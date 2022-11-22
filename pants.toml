@@ -2,12 +2,19 @@
 pants_version = "2.14.0"
 backend_packages = [
     "pants.backend.python",
-    "pants.backend.python.lint.black",
     "pants.backend.python.lint.docformatter",
     "pants.backend.python.lint.flake8",
+    "pants.backend.python.lint.isort",
     "pants.backend.python.lint.pylint",
     "pants.backend.python.lint.yapf",
     "pants.backend.python.typecheck.mypy",
     "pants.backend.docker",
     "pants.backend.docker.lint.hadolint",
+]
+
+[source]
+root_patterns = [
+    "common/src", "common/test",
+    "project_management/src", "project_management/test",
+    "user_management/src", "user_management/test"
 ]
