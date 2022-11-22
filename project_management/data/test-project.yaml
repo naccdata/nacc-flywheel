@@ -1,0 +1,10 @@
+---
+project: "Test Project"
+centers:
+  - center-id: 1006
+    name: "University of Testing"
+    is-active: True
+datatypes:
+  - form
+  - dicom
+published: True
