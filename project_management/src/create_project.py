@@ -9,6 +9,7 @@ datatypes - array of datatype names (form, dicom)
 published - boolean indicating whether data is to be published
 """
 import logging
+import sys
 
 import yaml
 from projects.project import Center, Project, ProjectVisitor
@@ -59,7 +60,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
                      group_id=group_id)
         return group_id
 
-    def visit_center(self, center: "Center"):
+    def visit_center(self, center: Center):
         """Creates project in FW instance."""
         if not self.__current:
             logging.error("No project given")
@@ -70,7 +71,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
                        project_id=center.center_id,
                        project_label=center.name)
 
-    def visit_project(self, project: "Project"):
+    def visit_project(self, project: Project):
         """Creates groups in FW instance:
 
         - one ingest groups for each datatype for each center
@@ -84,7 +85,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
                 self.visit_datatype(datatype)
         else:
             logging.warning(
-                "Not creating ingest group for project %s, which has no datatypes",
+                "Not creating ingest group for project %s: no datatypes given",
                 project.name)
 
         if project.centers:
@@ -92,7 +93,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
                 center.apply(self)
         else:
             logging.warning(
-                "Not creating accepted group for project %s, which has no centers",
+                "Not creating accepted group for project %s: no centers given",
                 project.name)
 
         if project.published:
@@ -114,17 +115,31 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         for center in self.__current.centers:
             project_label = center.name + " " + datatype + " ingest"
             project_id = center.center_id + "-" + datatype
-            create_project(group_id=self._ingest_group_id,
+            create_project(group_id=self.__ingest_group_id,
                            project_id=project_id,
                            project_label=project_label)
 
 
 def main():
-    with open("adrc_program.yaml", 'r', encoding='utf-8') as stream:
-        project_dict = yaml.load(stream)
+    """Main method to create project from the adrc_program.yaml file."""
+    project_file = "adrc_program.yaml"
+    with open(project_file, 'r', encoding='utf-8') as stream:
+        try:
+            project_gen = yaml.safe_load_all(stream)
+        except yaml.YAMLError as exception:
+            logging.error("Error in YAML file: %s", project_file)
+            if hasattr(exception, 'problem_mark'):
+                mark = exception.problem_mark
+                logging.error("Error: line %s, column %s", mark.line + 1,
+                              mark.column + 1)
+            sys.exit(1)
+        else:
+            project_list = list(project_gen)
 
-    project = Project.create(project_dict)
-    project.apply(FlywheelProjectArtifactCreator())
+    visitor = FlywheelProjectArtifactCreator()
+    for project_doc in project_list:
+        project = Project.create(project_doc)
+        project.apply(visitor)
 
 
 if __name__ == "__main__":
