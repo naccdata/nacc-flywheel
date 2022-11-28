@@ -1,5 +1,4 @@
-"""
-Reads a YAML file with project info
+"""Reads a YAML file with project info.
 
 project - name of project
 centers - array of centers
@@ -12,8 +11,7 @@ published - boolean indicating whether data is to be published
 import logging
 
 import yaml
-
-from projects.project import Project, Center, ProjectVisitor
+from projects.project import Center, Project, ProjectVisitor
 
 
 def create_group(*, group_label: str, group_id: str) -> str:
@@ -31,7 +29,8 @@ def create_group(*, group_label: str, group_id: str) -> str:
     return group_id
 
 
-def create_project(*, group_id: str, project_id: str, project_label: str) -> None:
+def create_project(*, group_id: str, project_id: str,
+                   project_label: str) -> None:
     """Creates FW project w/in group with given name.
 
     Args:
@@ -46,10 +45,10 @@ def create_project(*, group_id: str, project_id: str, project_label: str) -> Non
 
 
 class FlywheelProjectArtifactCreator(ProjectVisitor):
-    """Creates project artifacts in Flywheel"""
+    """Creates project artifacts in Flywheel."""
 
     def __init__(self) -> None:
-        """Inititializes visitor with FW instance details"""
+        """Inititializes visitor with FW instance details."""
         self.__current = None
         self.__ingest_group_id = None
         self.__accepted_group_id = None
@@ -61,17 +60,19 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         return group_id
 
     def visit_center(self, center: "Center"):
-        """Creates project in FW instance"""
+        """Creates project in FW instance."""
         if not self.__current:
             logging.error("No project given")
             return
         if not self.__accepted_group_id:
             self.__accepted_group_id = self.__create_group("Accepted")
         create_project(group_id=self.__accepted_group_id,
-                       project_id=center.center_id, project_label=center.name)
+                       project_id=center.center_id,
+                       project_label=center.name)
 
     def visit_project(self, project: "Project"):
         """Creates groups in FW instance:
+
         - one ingest groups for each datatype for each center
         - one "accepted" groups for each center
         - "release" group for project if project.published
@@ -83,14 +84,16 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
                 self.visit_datatype(datatype)
         else:
             logging.warning(
-                "Not creating ingest group for project %s, which has no datatypes", project.name)
+                "Not creating ingest group for project %s, which has no datatypes",
+                project.name)
 
         if project.centers:
             for center in project.centers:
                 center.apply(self)
         else:
             logging.warning(
-                "Not creating accepted group for project %s, which has no centers", project.name)
+                "Not creating accepted group for project %s, which has no centers",
+                project.name)
 
         if project.published:
             self.__create_group("Release")
@@ -112,7 +115,8 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
             project_label = center.name + " " + datatype + " ingest"
             project_id = center.center_id + "-" + datatype
             create_project(group_id=self._ingest_group_id,
-                           project_id=project_id, project_label=project_label)
+                           project_id=project_id,
+                           project_label=project_label)
 
 
 def main():
