@@ -15,7 +15,7 @@ import yaml
 from projects.project import Center, Project, ProjectVisitor
 
 
-def create_group(*, group_label: str, group_id: str) -> str:
+def create_flywheel_group(*, group_label: str, group_id: str) -> str:
     """Creates FW group with label and ID.
 
     Args:
@@ -30,8 +30,8 @@ def create_group(*, group_label: str, group_id: str) -> str:
     return group_id
 
 
-def create_project(*, group_id: str, project_id: str,
-                   project_label: str) -> None:
+def create_flywheel_project(*, group_id: str, project_id: str,
+                            project_label: str) -> None:
     """Creates FW project w/in group with given name.
 
     Args:
@@ -56,8 +56,9 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
 
     def __create_group(self, extension: str) -> str:
         group_id = self.__current.project_id + "-" + extension.lower()
-        create_group(group_label=self.__current.name + " " + extension,
-                     group_id=group_id)
+        create_flywheel_group(group_label=self.__current.name + " " +
+                              extension,
+                              group_id=group_id)
         return group_id
 
     def visit_center(self, center: Center):
@@ -67,9 +68,9 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
             return
         if not self.__accepted_group_id:
             self.__accepted_group_id = self.__create_group("Accepted")
-        create_project(group_id=self.__accepted_group_id,
-                       project_id=center.center_id,
-                       project_label=center.name)
+        create_flywheel_project(group_id=self.__accepted_group_id,
+                                project_id=center.center_id,
+                                project_label=center.name)
 
     def visit_project(self, project: Project):
         """Creates groups in FW instance:
@@ -115,9 +116,9 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         for center in self.__current.centers:
             project_label = center.name + " " + datatype + " ingest"
             project_id = center.center_id + "-" + datatype
-            create_project(group_id=self.__ingest_group_id,
-                           project_id=project_id,
-                           project_label=project_label)
+            create_flywheel_project(group_id=self.__ingest_group_id,
+                                    project_id=project_id,
+                                    project_label=project_label)
 
 
 def main():
