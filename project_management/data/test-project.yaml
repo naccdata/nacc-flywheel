@@ -1,10 +1,25 @@
 ---
 project: "Test Project"
 centers:
-  - center-id: 1006
+  - adc-id: 1006
     name: "University of Testing"
     is-active: True
+  - adc-id: 2006
+    name: "Inactive University of Testing"
+    is-active: False
 datatypes:
   - form
   - dicom
 published: True
+---
+project: "Test Project 2"
+centers:
+  - adc-id: 1006
+    name: "University of Testing"
+    is-active: True
+  - adc-id: 5006
+    name: "Testing ADRC"
+    is-active: True
+datatypes:
+  - form
+published: False

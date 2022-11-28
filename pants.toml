@@ -1,0 +1,35 @@
+[GLOBAL]
+pants_version = "2.14.0"
+backend_packages = [
+    "pants.backend.docker",
+    "pants.backend.docker.lint.hadolint",
+    "pants.backend.python",
+    "pants.backend.python.lint.docformatter",
+    "pants.backend.python.lint.flake8",
+    "pants.backend.python.lint.isort",
+    "pants.backend.python.lint.pylint",
+    "pants.backend.python.lint.yapf",
+    "pants.backend.python.typecheck.mypy",
+    "pants.backend.docker",
+    "pants.backend.docker.lint.hadolint",
+]
+
+[anonymous-telemetry]
+enabled = true
+repo_id = "A8B966D2-72FA-451B-965B-CACF8CF2FDC5"
+
+[source]
+root_patterns = [
+    "common/src", "common/test",
+    "project_management/src", "project_management/test",
+    "user_management/src", "user_management/test"
+]
+
+[python]
+interpreter_constraints = ["==3.9.*"]
+enable_resolves = true
+resolves = { python-default = "python-default.lock"}
+
+[python-bootstrap]
+#  https://www.pantsbuild.org/docs/python-interpreter-compatibility#changing-the-interpreter-search-path.
+search_path = ["<PATH>", "<PYENV>"]
