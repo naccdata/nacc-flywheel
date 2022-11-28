@@ -1,2 +1,2 @@
-python_sources()
+python_sources(name="lib")
 
