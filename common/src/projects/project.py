@@ -113,10 +113,25 @@ class Project:
         self._datatypes = datatypes
         self._published = published
 
+    def __eq__(self, __o: object) -> bool:
+        if not isinstance(__o, Project):
+            return False
+        return (__o.name == self._name and __o._centers == self._centers
+                and __o._datatypes == self._datatypes
+                and __o._published == self._published)
+
+    def __repr__(self) -> str:
+        return ("Project("
+                f"name={self._name},"
+                f"centers={self._centers},"
+                f"datatypes={self._datatypes},"
+                f"published={self._published}"
+                ")")
+
     @property
     def project_id(self) -> str:
         """Project ID property."""
-        return self._name
+        return convert_to_slug(self._name)
 
     @property
     def name(self) -> str:
@@ -146,7 +161,8 @@ class Project:
     @classmethod
     def create(cls, project: Mapping[str, T]) -> "Project":
         """Create Project from given mapping."""
-        return Project(name=project['project'],
-                       centers=project['centers'],
-                       datatypes=project['datatypes'],
-                       published=project['published'])
+        return Project(
+            name=project['project'],
+            centers=[Center.create(center) for center in project['centers']],
+            datatypes=project['datatypes'],
+            published=project['published'])
