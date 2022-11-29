@@ -8,11 +8,12 @@ centers - array of centers
 datatypes - array of datatype names (form, dicom)
 published - boolean indicating whether data is to be published
 """
+import argparse
 import logging
 import sys
 
 import yaml
-from projects.project import Center, Project, ProjectVisitor
+from projects.project import Center, Project, ProjectVisitor, convert_to_slug
 
 
 def create_flywheel_group(*, group_label: str, group_id: str) -> str:
@@ -55,10 +56,9 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         self.__accepted_group_id = None
 
     def __create_group(self, extension: str) -> str:
-        group_id = self.__current.project_id + "-" + extension.lower()
-        create_flywheel_group(group_label=self.__current.name + " " +
-                              extension,
-                              group_id=group_id)
+        label = self.__current.name + " " + extension
+        group_id = convert_to_slug(label)
+        create_flywheel_group(group_label=label, group_id=group_id)
         return group_id
 
     def visit_center(self, center: Center):
@@ -97,7 +97,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
                 "Not creating accepted group for project %s: no centers given",
                 project.name)
 
-        if project.published:
+        if project.is_published():
             self.__create_group("Release")
         else:
             logging.info("Project %s has no release project", project.name)
@@ -114,16 +114,21 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
             self.__ingest_group_id = self.__create_group("Ingest")
 
         for center in self.__current.centers:
-            project_label = center.name + " " + datatype + " ingest"
+            label = center.name + " " + datatype.capitalize() + " Ingest"
             project_id = center.center_id + "-" + datatype
             create_flywheel_project(group_id=self.__ingest_group_id,
                                     project_id=project_id,
-                                    project_label=project_label)
+                                    project_label=label)
 
 
 def main():
     """Main method to create project from the adrc_program.yaml file."""
-    project_file = "adrc_program.yaml"
+
+    parser = argparse.ArgumentParser(
+        description="Create FW structures for Project")
+    parser.add_argument('filename')
+    args = parser.parse_args()
+    project_file = args.filename
     with open(project_file, 'r', encoding='utf-8') as stream:
         try:
             project_gen = yaml.safe_load_all(stream)
