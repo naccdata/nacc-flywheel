@@ -29,7 +29,7 @@ Consists of python scripts for managing projects and project users.
 └── README.md
 ```
 
-The repository is setup to use Pants for the build.
+The repository is setup to use Pants (https://www.pantsbuild.org) for the build.
 
 Commands are
 1. Format every thing
