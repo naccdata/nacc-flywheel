@@ -26,8 +26,8 @@ def create_flywheel_group(*, group_label: str, group_id: str) -> str:
       the ID of the FW group
     """
     logging.info("Creating group %s with id %s", group_label, group_id)
-    print(f"group label: {group_label}")
-    print(f"group ID: {group_id}")
+    logging.info("  group label: %s", group_label)
+    logging.info("  group ID: %s", group_id)
     return group_id
 
 
@@ -42,8 +42,9 @@ def create_flywheel_project(*, group_id: str, project_id: str,
     """
     project_ref = f"fw://{group_id}/{project_id}"
     logging.info("Creating project %s with id %s", project_label, project_ref)
-    print(f"project: {project_ref}")
-    print(f"project name: {project_label}")
+    logging.info("  project: %s", project_ref)
+    logging.info("  project name: %s", project_label)
+    return project_ref
 
 
 class FlywheelProjectArtifactCreator(ProjectVisitor):
@@ -123,6 +124,8 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
 
 def main():
     """Main method to create project from the adrc_program.yaml file."""
+
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
     parser = argparse.ArgumentParser(
         description="Create FW structures for Project")
