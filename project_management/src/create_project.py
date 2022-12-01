@@ -52,26 +52,46 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
 
     def __init__(self) -> None:
         """Inititializes visitor with FW instance details."""
-        self.__current = None
-        self.__ingest_group_id = None
-        self.__accepted_group_id = None
+        self.__current_project = None
 
-    def __create_group(self, extension: str) -> str:
-        label = self.__current.name + " " + extension
+    def __create_accepted(self, center):
+        label = self.__current_project.name + " " + center.name + " Accepted"
         group_id = convert_to_slug(label)
         create_flywheel_group(group_label=label, group_id=group_id)
-        return group_id
+        create_flywheel_project(group_id=group_id,
+                                project_id=center.center_id,
+                                project_label=center.name)
+
+    def __create_ingest(self, center):
+        label = self.__current_project.name + " " + center.name + " Ingest"
+        group_id = convert_to_slug(label)
+        create_flywheel_group(group_label=label, group_id=group_id)
+        for datatype in self.__current_project.datatypes:
+            label = center.name + " " + datatype.capitalize() + " Ingest"
+            project_id = center.center_id + "-" + datatype
+            create_flywheel_project(group_id=group_id,
+                                    project_id=project_id,
+                                    project_label=label)
+
+    def __create_release(self):
+        label = self.__current_project.name + " Release"
+        group_id = convert_to_slug(label)
+        create_flywheel_group(group_label=label, group_id=group_id)
 
     def visit_center(self, center: Center):
         """Creates project in FW instance."""
-        if not self.__current:
+        if not self.__current_project:
             logging.error("No project given")
             return
-        if not self.__accepted_group_id:
-            self.__accepted_group_id = self.__create_group("Accepted")
-        create_flywheel_project(group_id=self.__accepted_group_id,
-                                project_id=center.center_id,
-                                project_label=center.name)
+
+        if self.__current_project.datatypes:
+            self.__create_ingest(center)
+        else:
+            logging.warning(
+                "Not creating ingest group for project %s: no datatypes given",
+                self.__current_project.name)
+
+        self.__create_accepted(center)
 
     def visit_project(self, project: Project):
         """Creates groups in FW instance:
@@ -80,46 +100,26 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         - one "accepted" groups for each center
         - "release" group for project if project.published
         """
-        self.__current = project
+        self.__current_project = project
 
-        if project.datatypes:
-            for datatype in project.datatypes:
-                self.visit_datatype(datatype)
-        else:
-            logging.warning(
-                "Not creating ingest group for project %s: no datatypes given",
-                project.name)
-
-        if project.centers:
-            for center in project.centers:
+        if self.__current_project.centers:
+            for center in self.__current_project.centers:
                 center.apply(self)
         else:
             logging.warning(
                 "Not creating accepted group for project %s: no centers given",
-                project.name)
+                self.__current_project.name)
 
-        if project.is_published():
-            self.__create_group("Release")
+        if self.__current_project.is_published():
+            self.__create_release()
         else:
-            logging.info("Project %s has no release project", project.name)
+            logging.info("Project %s has no release project",
+                         self.__current_project.name)
 
-        self.__current = None
-        self.__accepted_group_id = None
-        self.__ingest_group_id = None
+        self.__current_project = None
 
     def visit_datatype(self, datatype: str):
-        if not self.__current:
-            logging.error("No project given")
-            return
-        if not self.__ingest_group_id:
-            self.__ingest_group_id = self.__create_group("Ingest")
-
-        for center in self.__current.centers:
-            label = center.name + " " + datatype.capitalize() + " Ingest"
-            project_id = center.center_id + "-" + datatype
-            create_flywheel_project(group_id=self.__ingest_group_id,
-                                    project_id=project_id,
-                                    project_label=label)
+        pass
 
 
 def main():
