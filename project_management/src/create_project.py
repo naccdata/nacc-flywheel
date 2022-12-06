@@ -25,7 +25,7 @@ def create_flywheel_group(*, group_label: str, group_id: str) -> str:
     Returns:
       the ID of the FW group
     """
-    logging.info("Creating group %s with id %s", group_label, group_id)
+    logging.info("Creating group")
     logging.info("  group label: %s", group_label)
     logging.info("  group ID: %s", group_id)
     return group_id
@@ -41,7 +41,7 @@ def create_flywheel_project(*, group_id: str, project_id: str,
       project_label: the display name of the project
     """
     project_ref = f"fw://{group_id}/{project_id}"
-    logging.info("Creating project %s with id %s", project_label, project_ref)
+    logging.info("Creating project")
     logging.info("  project: %s", project_ref)
     logging.info("  project name: %s", project_label)
     return project_ref
@@ -54,48 +54,77 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         """Inititializes visitor with FW instance details."""
         self.__current_project = None
 
-    def __create_accepted(self, center):
-        label = self.__current_project.name + " " + center.name + " Accepted"
-        group_id = convert_to_slug(label)
-        create_flywheel_group(group_label=label, group_id=group_id)
+    def __create_accepted(self, group_id: str) -> None:
+        """Creates an accepted project for current project within given group.
+
+        Args:
+          group_id: the ID for parent group of project
+        """
         create_flywheel_project(group_id=group_id,
-                                project_id=center.center_id,
-                                project_label=center.name)
+                                project_id="accepted-" +
+                                convert_to_slug(self.__current_project.name),
+                                project_label=self.__current_project.name +
+                                " Accepted")
 
-    def __create_ingest(self, center):
-        label = self.__current_project.name + " " + center.name + " Ingest"
-        group_id = convert_to_slug(label)
-        create_flywheel_group(group_label=label, group_id=group_id)
+    def __create_ingest(self, group_id: str) -> None:
+        """Creates an ingest project for current project within the given group
+        for each data type in the project.
+
+        Args:
+          group_id: the ID for the parent group of the ingest projects.
+        """
         for datatype in self.__current_project.datatypes:
-            label = center.name + " " + datatype.capitalize() + " Ingest"
-            project_id = center.center_id + "-" + datatype
-            create_flywheel_project(group_id=group_id,
-                                    project_id=project_id,
-                                    project_label=label)
+            create_flywheel_project(
+                group_id=group_id,
+                project_id="ingest-" + datatype + "-" +
+                convert_to_slug(self.__current_project.name),
+                project_label=self.__current_project.name + " " +
+                datatype.capitalize() + " Ingest")
 
-    def __create_release(self):
-        label = self.__current_project.name + " Release"
-        group_id = convert_to_slug(label)
-        create_flywheel_group(group_label=label, group_id=group_id)
+    def __create_release(self, project: Project):
+        """Creates a release FW group for the given project with a master FW
+        project.
 
-    def visit_center(self, center: Center):
-        """Creates project in FW instance."""
+        Args:
+          project: the project
+        """
+        group_id = create_flywheel_group(group_label=project.name + " Release",
+                                         group_id="release-" +
+                                         convert_to_slug(project.name))
+
+        create_flywheel_project(group_id=group_id,
+                                project_id="master-project",
+                                project_label="Master Project")
+
+    def visit_center(self, center: Center) -> None:
+        """Creates center specific details for project in FW instance.
+
+        Adds a FW group for the center containing
+        - one FW project per project and datatype, if center is active
+        - one FW project for "accepted" data
+
+        Args:
+          center: the Center
+        """
         if not self.__current_project:
             logging.error("No project given")
             return
 
+        group_id = create_flywheel_group(group_label=center.name,
+                                         group_id=convert_to_slug(center.name))
+
         if center.is_active():
             if self.__current_project.datatypes:
-                self.__create_ingest(center)
+                self.__create_ingest(group_id)
             else:
                 logging.warning(
-                    "Not creating ingest group for project %s: no datatypes given",
+                    "No ingest groups created for %s: no datatypes given",
                     self.__current_project.name)
         else:
             logging.info("Not creating ingest for inactive center %s",
                          center.name)
 
-        self.__create_accepted(center)
+        self.__create_accepted(group_id)
 
     def visit_project(self, project: Project):
         """Creates groups in FW instance:
@@ -111,11 +140,11 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
                 center.apply(self)
         else:
             logging.warning(
-                "Not creating accepted group for project %s: no centers given",
+                "Not creating center groups for project %s: no centers given",
                 self.__current_project.name)
 
         if self.__current_project.is_published():
-            self.__create_release()
+            self.__create_release(self.__current_project)
         else:
             logging.info("Project %s has no release project",
                          self.__current_project.name)
