@@ -84,12 +84,16 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
             logging.error("No project given")
             return
 
-        if self.__current_project.datatypes:
-            self.__create_ingest(center)
+        if center.is_active():
+            if self.__current_project.datatypes:
+                self.__create_ingest(center)
+            else:
+                logging.warning(
+                    "Not creating ingest group for project %s: no datatypes given",
+                    self.__current_project.name)
         else:
-            logging.warning(
-                "Not creating ingest group for project %s: no datatypes given",
-                self.__current_project.name)
+            logging.info("Not creating ingest for inactive center %s",
+                         center.name)
 
         self.__create_accepted(center)
 
