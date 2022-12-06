@@ -16,6 +16,7 @@ def convert_to_slug(name: str) -> str:
     Returns:
       The transformed name.
     """
+    name = re.sub(r"[/]", ' ', name)
     name = re.sub(r"[^\w\s]", '', name)
     name = re.sub(r"\s+", '-', name)
     return name.lower()
