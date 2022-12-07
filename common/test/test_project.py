@@ -1,4 +1,6 @@
 """Tests for projects.*"""
+from typing import Optional
+
 import pytest
 from projects.project import Center, Project, ProjectVisitor
 
@@ -7,9 +9,9 @@ class DummyVisitor(ProjectVisitor):
     """Visitor for testing apply methods."""
 
     def __init__(self) -> None:
-        self.center_name = None
-        self.project_name = None
-        self.datatype_name = None
+        self.center_name: Optional[str] = None
+        self.project_name: Optional[str] = None
+        self.datatype_name: Optional[str] = None
 
     def visit_center(self, center: Center) -> None:
         self.center_name = center.name
@@ -63,13 +65,15 @@ class TestProject:
             name="Project Alpha",
             centers=[Center(adcid=1, name='A Center', active=True)],
             datatypes=['dicom'],
-            published=True)
+            published=True,
+            primary=True)
         assert project.project_id == "project-alpha"
         assert project.centers == [
             Center(adcid=1, name='A Center', active=True)
         ]
         assert project.datatypes == ['dicom']
         assert project.is_published()
+        assert project.is_primary()
 
         project2 = Project.create({
             'project':
@@ -81,6 +85,8 @@ class TestProject:
             }],
             'datatypes': ['dicom'],
             'published':
+            True,
+            'primary':
             True
         })
         assert project == project2

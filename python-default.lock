@@ -10,7 +10,8 @@
 //   ],
 //   "generated_with_requirements": [
 //     "pytest>=7.2.0",
-//     "pyyaml==6.0"
+//     "pyyaml==6.0",
+//     "types-PyYAML>=6.0.12"
 //   ],
 //   "manylinux": "manylinux2014",
 //   "requirement_constraints": [],
@@ -270,6 +271,24 @@
           "requires_dists": [],
           "requires_python": ">=3.7",
           "version": "2.0.1"
+        },
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
+              "hash": "1e94e80aafee07a7e798addb2a320e32956a373f376655128ae20637adb2655b",
+              "url": "https://files.pythonhosted.org/packages/13/c2/aff0c123a4a8e4b360a52bb62019949fa691d02ca0fda1ac5010171d9d42/types_PyYAML-6.0.12.2-py3-none-any.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "6840819871c92deebe6a2067fb800c11b8a063632eb4e3e755914e7ab3604e83",
+              "url": "https://files.pythonhosted.org/packages/98/f1/b811af145690f4585e5ef03ce961b9ed3e361ace950416bd577dfa6c4918/types-PyYAML-6.0.12.2.tar.gz"
+            }
+          ],
+          "project_name": "types-pyyaml",
+          "requires_dists": [],
+          "requires_python": null,
+          "version": "6.0.12.2"
         }
       ],
       "platform_tag": null
@@ -281,7 +300,8 @@
   "prefer_older_binary": false,
   "requirements": [
     "pytest>=7.2.0",
-    "pyyaml==6.0"
+    "pyyaml==6.0",
+    "types-PyYAML>=6.0.12"
   ],
   "requires_python": [
     "==3.9.*"

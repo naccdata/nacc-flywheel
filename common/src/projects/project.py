@@ -1,7 +1,7 @@
 """Classes for representing NACC projects."""
 import re
 from abc import ABC, abstractmethod
-from typing import List, Mapping, TypeVar
+from typing import Any, List, Mapping
 
 
 def convert_to_slug(name: str) -> str:
@@ -108,25 +108,29 @@ class Project:
                  name: str,
                  centers: List[Center],
                  datatypes: List[str],
-                 published: bool = False) -> None:
+                 published: bool = False,
+                 primary: bool = False) -> None:
         self._name = name
         self._centers = centers
         self._datatypes = datatypes
         self._published = published
+        self._primary = primary
 
     def __eq__(self, __o: object) -> bool:
         if not isinstance(__o, Project):
             return False
         return (__o.name == self._name and __o._centers == self._centers
                 and __o._datatypes == self._datatypes
-                and __o._published == self._published)
+                and __o._published == self._published
+                and __o._primary == self._primary)
 
     def __repr__(self) -> str:
         return ("Project("
                 f"name={self._name},"
                 f"centers={self._centers},"
                 f"datatypes={self._datatypes},"
-                f"published={self._published}"
+                f"published={self._published},"
+                f"primary={self._primary}"
                 ")")
 
     @property
@@ -153,17 +157,21 @@ class Project:
         """Project published predicate."""
         return self._published
 
+    def is_primary(self) -> bool:
+        """Predicate to indicate whether is the main project of coordinating
+        center."""
+        return self._primary
+
     def apply(self, visitor) -> None:
         """Apply visitor to this Project."""
         visitor.visit_project(self)
 
-    T = TypeVar('T')
-
     @classmethod
-    def create(cls, project: Mapping[str, T]) -> "Project":
+    def create(cls, project: Mapping[str, Any]) -> "Project":
         """Create Project from given mapping."""
         return Project(
             name=project['project'],
             centers=[Center.create(center) for center in project['centers']],
             datatypes=project['datatypes'],
-            published=project['published'])
+            published=project['published'],
+            primary=project['primary'])

@@ -11,6 +11,7 @@ published - boolean indicating whether data is to be published
 import argparse
 import logging
 import sys
+from typing import Optional
 
 import yaml
 from projects.project import Center, Project, ProjectVisitor, convert_to_slug
@@ -32,7 +33,7 @@ def create_flywheel_group(*, group_label: str, group_id: str) -> str:
 
 
 def create_flywheel_project(*, group_id: str, project_id: str,
-                            project_label: str) -> None:
+                            project_label: str) -> str:
     """Creates FW project w/in group with given name.
 
     Args:
@@ -47,12 +48,28 @@ def create_flywheel_project(*, group_id: str, project_id: str,
     return project_ref
 
 
+def create_release(project: Project):
+    """Creates a release FW group for the given project with a master FW
+    project.
+
+    Args:
+        project: the project
+    """
+    group_id = create_flywheel_group(group_label=project.name + " Release",
+                                     group_id="release-" +
+                                     convert_to_slug(project.name))
+
+    create_flywheel_project(group_id=group_id,
+                            project_id="master-project",
+                            project_label="Master Project")
+
+
 class FlywheelProjectArtifactCreator(ProjectVisitor):
     """Creates project artifacts in Flywheel."""
 
     def __init__(self) -> None:
         """Inititializes visitor with FW instance details."""
-        self.__current_project = None
+        self.__current_project: Optional[Project] = None
 
     def __create_accepted(self, group_id: str) -> None:
         """Creates an accepted project for current project within given group.
@@ -60,11 +77,26 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         Args:
           group_id: the ID for parent group of project
         """
+        assert self.__current_project
+        project_id = self.__build_project_id("accepted")
         create_flywheel_project(group_id=group_id,
-                                project_id="accepted-" +
-                                convert_to_slug(self.__current_project.name),
+                                project_id=project_id,
                                 project_label=self.__current_project.name +
                                 " Accepted")
+
+    def __build_project_id(self, prefix: str) -> str:
+        """Builds a FW project ID string from the given prefix.
+
+        Concatenates the name of the current project, if is not the primary
+        project of the coordinating center.
+
+        Args:
+          prefix: the prefix for the project ID
+        """
+        assert self.__current_project
+        if self.__current_project.is_primary():
+            return prefix
+        return prefix + "-" + convert_to_slug(self.__current_project.name)
 
     def __create_ingest(self, group_id: str) -> None:
         """Creates an ingest project for current project within the given group
@@ -73,28 +105,13 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         Args:
           group_id: the ID for the parent group of the ingest projects.
         """
+        assert self.__current_project
         for datatype in self.__current_project.datatypes:
-            create_flywheel_project(
-                group_id=group_id,
-                project_id="ingest-" + datatype + "-" +
-                convert_to_slug(self.__current_project.name),
-                project_label=self.__current_project.name + " " +
-                datatype.capitalize() + " Ingest")
-
-    def __create_release(self, project: Project):
-        """Creates a release FW group for the given project with a master FW
-        project.
-
-        Args:
-          project: the project
-        """
-        group_id = create_flywheel_group(group_label=project.name + " Release",
-                                         group_id="release-" +
-                                         convert_to_slug(project.name))
-
-        create_flywheel_project(group_id=group_id,
-                                project_id="master-project",
-                                project_label="Master Project")
+            project_id = self.__build_project_id("ingest-" + datatype.lower())
+            create_flywheel_project(group_id=group_id,
+                                    project_id=project_id,
+                                    project_label=self.__current_project.name +
+                                    " " + datatype.capitalize() + " Ingest")
 
     def visit_center(self, center: Center) -> None:
         """Creates center specific details for project in FW instance.
@@ -144,7 +161,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
                 self.__current_project.name)
 
         if self.__current_project.is_published():
-            self.__create_release(self.__current_project)
+            create_release(self.__current_project)
         else:
             logging.info("Project %s has no release project",
                          self.__current_project.name)
