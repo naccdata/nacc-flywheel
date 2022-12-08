@@ -10,25 +10,97 @@ published - boolean indicating whether data is to be published
 """
 import argparse
 import logging
+from pathvalidate import ValidationError, validate_filename, sanitize_filename
 import sys
 
 import yaml
+import flywheel
+from flywheel import ApiException
+
 from projects.project import Center, Project, ProjectVisitor, convert_to_slug
 
 
-def create_flywheel_group(*, group_label: str, group_id: str) -> str:
+DRYRUN = True
+
+
+def sanitize_name(name: str, groupid: bool = False) -> str:
+    """ Sanitizes a name for flywheel
+
+    Flywheel name/label requirments are that it must be less than 64 characters,
+    and group ids can include lowercase letters, numbers, dashes, and underscores as long as it’s unique.
+
+    Args:
+        name: the name to be sanitized
+        groupid: boolean indicating if the name is a group ID or not (which has special sanitation rules)
+
+    Returns:
+        safe_name: the new sanitized name for the container/group that's safe for flywheel
+
+    """
+
+    safe_name = ""
+    if groupid:
+        # Group ID can include lowercase letters, numbers, dashes, and underscores as long as it’s unique.
+        modname = name.lower() # Convert to lowercase
+        modname = modname.replace(" ", "_") # Replace spaces with dashes
+        for c in modname:
+            safe_name += c if c.isalnum() or c in ['-','_'] else ""
+
+    else:
+        safe_name = name[:64]
+
+    if safe_name != name:
+        logging.info(f"changed from {name} to {safe_name}")
+
+    return safe_name
+
+def flywheel_path_exists(fwpath: str, fw: flywheel.Client) -> bool:
+    """ ensure that a fw path (group, or group/project) is valid for creation.
+    i.e., ensure that it doesn't exist already
+
+    Args:
+        fwpath: a string path to a group, or group/project (just "<groupid>", or "<groupid>/<project>")
+        fw: flywheel Client
+
+    Returns: True|False
+
+    """
+
+    try:
+        fw.lookup(fwpath)
+    except ApiException as e:
+        if e.status == 404:
+            return False
+    return True
+
+
+def create_flywheel_group(*, group_label: str, group_id: str, fw: flywheel.Client) -> str:
     """Creates FW group with label and ID.
 
     Args:
       group_label: the name of the project to be created
       group_id: the id for the group
+      fw: flywheel sdk Client
     Returns:
       the ID of the FW group
     """
+    group_label = sanitize_name(group_label)
+    group_id = sanitize_name(group_id, groupid=True)
+
+    if flywheel_path_exists(group_id):
+        logging.info(f"Flywheel group {group_id} already exists")
+        return group_id
+
     logging.info("Creating group %s with id %s", group_label, group_id)
     logging.info("  group label: %s", group_label)
     logging.info("  group ID: %s", group_id)
+
+    if not DRYRUN:
+        group_id = fw.add_group(flywheel.Group(group_id, group_label))
+        logging.info("\tsuccess")
+
     return group_id
+
 
 
 def create_flywheel_project(*, group_id: str, project_id: str,
