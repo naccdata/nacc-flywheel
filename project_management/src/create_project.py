@@ -95,27 +95,45 @@ def create_flywheel_group(*, group_label: str, group_id: str, fw: flywheel.Clien
     logging.info("  group label: %s", group_label)
     logging.info("  group ID: %s", group_id)
 
-    if not DRYRUN:
-        group_id = fw.add_group(flywheel.Group(group_id, group_label))
-        logging.info("\tsuccess")
+    if DRYRUN:
+        return group_id
+
+    group_id = fw.add_group(flywheel.Group(group_id, group_label))
+    logging.info("\tsuccess")
 
     return group_id
 
 
 
 def create_flywheel_project(*, group_id: str, project_id: str,
-                            project_label: str) -> None:
+                            project_label: str, fw: flywheel.Client) -> None:
     """Creates FW project w/in group with given name.
 
     Args:
       group_id: the group
       project_id: the name of the project
       project_label: the display name of the project
+      fw: the flywheel SDK client
     """
-    project_ref = f"fw://{group_id}/{project_id}"
+
+    project_label = sanitize_name(project_label)
+    project_path = f"{group_id}/{project_id}"
+    project_ref = f"fw://{project_path}"
+
+    if flywheel_path_exists(project_path):
+        logging.info(f"Flywheel group {project_ref} already exists")
+        return project_ref
+
     logging.info("Creating project %s with id %s", project_label, project_ref)
     logging.info("  project: %s", project_ref)
     logging.info("  project name: %s", project_label)
+
+    if DRYRUN:
+        return project_ref
+
+    group = fw.get_group(group_id)
+    project = group.add_project(label=project_label)
+
     return project_ref
 
 
