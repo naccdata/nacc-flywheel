@@ -53,15 +53,22 @@ class ProjectVisitor(ABC):
 class Center:
     """Represents a center with data managed at NACC."""
 
-    def __init__(self, *, adcid: int, name: str, active: bool = True) -> None:
+    def __init__(self,
+                 *,
+                 adcid: int,
+                 name: str,
+                 center_id: str,
+                 active: bool = True) -> None:
         self._adcid = adcid
         self._name = name
         self._active = active
+        self._center_id = center_id
 
     def __repr__(self) -> str:
         return (f"Center(adcid={self.adcid}, "
                 f"center_id={self.center_id}, "
-                f"name={self.name})")
+                f"name={self.name}, "
+                f"active={self.is_active()})")
 
     def __eq__(self, __o: object) -> bool:
         if not isinstance(__o, Center):
@@ -70,23 +77,23 @@ class Center:
                 and self.name == __o.name)
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Center name property."""
         return self._name
 
-    def is_active(self):
+    def is_active(self) -> bool:
         """Indicates whether the center is active."""
         return self._active
 
     @property
-    def adcid(self):
+    def adcid(self) -> int:
         """Center ADC ID property."""
         return self._adcid
 
     @property
     def center_id(self):
         """Center text ID property."""
-        return convert_to_slug(self._name)
+        return self._center_id
 
     def apply(self, visitor):
         """Applies visitor to this Center."""
@@ -97,6 +104,7 @@ class Center:
         """Creates a Center from the given dictionary."""
         return Center(adcid=center['adc-id'],
                       name=center['name'],
+                      center_id=center['center-id'],
                       active=center['is-active'])
 
 
@@ -106,6 +114,7 @@ class Project:
     def __init__(self,
                  *,
                  name: str,
+                 project_id: str,
                  centers: List[Center],
                  datatypes: List[str],
                  published: bool = False,
@@ -115,6 +124,7 @@ class Project:
         self._datatypes = datatypes
         self._published = published
         self._primary = primary
+        self._project_id = project_id
 
     def __eq__(self, __o: object) -> bool:
         if not isinstance(__o, Project):
@@ -127,6 +137,7 @@ class Project:
     def __repr__(self) -> str:
         return ("Project("
                 f"name={self._name},"
+                f"project_id={self._project_id},"
                 f"centers={self._centers},"
                 f"datatypes={self._datatypes},"
                 f"published={self._published},"
@@ -136,7 +147,7 @@ class Project:
     @property
     def project_id(self) -> str:
         """Project ID property."""
-        return convert_to_slug(self._name)
+        return self._project_id
 
     @property
     def name(self) -> str:
@@ -169,9 +180,14 @@ class Project:
     @classmethod
     def create(cls, project: Mapping[str, Any]) -> "Project":
         """Create Project from given mapping."""
+        primary_project = False
+        if 'primary' in project:
+            primary_project = project['primary']
+
         return Project(
             name=project['project'],
+            project_id=project['project-id'],
             centers=[Center.create(center) for center in project['centers']],
             datatypes=project['datatypes'],
             published=project['published'],
-            primary=project['primary'])
+            primary=primary_project)
