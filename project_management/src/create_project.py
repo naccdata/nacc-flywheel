@@ -14,7 +14,7 @@ import sys
 from typing import Optional
 
 import yaml
-from projects.project import Center, Project, ProjectVisitor, convert_to_slug
+from projects.project import Center, Project, ProjectVisitor
 
 
 def create_flywheel_group(*, group_label: str, group_id: str) -> str:
@@ -56,8 +56,7 @@ def create_release(project: Project):
         project: the project
     """
     group_id = create_flywheel_group(group_label=project.name + " Release",
-                                     group_id="release-" +
-                                     convert_to_slug(project.name))
+                                     group_id="release-" + project.project_id)
 
     create_flywheel_project(group_id=group_id,
                             project_id="master-project",
@@ -96,7 +95,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         assert self.__current_project
         if self.__current_project.is_primary():
             return prefix
-        return prefix + "-" + convert_to_slug(self.__current_project.name)
+        return prefix + "-" + self.__current_project.project_id
 
     def __create_ingest(self, group_id: str) -> None:
         """Creates an ingest project for current project within the given group
@@ -128,7 +127,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
             return
 
         group_id = create_flywheel_group(group_label=center.name,
-                                         group_id=convert_to_slug(center.name))
+                                         group_id=center.center_id)
 
         if center.is_active():
             if self.__current_project.datatypes:
