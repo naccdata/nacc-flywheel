@@ -92,8 +92,7 @@ def create_flywheel_group(*, group_label: str, group_id: str, fw: flywheel.Clien
         logging.info(f"Flywheel group {group_id} already exists")
         return group_id
 
-    logging.info("Creating group %s with id %s", group_label, group_id)
-
+    logging.info("Creating group")
     logging.info("  group label: %s", group_label)
     logging.info("  group ID: %s", group_id)
 
@@ -108,7 +107,7 @@ def create_flywheel_group(*, group_label: str, group_id: str, fw: flywheel.Clien
 
 
 def create_flywheel_project(*, group_id: str, project_id: str,
-                            project_label: str, fw: flywheel.Client) -> None:
+                            project_label: str, fw: flywheel.Client) -> str:
 
     """Creates FW project w/in group with given name.
 
@@ -120,6 +119,7 @@ def create_flywheel_project(*, group_id: str, project_id: str,
     """
 
     project_label = sanitize_name(project_label)
+
     project_path = f"{group_id}/{project_id}"
     project_ref = f"fw://{project_path}"
 
@@ -127,8 +127,7 @@ def create_flywheel_project(*, group_id: str, project_id: str,
         logging.info(f"Flywheel group {project_ref} already exists")
         return project_ref
 
-    logging.info("Creating project %s with id %s", project_label, project_ref)
-
+    logging.info("Creating project")
     logging.info("  project: %s", project_ref)
     logging.info("  project name: %s", project_label)
 
