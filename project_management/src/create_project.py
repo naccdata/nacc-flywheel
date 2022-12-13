@@ -18,7 +18,7 @@ import yaml
 import flywheel
 from flywheel import ApiException
 
-from projects.project import Center, Project, ProjectVisitor, convert_to_slug
+from common.src.projects.project import Center, Project, ProjectVisitor, convert_to_slug
 
 
 DRYRUN = True
