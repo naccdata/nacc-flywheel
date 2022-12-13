@@ -1,4 +1,6 @@
 """Tests for projects.*"""
+from typing import Optional
+
 import pytest
 from projects.project import Center, Project, ProjectVisitor
 
@@ -7,9 +9,9 @@ class DummyVisitor(ProjectVisitor):
     """Visitor for testing apply methods."""
 
     def __init__(self) -> None:
-        self.center_name = None
-        self.project_name = None
-        self.datatype_name = None
+        self.center_name: Optional[str] = None
+        self.project_name: Optional[str] = None
+        self.datatype_name: Optional[str] = None
 
     def visit_center(self, center: Center) -> None:
         self.center_name = center.name
@@ -27,7 +29,7 @@ class TestCenter:
 
     def test_object(self):
         """Sanity check on object creation and properties."""
-        center = Center(adcid=7, name="Alpha ADRC")
+        center = Center(adcid=7, name="Alpha ADRC", center_id='alpha-adrc')
         assert center.adcid == 7
         assert center.name == "Alpha ADRC"
         assert center.is_active()
@@ -37,10 +39,11 @@ class TestCenter:
         """Check that create method creates object correctly."""
         center = Center.create({
             'adc-id': 7,
-            'name': "Alpha ADRC",
+            'name': 'Alpha ADRC',
+            'center-id': 'alpha-adrc',
             'is-active': True
         })
-        center2 = Center(adcid=7, name="Alpha ADRC")
+        center2 = Center(adcid=7, name="Alpha ADRC", center_id='alpha-adrc')
         assert center == center2
 
         with pytest.raises(KeyError):
@@ -49,7 +52,7 @@ class TestCenter:
     def test_apply(self):
         """Test that visitor applied."""
         visitor = DummyVisitor()
-        center = Center(adcid=1, name="Dummy Center")
+        center = Center(adcid=1, name="Dummy Center", center_id="dummy")
         center.apply(visitor)
         assert visitor.center_name == "Dummy Center"
 
@@ -59,28 +62,40 @@ class TestProject:
 
     def test_object(self):
         """Tests for object creation."""
-        project = Project(
-            name="Project Alpha",
-            centers=[Center(adcid=1, name='A Center', active=True)],
-            datatypes=['dicom'],
-            published=True)
+        project = Project(name="Project Alpha",
+                          project_id='project-alpha',
+                          centers=[
+                              Center(adcid=1,
+                                     name='A Center',
+                                     center_id='ac',
+                                     active=True)
+                          ],
+                          datatypes=['dicom'],
+                          published=True,
+                          primary=True)
         assert project.project_id == "project-alpha"
         assert project.centers == [
-            Center(adcid=1, name='A Center', active=True)
+            Center(adcid=1, name='A Center', center_id='ac', active=True)
         ]
         assert project.datatypes == ['dicom']
         assert project.is_published()
+        assert project.is_primary()
 
         project2 = Project.create({
             'project':
             'Project Alpha',
+            'project-id':
+            'project-alpha',
             'centers': [{
                 'adc-id': 1,
                 'name': 'A Center',
+                'center-id': 'ac',
                 'is-active': True
             }],
             'datatypes': ['dicom'],
             'published':
+            True,
+            'primary':
             True
         })
         assert project == project2
@@ -92,6 +107,7 @@ class TestProject:
         """Test project apply method."""
         visitor = DummyVisitor()
         project = Project(name='Project Beta',
+                          project_id='beta',
                           centers=[],
                           datatypes=[],
                           published=True)
