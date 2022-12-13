@@ -21,7 +21,6 @@ from flywheel import ApiException
 from projects.project import Center, Project, ProjectVisitor, convert_to_slug
 
 
-
 DRYRUN = True
 
 
@@ -122,7 +121,7 @@ def create_flywheel_project(*, group_id: str, project_id: str,
     project_label = sanitize_name(project_label)
 
     project_path = f"{group_id}/{project_id}"
-    project_ref = f"fw://{group_id}/{project_id}"
+    project_ref = f"fw://{project_path}"
 
     if flywheel_path_exists(project_path):
         logging.info(f"Flywheel group {project_ref} already exists")
@@ -149,7 +148,8 @@ def create_release(project: Project):
         project: the project
     """
     group_id = create_flywheel_group(group_label=project.name + " Release",
-                                     group_id="release-" + project.project_id)
+                                     group_id="release-" +
+                                     convert_to_slug(project.name))
 
     create_flywheel_project(group_id=group_id,
                             project_id="master-project",
@@ -188,7 +188,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         assert self.__current_project
         if self.__current_project.is_primary():
             return prefix
-        return prefix + "-" + self.__current_project.project_id
+        return prefix + "-" + convert_to_slug(self.__current_project.name)
 
     def __create_ingest(self, group_id: str) -> None:
         """Creates an ingest project for current project within the given group
@@ -220,7 +220,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
             return
 
         group_id = create_flywheel_group(group_label=center.name,
-                                         group_id=center.center_id)
+                                         group_id=convert_to_slug(center.name))
 
         if center.is_active():
             if self.__current_project.datatypes:
