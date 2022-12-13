@@ -16,6 +16,8 @@ from typing import Optional
 import yaml
 from projects.project import Center, Project, ProjectVisitor
 
+import fw_create_project as fc
+
 
 def create_flywheel_group(*, group_label: str, group_id: str) -> str:
     """Creates FW group with label and ID.
