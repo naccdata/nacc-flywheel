@@ -10,134 +10,41 @@ published - boolean indicating whether data is to be published
 """
 import argparse
 import logging
-from pathvalidate import ValidationError, validate_filename, sanitize_filename
 import sys
 from typing import Optional
 
 import yaml
-import flywheel
-from flywheel import ApiException
-
-from projects.project import Center, Project, ProjectVisitor, convert_to_slug
+from projects.project import Center, Project, ProjectVisitor
 
 
-DRYRUN = True
-
-
-def sanitize_name(name: str, groupid: bool = False) -> str:
-    """ Sanitizes a name for flywheel
-
-    Flywheel name/label requirments are that it must be less than 64 characters,
-    and group ids can include lowercase letters, numbers, dashes, and underscores as long as it’s unique.
-
-    Args:
-        name: the name to be sanitized
-        groupid: boolean indicating if the name is a group ID or not (which has special sanitation rules)
-
-    Returns:
-        safe_name: the new sanitized name for the container/group that's safe for flywheel
-
-    """
-
-    safe_name = ""
-    if groupid:
-        # Group ID can include lowercase letters, numbers, dashes, and underscores as long as it’s unique.
-        modname = name.lower() # Convert to lowercase
-        modname = modname.replace(" ", "_") # Replace spaces with dashes
-        for c in modname:
-            safe_name += c if c.isalnum() or c in ['-','_'] else ""
-
-    else:
-        safe_name = name[:64]
-
-    if safe_name != name:
-        logging.info(f"changed from {name} to {safe_name}")
-
-    return safe_name
-
-def flywheel_path_exists(fwpath: str, fw: flywheel.Client) -> bool:
-    """ ensure that a fw path (group, or group/project) is valid for creation.
-    i.e., ensure that it doesn't exist already
-
-    Args:
-        fwpath: a string path to a group, or group/project (just "<groupid>", or "<groupid>/<project>")
-        fw: flywheel Client
-
-    Returns: True|False
-
-    """
-
-    try:
-        fw.lookup(fwpath)
-    except ApiException as e:
-        if e.status == 404:
-            return False
-    return True
-
-
-def create_flywheel_group(*, group_label: str, group_id: str, fw: flywheel.Client) -> str:
+def create_flywheel_group(*, group_label: str, group_id: str) -> str:
     """Creates FW group with label and ID.
 
     Args:
       group_label: the name of the project to be created
       group_id: the id for the group
-      fw: flywheel sdk Client
     Returns:
       the ID of the FW group
     """
-    group_label = sanitize_name(group_label)
-    group_id = sanitize_name(group_id, groupid=True)
-
-    if flywheel_path_exists(group_id):
-        logging.info(f"Flywheel group {group_id} already exists")
-        return group_id
-
-    logging.info("Creating group %s with id %s", group_label, group_id)
-
+    logging.info("Creating group")
     logging.info("  group label: %s", group_label)
     logging.info("  group ID: %s", group_id)
-
-    if DRYRUN:
-        return group_id
-
-    group_id = fw.add_group(flywheel.Group(group_id, group_label))
-    logging.info("\tsuccess")
-
     return group_id
 
 
-
 def create_flywheel_project(*, group_id: str, project_id: str,
-                            project_label: str, fw: flywheel.Client) -> None:
-
+                            project_label: str) -> str:
     """Creates FW project w/in group with given name.
 
     Args:
       group_id: the group
       project_id: the name of the project
       project_label: the display name of the project
-      fw: the flywheel SDK client
     """
-
-    project_label = sanitize_name(project_label)
-    project_path = f"{group_id}/{project_id}"
-    project_ref = f"fw://{project_path}"
-
-    if flywheel_path_exists(project_path):
-        logging.info(f"Flywheel group {project_ref} already exists")
-        return project_ref
-
-    logging.info("Creating project %s with id %s", project_label, project_ref)
-
+    project_ref = f"fw://{group_id}/{project_id}"
+    logging.info("Creating project")
     logging.info("  project: %s", project_ref)
     logging.info("  project name: %s", project_label)
-
-    if DRYRUN:
-        return project_ref
-
-    group = fw.get_group(group_id)
-    project = group.add_project(label=project_label)
-
     return project_ref
 
 
@@ -149,8 +56,7 @@ def create_release(project: Project):
         project: the project
     """
     group_id = create_flywheel_group(group_label=project.name + " Release",
-                                     group_id="release-" +
-                                     convert_to_slug(project.name))
+                                     group_id="release-" + project.project_id)
 
     create_flywheel_project(group_id=group_id,
                             project_id="master-project",
@@ -189,7 +95,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         assert self.__current_project
         if self.__current_project.is_primary():
             return prefix
-        return prefix + "-" + convert_to_slug(self.__current_project.name)
+        return prefix + "-" + self.__current_project.project_id
 
     def __create_ingest(self, group_id: str) -> None:
         """Creates an ingest project for current project within the given group
@@ -221,7 +127,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
             return
 
         group_id = create_flywheel_group(group_label=center.name,
-                                         group_id=convert_to_slug(center.name))
+                                         group_id=center.center_id)
 
         if center.is_active():
             if self.__current_project.datatypes:

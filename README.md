@@ -52,3 +52,8 @@ Commands are
     ```bash
     ./pants run project_management/src/create_project.py --  project_management/data/test-project.yaml
     ```
+
+6. Update dependencies (after editing requirements.txt)
+    ```bash
+    ./pants generate-lockfiles
+    ```
