@@ -57,3 +57,8 @@ Commands are
     ```bash
     ./pants generate-lockfiles
     ```
+    
+7. Add configuration for new code/directories
+    ```bash
+    ./pants tailor ::
+    ```
