@@ -10,33 +10,22 @@ published - boolean indicating whether data is to be published
 """
 import argparse
 import logging
+import os
 import sys
 from typing import Optional
 
-import fw_create_project as fc
 import yaml
+from fw_create_project import FlywheelProxy
 from projects.project import Center, Project, ProjectVisitor
-
-
-def create_release(project: Project):
-    """Creates a release FW group for the given project with a master FW
-    project.
-
-    Args:
-        project: the project
-    """
-    group = fc.fw_create_group(group_label=project.name + " Release",
-                               group_id="release-" + project.project_id)
-
-    fc.fw_create_project(group=group, project_label="master-project")
 
 
 class FlywheelProjectArtifactCreator(ProjectVisitor):
     """Creates project artifacts in Flywheel."""
 
-    def __init__(self) -> None:
+    def __init__(self, flywheel_proxy: FlywheelProxy) -> None:
         """Inititializes visitor with FW instance details."""
         self.__current_project: Optional[Project] = None
+        self.__fw = flywheel_proxy
 
     def __create_accepted(self, group) -> None:
         """Creates an accepted project for current project within given group.
@@ -46,7 +35,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         """
         assert self.__current_project
         project_id = self.__build_project_id("accepted")
-        fc.fw_create_project(group=group, project_label=project_id)
+        self.__fw.get_project(group=group, project_label=project_id)
 
     def __build_project_id(self, prefix: str) -> str:
         """Builds a FW project ID string from the given prefix.
@@ -72,7 +61,20 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
         assert self.__current_project
         for datatype in self.__current_project.datatypes:
             project_id = self.__build_project_id("ingest-" + datatype.lower())
-            fc.fw_create_project(group=group, project_label=project_id)
+            self.__fw.get_project(group=group, project_label=project_id)
+
+    def __create_release(self, project: Project):
+        """Creates a release FW group for the given project with a master FW
+        project.
+
+        Args:
+            project: the project
+        """
+        group = self.__fw.get_group(group_label=project.name + " Release",
+                                    group_id="release-" + project.project_id)
+
+        return self.__fw.get_project(group=group,
+                                     project_label="master-project")
 
     def visit_center(self, center: Center) -> None:
         """Creates center specific details for project in FW instance.
@@ -88,8 +90,8 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
             logging.error("No project given")
             return
 
-        group = fc.fw_create_group(group_label=center.name,
-                                   group_id=center.center_id)
+        group = self.__fw.get_group(group_label=center.name,
+                                    group_id=center.center_id)
 
         if center.is_active():
             if self.__current_project.datatypes:
@@ -122,7 +124,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
                 self.__current_project.name)
 
         if self.__current_project.is_published():
-            create_release(self.__current_project)
+            self.__create_release(self.__current_project)
         else:
             logging.info("Project %s has no release project",
                          self.__current_project.name)
@@ -156,7 +158,10 @@ def main():
         else:
             project_list = list(project_gen)
 
-    visitor = FlywheelProjectArtifactCreator()
+    # This assumes that there is an environment variable
+    # called "FW_API_KEY" to create the flywheel client from
+    flywheel_proxy = FlywheelProxy(os.environ["FW_API_KEY"])
+    visitor = FlywheelProjectArtifactCreator(flywheel_proxy)
     for project_doc in project_list:
         project = Project.create(project_doc)
         project.apply(visitor)
