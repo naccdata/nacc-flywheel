@@ -11,9 +11,9 @@ class FlywheelProxy:
     """Defines a proxy object for group and project creation on a Flywheel
     instance."""
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, dry_run: bool = True) -> None:
         self.__fw = flywheel.Client(api_key, root=True)
-        self.__dry_run = True
+        self.__dry_run = dry_run
 
     @property
     def dry_run(self):
