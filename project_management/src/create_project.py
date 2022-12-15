@@ -142,9 +142,15 @@ def main():
 
     parser = argparse.ArgumentParser(
         description="Create FW structures for Project")
-    parser.add_argument('filename')
+    parser.add_argument('-d',
+                        '--dry_run',
+                        help='do a dry run to check input file',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('filename')                        
     args = parser.parse_args()
     project_file = args.filename
+
     with open(project_file, 'r', encoding='utf-8') as stream:
         try:
             project_gen = yaml.safe_load_all(stream)
@@ -158,9 +164,13 @@ def main():
         else:
             project_list = list(project_gen)
 
-    # This assumes that there is an environment variable
-    # called "FW_API_KEY" to create the flywheel client from
-    flywheel_proxy = FlywheelProxy(os.environ["FW_API_KEY"])
+    if 'FW_API_KEY' in os.environ:
+        api_key = os.environ['FW_API_KEY']
+    else:
+        logging.error('No API key: expecting FW_API_KEY to be set')
+        sys.exit(1)
+
+    flywheel_proxy = FlywheelProxy(api_key=api_key, dry_run=args.dry_run)
     visitor = FlywheelProjectArtifactCreator(flywheel_proxy)
     for project_doc in project_list:
         project = Project.create(project_doc)
