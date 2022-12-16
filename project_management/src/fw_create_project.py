@@ -63,14 +63,15 @@ class FlywheelProxy:
         """
         group = self.find_group(group_id)
         if group:
-            return group
+            return group[0]
 
         if self.__dry_run:
             log.info('Dry Run, would create group %s', group_id)
             return flywheel.Group(label=group_label, id=group_id)
 
         log.info('creating group...')
-        group = self.__fw.add_group(flywheel.Group(group_id, group_label))
+        group = self.__fw.add_group(flywheel.Group(group_id, group_label)) # This just returns a string of the group ID
+        group = self.__fw.get_group(group) # we must fw.get_group() with the ID string to get the actual Group object.
         log.info("success")
 
         return group
