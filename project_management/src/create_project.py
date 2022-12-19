@@ -147,7 +147,7 @@ def main():
                         help='do a dry run to check input file',
                         default=False,
                         action='store_true')
-    parser.add_argument('filename')                        
+    parser.add_argument('filename')
     args = parser.parse_args()
     project_file = args.filename
 

@@ -70,8 +70,10 @@ class FlywheelProxy:
             return flywheel.Group(label=group_label, id=group_id)
 
         log.info('creating group...')
-        group = self.__fw.add_group(flywheel.Group(group_id, group_label)) # This just returns a string of the group ID
-        group = self.__fw.get_group(group) # we must fw.get_group() with the ID string to get the actual Group object.
+        # This just returns a string of the group ID
+        group = self.__fw.add_group(flywheel.Group(group_id, group_label))
+        # we must fw.get_group() with ID string to get the actual Group object.
+        group = self.__fw.get_group(group)
         log.info("success")
 
         return group
