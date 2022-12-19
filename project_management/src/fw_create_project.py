@@ -1,181 +1,117 @@
-import flywheel
+"""Defines project creation functions for calls to Flywheel."""
 import logging
-import os
+from typing import List
+
+import flywheel  # type: ignore
+
+log = logging.getLogger()
 
 
+class FlywheelProxy:
+    """Defines a proxy object for group and project creation on a Flywheel
+    instance."""
 
-"""This assumes that there is an environment variable 
-called "FW_API_KEY" to create the flywheel client from
-"""
-fw = flywheel.Client(os.environ["FW_API_KEY"], root=True)
+    def __init__(self, api_key: str, dry_run: bool = True) -> None:
+        self.__fw = flywheel.Client(api_key, root=True)
+        self.__dry_run = dry_run
 
-log = logging.getlogger()
+    @property
+    def dry_run(self):
+        """Indicates whether proxy is set for a dry run."""
+        return self.__dry_run
 
-DRYRUN = True
+    def find_project(self, *, group_id: str,
+                     project_label: str) -> List[flywheel.Project]:
+        """Finds a flywheel project with a given label, within a group ID if
+        specified. Otherwise it's site wide.
 
-def fw_find_project(project_label: str, group_id: str="") -> list[flywheel.Project]:
-    """Finds a flywheel project with a given label, within a group ID if specified.
-    Otherwise it's site wide.
+        Args:
+            project_label: the project label to search for
+            group_id: the group ID the project may be in
 
-    Args:
-        project_label: the project label to search for
-        group_id: the group ID the project may be in
+        Returns:
+            existing: a list of all matching projects.
+        """
+        return self.__fw.projects.find(
+            f"parents.group={group_id},label={project_label}")
 
-    Returns:
-        existing: a list of all matching projects.
+    def find_group(self, group_id: str) -> List[flywheel.Group]:
+        """Searches for and returns a group if it exists.
 
-    """
-    if group_id:
-        existing = fw.projects.find(f"parents.group={group_id},label={project_label}")
-    else:
-        existing = fw.projects.find(f"label={project_label}")
-    return existing
+        Args:
+            group_id: the ID to search for
 
-def fw_project_exists(project_label: str, group_id: str="", single=True) -> bool:
-    """ Checks to see if a flywheel project exists
+        Returns:
+            group: the group (or empty list if not found)
+        """
+        return self.__fw.groups.find(f'_id={group_id}')
 
-    Args:
-        project_label: The label of the proejct to check for
-        group_id: the group the project belongs to
-        single: allow only one result (T/F)
+    def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
+        """Returns the flywheel group with the given ID and label.
 
-    Returns:
-        bool: True if the project exists, false if it doesn't OR if multiple exist and single = True
+        If the group already exists, returns that group.
+        Otherwise, creates a new group.
 
-    """
-    existing = fw_find_project(project_label, group_id)
-    if not existing:
-        return False
-    if single and len(existing) > 1:
-        return False
+        if self.dry_run is true, creates a dummy object
 
-    return True
+        Args:
+          group_id: the group ID to create
+          group_label: the group label to create
 
-def fw_group_exists(group_id: str) -> bool:
-    """Checks to see if a group exists given an id
+        Returns:
+          group: the created group
+        """
+        group = self.find_group(group_id)
+        if group:
+            return group[0]
 
-    Args:
-        group_id: the group ID to search for
+        if self.__dry_run:
+            log.info('Dry Run, would create group %s', group_id)
+            return flywheel.Group(label=group_label, id=group_id)
 
-    Returns:
-        bool: T/F
+        log.info('creating group...')
+        # This just returns a string of the group ID
+        group = self.__fw.add_group(flywheel.Group(group_id, group_label))
+        # we must fw.get_group() with ID string to get the actual Group object.
+        group = self.__fw.get_group(group)
+        log.info("success")
 
-    """
+        return group
 
-    group = fw_find_group(group_id)
-    if group:
-        return True
-    return False
+    def get_project(self, *, group: flywheel.Group,
+                    project_label: str) -> flywheel.Project:
+        """Given a flywheel project label and optional group ID, search for the
+        project, and create it if it doesn't exist returns the project, found
+        or created.
 
-def fw_find_group(group_id: str) -> list[flywheel.Group]:
-    """Searches for and returns a group if it exists
+        Args:
+            project_label: the project label to find or create
+            group_id: the group id the project is in - required if creating
 
-    Args:
-        group_id: the ID to search for
+        Returns:
+            project: the found or created project
+        """
+        existing_projects = self.find_project(group_id=group.id,
+                                              project_label=project_label)
+        if existing_projects and len(existing_projects) == 1:
+            project_ref = f"{group.id}/{project_label}"
+            log.info('Project %s exists', project_ref)
+            return existing_projects[0]
 
-    Returns:
-        group: the group (or empty list if not found)
+        if not group:
+            log.error(('No project named %s and no group id provided.'
+                       '  Please provide a group ID to create the project in'),
+                      project_label)
+            return None
 
-    """
-    group = fw.groups.find(f'_id={group_id}')
-    return group
+        project_ref = f"{group.id}/{project_label}"
+        if self.__dry_run:
+            log.info('Dry Run: would create project %s', project_ref)
+            return flywheel.Project(label=project_label,
+                                    parents={'group': group.id})
 
-def fw_create_project(group: flywheel.Group, project_label: str) -> flywheel.Project:
-    """ Makes a project given a group id and a project label.
-    Assumes group and project items have already been validated.
+        log.info('creating project...')
+        project = group.add_project(label=project_label)
+        log.info('success')
 
-    if DRYRUN is true, creates a dummy object.
-
-    Args:
-        group_id: the ID of the group to create the project in
-        project_label: the label of the project to make
-
-    Returns:
-        project_ref: the ref of the created project.
-
-    """
-    project_ref = f"{group_id}/{project_label}"
-    if DRYRUN:
-        log.info(f'Dry Run, would create project {project_ref}')
-        return flywheel.Project(label=project_label, parents={'group': group.id})
-
-    log.info('creating project...')
-    group = fw.get_group(group_id)
-    project = group.add_project(label=project_label)
-    log.info('success')
-
-    return project
-
-def fw_create_group(group_id: str, group_label: str="") -> flywheel.Group:
-    """ Creates a flywheel group given an ID and an option label
-
-    if DRYRUN is true, creates a dummy object
-
-    Args:
-        group_id: the group ID to create
-        group_label: the group label to create
-
-    Returns:
-        group: the created group
-
-    """
-
-    if not group_label:
-        group_label = group_id
-
-    if DRYRUN:
-        log.info(f'Dry Run, would create group {group_id}')
-        return flywheel.Group(label=group_label,id=group_id)
-
-    log.info('creating group...')
-    group = fw.add_group(flywheel.Group(group_id, group_label))
-    log.info("success")
-    return group
-
-def fw_get_or_create_project(project_label: str, group_id: str = "") -> flywheel.Project:
-    """Given a flywheel project label and optional group ID, search for the project, and create it if it doesn't exist
-    returns the project, found or created
-
-    Args:
-        project_label: the project label to find or create
-        group_id: the group id the project is in - required if creating
-
-    Returns:
-        project: the found or created project
-
-    """
-
-    project_ref = f"{group_id}/{project_label}"
-    if fw_project_exists(project_label, group_id):
-        log.info(f'Project {project_ref} exists')
-        project = fw_find_project(project_label, group_id)[0]
         return project
-
-    if not group_id:
-        log.error(f'No project named {project_label} and no group id provided.  Please provide a group ID to create the project in')
-        return None
-
-    group = fw_get_or_create_group(group_id)
-    project = fw_create_project(project_label, group)
-    return project
-
-
-def fw_get_or_create_group(group_id: str) -> flywheel.Group:
-    """Given a flywheel group ID, search for the group, and create it if it doesn't exist
-    returns the group, found or created
-
-    Args:
-        group_id: the group ID to find or create
-
-    Returns:
-        group: the flywheel group found or created
-
-    """
-    if not fw_group_exists(group_id):
-        group = fw_create_group(group_id)
-    else:
-        group = fw_find_group(group_id)[0]
-    return group
-
-
-

@@ -142,8 +142,8 @@
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "94f90b58bd602192affca304ca1bc7cd998556f019a35da96fed067e11c9e7ff",
-              "url": "https://files.pythonhosted.org/packages/55/ca/19ba17990c04db92c5eb7c7ab353277d34b1e8ac0b883e692591a3a9f4a2/flywheel_sdk-16.14.8-py2.py3-none-any.whl"
+              "hash": "ed3b166612cb9d93c7bfe709bff150612cdb2fbf016a52aaa0c24ea986eaf39f",
+              "url": "https://files.pythonhosted.org/packages/e6/d5/1c8bf12c92acec7a878d9f1c26c7f23d52a763c365b2b9458dfe28e10e11/flywheel_sdk-16.14.10-py2.py3-none-any.whl"
             }
           ],
           "project_name": "flywheel-sdk",
@@ -157,7 +157,7 @@
             "urllib3>=1.15"
           ],
           "requires_python": null,
-          "version": "16.14.8"
+          "version": "16.14.10"
         },
         {
           "artifacts": [
