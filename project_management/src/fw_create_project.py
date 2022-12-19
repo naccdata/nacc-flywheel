@@ -2,7 +2,7 @@
 import logging
 from typing import List
 
-import flywheel
+import flywheel  # type: ignore
 
 log = logging.getLogger()
 
