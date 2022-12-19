@@ -10,7 +10,10 @@
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "pip3 install --user -r requirements.txt",
-	"postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}"
+	"postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+	}
 
 	// Configure tool-specific properties.
 	// "customizations": {},
