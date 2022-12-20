@@ -1,5 +1,11 @@
 FROM python:3.9
 
-ENTRYPOINT [ "/bin/create_project" ]
-#COPY src/docker/manifest.json dest
+ENV BASE_DIR=/flywheel/v0
+RUN mkdir -p ${BASE_DIR}/input
+
+WORKDIR ${BASE_DIR}
+
+COPY project_management/src/docker/manifest.json ${BASE_DIR}
 COPY project_management.src.python/bin.pex /bin/create_project
+
+ENTRYPOINT [ "/bin/create_project" ]
