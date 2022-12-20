@@ -4,22 +4,28 @@ Monorepo for NACC Flywheel adaptations.
 
 Consists of python scripts for managing projects and project users.
 
+1. Project management - creates and manages NACC projects as
+   Flywheel groups and projects.
+2. User management - attaches users to centers in roles identified in NACC directory.
+
+The repository is setup to use Pants (https://www.pantsbuild.org) for the build.
+
+## Directory structure
 
 ```bash
 .
 ├── common              # shared code
 │   ├── src
 │   └── test
-├── project_management  # scripts for managing NACC projects
+├── project_management  # script for managing NACC projects
 │   ├── data
 │   ├── src
 │   └── test
-├── user_management     # scripts for managing project users
+├── user_management     # script for managing project users
 │   ├── directory
 │   ├── src
 │   └── test
-├── dist
-│   └── export
+├── dist                # Directory containing distributions built by Pants
 ├── pants               # Pants script
 ├── pants.toml          # Pants configuration
 ├── python-default.lock # dependency lock file
@@ -29,7 +35,9 @@ Consists of python scripts for managing projects and project users.
 └── README.md
 ```
 
-The repository is setup to use Pants (https://www.pantsbuild.org) for the build.
+## Care and feeding
+
+
 
 Commands are
 1. Format every thing
