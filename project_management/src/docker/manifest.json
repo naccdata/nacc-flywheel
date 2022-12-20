@@ -1,22 +1,22 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "name": "create-project",
-    "label": "Project creation",
-    "description": "Creates projects from project YAML file",
+    "name": "project-management",
+    "label": "Project management",
+    "description": "Creates and updates projects from project YAML file",
     "version": "0.0.1",
     "author": "bjkeller@uw.edu",
     "maintainer": "nacchelp@uw.edu",
     "cite": "",
-    "license": "Mozilla Public License, v2",
+    "license": "MPL-2.0",
     "url": "",
-    "source": "",
+    "source": "https://github.com/naccdata/flywheel-extensions",
     "environment": {
         "FLYWHEEL": "/flywheel/v0"
     },
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/createproject"
+            "image": "naccdata/project-management"
         },
         "flywheel": {
             "suite": "NACC Admin Gears"
@@ -40,5 +40,5 @@
             "default": false
         }
     },
-    "command": ""
+    "command": "/bin/create_project"
 }
