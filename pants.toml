@@ -25,6 +25,9 @@ root_patterns = [
     "user_management/src", "user_management/test"
 ]
 
+[docker]
+default_repository = "naccdata/{name}"
+
 [python]
 interpreter_constraints = ["==3.9.*"]
 enable_resolves = true
