@@ -1,0 +1,44 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "name": "project-management",
+    "label": "Project management",
+    "description": "Creates and updates projects from project YAML file",
+    "version": "0.0.1",
+    "author": "bjkeller@uw.edu",
+    "maintainer": "nacchelp@uw.edu",
+    "cite": "",
+    "license": "MPL-2.0",
+    "url": "",
+    "source": "https://github.com/naccdata/flywheel-extensions",
+    "environment": {
+        "FLYWHEEL": "/flywheel/v0"
+    },
+    "custom": {
+        "gear-builder": {
+            "category": "utility",
+            "image": "naccdata/project-management"
+        },
+        "flywheel": {
+            "suite": "NACC Admin Gears"
+        }
+    },
+    "inputs": {
+        "project_file": {
+            "description": "The project YAML file",
+            "base": "file",
+            "type": {
+                "enum": [
+                    "source code"
+                ]
+            }
+        }
+    },
+    "config": {
+        "dry_run": {
+            "description": "Whether to do a dry run",
+            "type": "boolean",
+            "default": false
+        }
+    },
+    "command": "/bin/create_project --gear"
+}

@@ -14,6 +14,7 @@ import os
 import sys
 from typing import Optional
 
+import flywheel
 import yaml
 from fw_create_project import FlywheelProxy
 from projects.project import Center, Project, ProjectVisitor
@@ -140,17 +141,63 @@ def main():
 
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if args.gear:
+        context = flywheel.GearContext()
+        config = context.config
+        dry_run = config['dry_run']
+        project_file = context.get_input_path('project_file')
+    else:
+        dry_run = args.dry_run
+        project_file = args.filename
+
+    project_list = get_project_list(project_file)
+
+    api_key = get_api_key()
+    if not api_key:
+        logging.error('No API key: expecting FW_API_KEY to be set')
+        sys.exit(1)
+
+    flywheel_proxy = FlywheelProxy(api_key=api_key, dry_run=dry_run)
+    visitor = FlywheelProjectArtifactCreator(flywheel_proxy)
+    for project_doc in project_list:
+        project = Project.create(project_doc)
+        project.apply(visitor)
+
+
+def build_parser():
+    """Builds and returns the argument parser."""
     parser = argparse.ArgumentParser(
         description="Create FW structures for Project")
+    parser.add_argument('-g',
+                        '--gear',
+                        help='whether to read arguments from gear input',
+                        default=False,
+                        action='store_true')
     parser.add_argument('-d',
                         '--dry_run',
                         help='do a dry run to check input file',
                         default=False,
                         action='store_true')
     parser.add_argument('filename')
-    args = parser.parse_args()
-    project_file = args.filename
+    return parser
 
+
+def get_api_key() -> Optional[str]:
+    """Get the Flywheel API key from environment.
+
+    Returns None if the key is not defined.
+    """
+    api_key = None
+    if 'FW_API_KEY' in os.environ:
+        api_key = os.environ['FW_API_KEY']
+    return api_key
+
+
+def get_project_list(project_file):
+    """Gets list of projects from the project file."""
     with open(project_file, 'r', encoding='utf-8') as stream:
         try:
             project_gen = yaml.safe_load_all(stream)
@@ -163,18 +210,7 @@ def main():
             sys.exit(1)
         else:
             project_list = list(project_gen)
-
-    if 'FW_API_KEY' in os.environ:
-        api_key = os.environ['FW_API_KEY']
-    else:
-        logging.error('No API key: expecting FW_API_KEY to be set')
-        sys.exit(1)
-
-    flywheel_proxy = FlywheelProxy(api_key=api_key, dry_run=args.dry_run)
-    visitor = FlywheelProjectArtifactCreator(flywheel_proxy)
-    for project_doc in project_list:
-        project = Project.create(project_doc)
-        project.apply(visitor)
+    return project_list
 
 
 if __name__ == "__main__":

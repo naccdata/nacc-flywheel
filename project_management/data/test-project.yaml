@@ -1,30 +1,30 @@
 ---
-project: "Test Project"
-project-id: test-1
+project: "Project Tau"
+project-id: tau
 centers:
   - adc-id: 1006
-    name: "University of Testing"
-    center-id: utesting
+    name: "Alpha Center"
+    center-id: alpha
     is-active: True
   - adc-id: 2006
-    name: "Inactive University of Testing"
-    center-id: utesting-inactive
+    name: "Beta Center"
+    center-id: beta-inactive
     is-active: False
 datatypes:
   - form
   - dicom
 published: True
 ---
-project: "Test Project 2"
-project-id: test-2
+project: "Project Zeta"
+project-id: zeta
 centers:
   - adc-id: 1006
-    name: "University of Testing"
-    center-id: utesting
+    name: "Alpha Center"
+    center-id: alpha
     is-active: True
   - adc-id: 5006
-    name: "Testing ADRC"
-    center-id: testing-adrc
+    name: "Gamma ADRC"
+    center-id: gamma-adrc
     is-active: True
 datatypes:
   - form
