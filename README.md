@@ -42,6 +42,13 @@ The repository is setup to use Pants (https://www.pantsbuild.org) for the build.
 To add a new project
 
 1. Create directory structure
+    ```bash
+    mkdir -p <new-project-name>/src/python
+    touch <new-project-name>/src/python/main.py
+    mkdir -p <new-project-name>/src/docker
+    touch <new-project-name>/src/docker/Dockerfile
+    touch <new-project-name>/src/docker/manifest.json
+    ```
 2. Add source roots to pants.toml
 3. Add configuration for new code/directories
     ```bash
@@ -82,7 +89,7 @@ If you add new python dependencies
 
 5. Run the create project script (The `--` is required before the arguments)
     ```bash
-    ./pants run project_management/src/create_project.py --  project_management/data/test-project.yaml
+    ./pants run project_management/src/python/create_project.py --  project_management/data/test-project.yaml
     ```
     or
     ```bash
