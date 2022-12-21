@@ -24,7 +24,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
     """Creates project artifacts in Flywheel."""
 
     def __init__(self, flywheel_proxy: FlywheelProxy) -> None:
-        """Inititializes visitor with FW instance details."""
+        """Initializes visitor with FW instance details."""
         self.__current_project: Optional[Project] = None
         self.__fw = flywheel_proxy
 
@@ -82,7 +82,8 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
 
         Adds a FW group for the center containing
         - one FW project per project and datatype, if center is active
-        - one FW project for "accepted" data
+        - one FW project per project for "accepted" data
+        - one FW project per center for metadata
 
         Args:
           center: the Center
@@ -106,6 +107,7 @@ class FlywheelProjectArtifactCreator(ProjectVisitor):
                          center.name)
 
         self.__create_accepted(group)
+        self.__fw.get_project(group=group, project_label="metadata")
 
     def visit_project(self, project: Project):
         """Creates groups in FW instance:
