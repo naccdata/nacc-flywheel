@@ -40,5 +40,5 @@
             "default": false
         }
     },
-    "command": "/bin/create_project"
+    "command": "/bin/create_project --gear"
 }
