@@ -89,7 +89,7 @@ If you add new python dependencies
 
 5. Run the create project script (The `--` is required before the arguments)
     ```bash
-    ./pants run project_management/src/python/create_project.py --  project_management/data/test-project.yaml
+    ./pants run project_management/src/python/run.py --  project_management/data/test-project.yaml
     ```
     or
     ```bash
