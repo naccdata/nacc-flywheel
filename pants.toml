@@ -20,9 +20,10 @@ repo_id = "A8B966D2-72FA-451B-965B-CACF8CF2FDC5"
 
 [source]
 root_patterns = [
-    "common/src", "common/test",
+    "common/src/python", "common/test/python",
     "project_management/src/python", "project_management/test/python",
-    "user_management/src", "user_management/test"
+    "project_management/src/docker",
+    "user_management/src/python", "user_management/src/docker", "user_management/test"
 ]
 
 [docker]
