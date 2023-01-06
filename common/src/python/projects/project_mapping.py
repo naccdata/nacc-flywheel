@@ -32,6 +32,7 @@ from projects.project import Center, Project
 
 log = logging.getLogger(__name__)
 
+
 class ProjectMappingAdaptor:
     """Defines an adaptor for the coordinating center Project class that
     supports mapping to a data pipeline using Flywheel groups and projects."""
@@ -63,6 +64,11 @@ class ProjectMappingAdaptor:
     def datatypes(self):
         """Exposes datatypes of this project."""
         return self.__project.datatypes
+
+    @property
+    def name(self):
+        """Exposes project name."""
+        return self.__project.name
 
     def build_project_id(self, prefix: str) -> str:
         """Builds a FW project ID string from the given prefix.
@@ -152,8 +158,7 @@ class ProjectMappingAdaptor:
         """Creates the release pipeline for this project if the project is
         published."""
         if not self.__project.is_published():
-            log.info("Project %s has no release project",
-                         self.__project.name)
+            log.info("Project %s has no release project", self.__project.name)
             return
 
         self.get_release_group()
@@ -242,12 +247,11 @@ class CenterMappingAdaptor:
         """
         if not self.__center.is_active():
             log.info("Not creating ingest for inactive center %s",
-                         self.__center.name)
+                     self.__center.name)
             return
         if not project.datatypes:
-            log.warning(
-                "No ingest groups created for %s: no datatypes given",
-                project.name)
+            log.warning("No ingest groups created for %s: no datatypes given",
+                        project.name)
             return
 
         for datatype in project.datatypes:
