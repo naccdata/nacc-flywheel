@@ -1,6 +1,7 @@
 [GLOBAL]
 pants_version = "2.14.0"
 backend_packages = [
+    "pants.backend.build_files.fmt.yapf",
     "pants.backend.docker",
     "pants.backend.docker.lint.hadolint",
     "pants.backend.python",
