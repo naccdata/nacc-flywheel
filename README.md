@@ -126,3 +126,10 @@ For instance,
 
 At which point you can use the [fw gear local](https://docs.flywheel.io/hc/en-us/articles/360037690613-Gear-Building-Tutorial-Part-2e-Gear-Testing-Debugging-Uploading) commands.
 
+## Working within VSCode
+
+This repository is setup with a VSCode devcontainer. 
+To use it you will need to install VSCode, Docker, and enable dev containers within VSCode.
+When you open the repository within the devcontainer, the environment is a python3 container, with the flywheel cli installed.
+
+To enable VSCode access to the python dependencies, follow the [instructions for setting up an IDE](https://www.pantsbuild.org/docs/setting-up-an-ide).
