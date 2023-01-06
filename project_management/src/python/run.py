@@ -16,7 +16,7 @@ from inputs.arguments import build_parser
 from inputs.context_parser import parse_config
 from inputs.environment import get_api_key
 from inputs.yaml import get_object_list
-from main import run
+from project_main import run
 
 log = logging.getLogger(__name__)
 
