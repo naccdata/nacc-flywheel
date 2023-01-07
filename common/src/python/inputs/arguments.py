@@ -21,5 +21,9 @@ def build_parser():
                         help='do a dry run to check input file',
                         default=False,
                         action='store_true')
+    parser.add_argument('-a',
+                        '--admin_group',
+                        help='Group ID for the admin group',
+                        default='nacc')
     parser.add_argument('filename', help='path of input file')
     return parser

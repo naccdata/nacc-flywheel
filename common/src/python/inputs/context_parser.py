@@ -7,5 +7,6 @@ def parse_config(*, gear_context: GearToolkitContext, filename: str):
     args = {}
     args['dry_run'] = gear_context.config.get("dry_run")
     args[filename] = gear_context.get_input_path(filename)
+    args['admin_group'] = gear_context.config.get('admin_group', 'nacc')
 
     return args
