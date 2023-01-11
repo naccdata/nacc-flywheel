@@ -1,8 +1,10 @@
 """Defines project creation functions for calls to Flywheel."""
 import logging
-from typing import List, Optional
+from typing import List, Mapping, Optional, Union
 
 import flywheel  # type: ignore
+from flywheel.models.roles_role import RolesRole
+from flywheel.models.roles_role_assignment import RolesRoleAssignment
 
 log = logging.getLogger(__name__)
 
@@ -14,6 +16,8 @@ class FlywheelProxy:
     def __init__(self, api_key: str, dry_run: bool = True) -> None:
         self.__fw = flywheel.Client(api_key, root=True)
         self.__dry_run = dry_run
+        self.__roles: Optional[Mapping[str, RolesRoleAssignment]] = None
+        self.__admin_role = None
 
     @property
     def dry_run(self):
@@ -33,7 +37,7 @@ class FlywheelProxy:
             existing: a list of all matching projects.
         """
         return self.__fw.projects.find(
-            f"parents.group={group_id},label={project_label}")
+            f"parents.group={group_id},label={project_label}")  # type: ignore
 
     def find_group(self, group_id: str) -> List[flywheel.Group]:
         """Searches for and returns a group if it exists.
@@ -44,7 +48,18 @@ class FlywheelProxy:
         Returns:
             group: the group (or empty list if not found)
         """
-        return self.__fw.groups.find(f'_id={group_id}')
+        return self.__fw.groups.find(f'_id={group_id}')  # type: ignore
+
+    def find_user(self, user_id: str) -> List[flywheel.User]:
+        """Searches for and returns a user if it exists.
+
+        Args:
+            user_id: the ID to search for
+
+        Returns:
+            the user, or an empty list if now found
+        """
+        return self.__fw.users.find(f'_id={user_id}')  # type: ignore
 
     def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
         """Returns the flywheel group with the given ID and label.
@@ -91,7 +106,9 @@ class FlywheelProxy:
         Returns:
             project: the found or created project
         """
-        existing_projects = self.find_project(group_id=group.id,
+        group_id = group.id
+        assert group_id
+        existing_projects = self.find_project(group_id=group_id,
                                               project_label=project_label)
         if existing_projects and len(existing_projects) == 1:
             project_ref = f"{group.id}/{project_label}"
@@ -115,3 +132,128 @@ class FlywheelProxy:
         log.info('success')
 
         return project
+
+    def __get_roles(self) -> Mapping[str, RolesRoleAssignment]:
+        """Gets all roles for the FW instance."""
+        if not self.__roles:
+            all_roles = self.__fw.get_all_roles()
+            self.__roles = {role.label: role for role in all_roles}
+        return self.__roles
+
+    def get_admin_role(self) -> Optional[RolesRoleAssignment]:
+        """Gets admin role."""
+        if not self.__admin_role:
+            role_map = self.__get_roles()
+            self.__admin_role = role_map.get('admin')
+        return self.__admin_role
+
+    def add_project_permissions(self, *, project: flywheel.Project,
+                                user: flywheel.User, role: RolesRole) -> None:
+        """Adds the user with the role to the project.
+
+        Note: project and group permissions in the FW SDK use different types.
+
+        Args:
+          project: the project
+          user: the user to add
+          role: the user role to add
+        """
+        if self.__dry_run:
+            log.info("Dry Run: would add role %s to user %s for project %s",
+                     user.id, role.label, project.label)
+            return
+
+        permissions = [
+            permission for permission in project.permissions
+            if permission.id == user.id
+        ]
+        if not permissions:
+            log.info("User %s has no permissions for project %s, adding %s", user.id,
+                     project.label, role.label)
+            user_role = RolesRoleAssignment(id=user.id, role_ids=[role.id])
+            project.add_permission(user_role)
+            return
+
+        permission = permissions[0]
+        user_roles = permission.role_ids
+        if role.id in user_roles:
+            return
+        user_roles.append(role.id)
+        project.update_permission(user.id,
+                                  {'role_ids': user_roles})
+
+    def add_group_permissions(self, *, group: flywheel.Group,
+                              user: flywheel.User, role: RolesRole) -> None:
+        """Adds the user with the role to the group.
+
+        Note: project and group permissions in the FW SDK use different types.
+
+        Args:
+          group: the group
+          user: the user to add
+          role: the user role to add
+        """
+        permissions = [
+            permission for permission in group.permissions
+            if permission.id == user.id
+        ]
+        if not permissions:
+            # add user with new role
+            return
+
+        # want to set access to given role
+
+    def add_admin_users(self, *, obj: Union[flywheel.Group, flywheel.Project],
+                        users: List[flywheel.User]) -> None:
+        """Adds the users with admin role to the given group or project.
+
+        Args:
+          obj: group or project
+          users: list of users to be given admin role
+        """
+        admin_role = self.get_admin_role()
+        assert admin_role
+
+        if isinstance(obj, flywheel.Project):
+            for user in users:
+                self.add_project_permissions(project=obj,
+                                             user=user,
+                                             role=admin_role)
+            return
+
+        for user in users:
+            self.add_group_permissions(group=obj, user=user, role=admin_role)
+
+    def get_group_users(self,
+                        group: flywheel.Group,
+                        *,
+                        role: Optional[str] = None) -> List[flywheel.User]:
+        """Gets the users for the named group.
+
+        Returns an empty list if the group does not exist or there are no
+        user roles.
+        If a role is specified, only the users with the role will be returned.
+
+        Args:
+          group_name: the group ID
+          role: (optional) the role id
+        Returns:
+          the list of users for the group
+        """
+        permissions = group.permissions
+        if not permissions:
+            return []
+
+        if role:
+            permissions = [
+                permission for permission in permissions
+                if role == permission.access
+            ]
+
+        user_ids = [permission.id for permission in permissions]
+        users = []
+        for user_id in user_ids:
+            user = self.find_user(user_id)[0]
+            if user:
+                users.append(user)
+        return users
