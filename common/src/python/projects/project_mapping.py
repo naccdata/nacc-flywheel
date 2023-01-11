@@ -24,7 +24,7 @@ To represent this a project release group is created with a single "master"
 project for managing the consolodated data.
 """
 import logging
-from typing import Optional
+from typing import List, Optional
 
 import flywheel  # type: ignore
 from projects.flywheel_proxy import FlywheelProxy
@@ -37,8 +37,11 @@ class ProjectMappingAdaptor:
     """Defines an adaptor for the coordinating center Project class that
     supports mapping to a data pipeline using Flywheel groups and projects."""
 
-    def __init__(self, *, project: Project,
-                 flywheel_proxy: FlywheelProxy) -> None:
+    def __init__(self,
+                 *,
+                 project: Project,
+                 flywheel_proxy: FlywheelProxy,
+                 admin_users: Optional[List[flywheel.User]] = None) -> None:
         """Creates an adaptor mapping the given project to the corresponding
         objects in the flywheel instance linked by the proxy.
 
@@ -49,6 +52,7 @@ class ProjectMappingAdaptor:
         self.__fw = flywheel_proxy
         self.__project = project
         self.__release_group = None
+        self.__admin_users = admin_users
 
     def has_datatype(self, datatype: str) -> bool:
         """Indicates whether this project has the datatype.
@@ -61,12 +65,12 @@ class ProjectMappingAdaptor:
         return datatype in self.__project.datatypes
 
     @property
-    def datatypes(self):
+    def datatypes(self) -> List[str]:
         """Exposes datatypes of this project."""
         return self.__project.datatypes
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Exposes project name."""
         return self.__project.name
 
@@ -85,7 +89,7 @@ class ProjectMappingAdaptor:
         return prefix + "-" + self.__project.project_id
 
     @property
-    def accepted_id(self):
+    def accepted_id(self) -> str:
         """Builds a project ID for the accepted stage of this project."""
         return self.build_project_id('accepted')
 
@@ -104,7 +108,7 @@ class ProjectMappingAdaptor:
         return self.build_project_id('ingest-' + datatype.lower())
 
     @property
-    def release_id(self):
+    def release_id(self) -> Optional[str]:
         """Builds the FW project ID string for the release stage for this
         project."""
         if not self.__project.is_published():
@@ -122,10 +126,12 @@ class ProjectMappingAdaptor:
         if not self.__project.is_published():
             return None
 
+        release_id = self.release_id
+        assert release_id
         if not self.__release_group:
             self.__release_group = self.__fw.get_group(
                 group_label=self.__project.name + " Release",
-                group_id=self.release_id)
+                group_id=release_id)
         return self.__release_group
 
     def get_master_project(self) -> Optional[flywheel.Project]:
@@ -138,10 +144,12 @@ class ProjectMappingAdaptor:
         if not self.__project.is_published():
             return None
 
-        return self.__fw.get_project(group=self.get_release_group(),
+        release_group = self.get_release_group()
+        assert release_group
+        return self.__fw.get_project(group=release_group,
                                      project_label="master-project")
 
-    def create_center_pipelines(self):
+    def create_center_pipelines(self) -> None:
         """Creates data pipelines for centers in this project."""
         if not self.__project.centers:
             log.warning(
@@ -150,21 +158,31 @@ class ProjectMappingAdaptor:
             return
 
         for center in self.__project.centers:
-            center_adaptor = CenterMappingAdaptor(center=center,
-                                                  flywheel_proxy=self.__fw)
-            center_adaptor.create_center_pipeline(self.__project)
+            center_adaptor = CenterMappingAdaptor(
+                center=center,
+                flywheel_proxy=self.__fw,
+                admin_users=self.__admin_users)
+            center_adaptor.create_center_pipeline(self)
 
-    def create_release_pipeline(self):
+    def create_release_pipeline(self) -> None:
         """Creates the release pipeline for this project if the project is
         published."""
         if not self.__project.is_published():
             log.info("Project %s has no release project", self.__project.name)
             return
 
-        self.get_release_group()
-        self.get_master_project()
+        release_group = self.get_release_group()
+        master_project = self.get_master_project()
 
-    def create_project_pipelines(self):
+        if self.__project.is_published() and self.__admin_users:
+            assert release_group
+            self.__fw.add_admin_users(obj=release_group,
+                                      users=self.__admin_users)
+            assert master_project
+            self.__fw.add_admin_users(obj=master_project,
+                                      users=self.__admin_users)
+
+    def create_project_pipelines(self) -> None:
         """Creates the pipelines for this project."""
         self.create_center_pipelines()
         self.create_release_pipeline()
@@ -174,13 +192,17 @@ class CenterMappingAdaptor:
     """Defines an adaptor mapping a center to Flywheel groups and projects to
     implement data pipelines for projects."""
 
-    def __init__(self, *, center: Center,
-                 flywheel_proxy: FlywheelProxy) -> None:
+    def __init__(self,
+                 *,
+                 center: Center,
+                 flywheel_proxy: FlywheelProxy,
+                 admin_users: Optional[List[flywheel.User]] = None) -> None:
         """Initializes an adaptor for the given center using the Flywheel
         instance linked by the proxy."""
         self.__center = center
         self.__fw = flywheel_proxy
         self.__group = None
+        self.__admin_users = admin_users
 
     def get_group(self) -> flywheel.Group:
         """Gets the FW group for this center.
@@ -226,7 +248,7 @@ class CenterMappingAdaptor:
         ingest_id = project.get_ingest_id(datatype)
         assert ingest_id
 
-        return self.__fw.get_project(group=self.get_group,
+        return self.__fw.get_project(group=self.get_group(),
                                      project_label=ingest_id)
 
     def get_metadata_project(self) -> Optional[flywheel.Project]:
@@ -238,24 +260,33 @@ class CenterMappingAdaptor:
         return self.__fw.get_project(group=self.get_group(),
                                      project_label="metadata")
 
-    def create_ingest_projects(self, project: ProjectMappingAdaptor) -> None:
+    def create_ingest_projects(
+            self, project: ProjectMappingAdaptor) -> List[flywheel.Project]:
         """Creates ingest projects for the given project within the group for
         this center.
 
         Args:
             project: the mapping adaptor for the project
+        Returns:
+            list of ingest created ingest projects
         """
         if not self.__center.is_active():
             log.info("Not creating ingest for inactive center %s",
                      self.__center.name)
-            return
+            return []
         if not project.datatypes:
             log.warning("No ingest groups created for %s: no datatypes given",
                         project.name)
-            return
+            return []
 
+        project_list = []
         for datatype in project.datatypes:
-            self.get_ingest_project(project=project, datatype=datatype)
+            ingest_project = self.get_ingest_project(project=project,
+                                                     datatype=datatype)
+            if ingest_project:
+                project_list.append(ingest_project)
+
+        return project_list
 
     def create_center_pipeline(self, project: ProjectMappingAdaptor) -> None:
         """Creates FW groups and projects for data pipeline of the given
@@ -264,7 +295,20 @@ class CenterMappingAdaptor:
         Args:
             project: the project mapping adaptor
         """
-        self.get_group()
-        self.create_ingest_projects(project)
-        self.get_accepted_project(project)
-        self.get_metadata_project()
+        center_group = self.get_group()
+        ingest_projects = self.create_ingest_projects(project)
+        accepted_project = self.get_accepted_project(project)
+        metadata_project = self.get_metadata_project()
+
+        if self.__admin_users:
+            self.__fw.add_admin_users(obj=center_group,
+                                      users=self.__admin_users)
+            for ingest_project in ingest_projects:
+                self.__fw.add_admin_users(obj=ingest_project,
+                                          users=self.__admin_users)
+            assert accepted_project
+            self.__fw.add_admin_users(obj=accepted_project,
+                                      users=self.__admin_users)
+            assert metadata_project
+            self.__fw.add_admin_users(obj=metadata_project,
+                                      users=self.__admin_users)
