@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.10
 
 ENV BASE_DIR=/flywheel/v0
 RUN mkdir -p ${BASE_DIR}/input
