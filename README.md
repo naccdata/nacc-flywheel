@@ -43,14 +43,9 @@ To add a new project
 
 1. Create directory structure
     ```bash
-    mkdir -p <new-project-name>/src/python
-    touch <new-project-name>/src/python/main.py
-    mkdir -p <new-project-name>/src/docker
-    touch <new-project-name>/src/docker/Dockerfile
-    touch <new-project-name>/src/docker/manifest.json
+    bash bin/new_gear.sh <new-project-name>
     ```
-2. Add source roots to pants.toml
-3. Add configuration for new code/directories
+2. Add configuration for new code/directories
     ```bash
     ./pants tailor ::
     ```
