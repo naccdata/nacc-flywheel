@@ -6,6 +6,10 @@ from typing import Optional
 import requests
 
 
+class LONIConnectionError(Exception):
+    """Exception for errors that occur when connecting to LONI."""
+
+
 class LONIConnection:
     """Manages a connection to the LONI IDA"""
 
@@ -30,12 +34,16 @@ class LONIConnection:
             }
         )
         if response.status_code == 401:
-            # TODO: handle invalid key
-            return None
+            # handle invalid key
+            raise LONIConnectionError(
+                f"Unable to access tables in {database_name}: {response.reason}"
+            )
 
         if response.status_code == 500:
-            # TODO: handle system error
-            return None
+            # handle system error
+            raise LONIConnectionError(
+                f"Unable to connect to {database_name}: {response.reason}"
+            )
 
         return response.json()
 
@@ -58,23 +66,27 @@ class LONIConnection:
             }
         )
         if response.status_code == 401:
-            # TODO: no access/invalid key
-            return None
+            raise LONIConnectionError(
+                f"unable to access columns: {response.reason}"
+            )
 
         if response.status_code == 500:
-            # TODO: handle system error
-            return None
+            raise LONIConnectionError(
+                f"error connecting to {database_name}: {response.reason}"
+            )
 
         return response.json()
 
-    def get_table(self, *, database_name: str, table_name: str):
+    def get_table(self, *, database_name: str, table_name: str) -> str:
         """Returns the requested table from the database.
-        
+
         Args:
           database_name: the name of the database
           table_name: the name of the table
         Returns:
           CSV of table contents
+        Raises:
+          LONIConnectionError when access is denied or there is a system error
         """
         response = requests.get(
             url=LONIConnection.url(f"{database_name}/download"),
@@ -84,15 +96,15 @@ class LONIConnection:
             }
         )
         if response.status_code == 401:
-            # TODO: no access/invalid key/ no permission
-            return None
+            raise LONIConnectionError(
+                f"Failed to get table {table_name}: {response.reason}")
 
         if response.status_code == 500:
-            # TODO: handle system error
-            return None
+            raise LONIConnectionError(
+                f"Error connecting to {database_name}: {response.reason}"
+            )
 
         return response.text
-
 
     @classmethod
     def url(cls, path: str) -> str:
@@ -116,7 +128,7 @@ class LONIConnection:
           password: password for the LONI IDA account.
 
         Returns:
-          A LONI IDA connection for the account. 
+          A LONI IDA connection for the account.
         """
         user_params = {
             'email': email,
@@ -130,8 +142,9 @@ class LONIConnection:
         )
 
         if not response.ok:
-            # TODO: throw exception
-            return None
+            raise LONIConnectionError(
+                f"Could not create LONI connection: {response.reason}"
+            )
 
         key = response.json()['key']
         return LONIConnection(key)
