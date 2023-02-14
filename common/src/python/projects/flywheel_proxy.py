@@ -168,8 +168,8 @@ class FlywheelProxy:
             if permission.id == user.id
         ]
         if not permissions:
-            log.info("User %s has no permissions for project %s, adding %s", user.id,
-                     project.label, role.label)
+            log.info("User %s has no permissions for project %s, adding %s",
+                     user.id, project.label, role.label)
             user_role = RolesRoleAssignment(id=user.id, role_ids=[role.id])
             project.add_permission(user_role)
             return
@@ -179,8 +179,7 @@ class FlywheelProxy:
         if role.id in user_roles:
             return
         user_roles.append(role.id)
-        project.update_permission(user.id,
-                                  {'role_ids': user_roles})
+        project.update_permission(user.id, {'role_ids': user_roles})
 
     def add_group_permissions(self, *, group: flywheel.Group,
                               user: flywheel.User, role: RolesRole) -> None:
