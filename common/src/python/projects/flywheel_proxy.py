@@ -181,7 +181,8 @@ class FlywheelProxy:
         user_roles.append(role.id)
         project.update_permission(user.id, {'role_ids': user_roles})
 
-    def add_group_permissions(self, *, group: flywheel.Group,
+    @classmethod
+    def add_group_permissions(cls, *, group: flywheel.Group,
                               user: flywheel.User, access: str) -> None:
         """Adds the user with the role to the group.
 
@@ -221,7 +222,9 @@ class FlywheelProxy:
             return
 
         for user in users:
-            self.add_group_permissions(group=obj, user=user, access='admin')
+            FlywheelProxy.add_group_permissions(group=obj,
+                                                user=user,
+                                                access='admin')
 
     def get_group_users(self,
                         group: flywheel.Group,
