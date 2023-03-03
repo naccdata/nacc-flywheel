@@ -58,9 +58,13 @@ def main():
     admin_users = get_admin_users(flywheel_proxy=flywheel_proxy,
                                   group_name=admin_group_name)
 
+    # TODO: GEAR RULE - wherever rules come from, load them before calling run
+    gear_rules = None
+
     run(proxy=flywheel_proxy,
         project_list=project_list,
-        admin_users=admin_users)
+        admin_users=admin_users,
+        gear_rules=gear_rules)
 
 
 if __name__ == "__main__":

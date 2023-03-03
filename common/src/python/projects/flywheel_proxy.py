@@ -256,3 +256,13 @@ class FlywheelProxy:
             if user:
                 users.append(user)
         return users
+
+    def add_project_gear_rules(self,*, project: flywheel.Project, rules) -> None:
+        """Adds gear rules to the Flywheel project.
+        
+        Args:
+          project: the flywheel project
+          rules: the gear rules
+        """
+        # TODO: GEAR RULE - fix the type of rules in arguments
+        # TODO: GEAR RULE - make the method add the rules to the project

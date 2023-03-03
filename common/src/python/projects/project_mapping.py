@@ -24,7 +24,7 @@ To represent this a project release group is created with a single "master"
 project for managing the consolodated data.
 """
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import flywheel  # type: ignore
 from projects.flywheel_proxy import FlywheelProxy
@@ -41,7 +41,9 @@ class ProjectMappingAdaptor:
                  *,
                  project: Project,
                  flywheel_proxy: FlywheelProxy,
-                 admin_users: Optional[List[flywheel.User]] = None) -> None:
+                 admin_users: Optional[List[flywheel.User]] = None,
+                 gear_rules: Optional[object] = None) -> None:
+        # TODO: GEAR RULE - fix type of gear_rules in arguments
         """Creates an adaptor mapping the given project to the corresponding
         objects in the flywheel instance linked by the proxy.
 
@@ -53,6 +55,7 @@ class ProjectMappingAdaptor:
         self.__project = project
         self.__release_group = None
         self.__admin_users = admin_users
+        self.__gear_rules = gear_rules
 
     def has_datatype(self, datatype: str) -> bool:
         """Indicates whether this project has the datatype.
@@ -161,7 +164,8 @@ class ProjectMappingAdaptor:
             center_adaptor = CenterMappingAdaptor(
                 center=center,
                 flywheel_proxy=self.__fw,
-                admin_users=self.__admin_users)
+                admin_users=self.__admin_users,
+                gear_rules=self.__gear_rules)
             center_adaptor.create_center_pipeline(self)
 
     def create_release_pipeline(self) -> None:
@@ -196,13 +200,16 @@ class CenterMappingAdaptor:
                  *,
                  center: Center,
                  flywheel_proxy: FlywheelProxy,
-                 admin_users: Optional[List[flywheel.User]] = None) -> None:
+                 admin_users: Optional[List[flywheel.User]] = None,
+                 gear_rules: Optional[object] = None) -> None:
+        # TODO: GEAR RULE - fix the type of gear_rules
         """Initializes an adaptor for the given center using the Flywheel
         instance linked by the proxy."""
         self.__center = center
         self.__fw = flywheel_proxy
         self.__group = None
         self.__admin_users = admin_users
+        self.__gear_rules = gear_rules
 
     def get_group(self) -> flywheel.Group:
         """Gets the FW group for this center.
@@ -261,7 +268,7 @@ class CenterMappingAdaptor:
                                      project_label="metadata")
 
     def create_ingest_projects(
-            self, project: ProjectMappingAdaptor) -> List[flywheel.Project]:
+            self, project: ProjectMappingAdaptor) -> Dict[str, flywheel.Project]:
         """Creates ingest projects for the given project within the group for
         this center.
 
@@ -273,20 +280,46 @@ class CenterMappingAdaptor:
         if not self.__center.is_active():
             log.info("Not creating ingest for inactive center %s",
                      self.__center.name)
-            return []
+            return {}
         if not project.datatypes:
             log.warning("No ingest groups created for %s: no datatypes given",
                         project.name)
-            return []
+            return {}
 
-        project_list = []
+        project_map = {}
         for datatype in project.datatypes:
             ingest_project = self.get_ingest_project(project=project,
                                                      datatype=datatype)
             if ingest_project:
-                project_list.append(ingest_project)
+                project_map[datatype] = ingest_project
 
-        return project_list
+        return project_map
+
+    def add_ingest_rules(self, ingest_projects: Dict[str, flywheel.Project]) -> None:
+        """Adds ingest gear rules to each of the given projects based on datatype.
+
+        Args:
+          ingest_projects: a dictionary mapping from datatype to project
+        """
+        for datatype, project in ingest_projects:
+            # TODO: GEAR RULE - replace following line to select ingest rules for data type
+            ingest_rules = self.__gear_rules
+            self.__fw.add_project_gear_rules(
+                project=project, rules=ingest_rules)
+
+    def add_curation_rules(self, *, project: flywheel.Project, datatypes: List[str]) -> None:
+        """Adds curation gear rules to the given project based on the datatypes.
+
+        Args:
+          accepted_project: the project
+          datatypes: the list of datatypes
+        """
+        # TODO: GEAR RULE - this code should be changed to whatever is needed to select gear rules for all of the datatypes
+        curation_rules = []
+        for datatype in datatypes:
+            # TODO: GEAR RULE - replace following line to select curation rules for data type and add rules object
+            curation_rules = self.__gear_rules
+        self.__fw.add_project_gear_rules(project=project, rules=curation_rules)
 
     def create_center_pipeline(self, project: ProjectMappingAdaptor) -> None:
         """Creates FW groups and projects for data pipeline of the given
@@ -303,7 +336,7 @@ class CenterMappingAdaptor:
         if self.__admin_users:
             self.__fw.add_admin_users(obj=center_group,
                                       users=self.__admin_users)
-            for ingest_project in ingest_projects:
+            for ingest_project in ingest_projects.values():
                 self.__fw.add_admin_users(obj=ingest_project,
                                           users=self.__admin_users)
             assert accepted_project
@@ -312,3 +345,8 @@ class CenterMappingAdaptor:
             assert metadata_project
             self.__fw.add_admin_users(obj=metadata_project,
                                       users=self.__admin_users)
+
+        if self.__gear_rules:
+            self.add_ingest_rules(ingest_projects)
+            self.add_curation_rules(
+                project=accepted_project, datatypes=project.datatypes)

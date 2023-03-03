@@ -1,7 +1,7 @@
 """Defines project management computation."""
 
 import logging
-from typing import List
+from typing import List, Optional
 
 import flywheel
 from projects.flywheel_proxy import FlywheelProxy
@@ -12,7 +12,9 @@ log = logging.getLogger(__name__)
 
 
 def run(*, proxy: FlywheelProxy, project_list,
-        admin_users: List[flywheel.User]):
+        admin_users: List[flywheel.User],
+        gear_rules: Optional[object]):
+    # TODO: GEAR RULE - fix type of gear_rules in arguments
     """Runs project pipeline creation/management.
 
     Args:
@@ -25,5 +27,6 @@ def run(*, proxy: FlywheelProxy, project_list,
         project = Project.create(project_doc)
         project_mapper = ProjectMappingAdaptor(project=project,
                                                flywheel_proxy=proxy,
-                                               admin_users=admin_users)
+                                               admin_users=admin_users,
+                                               gear_rules=gear_rules)
         project_mapper.create_project_pipelines()
