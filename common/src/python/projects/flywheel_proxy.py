@@ -270,7 +270,7 @@ class FlywheelProxy:
         """
         return self.__fw.get_project_rules(project_id)
 
-
+    # TODO: Maybe this should be somewhere else?
     def get_gear_rule_template(self) -> List[flywheel.Rules]:
         """ Gets the list of gear rules to be applied to every project.
 
