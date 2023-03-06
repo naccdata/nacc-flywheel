@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 def run(*, proxy: FlywheelProxy, project_list,
         admin_users: List[flywheel.User],
-        gear_rules: Optional[object]):
+        gear_rules: Optional[List[flywheel.Rule]]):
     # TODO: GEAR RULE - fix type of gear_rules in arguments
     """Runs project pipeline creation/management.
 
@@ -21,6 +21,7 @@ def run(*, proxy: FlywheelProxy, project_list,
       proxy: the proxy for the Flywheel instance
       project_list: the list of project input
       admin_users: the list of admin users
+      gear_rules: a list of gear rules to add to the project
     """
 
     for project_doc in project_list:
@@ -30,3 +31,4 @@ def run(*, proxy: FlywheelProxy, project_list,
                                                admin_users=admin_users,
                                                gear_rules=gear_rules)
         project_mapper.create_project_pipelines()
+
