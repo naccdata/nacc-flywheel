@@ -257,6 +257,48 @@ class FlywheelProxy:
                 users.append(user)
         return users
 
+
+    def get_project_rules(self, project_id: str) -> List[flywheel.Rule]:
+        """ Returns the gear rules on a project given the project's flywheel ID.
+
+        Args:
+            project_id: the ID of the project to return the gear rules from
+
+        Returns:
+            a list of gear rules
+
+        """
+        return self.__fw.get_project_rules(project_id)
+
+
+    def get_gear_rule_template(self) -> List[flywheel.Rules]:
+        """ Gets the list of gear rules to be applied to every project.
+
+        Current strategy is to copy the rules from a template project.
+        This is because you're not allowed to specify static inputs in the site-level gear rule templates.
+
+
+        Returns:
+            rules: a list of flywheel gear rules
+
+        """
+
+        # TODO: Not sure the best way to specify which project we're getting the gear rules from.
+        #   Maybe it should be passed in?
+        template_project_label = "<TEMPLATE_PROJECT_LABEL>"
+        template_group_id = "<TEMPLATE_GROUP_ID>"
+        template_project = self.find_project(template_group_id, template_project_label)
+
+        if not template_project:
+            log.error(f"No template project {template_project} found")
+            raise Exception(f"No template project {template_project} found")
+
+        template_project = template_project[0]
+        rules = self.get_project_rules(template_project.id)
+
+        return rules
+
+
     def add_project_gear_rules(self, *, project: flywheel.Project, rules: List[flywheel.Rule]) -> None:
         """Adds gear rules to the Flywheel project.
 
@@ -270,7 +312,7 @@ class FlywheelProxy:
         # Examples for rule handling can be found here:
         # https://gitlab.com/flywheel-io/public/flywheel-tutorials/-/blob/master/python/find-outdated-gear-rule-and-update-with-latest-version.ipynb
 
-        existing_rules = self.__fw.get_project_rules(project.id)
+        existing_rules = self.get_project_rules(project.id)
 
         for rule in rules:
             matching_rule = [er for er in existing_rules if er.name == rule.name]

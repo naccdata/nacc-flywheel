@@ -11,6 +11,7 @@ published - boolean indicating whether data is to be published
 import logging
 import sys
 
+import flywheel.Rules
 from admin.users import get_admin_users
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.arguments import build_parser
@@ -22,6 +23,8 @@ from projects.flywheel_proxy import FlywheelProxy
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
+
+
 
 
 def main():
@@ -58,8 +61,7 @@ def main():
     admin_users = get_admin_users(flywheel_proxy=flywheel_proxy,
                                   group_name=admin_group_name)
 
-    # TODO: GEAR RULE - wherever rules come from, load them before calling run
-    gear_rules = None
+    gear_rules = flywheel_proxy.get_gear_rule_template(FlywheelProxy)
 
     run(proxy=flywheel_proxy,
         project_list=project_list,
