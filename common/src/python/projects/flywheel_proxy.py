@@ -257,12 +257,32 @@ class FlywheelProxy:
                 users.append(user)
         return users
 
-    def add_project_gear_rules(self,*, project: flywheel.Project, rules) -> None:
+    def add_project_gear_rules(self, *, project: flywheel.Project, rules: List[flywheel.Rule]) -> None:
         """Adds gear rules to the Flywheel project.
+
+        if a rule with the same name exists on the project, it will be deleted and re-added
         
         Args:
           project: the flywheel project
           rules: the gear rules
         """
-        # TODO: GEAR RULE - fix the type of rules in arguments
-        # TODO: GEAR RULE - make the method add the rules to the project
+
+        # Examples for rule handling can be found here:
+        # https://gitlab.com/flywheel-io/public/flywheel-tutorials/-/blob/master/python/find-outdated-gear-rule-and-update-with-latest-version.ipynb
+
+        existing_rules = self.__fw.get_project_rules(project.id)
+
+        for rule in rules:
+            matching_rule = [er for er in existing_rules if er.name == rule.name]
+            if not matching_rule:
+                self.__fw.add_project_rule(project.id, rule)
+                continue
+
+            if len(matching_rule) > 1:
+                log.warning(f'WARNING multiple gear rules with the same name {rule.name} on project {project.label}. Skipping')
+                continue
+            self.__fw.remove_project_rule(project.id, matching_rule[0]['id'])
+            self.__fw.add_project_rule(project.id, rule)
+
+
+
