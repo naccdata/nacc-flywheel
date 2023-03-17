@@ -40,7 +40,10 @@ def main():
       * the project file
 
     Gear rules are taken from template projects in the admin group.
-    These projects are expected to be named `<datatype>-template`
+    These projects are expected to be named `<datatype>-<stage>-template`,
+    where `datatype` is one of the datatypes that occur in the project file,
+    and `stage` is one of 'accepted', 'ingest' or 'retrospective'.
+    (These are pipeline stages that can be created for the project)
     """
 
     parser = build_parser()
