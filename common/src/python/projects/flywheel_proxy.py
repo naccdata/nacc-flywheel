@@ -3,6 +3,7 @@ import logging
 from typing import List, Mapping, Optional, Union
 
 import flywheel  # type: ignore
+from flywheel.models.gear_rule_input import GearRuleInput
 from flywheel.models.roles_role import RolesRole
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
 
@@ -14,6 +15,12 @@ class FlywheelProxy:
     instance."""
 
     def __init__(self, api_key: str, dry_run: bool = True) -> None:
+        """Initializes a flywheel proxy object.
+
+        Args:
+          api_key: the API key
+          dry_run: whether proxy will be used for a dry run
+        """
         self.__fw = flywheel.Client(api_key, root=True)
         self.__dry_run = dry_run
         self.__roles: Optional[Mapping[str, RolesRoleAssignment]] = None
@@ -21,7 +28,11 @@ class FlywheelProxy:
 
     @property
     def dry_run(self):
-        """Indicates whether proxy is set for a dry run."""
+        """Indicates whether proxy is set for a dry run.
+
+        Returns:
+            True if proxy is set for a dry run. False otherwise.
+        """
         return self.__dry_run
 
     def find_project(self, *, group_id: str,
@@ -81,7 +92,7 @@ class FlywheelProxy:
             return group[0]
 
         if self.__dry_run:
-            log.info('Dry Run, would create group %s', group_id)
+            log.info('Dry Run: would create group %s', group_id)
             return flywheel.Group(label=group_label, id=group_id)
 
         log.info('creating group...')
@@ -192,6 +203,11 @@ class FlywheelProxy:
           user: the user to add
           access: the user role to add ('admin','rw','ro')
         """
+        if self.__dry_run:
+            log.info('Dry Run: would add access %s for user %s to group %s',
+                     access, user.id, group.label)
+            return
+
         permissions = [
             permission for permission in group.permissions
             if permission.id == user.id
@@ -257,12 +273,28 @@ class FlywheelProxy:
                 users.append(user)
         return users
 
-    def add_project_gear_rules(self,*, project: flywheel.Project, rules) -> None:
-        """Adds gear rules to the Flywheel project.
-        
+    def get_project_gear_rules(
+            self, project) -> List[flywheel.models.gear_rule.GearRule]:
+        """Get the gear rules from the given project.
+
         Args:
           project: the flywheel project
-          rules: the gear rules
+        Returns:
+          the gear rules
         """
-        # TODO: GEAR RULE - fix the type of rules in arguments
-        # TODO: GEAR RULE - make the method add the rules to the project
+        return self.__fw.get_project_rules(project.id)
+
+    def add_project_gear_rule(self, *, project: flywheel.Project,
+                              rule_input: GearRuleInput) -> None:
+        """Adds gear rules to the Flywheel project.
+
+        Args:
+          project: the flywheel project
+          rule_input: the GearRuleInput for the gear
+        """
+        if self.__dry_run:
+            log.info('Dry Run: would add gear rule %s to project %s',
+                     rule_input.name, project.label)
+            return
+
+        self.__fw.add_project_rule(project.id, rule_input)
