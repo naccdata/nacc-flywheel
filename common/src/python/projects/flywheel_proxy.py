@@ -35,7 +35,7 @@ class FlywheelProxy:
         """
         return self.__dry_run
 
-    def find_project(self, *, group_id: str,
+    def find_projects(self, *, group_id: str,
                      project_label: str) -> List[flywheel.Project]:
         """Finds a flywheel project with a given label, within a group ID if
         specified. Otherwise it's site wide.
@@ -50,7 +50,7 @@ class FlywheelProxy:
         return self.__fw.projects.find(
             f"parents.group={group_id},label={project_label}")  # type: ignore
 
-    def find_group(self, group_id: str) -> List[flywheel.Group]:
+    def find_groups(self, group_id: str) -> List[flywheel.Group]:
         """Searches for and returns a group if it exists.
 
         Args:
@@ -61,7 +61,7 @@ class FlywheelProxy:
         """
         return self.__fw.groups.find(f'_id={group_id}')  # type: ignore
 
-    def find_user(self, user_id: str) -> List[flywheel.User]:
+    def find_users(self, user_id: str) -> List[flywheel.User]:
         """Searches for and returns a user if it exists.
 
         Args:
@@ -87,7 +87,7 @@ class FlywheelProxy:
         Returns:
           group: the created group
         """
-        group = self.find_group(group_id)
+        group = self.find_groups(group_id)
         if group:
             return group[0]
 
@@ -119,7 +119,7 @@ class FlywheelProxy:
         """
         group_id = group.id
         assert group_id
-        existing_projects = self.find_project(group_id=group_id,
+        existing_projects = self.find_projects(group_id=group_id,
                                               project_label=project_label)
         if existing_projects and len(existing_projects) == 1:
             project_ref = f"{group.id}/{project_label}"
@@ -268,7 +268,7 @@ class FlywheelProxy:
         user_ids = [permission.id for permission in permissions]
         users = []
         for user_id in user_ids:
-            user = self.find_user(user_id)[0]
+            user = self.find_users(user_id)[0]
             if user:
                 users.append(user)
         return users

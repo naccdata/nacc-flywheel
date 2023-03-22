@@ -75,7 +75,7 @@ def main():
     flywheel_proxy = FlywheelProxy(api_key=api_key, dry_run=dry_run)
 
     admin_group = None
-    groups = flywheel_proxy.find_group(admin_group_name)
+    groups = flywheel_proxy.find_groups(admin_group_name)
     if groups:
         admin_group = groups[0]
     else:
