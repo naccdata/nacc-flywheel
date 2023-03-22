@@ -411,6 +411,11 @@ class CenterMappingAdaptor:
             for ingest_project in ingest_projects.values():
                 self.__fw.add_admin_users(obj=ingest_project,
                                           users=self.__admin_users)
+
+            for retrospective_project in retrospective_projects.values():
+                self.__fw.add_admin_users(obj=retrospective_project,
+                                          users=self.__admin_users)
+
             assert accepted_project
             self.__fw.add_admin_users(obj=accepted_project,
                                       users=self.__admin_users)
