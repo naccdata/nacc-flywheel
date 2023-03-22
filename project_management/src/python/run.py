@@ -26,6 +26,8 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
+
+
 def main():
     """Main method to create project from the adrc_program.yaml file.
 

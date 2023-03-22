@@ -31,3 +31,4 @@ def run(*, proxy: FlywheelProxy, project_list,
                                                admin_users=admin_users,
                                                template_map=template_map)
         project_mapper.create_project_pipelines()
+
