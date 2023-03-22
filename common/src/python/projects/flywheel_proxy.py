@@ -278,16 +278,16 @@ class FlywheelProxy:
         """Get the gear rules from the given project.
 
         Args:
-            project: the flywheel project
+          project: the flywheel project
 
         Returns:
-            a list of gear rules
+          the gear rules
         """
         return self.__fw.get_project_rules(project.id)
 
     def add_project_gear_rule(self, *, project: flywheel.Project,
                               rule_input: GearRuleInput) -> None:
-        """Adds gear rule to the Flywheel project.
+        """Adds the gear rule to the Flywheel project.
 
         Args:
           project: the flywheel project
@@ -295,7 +295,7 @@ class FlywheelProxy:
         """
         if self.__dry_run:
             log.info('Dry Run: would add gear rule %s to project %s',
-                     rule_input.name, project.lavel)
+                     rule_input.name, project.label)
             return
 
         self.__fw.add_project_rule(project.id, rule_input)
