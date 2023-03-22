@@ -289,45 +289,27 @@ class FlywheelProxy:
                               rule_input: GearRuleInput) -> None:
         """Adds the gear rule to the Flywheel project.
 
+        Replaces an existing rule with the same name.
+
         Args:
           project: the flywheel project
           rule_input: the GearRuleInput for the gear
         """
+        project_rules = self.get_project_gear_rules(project)
+        conflict = None
+        for rule in project_rules:
+            if rule.name == rule_input.name:
+                conflict = rule
+                break
+
         if self.__dry_run:
+            if conflict:
+                log.info('Dry Run: would remove conflicting rule %s from project %s', conflict.name)
             log.info('Dry Run: would add gear rule %s to project %s',
                      rule_input.name, project.label)
             return
+        
+        if conflict:
+            self.__fw.remove_project_rule(project.id, conflict['id'])
 
         self.__fw.add_project_rule(project.id, rule_input)
-
-    def add_project_gear_rules(self, *, project: flywheel.Project,
-                               rules: List[flywheel.Rule]) -> None:
-        """Adds gear rules to the Flywheel project.
-
-        if a rule with the same name exists on the project, it will be deleted and re-added
-
-        Args:
-          project: the flywheel project
-          rule_input: the GearRuleInput for the gear
-        """
-
-        # Examples for rule handling can be found here:
-        # https://gitlab.com/flywheel-io/public/flywheel-tutorials/-/blob/master/python/find-outdated-gear-rule-and-update-with-latest-version.ipynb
-
-        existing_rules = self.get_project_gear_rules(project)
-
-        for rule in rules:
-            matching_rule = [
-                er for er in existing_rules if er.name == rule.name
-            ]
-            if not matching_rule:
-                self.__fw.add_project_rule(project.id, rule)
-                continue
-
-            if len(matching_rule) > 1:
-                log.warning(
-                    f'WARNING multiple gear rules with the same name {rule.name} on project {project.label}. Skipping'
-                )
-                continue
-            self.__fw.remove_project_rule(project.id, matching_rule[0]['id'])
-            self.__fw.add_project_rule(project.id, rule)
