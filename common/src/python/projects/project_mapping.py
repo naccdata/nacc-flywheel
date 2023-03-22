@@ -345,7 +345,6 @@ class CenterMappingAdaptor:
         Returns:
           map of datatype to created retrospective ingest projects
         """
-        # TODO: simplify code since this is similar to create_ingest projects
         if not project.datatypes:
             log.warning(
                 "No retrospective ingest projects created for %s: "
