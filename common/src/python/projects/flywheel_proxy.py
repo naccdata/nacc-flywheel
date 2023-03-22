@@ -36,7 +36,7 @@ class FlywheelProxy:
         return self.__dry_run
 
     def find_projects(self, *, group_id: str,
-                     project_label: str) -> List[flywheel.Project]:
+                      project_label: str) -> List[flywheel.Project]:
         """Finds a flywheel project with a given label, within a group ID if
         specified. Otherwise it's site wide.
 
@@ -120,7 +120,7 @@ class FlywheelProxy:
         group_id = group.id
         assert group_id
         existing_projects = self.find_projects(group_id=group_id,
-                                              project_label=project_label)
+                                               project_label=project_label)
         if existing_projects and len(existing_projects) == 1:
             project_ref = f"{group.id}/{project_label}"
             log.info('Project %s exists', project_ref)
