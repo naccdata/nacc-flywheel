@@ -17,10 +17,10 @@ from flywheel_gear_toolkit import GearToolkitContext
 from inputs.arguments import build_parser
 from inputs.context_parser import parse_config
 from inputs.environment import get_api_key
+from inputs.templates import get_template_projects
 from inputs.yaml import get_object_list
 from project_main import run
 from projects.flywheel_proxy import FlywheelProxy
-from projects.template_project import TemplateProject
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -85,30 +85,8 @@ def main():
     if admin_group:
         admin_users = flywheel_proxy.get_group_users(admin_group, role='admin')
 
-    template_map = defaultdict(dict)
-    if admin_group:
-        template_matcher = re.compile(r"^(\w+)(?:-(\w+))?-template$")
-        for project in admin_group.projects():
-            match = template_matcher.match(project.label)
-            if match:
-                datatype = match.group(1)
-                stage = match.group(2)
-                if not stage:
-                    log.error('skipping template project %s without stage',
-                              project.label)
-                    continue
-
-                # TODO: stage list needs to come from project mapping
-                if stage not in ['accepted', 'ingest', 'retrospective']:
-                    log.error(
-                        'unrecognized pipeline stage %s'
-                        ' in template project %s', stage, project.label)
-                    continue
-
-                stage_map = template_map[datatype]
-                stage_map[stage] = TemplateProject(project=project,
-                                                   proxy=flywheel_proxy)
-                template_map[datatype] = stage_map
+    template_map = get_template_projects(group=admin_group,
+                                         proxy=flywheel_proxy)
 
     run(proxy=flywheel_proxy,
         project_list=project_list,
