@@ -26,7 +26,7 @@ def get_template_projects(
     Returns:
       dictionary of template projects indexed by stage and datatype
     """
-    template_map = defaultdict(dict)
+    template_map: Dict[str, Dict[str, TemplateProject]] = defaultdict(dict)
     if group:
         template_matcher = re.compile(r"^(\w+)-(\w+)-template$")
         for project in group.projects():

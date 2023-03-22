@@ -9,9 +9,7 @@ datatypes - array of datatype names (form, dicom)
 published - boolean indicating whether data is to be published
 """
 import logging
-import re
 import sys
-from collections import defaultdict
 
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.arguments import build_parser

@@ -304,11 +304,13 @@ class FlywheelProxy:
 
         if self.__dry_run:
             if conflict:
-                log.info('Dry Run: would remove conflicting rule %s from project %s', conflict.name)
+                log.info(
+                    'Dry Run: would remove conflicting '
+                    'rule %s from project %s', conflict.name, project.label)
             log.info('Dry Run: would add gear rule %s to project %s',
                      rule_input.name, project.label)
             return
-        
+
         if conflict:
             self.__fw.remove_project_rule(project.id, conflict['id'])
 
