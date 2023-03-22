@@ -21,7 +21,7 @@ class FlywheelProxy:
           api_key: the API key
           dry_run: whether proxy will be used for a dry run
         """
-        self.__fw = flywheel.Client(api_key, root=True)
+        self.__fw = flywheel.Client(api_key)
         self.__dry_run = dry_run
         self.__roles: Optional[Mapping[str, RolesRoleAssignment]] = None
         self.__admin_role = None
