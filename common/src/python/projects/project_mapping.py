@@ -331,6 +331,7 @@ class CenterMappingAdaptor:
                                                      datatype=datatype)
             if ingest_project:
                 project_map[datatype] = ingest_project
+                self.add_tags(ingest_project)
 
         return project_map
 
@@ -357,8 +358,29 @@ class CenterMappingAdaptor:
                 project=project, datatype=datatype)
             if retrospective_project:
                 project_map[datatype] = retrospective_project
+                self.add_tags(retrospective_project)
 
         return project_map
+
+    def add_tags(self, project: flywheel.Project) -> None:
+        """Adds tags from this center to the project.
+
+        Note: requires that tag is enabled in the group for the center.
+
+        Args:
+          project: the project to add tags to
+        """
+        for tag in self.__center.tags:
+            if tag not in project.tags:
+                project.add_tag(tag)
+
+    def __add_group_tags(self) -> None:
+        """Adds tags for the center to the group."""
+        center_group = self.get_group()
+
+        for tag in self.__center.tags:
+            if tag not in center_group.tags:
+                center_group.add_tag(tag)
 
     def add_ingest_rules(self,
                          ingest_projects: Dict[str, flywheel.Project],
@@ -400,6 +422,8 @@ class CenterMappingAdaptor:
             project: the project mapping adaptor
         """
         center_group = self.get_group()
+        self.__add_group_tags()
+
         ingest_projects = self.create_ingest_projects(project)
         retrospective_projects = self.create_retrospective_projects(project)
         accepted_project = self.get_accepted_project(project)

@@ -312,6 +312,6 @@ class FlywheelProxy:
             return
 
         if conflict:
-            self.__fw.remove_project_rule(project.id, conflict['id'])
+            self.__fw.remove_project_rule(project.id, conflict.id)
 
         self.__fw.add_project_rule(project.id, rule_input)
