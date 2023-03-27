@@ -84,21 +84,22 @@ class UserDirectoryEntry:
         Args:
           record: a dictionary containing report record for user
         """
-        if record["flywheel_access_information_complete"] == 2:
+        if record["flywheel_access_information_complete"] != 2:
             return None
 
         modalities = []
-        if int(record['flywheel_access_activities___a']):
+        activities = record["flywheel_access_activities"]
+        if 'a' in activities:
             modalities.append('form')
-        if int(record['flywheel_access_activities___b']):
+        if 'b' in activities:
             modalities.append('image')
+
 
         authorizations: Authorizations = {
             "submit": modalities,
-            "audit_data": bool(int(record['flywheel_access_activities___c'])),
-            "approve_data":
-            bool(int(record['flywheel_access_activities___d'])),
-            "view_reports": bool(int(record['flywheel_access_activities___e']))
+            "audit_data": bool('c' in activities),
+            "approve_data": bool('d' in activities),
+            "view_reports": bool('e' in activities)
         }
 
         credentials: Credentials = {
