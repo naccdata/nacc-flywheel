@@ -1,3 +1,4 @@
+"""Run method for user management."""
 import logging
 from typing import List
 
