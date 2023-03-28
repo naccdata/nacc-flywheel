@@ -1,7 +1,7 @@
 """Classes for NACC directory user credentials."""
 
 from datetime import datetime
-from typing import Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict
 
 
 class Authorizations(TypedDict):
@@ -29,7 +29,7 @@ class UserDirectoryEntry:
 
     def __init__(self, *, org_name: str, center_id: int, name: PersonName,
                  email: str, authorizations: Authorizations,
-                 credentials: Credentials, submit_time) -> None:
+                 credentials: Credentials, submit_time: datetime) -> None:
         self.__org_name = org_name
         self.__center_id = center_id
         self.__name = name
@@ -37,6 +37,17 @@ class UserDirectoryEntry:
         self.__authorizations = authorizations
         self.__credentials = credentials
         self.__submit_time = submit_time
+
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, UserDirectoryEntry):
+            return False
+
+        return (self.__org_name == __value.org_name
+                and self.__center_id == __value.center_id
+                and self.__name == __value.name
+                and self.__email == __value.email
+                and self.__authorizations == __value.authorizations
+                and self.__credentials == __value.credentials)
 
     @property
     def org_name(self) -> str:
@@ -64,7 +75,7 @@ class UserDirectoryEntry:
         return self.__authorizations
 
     @property
-    def credential(self) -> Credentials:
+    def credentials(self) -> Credentials:
         """The users CILogon credentials."""
         return self.__credentials
 
@@ -72,6 +83,40 @@ class UserDirectoryEntry:
     def submit_time(self) -> datetime:
         """The submission time for credentials."""
         return self.__submit_time
+
+    def as_dict(self):
+        """Builds a dictionary for this directory entry.
+
+        Returns:
+          A dictionary with values of this entry
+        """
+        result = {}
+        result['org_name'] = self.__org_name
+        result['center_id'] = self.__center_id
+        result['name'] = self.__name
+        result['email'] = self.__email
+        result['authorizations'] = self.__authorizations
+        result['credentials'] = self.__credentials
+        result['submit_time'] = self.__submit_time
+        return result
+
+    @classmethod
+    def create(cls, entry: Dict[str, Any]) -> "UserDirectoryEntry":
+        """Creates an object from a dictionary. Expects dictionary to match
+        output of `as_dict`
+
+        Args:
+          entry: the dictionary for entry
+        Returns:
+          The dictionary object
+        """
+        return UserDirectoryEntry(org_name=entry['org_name'],
+                                  center_id=entry['center_id'],
+                                  name=entry['name'],
+                                  email=entry['email'],
+                                  authorizations=entry['authorizations'],
+                                  credentials=entry['credentials'],
+                                  submit_time=entry['submit_time'])
 
     @classmethod
     def create_from_record(
@@ -83,8 +128,10 @@ class UserDirectoryEntry:
 
         Args:
           record: a dictionary containing report record for user
+        Returns:
+          the dictionary entry for the record. None, if record is incomplete
         """
-        if record["flywheel_access_information_complete"] != 2:
+        if int(record["flywheel_access_information_complete"]) != 2:
             return None
 
         modalities = []
@@ -93,7 +140,6 @@ class UserDirectoryEntry:
             modalities.append('form')
         if 'b' in activities:
             modalities.append('image')
-
 
         authorizations: Authorizations = {
             "submit": modalities,
@@ -113,11 +159,11 @@ class UserDirectoryEntry:
         }
 
         return UserDirectoryEntry(org_name=record['contact_company_name'],
-                              center_id=int(record['adresearchctr']),
-                              name=name,
-                              email=record['email'],
-                              credentials=credentials,
-                              submit_time=datetime.strptime(
-                                  record['fw_cred_sub_time'],
-                                  "%Y-%m-%d %H:%M"),
-                              authorizations=authorizations)
+                                  center_id=int(record['adresearchctr']),
+                                  name=name,
+                                  email=record['email'],
+                                  credentials=credentials,
+                                  submit_time=datetime.strptime(
+                                      record['fw_cred_sub_time'],
+                                      "%Y-%m-%d %H:%M"),
+                                  authorizations=authorizations)
