@@ -25,9 +25,6 @@ class TestDirectory:
             submit_time=datetime.strptime('2023-01-02 1:30', "%Y-%m-%d %H:%M"))
         assert entry.authorizations['audit_data']
 
-        # yaml_entry = yaml.safe_dump(entry.as_dict())
-        # assert yaml_entry == ""
-
         entry2 = UserDirectoryEntry.create_from_record({
             "record_id":
             "1",

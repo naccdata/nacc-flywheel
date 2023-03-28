@@ -2,6 +2,7 @@
 user management gear."""
 import logging
 import sys
+import yaml
 
 from inputs.environment import get_api_key, get_environment_variable
 from redcap.nacc_directory import UserDirectoryEntry
@@ -62,8 +63,14 @@ def main() -> None:
         log.error('Failed to pull users from directory: %s', error.error)
         sys.exit(1)
 
+    # Convert records in directory report to UserDirectoryEntry and then
+    # write to a file  
     user_entries = []
     for user_record in user_report:
         entry = UserDirectoryEntry.create_from_record(user_record)
         if entry:
-            user_entries.append(entry)
+            user_entries.append(entry.as_dict())
+
+    yaml_entries = yaml.safe_dump(user_entries)
+
+    
