@@ -25,5 +25,3 @@ def get_api_key() -> Optional[str]:
         the API Key if defined. None, otherwise.
     """
     return get_environment_variable('FW_API_KEY')
-
-
