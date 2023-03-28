@@ -204,10 +204,10 @@ class FlywheelProxy:
           user: the user to add
           access: the user role to add ('admin','rw','ro')
         """
-        if self.__dry_run:
-            log.info('Dry Run: would add access %s for user %s to group %s',
-                     access, user.id, group.label)
-            return
+        # if self.__dry_run:
+        #     log.info('Dry Run: would add access %s for user %s to group %s',
+        #              access, user.id, group.label)
+        #     return
 
         permissions = [
             permission for permission in group.permissions
