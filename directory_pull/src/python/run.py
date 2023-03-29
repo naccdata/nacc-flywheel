@@ -77,6 +77,7 @@ def main() -> None:
         log.error('Failed to pull users from directory: %s', error.error)
         sys.exit(1)
 
+    # TODO: add argument to allow uploading file if not run as gear
     if args.gear:
         admin_project = get_admin_project(admin_group_name, dry_run, api_key)
         if not admin_project:
