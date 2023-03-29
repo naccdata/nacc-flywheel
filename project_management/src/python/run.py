@@ -12,7 +12,7 @@ import logging
 import sys
 
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.arguments import build_parser
+from inputs.arguments import build_parser_with_input
 from inputs.context_parser import parse_config
 from inputs.environment import get_api_key
 from inputs.templates import get_template_projects
@@ -44,7 +44,7 @@ def main():
     (These are pipeline stages that can be created for the project)
     """
 
-    parser = build_parser()
+    parser = build_parser_with_input()
     args = parser.parse_args()
 
     if args.gear:

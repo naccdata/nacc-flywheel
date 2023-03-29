@@ -5,7 +5,7 @@ import sys
 
 from admin.users import get_admin_users
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.arguments import build_parser
+from inputs.arguments import build_parser_with_input
 from inputs.context_parser import parse_config
 from inputs.environment import get_api_key
 from inputs.yaml import get_object_list
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 def main() -> None:
     """Main method to manage users."""
 
-    parser = build_parser()
+    parser = build_parser_with_input()
     args = parser.parse_args()
 
     if args.gear:
