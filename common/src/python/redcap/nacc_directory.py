@@ -158,8 +158,15 @@ class UserDirectoryEntry:
             "last_name": record['lastname']
         }
 
-        return UserDirectoryEntry(org_name=record['contact_company_name'],
-                                  center_id=int(record['adresearchctr']),
+        org_name = record['contact_company_name']
+        center_id = record['adresearchctr']
+        if not center_id.isdigit():
+            center_id = '-1'
+            if org_name.lower() == 'nacc':
+                center_id = '0'
+
+        return UserDirectoryEntry(org_name=org_name,
+                                  center_id=int(center_id),
                                   name=name,
                                   email=record['email'],
                                   credentials=credentials,
