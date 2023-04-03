@@ -57,9 +57,20 @@ class FlywheelProxy:
             group_id: the ID to search for
 
         Returns:
-            group: the group (or empty list if not found)
+            the group (or empty list if not found)
         """
         return self.__fw.groups.find(f'_id={group_id}')  # type: ignore
+
+    def find_groups_by_tag(self, tag_pattern: str) -> List[flywheel.Group]:
+        """Searches for groups with tags matching the pattern.
+        
+        Args:
+          tag_pattern: raw string regex pattern
+
+        Returns:
+          the list of groups
+        """
+        return self.__fw.groups.find(f"tags=~{tag_pattern}") # type: ignore
 
     def find_users(self, user_id: str) -> List[flywheel.User]:
         """Searches for and returns a user if it exists.
@@ -68,7 +79,7 @@ class FlywheelProxy:
             user_id: the ID to search for
 
         Returns:
-            the user, or an empty list if now found
+            a list with the user, or an empty list if not found
         """
         return self.__fw.users.find(f'_id={user_id}')  # type: ignore
 
