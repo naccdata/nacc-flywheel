@@ -43,9 +43,13 @@ class TemplateProject:
         """
         if not self.__rules:
             log.info('loading rules for template project %s',
-                     destination.label)
+                     self.__source_project.label)
             self.__rules = self.__fw.get_project_gear_rules(
                 self.__source_project)
+            if not self.__rules:
+                log.warning('template %s has no rules, skipping', self.__source_project.label)
+                return
+    
         assert self.__rules
 
         for rule in self.__rules:
@@ -92,6 +96,7 @@ class TemplateProject:
           file: the file entry for the file
           destination: the destination project
         """
+        log.info("copying file %s to %s", file.name, destination.label)
         file_spec = flywheel.FileSpec(file.name, file.read(), file.mimetype)
         destination.upload_file(file_spec)
 
