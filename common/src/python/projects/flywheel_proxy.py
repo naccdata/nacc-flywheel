@@ -23,7 +23,7 @@ class FlywheelProxy:
         """
         self.__fw = flywheel.Client(api_key)
         self.__dry_run = dry_run
-        self.__roles: Optional[Mapping[str, RolesRoleAssignment]] = None
+        self.__roles: Optional[Mapping[str, RolesRole]] = None
         self.__admin_role = None
 
     @property
@@ -155,18 +155,28 @@ class FlywheelProxy:
 
         return project
 
-    def __get_roles(self) -> Mapping[str, RolesRoleAssignment]:
+    def __get_roles(self) -> Mapping[str, RolesRole]:
         """Gets all roles for the FW instance."""
         if not self.__roles:
             all_roles = self.__fw.get_all_roles()
             self.__roles = {role.label: role for role in all_roles}
         return self.__roles
 
-    def get_admin_role(self) -> Optional[RolesRoleAssignment]:
+    def get_role(self, label) -> Optional[RolesRole]:
+        """Gets role with label.
+
+        Args:
+          label: the name of the role
+        Returns:
+          the role with the name if one exists. None, otherwise
+        """
+        role_map = self.__get_roles()
+        return role_map.get(label)
+    
+    def get_admin_role(self) -> Optional[RolesRole]:
         """Gets admin role."""
         if not self.__admin_role:
-            role_map = self.__get_roles()
-            self.__admin_role = role_map.get('admin')
+            self.__admin_role = self.get_role('admin')
         return self.__admin_role
 
     def add_project_permissions(self, *, project: flywheel.Project,
@@ -189,6 +199,7 @@ class FlywheelProxy:
             permission for permission in project.permissions
             if permission.id == user.id
         ]
+
         if not permissions:
             log.info("User %s has no permissions for project %s, adding %s",
                      user.id, project.label, role.label)
