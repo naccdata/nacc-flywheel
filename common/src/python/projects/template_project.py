@@ -43,10 +43,17 @@ class TemplateProject:
         """
         if not self.__rules:
             log.info('loading rules for template project %s',
-                     destination.label)
+                     self.__source_project.label)
             self.__rules = self.__fw.get_project_gear_rules(
                 self.__source_project)
+            if not self.__rules:
+                log.warning('template %s has no rules, skipping',
+                            self.__source_project.label)
+                return
+
         assert self.__rules
+
+        self.__clean_up_rules(destination)
 
         for rule in self.__rules:
             log.info('copying rule %s to project %s', rule.name,
@@ -57,6 +64,26 @@ class TemplateProject:
                 rule=rule, fixed_inputs=fixed_inputs)
             self.__fw.add_project_gear_rule(project=destination,
                                             rule_input=gear_rule_input)
+
+    def __clean_up_rules(self, destination: flywheel.Project) -> None:
+        """Remove any gear rules from destination that are not in this
+        template.
+
+        Args:
+          destination: the detination project
+        """
+        destination_rules = self.__fw.get_project_gear_rules(destination)
+        if not destination_rules:
+            return
+
+        assert self.__rules
+        template_rulenames = [rule.name for rule in self.__rules]
+        for rule in destination_rules:
+            if rule.name not in template_rulenames:
+                log.info('removing rule %s, not in template %s', rule.name,
+                         self.__source_project.label)
+                self.__fw.remove_project_gear_rule(project=destination,
+                                                   rule=rule)
 
     def __map_fixed_inputs(self, *, inputs: List[FixedInput],
                            destination: flywheel.Project) -> List[FixedInput]:
@@ -92,6 +119,7 @@ class TemplateProject:
           file: the file entry for the file
           destination: the destination project
         """
+        log.info("copying file %s to %s", file.name, destination.label)
         file_spec = flywheel.FileSpec(file.name, file.read(), file.mimetype)
         destination.upload_file(file_spec)
 
