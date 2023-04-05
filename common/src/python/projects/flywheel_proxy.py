@@ -63,14 +63,14 @@ class FlywheelProxy:
 
     def find_groups_by_tag(self, tag_pattern: str) -> List[flywheel.Group]:
         """Searches for groups with tags matching the pattern.
-        
+
         Args:
           tag_pattern: raw string regex pattern
 
         Returns:
           the list of groups
         """
-        return self.__fw.groups.find(f"tags=~{tag_pattern}") # type: ignore
+        return self.__fw.groups.find(f"tags=~{tag_pattern}")  # type: ignore
 
     def find_users(self, user_id: str) -> List[flywheel.User]:
         """Searches for and returns a user if it exists.
@@ -326,3 +326,19 @@ class FlywheelProxy:
             self.__fw.remove_project_rule(project.id, conflict.id)
 
         self.__fw.add_project_rule(project.id, rule_input)
+
+    def remove_project_gear_rule(
+            self, *, project: flywheel.Project,
+            rule: flywheel.models.gear_rule.GearRule) -> None:
+        """Removes the gear rule from the project.
+
+        Args:
+          project: the project
+          rule: the gear rule
+        """
+        if self.dry_run:
+            log.info('Dry run: would remove rule %s from project %s',
+                     rule.name, project.label)
+            return
+
+        self.__fw.remove_project_rule(project.id, rule.id)
