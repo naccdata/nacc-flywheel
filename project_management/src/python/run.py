@@ -89,7 +89,8 @@ def main():
     run(proxy=flywheel_proxy,
         project_list=project_list,
         admin_users=admin_users,
-        template_map=template_map)
+        template_map=template_map,
+        role_names=['curate', 'upload'])
 
 
 if __name__ == "__main__":
