@@ -172,12 +172,30 @@ class FlywheelProxy:
         """
         role_map = self.__get_roles()
         return role_map.get(label)
-    
+
     def get_admin_role(self) -> Optional[RolesRole]:
         """Gets admin role."""
         if not self.__admin_role:
             self.__admin_role = self.get_role('admin')
         return self.__admin_role
+
+    def add_group_role(self, *, group: flywheel.Group,
+                       role: RolesRole) -> None:
+        """Add role to the group.
+
+        Args:
+          group: the group
+          role: the role
+        """
+        if role.id in group.roles:
+            return
+
+        if self.dry_run:
+            log.info("Dry run: would add role %s to group %s", role.name,
+                     group.label)
+            return
+
+        self.__fw.add_role_to_group(group.id, role)
 
     def add_project_permissions(self, *, project: flywheel.Project,
                                 user: flywheel.User, role: RolesRole) -> None:
