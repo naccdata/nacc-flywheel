@@ -4,6 +4,7 @@ import logging
 from typing import Dict, List
 
 import flywheel
+from flywheel.models.roles_role import RolesRole
 from projects.flywheel_proxy import FlywheelProxy
 from projects.project import Project
 from projects.project_mapping import ProjectMappingAdaptor
@@ -12,9 +13,31 @@ from projects.template_project import TemplateProject
 log = logging.getLogger(__name__)
 
 
+def get_roles(flywheel_proxy, role_names: List[str]) -> List[RolesRole]:
+    """Get the named roles.
+
+    Returns all roles matching a name in the list.
+    Logs a warning if a name is not matched.
+
+    Args:
+      role_names: the role names
+    Returns:
+      the list of roles with the names
+    """
+    role_list = []
+    for name in role_names:
+        role = flywheel_proxy.get_role(name)
+        if role:
+            role_list.append(role)
+        else:
+            log.warning('no such role %s', name)
+    return role_list
+
+
 def run(*, proxy: FlywheelProxy, project_list,
         admin_users: List[flywheel.User],
-        template_map: Dict[str, Dict[str, TemplateProject]]):
+        template_map: Dict[str, Dict[str,
+                                     TemplateProject]], role_names: List[str]):
     """Runs project pipeline creation/management.
 
     Args:
@@ -24,10 +47,13 @@ def run(*, proxy: FlywheelProxy, project_list,
       template_map: map from datatype name to template projects
     """
 
+    center_roles = get_roles(proxy, role_names)
+
     for project_doc in project_list:
         project = Project.create(project_doc)
         project_mapper = ProjectMappingAdaptor(project=project,
                                                flywheel_proxy=proxy,
                                                admin_users=admin_users,
-                                               template_map=template_map)
+                                               template_map=template_map,
+                                               center_roles=center_roles)
         project_mapper.create_project_pipelines()
