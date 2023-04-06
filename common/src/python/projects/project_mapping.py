@@ -27,6 +27,7 @@ import logging
 from typing import Dict, List, Optional
 
 import flywheel  # type: ignore
+from flywheel.models.roles_role import RolesRole
 from projects.flywheel_proxy import FlywheelProxy
 from projects.project import Center, Project
 from projects.template_project import TemplateProject
@@ -43,7 +44,8 @@ class ProjectMappingAdaptor:
                  project: Project,
                  flywheel_proxy: FlywheelProxy,
                  admin_users: Optional[List[flywheel.User]] = None,
-                 template_map: Dict[str, Dict[str, TemplateProject]]) -> None:
+                 template_map: Dict[str, Dict[str, TemplateProject]],
+                 center_roles: List[RolesRole]) -> None:
         """Creates an adaptor mapping the given project to the corresponding
         objects in the flywheel instance linked by the proxy.
 
@@ -52,12 +54,14 @@ class ProjectMappingAdaptor:
             flywheel_proxy: the proxy for the flywheel instance
             admin_users: the administrative users
             template_map: mapping from data types to template projects
+            center_roles: the roles for center users
         """
         self.__fw = flywheel_proxy
         self.__project = project
         self.__release_group = None
         self.__admin_users = admin_users
         self.__template_map = template_map
+        self.__center_roles = center_roles
 
     def has_datatype(self, datatype: str) -> bool:
         """Indicates whether this project has the datatype.
@@ -169,7 +173,8 @@ class ProjectMappingAdaptor:
                 center=center,
                 flywheel_proxy=self.__fw,
                 admin_users=self.__admin_users,
-                template_map=self.__template_map)
+                template_map=self.__template_map,
+                center_roles=self.__center_roles)
             center_adaptor.create_center_pipeline(self)
 
     def create_release_pipeline(self) -> None:
@@ -205,7 +210,8 @@ class CenterMappingAdaptor:
                  center: Center,
                  flywheel_proxy: FlywheelProxy,
                  admin_users: Optional[List[flywheel.User]] = None,
-                 template_map: Dict[str, Dict[str, TemplateProject]]) -> None:
+                 template_map: Dict[str, Dict[str, TemplateProject]],
+                 center_roles: List[RolesRole]) -> None:
         """Initializes an adaptor for the given center using the Flywheel
         instance linked by the proxy.
 
@@ -214,12 +220,14 @@ class CenterMappingAdaptor:
           flywheel_proxy: the flywheel instance proxy
           admin_users: the administrative users from admin group
           template_map: template projects for project resources
+          center_roles: the list of custom roles for user in center
         """
         self.__center = center
         self.__fw = flywheel_proxy
         self.__group = None
         self.__admin_users = admin_users
         self.__template_map = template_map
+        self.__center_roles = center_roles
 
     def get_group(self) -> flywheel.Group:
         """Gets the FW group for this center.
@@ -382,6 +390,12 @@ class CenterMappingAdaptor:
             if tag not in center_group.tags:
                 center_group.add_tag(tag)
 
+    def __add_group_roles(self) -> None:
+        center_group = self.get_group()
+
+        for role in self.__center_roles:
+            self.__fw.add_group_role(group=center_group, role=role)
+
     def add_ingest_rules(self,
                          ingest_projects: Dict[str, flywheel.Project],
                          stage: str = 'ingest') -> None:
@@ -423,6 +437,7 @@ class CenterMappingAdaptor:
         """
         center_group = self.get_group()
         self.__add_group_tags()
+        self.__add_group_roles()
 
         ingest_projects = self.create_ingest_projects(project)
         retrospective_projects = self.create_retrospective_projects(project)
