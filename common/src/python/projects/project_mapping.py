@@ -30,7 +30,6 @@ import flywheel  # type: ignore
 from flywheel.models.roles_role import RolesRole
 from projects.flywheel_proxy import FlywheelProxy
 from projects.project import Center, Project
-from projects.template_project import TemplateProject
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +43,6 @@ class ProjectMappingAdaptor:
                  project: Project,
                  flywheel_proxy: FlywheelProxy,
                  admin_users: Optional[List[flywheel.User]] = None,
-                 template_map: Dict[str, Dict[str, TemplateProject]],
                  center_roles: List[RolesRole]) -> None:
         """Creates an adaptor mapping the given project to the corresponding
         objects in the flywheel instance linked by the proxy.
@@ -60,7 +58,6 @@ class ProjectMappingAdaptor:
         self.__project = project
         self.__release_group = None
         self.__admin_users = admin_users
-        self.__template_map = template_map
         self.__center_roles = center_roles
 
     def has_datatype(self, datatype: str) -> bool:
@@ -173,7 +170,6 @@ class ProjectMappingAdaptor:
                 center=center,
                 flywheel_proxy=self.__fw,
                 admin_users=self.__admin_users,
-                template_map=self.__template_map,
                 center_roles=self.__center_roles)
             center_adaptor.create_center_pipeline(self)
 
@@ -210,8 +206,7 @@ class CenterMappingAdaptor:
                  center: Center,
                  flywheel_proxy: FlywheelProxy,
                  admin_users: Optional[List[flywheel.User]] = None,
-                 template_map: Dict[str, Dict[str, TemplateProject]],
-                 center_roles: List[RolesRole]) -> None:
+                 center_roles: Optional[List[RolesRole]]) -> None:
         """Initializes an adaptor for the given center using the Flywheel
         instance linked by the proxy.
 
@@ -226,7 +221,6 @@ class CenterMappingAdaptor:
         self.__fw = flywheel_proxy
         self.__group = None
         self.__admin_users = admin_users
-        self.__template_map = template_map
         self.__center_roles = center_roles
 
     def get_group(self) -> flywheel.Group:
@@ -391,42 +385,12 @@ class CenterMappingAdaptor:
                 center_group.add_tag(tag)
 
     def __add_group_roles(self) -> None:
-        center_group = self.get_group()
+        if not self.__center_roles:
+            return
 
+        center_group = self.get_group()
         for role in self.__center_roles:
             self.__fw.add_group_role(group=center_group, role=role)
-
-    def add_ingest_rules(self,
-                         ingest_projects: Dict[str, flywheel.Project],
-                         stage: str = 'ingest') -> None:
-        """Adds ingest gear rules to each of the given projects based on
-        datatype.
-
-        Args:
-          ingest_projects: a dictionary mapping from datatype to project
-        """
-        for datatype, project in ingest_projects.items():
-            stage_map = self.__template_map.get(datatype)
-            if stage_map:
-                template_project = stage_map.get(stage)
-                if template_project:
-                    template_project.copy_to(project)
-
-    def add_curation_rules(self, *, project: flywheel.Project,
-                           datatypes: List[str]) -> None:
-        """Adds curation gear rules to the given project based on the
-        datatypes.
-
-        Args:
-          accepted_project: the project
-          datatypes: the list of datatypes
-        """
-        for datatype in datatypes:
-            stage_map = self.__template_map.get(datatype)
-            if stage_map:
-                template_project = stage_map.get('accepted')
-                if template_project:
-                    template_project.copy_to(project)
 
     def create_center_pipeline(self, project: ProjectMappingAdaptor) -> None:
         """Creates FW groups and projects for data pipeline of the given
@@ -461,10 +425,3 @@ class CenterMappingAdaptor:
             assert metadata_project
             self.__fw.add_admin_users(obj=metadata_project,
                                       users=self.__admin_users)
-
-        if self.__template_map:
-            self.add_ingest_rules(ingest_projects, stage='ingest')
-            self.add_ingest_rules(retrospective_projects,
-                                  stage='retrospective')
-            self.add_curation_rules(project=accepted_project,
-                                    datatypes=project.datatypes)
