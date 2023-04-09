@@ -8,30 +8,71 @@ import re
 from typing import Dict, List, Optional
 
 import flywheel
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.group_adaptor import GroupAdaptor
+from flywheel_adaptor.project_adaptor import ProjectAdaptor
 from projects.template_project import TemplateProject
 
 log = logging.getLogger(__name__)
 
 
-class CenterGroup:
+class CenterGroup(GroupAdaptor):
     """Defines an adaptor for a group representing a center."""
 
-    def __init__(self, *, group: flywheel.Group) -> None:
-        self.__group = group
+    def __init__(self, *, group: flywheel.Group, proxy: FlywheelProxy) -> None:
+        super().__init__(group=group, proxy=proxy)
         self.__datatypes: List[str] = []
         self.__ingest_stages = ['ingest', 'retrospective']
 
-    def __get_matching_projects(self, prefix: str) -> List[flywheel.Project]:
-        """Returns the ingest projects for the center.
+    def __get_matching_projects(self, prefix: str) -> List[ProjectAdaptor]:
+        """Returns the projects for the center with labels that match the
+        prefix.
 
         Returns:
-          a list of ingest projects for the group
+          the list of matching projects for the group
         """
         pattern = re.compile(rf"^{prefix}")
         return [
-            project for project in self.__group.projects
+            ProjectAdaptor(project=project, proxy=self.__fw)
+            for project in self.__group.projects
             if pattern.match(project.label)
         ]
+
+    def get_ingest_projects(self) -> List[ProjectAdaptor]:
+        """Returns the ingest projects for the center.
+
+        Returns:
+          the list of ingest projects
+        """
+        projects: List[ProjectAdaptor] = []
+        for stage in self.__ingest_stages:
+            projects = projects + self.__get_matching_projects(f"{stage}-")
+
+        return projects
+
+    def get_accepted_project(self) -> Optional[ProjectAdaptor]:
+        """Returns the accepted project for this center.
+
+        Returns:
+          the project labeled 'accepted', None if there is none
+        """
+        projects = self.__get_matching_projects('accepted')
+        if not projects:
+            return None
+
+        return projects[0]
+
+    def get_metadata_project(self) -> Optional[ProjectAdaptor]:
+        """Returns the metadata project for this center.
+
+        Returns:
+          the project labeled 'metadata', None if there is none
+        """
+        projects = self.__get_matching_projects('metadata')
+        if not projects:
+            return None
+
+        return projects[0]
 
     @classmethod
     def get_datatype(cls, *, stage: str, label: str) -> Optional[str]:

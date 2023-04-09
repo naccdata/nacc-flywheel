@@ -11,7 +11,8 @@ from flywheel.models.file_entry import FileEntry
 from flywheel.models.fixed_input import FixedInput
 from flywheel.models.gear_rule import GearRule
 from flywheel.models.gear_rule_input import GearRuleInput
-from projects.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.project_adaptor import ProjectAdaptor
 
 log = logging.getLogger()
 
@@ -32,7 +33,7 @@ class TemplateProject:
         self.__source_project = project
         self.__rules: List[GearRule] = []
 
-    def copy_to(self, destination: flywheel.Project) -> None:
+    def copy_to(self, destination: ProjectAdaptor) -> None:
         """Copies all gear rules from the source project of the template to the
         destination project.
 
@@ -52,7 +53,18 @@ class TemplateProject:
                 return
 
         assert self.__rules
+        self.copy_rules(destination)
 
+        self.copy_users(destination)
+
+    def copy_rules(self, destination: ProjectAdaptor) -> None:
+        """Performs copy of gear rules to destination.
+
+        Removes any conflicting rules from the destination.
+
+        Args:
+          destination: the destination project
+        """
         self.__clean_up_rules(destination)
 
         for rule in self.__rules:
@@ -62,17 +74,26 @@ class TemplateProject:
                                                    destination=destination)
             gear_rule_input = self.__create_gear_rule_input(
                 rule=rule, fixed_inputs=fixed_inputs)
-            self.__fw.add_project_gear_rule(project=destination,
-                                            rule_input=gear_rule_input)
+            destination.add_gear_rule(rule_input=gear_rule_input)
 
-    def __clean_up_rules(self, destination: flywheel.Project) -> None:
+    def copy_users(self, destination: ProjectAdaptor) -> None:
+        """Copies users from this project to the destination.
+
+        Args:
+          destination: the destination project
+        """
+        role_assignments = self.__source_project.permissions
+        for role_assignment in role_assignments:
+            destination.add_user_roles(role_assignment)
+
+    def __clean_up_rules(self, destination: ProjectAdaptor) -> None:
         """Remove any gear rules from destination that are not in this
         template.
 
         Args:
           destination: the detination project
         """
-        destination_rules = self.__fw.get_project_gear_rules(destination)
+        destination_rules = destination.get_gear_rules()
         if not destination_rules:
             return
 
@@ -82,8 +103,7 @@ class TemplateProject:
             if rule.name not in template_rulenames:
                 log.info('removing rule %s, not in template %s', rule.name,
                          self.__source_project.label)
-                self.__fw.remove_project_gear_rule(project=destination,
-                                                   rule=rule)
+                destination.remove_gear_rule(rule=rule)
 
     def __map_fixed_inputs(self, *, inputs: List[FixedInput],
                            destination: flywheel.Project) -> List[FixedInput]:
@@ -112,7 +132,7 @@ class TemplateProject:
         return dest_inputs
 
     @staticmethod
-    def __copy_file(file: FileEntry, destination: flywheel.Project) -> None:
+    def __copy_file(file: FileEntry, destination: ProjectAdaptor) -> None:
         """Copies the file to the destination project.
 
         Args:

@@ -11,13 +11,14 @@ published - boolean indicating whether data is to be published
 import logging
 import sys
 
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.group_adaptor import GroupAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.arguments import build_parser_with_input
 from inputs.context_parser import parse_config
 from inputs.environment import get_api_key
 from inputs.yaml import get_object_list
 from project_main import run
-from projects.flywheel_proxy import FlywheelProxy
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -74,17 +75,17 @@ def main():
     admin_group = None
     groups = flywheel_proxy.find_groups(admin_group_name)
     if groups:
-        admin_group = groups[0]
+        admin_group = GroupAdaptor(group=groups[0], proxy=flywheel_proxy)
     else:
         log.warning("Admin group %s not found", admin_group_name)
 
-    admin_users = []
+    admin_access = []
     if admin_group:
-        admin_users = flywheel_proxy.get_group_users(admin_group, role='admin')
+        admin_access = admin_group.get_user_access()
 
     run(proxy=flywheel_proxy,
         project_list=project_list,
-        admin_users=admin_users,
+        admin_access=admin_access,
         role_names=['curate', 'upload'])
 
 

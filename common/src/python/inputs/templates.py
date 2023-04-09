@@ -5,7 +5,7 @@ from collections import defaultdict
 from typing import Dict
 
 import flywheel
-from projects.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from projects.template_project import TemplateProject
 
 log = logging.getLogger(__name__)

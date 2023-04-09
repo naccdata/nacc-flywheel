@@ -7,11 +7,11 @@ from typing import Any, Dict, List
 import flywheel
 import yaml
 from flywheel import FileSpec
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.arguments import build_parser_with_output
 from inputs.context_parser import parse_config
 from inputs.environment import get_api_key, get_environment_variable
-from projects.flywheel_proxy import FlywheelProxy
 from redcap.nacc_directory import UserDirectoryEntry
 from redcap.redcap_connection import REDCapConnection, REDCapConnectionError
 

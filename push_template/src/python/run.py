@@ -2,12 +2,12 @@
 import logging
 import sys
 
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.arguments import build_base_parser
 from inputs.context_parser import parse_config
 from inputs.environment import get_api_key
 from inputs.templates import get_template_projects
-from projects.flywheel_proxy import FlywheelProxy
 from push_template_main import run
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)

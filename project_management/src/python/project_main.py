@@ -3,9 +3,10 @@
 import logging
 from typing import List
 
-import flywheel
+from flywheel.models.permission_access_permission import \
+    PermissionAccessPermission
 from flywheel.models.roles_role import RolesRole
-from projects.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from projects.project import Project
 from projects.project_mapping import ProjectMappingAdaptor
 
@@ -34,7 +35,7 @@ def get_roles(flywheel_proxy, role_names: List[str]) -> List[RolesRole]:
 
 
 def run(*, proxy: FlywheelProxy, project_list,
-        admin_users: List[flywheel.User], role_names: List[str]):
+        admin_access: List[PermissionAccessPermission], role_names: List[str]):
     """Runs project pipeline creation/management.
 
     Args:
@@ -50,6 +51,6 @@ def run(*, proxy: FlywheelProxy, project_list,
         project = Project.create(project_doc)
         project_mapper = ProjectMappingAdaptor(project=project,
                                                flywheel_proxy=proxy,
-                                               admin_users=admin_users,
+                                               admin_access=admin_access,
                                                center_roles=center_roles)
         project_mapper.create_project_pipelines()

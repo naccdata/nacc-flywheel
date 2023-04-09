@@ -1,11 +1,10 @@
 """Defines project creation functions for calls to Flywheel."""
 import logging
-from typing import List, Mapping, Optional, Union
+from typing import List, Mapping, Optional
 
 import flywheel  # type: ignore
 from flywheel.models.gear_rule_input import GearRuleInput
 from flywheel.models.roles_role import RolesRole
-from flywheel.models.roles_role_assignment import RolesRoleAssignment
 
 log = logging.getLogger(__name__)
 
@@ -197,125 +196,6 @@ class FlywheelProxy:
 
         self.__fw.add_role_to_group(group.id, role)
 
-    def add_project_permissions(self, *, project: flywheel.Project,
-                                user: flywheel.User, role: RolesRole) -> None:
-        """Adds the user with the role to the project.
-
-        Note: project and group permissions in the FW SDK use different types.
-
-        Args:
-          project: the project
-          user: the user to add
-          role: the user role to add
-        """
-        if self.__dry_run:
-            log.info("Dry Run: would add role %s to user %s for project %s",
-                     user.id, role.label, project.label)
-            return
-
-        permissions = [
-            permission for permission in project.permissions
-            if permission.id == user.id
-        ]
-
-        if not permissions:
-            log.info("User %s has no permissions for project %s, adding %s",
-                     user.id, project.label, role.label)
-            user_role = RolesRoleAssignment(id=user.id, role_ids=[role.id])
-            project.add_permission(user_role)
-            return
-
-        permission = permissions[0]
-        user_roles = permission.role_ids
-        if role.id in user_roles:
-            return
-        user_roles.append(role.id)
-        project.update_permission(user.id, {'role_ids': user_roles})
-
-    @classmethod
-    def add_group_permissions(cls, *, group: flywheel.Group,
-                              user: flywheel.User, access: str) -> None:
-        """Adds the user with the role to the group.
-
-        Note: project and group permissions in the FW SDK use different types.
-
-        Args:
-          group: the group
-          user: the user to add
-          access: the user role to add ('admin','rw','ro')
-        """
-        # if self.__dry_run:
-        #     log.info('Dry Run: would add access %s for user %s to group %s',
-        #              access, user.id, group.label)
-        #     return
-
-        permissions = [
-            permission for permission in group.permissions
-            if permission.id == user.id
-        ]
-        if not permissions:
-            group.add_permission({"access": access, "id": user.id})
-            return
-
-        group.update_permission(user.id, {"access": access})
-
-    def add_admin_users(self, *, obj: Union[flywheel.Group, flywheel.Project],
-                        users: List[flywheel.User]) -> None:
-        """Adds the users with admin role to the given group or project.
-
-        Args:
-          obj: group or project
-          users: list of users to be given admin role
-        """
-        admin_role = self.get_admin_role()
-        assert admin_role
-
-        if isinstance(obj, flywheel.Project):
-            for user in users:
-                self.add_project_permissions(project=obj,
-                                             user=user,
-                                             role=admin_role)
-            return
-
-        for user in users:
-            FlywheelProxy.add_group_permissions(group=obj,
-                                                user=user,
-                                                access='admin')
-
-    def get_group_users(self,
-                        group: flywheel.Group,
-                        *,
-                        role: Optional[str] = None) -> List[flywheel.User]:
-        """Gets the users for the named group.
-
-        Returns an empty list if the group does not exist or there are no
-        user roles.
-        If a role is specified, only the users with the role will be returned.
-
-        Args:
-          group_name: the group ID
-          role: (optional) the role id
-        Returns:
-          the list of users for the group
-        """
-        permissions = group.permissions
-        if not permissions:
-            return []
-
-        if role:
-            permissions = [
-                permission for permission in permissions
-                if role == permission.access
-            ]
-
-        user_ids = [permission.id for permission in permissions]
-        users = []
-        for user_id in user_ids:
-            user = self.find_users(user_id)[0]
-            if user:
-                users.append(user)
-        return users
-
     def get_project_gear_rules(
             self, project) -> List[flywheel.models.gear_rule.GearRule]:
         """Get the gear rules from the given project.
@@ -328,35 +208,9 @@ class FlywheelProxy:
         """
         return self.__fw.get_project_rules(project.id)
 
-    def add_project_gear_rule(self, *, project: flywheel.Project,
-                              rule_input: GearRuleInput) -> None:
-        """Adds the gear rule to the Flywheel project.
-
-        Replaces an existing rule with the same name.
-
-        Args:
-          project: the flywheel project
-          rule_input: the GearRuleInput for the gear
-        """
-        project_rules = self.get_project_gear_rules(project)
-        conflict = None
-        for rule in project_rules:
-            if rule.name == rule_input.name:
-                conflict = rule
-                break
-
-        if self.__dry_run:
-            if conflict:
-                log.info(
-                    'Dry Run: would remove conflicting '
-                    'rule %s from project %s', conflict.name, project.label)
-            log.info('Dry Run: would add gear rule %s to project %s',
-                     rule_input.name, project.label)
-            return
-
-        if conflict:
-            self.__fw.remove_project_rule(project.id, conflict.id)
-
+    def add_project_rule(self, *, project: flywheel.Project,
+                         rule_input: GearRuleInput) -> None:
+        """Forwards call to the FW client."""
         self.__fw.add_project_rule(project.id, rule_input)
 
     def remove_project_gear_rule(

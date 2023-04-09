@@ -1,10 +1,10 @@
 """Run method for user management."""
-from collections import defaultdict
 import logging
+from collections import defaultdict
 from typing import List
 
 import flywheel
-from projects.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from redcap.nacc_directory import UserDirectoryEntry
 
 log = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ def run(*, proxy: FlywheelProxy, user_list, admin_users: List[flywheel.User]):
     """does the work."""
 
     # ignore administrative users in directory
-    admin_map = { user.id : user for user in admin_users }
+    admin_map = {user.id: user for user in admin_users}
 
     # gather users by center
     center_prefix = 'adcid-'
@@ -29,11 +29,10 @@ def run(*, proxy: FlywheelProxy, user_list, admin_users: List[flywheel.User]):
     for center_tag, center_users in center_map.items():
         group_list = proxy.find_groups_by_tag(center_tag)
         if len(group_list) > 1:
-            log.error('Error: expecting only one center for tag %s', center_tag)
+            log.error('Error: expecting only one center for tag %s',
+                      center_tag)
             continue
         center_group = group_list[0]
 
         for project in center_group.projects:
             pass
-        
-

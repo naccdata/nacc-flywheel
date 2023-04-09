@@ -4,7 +4,7 @@ import logging
 from typing import Dict
 
 from centers.center_group import CenterGroup
-from projects.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from projects.template_project import TemplateProject
 
 log = logging.getLogger(__name__)
@@ -26,5 +26,5 @@ def run(*, proxy: FlywheelProxy, center_tag_pattern: str,
         return
 
     for group in group_list:
-        center = CenterGroup(group=group)
+        center = CenterGroup(group=group, proxy=proxy)
         center.apply_template_map(template_map)
