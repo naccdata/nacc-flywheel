@@ -23,6 +23,11 @@ class ProjectAdaptor:
         self.__fw = proxy
 
     @property
+    def id(self):
+        """Returns the ID of the enclosed project."""
+        return self.__project.id
+
+    @property
     def label(self):
         """Returns the label of the enclosed project."""
         return self.__project.label
@@ -35,6 +40,16 @@ class ProjectAdaptor:
         """
         if tag not in self.__project.tags:
             self.__project.add_tag(tag)
+
+    def get_file(self, name: str):
+        """Gets the file from the enclosed project.
+        
+        Args:
+          name: the file name
+        Returns:
+          the named file
+        """
+        return self.__project.get_file(name)
 
     def upload_file(self, file_spec: flywheel.FileSpec) -> None:
         """Uploads the indicated file to enclosed project.
