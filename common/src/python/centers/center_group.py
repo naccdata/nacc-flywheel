@@ -154,11 +154,6 @@ class CenterGroup(GroupAdaptor):
         Args:
           template_map: map from datatype to stage to template project
         """
-        datatypes = self.get_datatypes()
-        if not datatypes:
-            log.warning('no datatypes for center group %s', self.label)
-            return
-
         stage = 'accepted'
         accepted_projects = self.__get_matching_projects(stage)
         if not accepted_projects:
@@ -166,12 +161,12 @@ class CenterGroup(GroupAdaptor):
                         self.label)
             return
 
-        for datatype in datatypes:
-            stage_map = template_map.get(datatype)
-            if stage_map:
-                template_project = stage_map.get(stage)
-                if template_project:
-                    template_project.copy_to(accepted_projects[0])
+        datatype = 'all'
+        stage_map = template_map.get(datatype)
+        if stage_map:
+            template_project = stage_map.get(stage)
+            if template_project:
+                template_project.copy_to(accepted_projects[0])
 
     def apply_template_map(
             self, template_map: Dict[str, Dict[str, TemplateProject]]) -> None:
