@@ -34,5 +34,5 @@ def run(*, proxy: FlywheelProxy, user_list, admin_users: List[flywheel.User]):
             continue
         center_group = group_list[0]
 
-        for project in center_group.projects:
+        for project in center_group.projects():
             pass
