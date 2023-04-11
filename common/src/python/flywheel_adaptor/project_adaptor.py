@@ -22,6 +22,7 @@ class ProjectAdaptor:
         self.__project = project
         self.__fw = proxy
 
+    # pylint: disable=(invalid-name)
     @property
     def id(self):
         """Returns the ID of the enclosed project."""
@@ -43,7 +44,7 @@ class ProjectAdaptor:
 
     def get_file(self, name: str):
         """Gets the file from the enclosed project.
-        
+
         Args:
           name: the file name
         Returns:

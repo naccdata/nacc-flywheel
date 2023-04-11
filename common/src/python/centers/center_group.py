@@ -34,8 +34,7 @@ class CenterGroup(GroupAdaptor):
         pattern = re.compile(rf"^{prefix}")
         return [
             ProjectAdaptor(project=project, proxy=self.proxy())
-            for project in self.projects()
-            if pattern.match(project.label)
+            for project in self.projects() if pattern.match(project.label)
         ]
 
     def get_ingest_projects(self) -> List[ProjectAdaptor]:
@@ -129,8 +128,7 @@ class CenterGroup(GroupAdaptor):
         """
         ingest_projects = self.__get_matching_projects(f"{stage}-")
         if not ingest_projects:
-            log.warning('no ingest stage projects for group %s',
-                        self.label)
+            log.warning('no ingest stage projects for group %s', self.label)
             return
 
         for project in ingest_projects:

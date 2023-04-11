@@ -35,7 +35,7 @@ def get_template_projects(
                 datatype = match.group(1)
                 stage = match.group(2)
 
-                # TODO: stage list needs to come from project mapping
+                # TODO: stage list needs to come from elsewhere
                 if stage not in ['accepted', 'ingest', 'retrospective']:
                     log.error(
                         'unrecognized pipeline stage %s'

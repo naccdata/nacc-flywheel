@@ -15,11 +15,7 @@ log = logging.getLogger(__name__)
 class GroupAdaptor:
     """Defines an adaptor for a flywheel group."""
 
-    def __init__(
-            self,
-            *,
-            group: flywheel.Group,
-            proxy: FlywheelProxy) -> None:
+    def __init__(self, *, group: flywheel.Group, proxy: FlywheelProxy) -> None:
         self.__group = group
         self.__fw = proxy
 
@@ -27,7 +23,7 @@ class GroupAdaptor:
     def label(self) -> str:
         """Return the label of the group."""
         return self.__group.label
-    
+
     def proxy(self) -> FlywheelProxy:
         """Return the proxy for the flywheel instance."""
         return self.__fw
