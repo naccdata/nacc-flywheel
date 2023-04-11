@@ -106,7 +106,7 @@ class TemplateProject:
                 destination.remove_gear_rule(rule=rule)
 
     def __map_fixed_inputs(self, *, inputs: List[FixedInput],
-                           destination: flywheel.Project) -> List[FixedInput]:
+                           destination: ProjectAdaptor) -> List[FixedInput]:
         """Maps the given fixed inputs to inputs for the destination project.
 
         Args:
@@ -144,7 +144,7 @@ class TemplateProject:
         destination.upload_file(file_spec)
 
     @staticmethod
-    def __same_file_exists(file: FileEntry, project: flywheel.Project) -> bool:
+    def __same_file_exists(file: FileEntry, project: ProjectAdaptor) -> bool:
         """Determines whether the destination project has a file with the same
         name and hash value as the given file.
 
