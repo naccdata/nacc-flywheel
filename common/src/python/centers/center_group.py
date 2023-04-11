@@ -33,8 +33,8 @@ class CenterGroup(GroupAdaptor):
         """
         pattern = re.compile(rf"^{prefix}")
         return [
-            ProjectAdaptor(project=project, proxy=self.__fw)
-            for project in self.__group.projects
+            ProjectAdaptor(project=project, proxy=self.proxy())
+            for project in self.projects()
             if pattern.match(project.label)
         ]
 
@@ -130,7 +130,7 @@ class CenterGroup(GroupAdaptor):
         ingest_projects = self.__get_matching_projects(f"{stage}-")
         if not ingest_projects:
             log.warning('no ingest stage projects for group %s',
-                        self.__group.label)
+                        self.label)
             return
 
         for project in ingest_projects:
@@ -158,14 +158,14 @@ class CenterGroup(GroupAdaptor):
         """
         datatypes = self.get_datatypes()
         if not datatypes:
-            log.warning('no datatypes for center group %s', self.__group.label)
+            log.warning('no datatypes for center group %s', self.label)
             return
 
         stage = 'accepted'
         accepted_projects = self.__get_matching_projects(stage)
         if not accepted_projects:
             log.warning('no accepted stage project in center group %s',
-                        self.__group.label)
+                        self.label)
             return
 
         for datatype in datatypes:

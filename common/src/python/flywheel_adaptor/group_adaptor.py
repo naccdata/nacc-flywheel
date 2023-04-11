@@ -18,10 +18,23 @@ class GroupAdaptor:
     def __init__(
             self,
             *,
-            group: flywheel.Group,  # type: ignore
+            group: flywheel.Group,
             proxy: FlywheelProxy) -> None:
         self.__group = group
         self.__fw = proxy
+
+    @property
+    def label(self) -> str:
+        """Return the label of the group."""
+        return self.__group.label
+    
+    def proxy(self) -> FlywheelProxy:
+        """Return the proxy for the flywheel instance."""
+        return self.__fw
+
+    def projects(self) -> List[flywheel.Project]:
+        """Return projects for the group."""
+        return self.__group.projects()
 
     def get_tags(self) -> str:
         """Return the list of tags for the group.
