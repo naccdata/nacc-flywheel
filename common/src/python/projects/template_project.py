@@ -4,6 +4,7 @@ the template, to other projects.
 Based on code written by David Parker, davidparker@flywheel.io
 """
 import logging
+from string import Template
 from typing import List
 
 import flywheel
@@ -54,8 +55,8 @@ class TemplateProject:
 
         assert self.__rules
         self.copy_rules(destination)
-
         self.copy_users(destination)
+        self.copy_description(destination)
 
     def copy_rules(self, destination: ProjectAdaptor) -> None:
         """Performs copy of gear rules to destination.
@@ -85,6 +86,21 @@ class TemplateProject:
         role_assignments = self.__source_project.permissions
         for role_assignment in role_assignments:
             destination.add_user_roles(role_assignment)
+
+    def copy_description(self, destination: ProjectAdaptor) -> None:
+        """Copies description from this project to the destination.
+
+        Args:
+          destination: the destination project
+        """
+        template_text = self.__source_project.description
+        if not template_text:
+            log.info('no description found in %s project', self.__source_project.label)
+            return
+        
+        template = Template(template_text)
+        description = template.substitute(adrc='BLAH')
+        
 
     def __clean_up_rules(self, destination: ProjectAdaptor) -> None:
         """Remove any gear rules from destination that are not in this
