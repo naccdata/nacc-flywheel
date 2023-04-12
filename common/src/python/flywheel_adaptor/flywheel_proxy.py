@@ -3,8 +3,11 @@ import logging
 from typing import List, Mapping, Optional
 
 import flywheel  # type: ignore
+from flywheel.models.container_id_view_input import ContainerIdViewInput
+from flywheel.models.data_view import DataView
 from flywheel.models.gear_rule_input import GearRuleInput
 from flywheel.models.roles_role import RolesRole
+from flywheel.models.view_id_output import ViewIdOutput
 
 log = logging.getLogger(__name__)
 
@@ -228,3 +231,33 @@ class FlywheelProxy:
             return
 
         self.__fw.remove_project_rule(project.id, rule.id)
+
+    def get_dataviews(self, project: flywheel.Project) -> List[DataView]:
+        """Get the dataviews for the project.
+
+        Args:
+          project: the project
+        Returns:
+          the dataviews for the project
+        """
+        return self.__fw.get_views(project.id)
+
+    def add_dataview(self, *, project: flywheel.Project,
+                     viewinput: ContainerIdViewInput) -> ViewIdOutput:
+        """Adds the data view to the enclosed project.
+
+        Args:
+          project: the project to which to add the data view
+          viewinput: the object representing the data view
+        """
+        return self.__fw.add_view(project.id, viewinput)
+
+    def modify_dataview(self, *, source: DataView,
+                        destination: DataView) -> None:
+        """Updates the destination data view by copying from the source view.
+
+        Args:
+          source: the source DataView
+          destination: the modified DataView
+        """
+        self.__fw.modify_view(destination.id, source)
