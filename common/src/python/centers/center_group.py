@@ -138,11 +138,10 @@ class CenterGroup(GroupAdaptor):
                 log.info('ingest project %s has no datatype', project.label)
                 continue
 
-            stage_map = template_map.get(datatype)
-            if stage_map:
-                template_project = stage_map.get(stage)
-                if template_project:
-                    template_project.copy_to(project)
+            self.__apply_to(stage=stage,
+                            template_map=template_map,
+                            project=project,
+                            datatype=datatype)
 
     def apply_to_accepted(
             self, template_map: Dict[str, Dict[str, TemplateProject]]) -> None:
@@ -161,12 +160,28 @@ class CenterGroup(GroupAdaptor):
                         self.label)
             return
 
-        datatype = 'all'
+        self.__apply_to(template_map=template_map,
+                        project=accepted_projects[0],
+                        stage=stage,
+                        datatype='all')
+
+    def __apply_to(self, *, template_map: Dict[str, Dict[str,
+                                                         TemplateProject]],
+                   project: ProjectAdaptor, stage: str, datatype: str):
+        """Applies the template map to the project for stage and datatype.
+
+        Args:
+          template_map: map from datatype to stage to template project
+          project: the destination project
+          stage: the stage for the destination
+          datatype: the datatype for the destination
+        """
         stage_map = template_map.get(datatype)
         if stage_map:
             template_project = stage_map.get(stage)
             if template_project:
-                template_project.copy_to(accepted_projects[0])
+                template_project.copy_to(
+                    project, value_map={'adrc': self.__group.label})
 
     def apply_template_map(
             self, template_map: Dict[str, Dict[str, TemplateProject]]) -> None:

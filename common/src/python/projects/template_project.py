@@ -5,7 +5,7 @@ Based on code written by David Parker, davidparker@flywheel.io
 """
 import logging
 from string import Template
-from typing import List
+from typing import Dict, List, Optional
 
 import flywheel
 from flywheel.models.file_entry import FileEntry
@@ -34,7 +34,10 @@ class TemplateProject:
         self.__source_project = project
         self.__rules: List[GearRule] = []
 
-    def copy_to(self, destination: ProjectAdaptor) -> None:
+    def copy_to(self,
+                destination: ProjectAdaptor,
+                *,
+                value_map: Optional[Dict[str, str]] = None) -> None:
         """Copies all gear rules from the source project of the template to the
         destination project.
 
@@ -42,6 +45,20 @@ class TemplateProject:
 
         Args:
           destination: project to copy to
+          value_map: optional map for substitutions for description template
+        """
+        self.copy_rules(destination)
+        self.copy_users(destination)
+        if value_map:
+            self.copy_description(destination=destination, values=value_map)
+
+    def copy_rules(self, destination: ProjectAdaptor) -> None:
+        """Performs copy of gear rules to destination.
+
+        Removes any conflicting rules from the destination.
+
+        Args:
+          destination: the destination project
         """
         if not self.__rules:
             log.info('loading rules for template project %s',
@@ -54,18 +71,7 @@ class TemplateProject:
                 return
 
         assert self.__rules
-        self.copy_rules(destination)
-        self.copy_users(destination)
-        self.copy_description(destination)
 
-    def copy_rules(self, destination: ProjectAdaptor) -> None:
-        """Performs copy of gear rules to destination.
-
-        Removes any conflicting rules from the destination.
-
-        Args:
-          destination: the destination project
-        """
         self.__clean_up_rules(destination)
 
         for rule in self.__rules:
@@ -87,20 +93,23 @@ class TemplateProject:
         for role_assignment in role_assignments:
             destination.add_user_roles(role_assignment)
 
-    def copy_description(self, destination: ProjectAdaptor) -> None:
+    def copy_description(self, *, destination: ProjectAdaptor,
+                         values: Dict[str, str]) -> None:
         """Copies description from this project to the destination.
 
         Args:
           destination: the destination project
+          values: value map for substitutions into description template
         """
         template_text = self.__source_project.description
         if not template_text:
-            log.info('no description found in %s project', self.__source_project.label)
+            log.info('no description found in %s project',
+                     self.__source_project.label)
             return
-        
+
         template = Template(template_text)
-        description = template.substitute(adrc='BLAH')
-        
+        description = template.substitute(values)
+        destination.set_description(description)
 
     def __clean_up_rules(self, destination: ProjectAdaptor) -> None:
         """Remove any gear rules from destination that are not in this
