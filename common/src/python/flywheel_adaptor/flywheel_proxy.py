@@ -258,6 +258,6 @@ class FlywheelProxy:
 
         Args:
           source: the source DataView
-          destination: the modified DataView
+          destination: the DataView to modify
         """
         self.__fw.modify_view(destination.id, source)
