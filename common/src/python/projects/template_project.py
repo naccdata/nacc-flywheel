@@ -13,6 +13,7 @@ from flywheel.models.file_entry import FileEntry
 from flywheel.models.fixed_input import FixedInput
 from flywheel.models.gear_rule import GearRule
 from flywheel.models.gear_rule_input import GearRuleInput
+from flywheel.models.viewer_app import ViewerApp
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.project_adaptor import ProjectAdaptor
 
@@ -35,6 +36,7 @@ class TemplateProject:
         self.__source_project = project
         self.__rules: List[GearRule] = []
         self.__dataviews: List[DataView] = []
+        self.__apps: List[ViewerApp]
 
     def copy_to(self,
                 destination: ProjectAdaptor,
@@ -53,6 +55,28 @@ class TemplateProject:
         self.copy_users(destination)
         if value_map:
             self.copy_description(destination=destination, values=value_map)
+        self.copy_apps(destination)
+
+    def copy_apps(self, destination: ProjectAdaptor) -> None:
+        """Performs copy of viewer apps to the destination.
+
+        Replaces any existing apps in the destination project.
+
+        Args:
+          destination: the destination project
+        """
+        if not self.__apps:
+            log.info('loading apps for template project %s',
+                     self.__source_project.label)
+            self.__apps = self.__fw.get_project_apps(self.__source_project)
+            if not self.__apps:
+                log.warning('template %s has no apps, skipping',
+                            self.__source_project.label)
+                return
+
+        assert self.__apps
+
+        destination.set_apps(self.__apps)
 
     def copy_rules(self, destination: ProjectAdaptor) -> None:
         """Performs copy of gear rules to destination.
@@ -271,8 +295,8 @@ class TemplateProject:
             "group_by", "include_ids", "include_labels",
             "missing_data_strategy"
         ]
-        for property in properties:
-            if first.get(property) != second.get(property):
+        for view_property in properties:
+            if first.get(view_property) != second.get(view_property):
                 return False
 
         return True

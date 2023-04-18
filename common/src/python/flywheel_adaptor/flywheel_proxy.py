@@ -8,6 +8,7 @@ from flywheel.models.data_view import DataView
 from flywheel.models.gear_rule_input import GearRuleInput
 from flywheel.models.roles_role import RolesRole
 from flywheel.models.view_id_output import ViewIdOutput
+from flywheel.models.viewer_app import ViewerApp
 
 log = logging.getLogger(__name__)
 
@@ -274,3 +275,29 @@ class FlywheelProxy:
         """
         result = self.__fw.delete_view(view.id)
         return bool(result.deleted)
+
+    def get_project_apps(self, project: flywheel.Project) -> List[ViewerApp]:
+        """Returns the viewer apps for the project.
+
+        Args:
+          project: the project
+        Returns:
+          The list of apps for the project
+        """
+        settings = self.__fw.get_project_settings(project.id)
+        if not settings:
+            return []
+
+        return settings.viewer_apps
+
+    def set_project_apps(self, *, project: flywheel.Project,
+                         apps: List[ViewerApp]):
+        """Sets the apps to the project settings to the list of apps.
+
+        Note: this will replace any existing apps
+
+        Args:
+          project: the project
+          apps: the list of viewer apps
+        """
+        self.__fw.modify_project_settings(project.id, {"viewer_apps": apps})
