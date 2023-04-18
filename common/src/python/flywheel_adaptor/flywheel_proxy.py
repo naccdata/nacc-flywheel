@@ -256,8 +256,21 @@ class FlywheelProxy:
                         destination: DataView) -> None:
         """Updates the destination data view by copying from the source view.
 
+        NOTE: This call doesn't appear to work as expected, so use with caution
+
         Args:
           source: the source DataView
           destination: the DataView to modify
         """
         self.__fw.modify_view(destination.id, source)
+
+    def delete_dataview(self, view: DataView) -> bool:
+        """Removes the indicated dataview.
+        
+        Args:
+          view: the dataview to remove
+        Returns:
+          True if the dataview is deleted, False otherwise
+        """
+        result = self.__fw.delete_view(view.id)
+        return bool(result.deleted)
