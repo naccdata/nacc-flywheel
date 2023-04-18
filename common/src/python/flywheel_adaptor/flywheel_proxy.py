@@ -266,7 +266,7 @@ class FlywheelProxy:
 
     def delete_dataview(self, view: DataView) -> bool:
         """Removes the indicated dataview.
-        
+
         Args:
           view: the dataview to remove
         Returns:

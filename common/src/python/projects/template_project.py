@@ -133,9 +133,9 @@ class TemplateProject:
         for dataview in self.__dataviews:
             destination_dataview = destination.get_dataview(dataview.label)
             if destination_dataview:
-              if self.__equal_views(destination_dataview, dataview):
-                  return
-              self.__fw.delete_dataview(destination_dataview)
+                if self.__equal_views(destination_dataview, dataview):
+                    return
+                self.__fw.delete_dataview(destination_dataview)
 
             destination.add_dataview(dataview)
 
