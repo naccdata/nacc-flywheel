@@ -1,5 +1,7 @@
 # Development Guide 
 
+This is the development guide for the NACC flywheel gear extensions repo.
+
 ## Directory structure
 
 ```bash
@@ -9,12 +11,16 @@
 │   └── test
 ├── docs
 │   ├── development
+│   ├── directory_pull
 │   ├── index.md
 │   ├── project_management
+│   ├── push_template
 │   └── user_management
-├── mypy.ini
 ├── project_management  # script for managing NACC projects
 │   ├── data
+│   ├── src
+│   └── test
+├── push_template
 │   ├── src
 │   └── test
 ├── user_management     # script for managing project users
@@ -22,6 +28,7 @@
 │   ├── src
 │   └── test
 ├── dist                # Directory containing distributions built by Pants
+├── mypy.ini
 ├── pants               # Pants script
 ├── pants.toml          # Pants configuration
 ├── python-default.lock # dependency lock file
@@ -55,10 +62,89 @@ To add a new project
     ```bash
     bash bin/new_gear.sh <new-project-name>
     ```
+
+    This will create a directory with the name given and the structure
+
+    ```bash
+    .
+    ├── src
+    │   ├── docker
+    │   │   ├── BUILD
+    │   │   ├── Dockerfile
+    │   │   └── manifest.json
+    │   └── python
+    │       ├── BUILD
+    │       └── run.py
+    └── test
+        └── python
+    ```
+    
 2. Add configuration for new code/directories
+
     ```bash
     ./pants tailor ::
     ```
+
+    this will add a `BUILD` file in the `src/docker` and `src/python` subdirectories.
+
+3. Edit the BUILD files
+
+   The python BUILD file will look like
+
+   ```python
+   python_sources(name="project_app", )
+
+   pex_binary(name="bin", entry_point="run.py")
+   ```
+
+   Replace `project_app` with the new app name.
+
+   The docker BUILD file should look like 
+
+   ```python
+   file(name="manifest", source="manifest.json")
+
+   docker_image(name="project-management",
+                source="Dockerfile",
+                dependencies=[":manifest", "project_management/src/python:bin"],
+                image_tags=["0.0.1", "latest"])
+   ```
+
+   where you should replace the `project-management` image name, and `project_management` directory name.
+
+4. Edit the docker file so that it has the content
+
+   ```docker
+   FROM python:3.10
+
+   ENV BASE_DIR=/flywheel/v0
+   RUN mkdir -p ${BASE_DIR}/input
+
+   WORKDIR ${BASE_DIR}
+
+   COPY project_management/src/docker/manifest.json ${BASE_DIR}
+   COPY project_management.src.python/bin.pex /bin/run
+
+   ENTRYPOINT [ "/bin/run" ]
+   ```
+
+   where `project_management` is replaced with the directory of your new project.
+
+4. Edit the manifest.
+
+   For the manifest, copy the file from an existing project. 
+   At the top level, change the `name`, `label`, `description`, `version`, `author`.
+   Under `custom.gear-builder` update `image` with the information from the `docker/BUILD` file.
+   Then make any changes needed for the command line arguments to `inputs` and `config`.
+   These details should match up with the information used by your `run.py` script to get parameters.
+
+### Adding common code
+
+If you need to add a file to the common library, either place it in the current subdirectory for the package that makes the most sense.
+
+If you need to create a new package structure, add the subdirectory with the code, add an `__init__.py` file, and then run `pants tailor ::` like above.
+Make sure the BUILD file contains the line `python_sources(name="lib")`
+
 
 ### Adding new dependencies
 
@@ -122,7 +208,7 @@ If you add new python dependencies
     ./pants run project_management/src/docker::
     ```
 
-Note: don't use `./pants publish` with Gears, need to use the `fw gear` commands to push to the FW instance instead.
+Note: don't use `./pants publish` with Gears, you need to use the `fw gear` commands to push to the FW instance instead.
 
 ### Working with a gear
 
