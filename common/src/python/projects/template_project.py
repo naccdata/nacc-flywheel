@@ -124,7 +124,7 @@ class TemplateProject:
                      self.__source_project.label)
             self.__dataviews = self.__fw.get_dataviews(self.__source_project)
             if not self.__dataviews:
-                log.warning('template %s has not dataviews',
+                log.warning('template %s has no dataviews',
                             self.__source_project.label)
                 return
 
