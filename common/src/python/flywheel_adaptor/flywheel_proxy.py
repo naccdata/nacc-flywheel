@@ -3,7 +3,8 @@ import logging
 from typing import List, Mapping, Optional
 
 import flywheel  # type: ignore
-from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput, RolesRole, ViewerApp, ViewIdOutput)
+from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
+                      RolesRole, ViewerApp, ViewIdOutput)
 
 log = logging.getLogger(__name__)
 
