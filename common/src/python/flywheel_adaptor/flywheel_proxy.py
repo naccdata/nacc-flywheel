@@ -3,8 +3,7 @@ import logging
 from typing import List, Mapping, Optional
 
 import flywheel  # type: ignore
-from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
-                      RolesRole, ViewerApp, ViewIdOutput)
+from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput, RolesRole, ViewerApp, ViewIdOutput)
 
 log = logging.getLogger(__name__)
 
@@ -251,13 +250,17 @@ class FlywheelProxy:
                         destination: DataView) -> None:
         """Updates the destination data view by copying from the source view.
 
-        NOTE: This call doesn't appear to work as expected, so use with caution
-
         Args:
           source: the source DataView
           destination: the DataView to modify
         """
+        temp_id = source._id  # pylint: disable=(protected-access)
+        temp_parent = source.parent
+        source._id = None  # pylint: disable=(protected-access)
+        source.parent = destination.parent
         self.__fw.modify_view(destination.id, source)
+        source._id = temp_id  # pylint: disable=(protected-access)
+        source.parent = temp_parent
 
     def delete_dataview(self, view: DataView) -> bool:
         """Removes the indicated dataview.
