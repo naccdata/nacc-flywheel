@@ -8,10 +8,7 @@ from string import Template
 from typing import Dict, List, Optional
 
 import flywheel
-from flywheel.models.file_entry import FileEntry
-from flywheel.models.fixed_input import FixedInput
-from flywheel.models.gear_rule import GearRule
-from flywheel.models.gear_rule_input import GearRuleInput
+from flywheel import DataView, FileEntry, FixedInput, GearRule, GearRuleInput
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.project_adaptor import ProjectAdaptor
 
@@ -33,6 +30,7 @@ class TemplateProject:
         self.__fw = proxy
         self.__source_project = project
         self.__rules: List[GearRule] = []
+        self.__dataviews: List[DataView] = []
 
     def copy_to(self,
                 destination: ProjectAdaptor,
@@ -110,6 +108,33 @@ class TemplateProject:
         template = Template(template_text)
         description = template.substitute(values)
         destination.set_description(description)
+
+    def copy_dataviews(self, *, destination: ProjectAdaptor) -> None:
+        """Copies the dataviews from this project to the destination.
+
+        Args:
+          destination: the destination project
+        """
+        if not self.__dataviews:
+            log.info('copying dataviews for the template %s',
+                     self.__source_project.label)
+            self.__dataviews = self.__fw.get_dataviews(self.__source_project)
+            if not self.__dataviews:
+                log.warning('template %s has no dataviews',
+                            self.__source_project.label)
+                return
+
+        # TODO: cleanup dataviews?
+
+        for dataview in self.__dataviews:
+            destination_dataview = destination.get_dataview(dataview.label)
+            if destination_dataview:
+                if self.__equal_views(destination_dataview, dataview):
+                    return
+                # TODO: decide whether to modify instead?
+                self.__fw.delete_dataview(destination_dataview)
+
+            destination.add_dataview(dataview)
 
     def __clean_up_rules(self, destination: ProjectAdaptor) -> None:
         """Remove any gear rules from destination that are not in this
@@ -224,3 +249,27 @@ class TemplateProject:
             disabled=rule.disabled,
             compute_provider_id=rule.compute_provider_id,
             triggering_input=rule.triggering_input)
+
+    @staticmethod
+    def __equal_views(first: DataView, second: DataView) -> bool:
+        """Checks whether the first and second dataviews are equivalent.
+
+        Checks properties: columns, label, sort, error_colum, file_spec,
+        filter, group_by, include_ids, include_labels, missing_data_strategy
+
+        Args:
+          first: a dataview
+          second: a dataview
+        Returns:
+          True if views are equivalent on listed properties, False otherwise
+        """
+        properties = [
+            "columns", "label", "sort", "error_column", "file_spec", "filter",
+            "group_by", "include_ids", "include_labels",
+            "missing_data_strategy"
+        ]
+        for property in properties:
+            if first.get(property) != second.get(property):
+                return False
+
+        return True

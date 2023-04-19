@@ -3,8 +3,8 @@ import logging
 from typing import List, Mapping, Optional
 
 import flywheel  # type: ignore
-from flywheel.models.gear_rule_input import GearRuleInput
-from flywheel.models.roles_role import RolesRole
+from flywheel import (ContainerIdViewInput, DataView, GearRuleInput, RolesRole,
+                      ViewIdOutput)
 
 log = logging.getLogger(__name__)
 
@@ -228,3 +228,50 @@ class FlywheelProxy:
             return
 
         self.__fw.remove_project_rule(project.id, rule.id)
+
+    def get_dataviews(self, project: flywheel.Project) -> List[DataView]:
+        """Get the dataviews for the project.
+
+        Args:
+          project: the project
+        Returns:
+          the dataviews for the project
+        """
+        return self.__fw.get_views(project.id)
+
+    def add_dataview(self, *, project: flywheel.Project,
+                     viewinput: ContainerIdViewInput) -> ViewIdOutput:
+        """Adds the data view to the enclosed project.
+
+        Args:
+          project: the project to which to add the data view
+          viewinput: the object representing the data view
+        """
+        return self.__fw.add_view(project.id, viewinput)
+
+    def modify_dataview(self, *, source: DataView,
+                        destination: DataView) -> None:
+        """Updates the destination data view by copying from the source view.
+
+        Args:
+          source: the source DataView
+          destination: the DataView to modify
+        """
+        temp_id = source._id  # pylint: disable=(protected-access)
+        temp_parent = source.parent
+        source._id = None  # pylint: disable=(protected-access)
+        source.parent = destination.parent
+        self.__fw.modify_view(destination.id, source)
+        source._id = temp_id  # pylint: disable=(protected-access)
+        source.parent = temp_parent
+
+    def delete_dataview(self, view: DataView) -> bool:
+        """Removes the indicated dataview.
+
+        Args:
+          view: the dataview to remove
+        Returns:
+          True if the dataview is deleted, False otherwise
+        """
+        result = self.__fw.delete_view(view.id)
+        return bool(result.deleted)

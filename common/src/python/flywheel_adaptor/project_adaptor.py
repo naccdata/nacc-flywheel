@@ -1,14 +1,11 @@
 """Defines adaptor class for flywheel.Project."""
 
 import logging
-from typing import List
+from typing import List, Optional
 
 import flywheel
-from flywheel.models.gear_rule import GearRule
-from flywheel.models.gear_rule_input import GearRuleInput
-from flywheel.models.permission_access_permission import \
-    PermissionAccessPermission
-from flywheel.models.roles_role_assignment import RolesRoleAssignment
+from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
+                      PermissionAccessPermission, RolesRoleAssignment)
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 log = logging.getLogger(__name__)
@@ -160,3 +157,54 @@ class ProjectAdaptor:
           rule: the rule to remove
         """
         self.__fw.remove_project_gear_rule(project=self.__project, rule=rule)
+
+    def get_dataviews(self) -> List[DataView]:
+        """Returns the list of dataviews for the project.
+
+        Returns:
+          the dataviews in the enclosed project
+        """
+        return self.__fw.get_dataviews(self.__project)
+
+    def get_dataview(self, label: str) -> Optional[DataView]:
+        """Returns the dataview in the project with the label.
+
+        Args:
+          label: the label for the desired dataview
+        Returns:
+          the dataview with matching label, None otherwise
+        """
+        dataviews = self.get_dataviews()
+        for dataview in dataviews:
+            if label == dataview.label:
+                return dataview
+
+        return None
+
+    def add_dataview(self, dataview: DataView) -> str:
+        """Adds the dataview to the enclosed project.
+
+        Args:
+          dataview: the DataView to add
+        """
+
+        # Copy the dataview into a ContainerIdViewInput
+        # which is required to add the dataview
+        # copying all of the properties but "origin"
+        view_template = ContainerIdViewInput(
+            parent=dataview.parent,
+            label=dataview.label,
+            description=dataview.description,
+            columns=dataview.columns,
+            group_by=dataview.group_by,
+            filter=dataview.filter,
+            file_spec=dataview.file_spec,
+            include_ids=dataview.include_ids,
+            include_labels=dataview.include_labels,
+            error_column=dataview.error_column,
+            missing_data_strategy=dataview.missing_data_strategy,
+            sort=dataview.sort,
+            id=dataview.id)
+        view_id = self.__fw.add_dataview(project=self.__project,
+                                         viewinput=view_template)
+        return view_id.id

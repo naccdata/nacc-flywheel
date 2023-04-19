@@ -28,9 +28,7 @@ from typing import Dict, List, Optional
 
 import flywheel  # type: ignore
 from centers.center_group import CenterGroup
-from flywheel.models.permission_access_permission import \
-    PermissionAccessPermission
-from flywheel.models.roles_role import RolesRole
+from flywheel import PermissionAccessPermission, RolesRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.group_adaptor import GroupAdaptor
 from flywheel_adaptor.project_adaptor import ProjectAdaptor
