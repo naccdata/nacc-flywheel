@@ -131,6 +131,7 @@ class TemplateProject:
             if destination_dataview:
                 if self.__equal_views(destination_dataview, dataview):
                     return
+                # TODO: decide whether to modify instead?
                 self.__fw.delete_dataview(destination_dataview)
 
             destination.add_dataview(dataview)
