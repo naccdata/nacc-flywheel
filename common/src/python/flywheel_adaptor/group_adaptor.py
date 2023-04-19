@@ -4,9 +4,7 @@ import logging
 from typing import List, Optional
 
 import flywheel
-from flywheel.models.permission_access_permission import \
-    PermissionAccessPermission
-from flywheel.models.roles_role import RolesRole
+from flywheel import PermissionAccessPermission, RolesRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 log = logging.getLogger(__name__)

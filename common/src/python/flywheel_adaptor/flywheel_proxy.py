@@ -3,8 +3,8 @@ import logging
 from typing import List, Mapping, Optional
 
 import flywheel  # type: ignore
-from flywheel import (ContainerIdViewInput, DataView, GearRuleInput, RolesRole,
-                      ViewerApp, ViewIdOutput)
+from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
+                      RolesRole, ViewerApp, ViewIdOutput)
 
 log = logging.getLogger(__name__)
 
@@ -196,8 +196,7 @@ class FlywheelProxy:
 
         self.__fw.add_role_to_group(group.id, role)
 
-    def get_project_gear_rules(
-            self, project) -> List[flywheel.models.gear_rule.GearRule]:
+    def get_project_gear_rules(self, project) -> List[GearRule]:
         """Get the gear rules from the given project.
 
         Args:
@@ -213,9 +212,8 @@ class FlywheelProxy:
         """Forwards call to the FW client."""
         self.__fw.add_project_rule(project.id, rule_input)
 
-    def remove_project_gear_rule(
-            self, *, project: flywheel.Project,
-            rule: flywheel.models.gear_rule.GearRule) -> None:
+    def remove_project_gear_rule(self, *, project: flywheel.Project,
+                                 rule: GearRule) -> None:
         """Removes the gear rule from the project.
 
         Args:
