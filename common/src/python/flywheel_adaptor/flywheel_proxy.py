@@ -161,7 +161,7 @@ class FlywheelProxy:
             self.__roles = {role.label: role for role in all_roles}
         return self.__roles
 
-    def get_role(self, label) -> Optional[RolesRole]:
+    def get_role(self, label: str) -> Optional[RolesRole]:
         """Gets role with label.
 
         Args:
@@ -196,7 +196,7 @@ class FlywheelProxy:
 
         self.__fw.add_role_to_group(group.id, role)
 
-    def get_project_gear_rules(self, project) -> List[GearRule]:
+    def get_project_gear_rules(self, project: flywheel.Project) -> List[GearRule]:
         """Get the gear rules from the given project.
 
         Args:
@@ -235,7 +235,9 @@ class FlywheelProxy:
         Returns:
           the dataviews for the project
         """
-        return self.__fw.get_views(project.id)
+
+        dataviews = self.__fw.get_views(project.id)
+        return [view for view in dataviews if view.parent != "site"]
 
     def add_dataview(self, *, project: flywheel.Project,
                      viewinput: ContainerIdViewInput) -> ViewIdOutput:
