@@ -3,9 +3,7 @@
 import logging
 from typing import List
 
-from flywheel import \
-    PermissionAccessPermission
-from flywheel import RolesRole
+from flywheel import PermissionAccessPermission, RolesRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from projects.project import Project
 from projects.project_mapping import ProjectMappingAdaptor
