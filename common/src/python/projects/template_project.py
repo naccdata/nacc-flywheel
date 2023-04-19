@@ -8,11 +8,7 @@ from string import Template
 from typing import Dict, List, Optional
 
 import flywheel
-from flywheel.models.data_view import DataView
-from flywheel.models.file_entry import FileEntry
-from flywheel.models.fixed_input import FixedInput
-from flywheel.models.gear_rule import GearRule
-from flywheel.models.gear_rule_input import GearRuleInput
+from flywheel import DataView, FileEntry, FixedInput, GearRule, GearRuleInput
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.project_adaptor import ProjectAdaptor
 

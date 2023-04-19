@@ -4,13 +4,8 @@ import logging
 from typing import List, Optional
 
 import flywheel
-from flywheel.models.container_id_view_input import ContainerIdViewInput
-from flywheel.models.data_view import DataView
-from flywheel.models.gear_rule import GearRule
-from flywheel.models.gear_rule_input import GearRuleInput
-from flywheel.models.permission_access_permission import \
-    PermissionAccessPermission
-from flywheel.models.roles_role_assignment import RolesRoleAssignment
+from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
+                      PermissionAccessPermission, RolesRoleAssignment)
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 log = logging.getLogger(__name__)
