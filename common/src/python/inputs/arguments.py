@@ -36,6 +36,11 @@ def build_base_parser() -> argparse.ArgumentParser:
                         help='do a dry run to check input file',
                         default=False,
                         action='store_true')
+    parser.add_argument('-n',
+                        '--new_only',
+                        help='Whether to only add new centers',
+                        default=False,
+                        action='store_true')
     parser.add_argument('-a',
                         '--admin_group',
                         help='Group ID for the admin group',

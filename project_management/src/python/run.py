@@ -55,9 +55,11 @@ def main():
                                         filename=filename)
             admin_group_name = context_args['admin_group']
             dry_run = context_args['dry_run']
+            new_only = context_args['new_only']
             project_file = context_args[filename]
     else:
         dry_run = args.dry_run
+        new_only = args.new_only
         project_file = args.filename
         admin_group_name = args.admin_group
 
@@ -86,8 +88,8 @@ def main():
     run(proxy=flywheel_proxy,
         project_list=project_list,
         admin_access=admin_access,
-        role_names=['curate', 'upload'])
-
+        role_names=['curate', 'upload'],
+        new_only=new_only)
 
 if __name__ == "__main__":
     main()

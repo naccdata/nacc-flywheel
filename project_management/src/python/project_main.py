@@ -33,7 +33,8 @@ def get_roles(flywheel_proxy, role_names: List[str]) -> List[RolesRole]:
 
 
 def run(*, proxy: FlywheelProxy, project_list,
-        admin_access: List[PermissionAccessPermission], role_names: List[str]):
+        admin_access: List[PermissionAccessPermission], role_names: List[str],
+        new_only: bool = False):
     """Runs project pipeline creation/management.
 
     Args:
@@ -50,5 +51,6 @@ def run(*, proxy: FlywheelProxy, project_list,
         project_mapper = ProjectMappingAdaptor(project=project,
                                                flywheel_proxy=proxy,
                                                admin_access=admin_access,
-                                               center_roles=center_roles)
+                                               center_roles=center_roles,
+                                               new_only=new_only)
         project_mapper.create_project_pipelines()
