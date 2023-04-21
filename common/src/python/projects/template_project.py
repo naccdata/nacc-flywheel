@@ -32,7 +32,7 @@ class TemplateProject:
         self.__source_project = project
         self.__rules: List[GearRule] = []
         self.__dataviews: List[DataView] = []
-        self.__apps: List[ViewerApp]
+        self.__apps: List[ViewerApp] = []
 
     def copy_to(self,
                 destination: ProjectAdaptor,
