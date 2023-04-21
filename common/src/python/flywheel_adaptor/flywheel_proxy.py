@@ -196,7 +196,8 @@ class FlywheelProxy:
 
         self.__fw.add_role_to_group(group.id, role)
 
-    def get_project_gear_rules(self, project: flywheel.Project) -> List[GearRule]:
+    def get_project_gear_rules(self,
+                               project: flywheel.Project) -> List[GearRule]:
         """Get the gear rules from the given project.
 
         Args:

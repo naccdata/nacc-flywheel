@@ -162,7 +162,7 @@ class ProjectMappingAdaptor:
 
         release_group = self.get_release_group()
         assert release_group
-        project=release_group.get_project(label='master-project')
+        project = release_group.get_project(label='master-project')
         if not project:
             return None
 
@@ -177,7 +177,7 @@ class ProjectMappingAdaptor:
             return
 
         for center in self.__project.centers:
-            if 'new-center' not in center.tags:
+            if self.__new_centers_only and 'new-center' not in center.tags:
                 continue
 
             center_adaptor = CenterMappingAdaptor(
