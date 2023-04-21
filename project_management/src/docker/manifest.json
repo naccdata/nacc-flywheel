@@ -43,6 +43,11 @@
             "description": "Name of the admin group",
             "type": "string",
             "default": "nacc"
+        },
+        "new_only": {
+            "description": "Only create projects for centers tagged as new",
+            "type": "boolean",
+            "default": false
         }
     },
     "command": "/bin/run --gear"
