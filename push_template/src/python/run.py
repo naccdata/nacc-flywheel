@@ -42,9 +42,11 @@ def main():
             context_args = parse_config(gear_context=gear_context,
                                         filename=None)
             admin_group_name = context_args['admin_group']
+            new_only = context_args['new_only']
             dry_run = context_args['dry_run']
     else:
         dry_run = args.dry_run
+        new_only = args.new_only
         admin_group_name = args.admin_group
 
     api_key = get_api_key()
@@ -62,6 +64,7 @@ def main():
     template_map = get_template_projects(group=groups[0], proxy=flywheel_proxy)
     run(proxy=flywheel_proxy,
         center_tag_pattern=r'adcid-\d+',
+        new_only=new_only,
         template_map=template_map)
 
 
