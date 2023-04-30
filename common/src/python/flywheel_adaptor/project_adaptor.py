@@ -30,6 +30,11 @@ class ProjectAdaptor:
     def label(self):
         """Returns the label of the enclosed project."""
         return self.__project.label
+    
+    @property
+    def group(self) -> str:
+        """Returns the group label of the enclosed project."""
+        return self.__project.group
 
     def add_tag(self, tag: str) -> None:
         """Add tag to the enclosed project.
