@@ -71,7 +71,9 @@ class TemplateProject:
                 return
 
         assert self.__apps
-
+        log.info('copying apps from template %s to %s/%s',
+                 self.__source_project.label, destination.group,
+                 destination.label)
         destination.set_apps(self.__apps)
 
     def copy_rules(self, destination: ProjectAdaptor) -> None:
