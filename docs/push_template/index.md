@@ -9,6 +9,12 @@ The script expects the `FW_API_KEY` environment variables to be set, which shoul
 ## Flywheel configuration
 
 The script also expects that there is an admin group containing template projects.
+The following are copied from a template project:
+
+- gear rules and any associated files
+- user permissions
+- the project description (may use `$adrc` as the placeholder for the center name)
+- applications
 
 A template project has a name like `form-ingest-template` where the first word is the datatype and the second is a pipeline stage.
 Concretely, the name should match the regex `^((\w+)-)?(\w+)-template$`.
