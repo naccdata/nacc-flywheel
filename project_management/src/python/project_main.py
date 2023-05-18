@@ -32,8 +32,11 @@ def get_roles(flywheel_proxy, role_names: List[str]) -> List[RolesRole]:
     return role_list
 
 
-def run(*, proxy: FlywheelProxy, project_list,
-        admin_access: List[PermissionAccessPermission], role_names: List[str],
+def run(*,
+        proxy: FlywheelProxy,
+        project_list,
+        admin_access: List[PermissionAccessPermission],
+        role_names: List[str],
         new_only: bool = False):
     """Runs project pipeline creation/management.
 
