@@ -240,13 +240,15 @@ To enable VSCode access to the python dependencies.
    ```bash
    bash bin/set-source-roots.sh
    ```
+
 2. Update dependencies
    ```bash
    pants generate-lockfiles
    ```
+
 3. Export virtual environment
    ```bash
    bash bin/set-venv.sh
    ``` 
 
-If you run into any issues, consult , the [instructions for setting up an IDE](https://www.pantsbuild.org/docs/setting-up-an-ide)
+If you run into any issues, consult the [instructions for setting up an IDE](https://www.pantsbuild.org/docs/setting-up-an-ide)
