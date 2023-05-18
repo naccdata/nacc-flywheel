@@ -44,13 +44,19 @@ This is the development guide for the NACC flywheel gear extensions repo.
 
 This respository is managed using [Pants](https://www.pantsbuild.org).
 
+To get started, first run
+
+```bash
+bash get-pants.sh
+```
+
 It may also be opened in a VS Code devcontainer with a Python 3 environment and whatever is needed installed.
 See the details [below](#working-within-vscode).
 
 If you don't want to use the devcontainer you'll need to make sure you have a compatible environment setup along with the FW cli.
 For details, see the files in `.devcontainer`, or just use the devcontainer.
 
-If things are setup correctly, you will be able to run `./pants version` and get a version number as a response, and `which fw` and find the FW cli executable.
+If things are setup correctly, you will be able to run `pants version` and get a version number as a response, and `which fw` and find the FW cli executable.
 
 ## Care and feeding
 
@@ -82,7 +88,7 @@ To add a new project
 2. Add configuration for new code/directories
 
     ```bash
-    ./pants tailor ::
+    pants tailor ::
     ```
 
     this will add a `BUILD` file in the `src/docker` and `src/python` subdirectories.
@@ -153,43 +159,43 @@ If you add new python dependencies
 1. Edit requirements.txt and add your new dependencies
 2. Update dependencies (after editing requirements.txt)
     ```bash
-    ./pants generate-lockfiles
+    pants generate-lockfiles
     ```
 
 ### Working with code
 
 1. Format everything
     ```bash
-    ./pants fmt ::
+    pants fmt ::
     ```
 
 2. Format just the common subproject
     ```bash
-    ./pants fmt common::
+    pants fmt common::
     ```
 
 3. Lint
     ```bash
-    ./pants lint ::
+    pants lint ::
     ```
 
 4. Run tests for common subproject
     ```bash
-    ./pants test common::
+    pants test common::
     ```
 
 5. Run type checker for common subproject
     ```bash
-    ./pants check common::
+    pants check common::
     ```
 
 5. Run the create project script (The `--` is required before the arguments)
     ```bash
-    ./pants run project_management/src/python/run.py --  project_management/data/test-project.yaml
+    pants run project_management/src/python/run.py --  project_management/data/test-project.yaml
     ```
     or
     ```bash
-    ./pants run project_management/src/python:bin --  project_management/data/test-project.yaml
+    pants run project_management/src/python:bin --  project_management/data/test-project.yaml
     ```
 
 > Scripts will expect that `FW_API_KEY` is set.
@@ -200,15 +206,15 @@ If you add new python dependencies
 
 1. Create docker image
     ```bash
-    ./pants package project_management/src/docker::
+    pants package project_management/src/docker::
     ```
 
 2. Run docker image
     ```bash
-    ./pants run project_management/src/docker::
+    pants run project_management/src/docker::
     ```
 
-Note: don't use `./pants publish` with Gears, you need to use the `fw gear` commands to push to the FW instance instead.
+Note: don't use `pants publish` with Gears, you need to use the `fw gear` commands to push to the FW instance instead.
 
 ### Working with a gear
 
@@ -228,4 +234,21 @@ This repository is setup with a VSCode devcontainer.
 To use it you will need to install VSCode, Docker, and enable dev containers within VSCode.
 When you open the repository within the devcontainer, the environment is a python3 container, with the flywheel cli installed.
 
-To enable VSCode access to the python dependencies, follow the [instructions for setting up an IDE](https://www.pantsbuild.org/docs/setting-up-an-ide).
+To enable VSCode access to the python dependencies.
+
+1. to create a `.env` file that sets the `PYTHONPATH` for source code in the project.
+   ```bash
+   bash bin/set-source-roots.sh
+   ```
+
+2. Update dependencies
+   ```bash
+   pants generate-lockfiles
+   ```
+
+3. Export virtual environment
+   ```bash
+   bash bin/set-venv.sh
+   ``` 
+
+If you run into any issues, consult the [instructions for setting up an IDE](https://www.pantsbuild.org/docs/setting-up-an-ide)

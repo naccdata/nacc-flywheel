@@ -23,9 +23,9 @@ log = logging.getLogger(__name__)
 def main() -> None:
     """Main method for directory pull.
 
-    Expects information needed for access to the user access report
-    from the NACC directory on REDCap, and api key for flywheel.
-    These must be given as environment variables.
+    Expects information needed for access to the user access report from
+    the NACC directory on REDCap, and api key for flywheel. These must
+    be given as environment variables.
     """
 
     parser = build_parser_with_output()
