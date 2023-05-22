@@ -4,7 +4,7 @@ import logging
 from typing import List, Optional
 
 import flywheel
-from flywheel import PermissionAccessPermission, RolesRole
+from flywheel import GroupRole, PermissionAccessPermission
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 log = logging.getLogger(__name__)
@@ -111,7 +111,7 @@ class GroupAdaptor:
         self.__group.update_permission(new_permission.id,
                                        {'access': new_permission.access})
 
-    def add_role(self, new_role: RolesRole) -> None:
+    def add_role(self, new_role: GroupRole) -> None:
         """Add the role to the the group for center.
 
         Args:
