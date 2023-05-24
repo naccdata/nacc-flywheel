@@ -99,8 +99,9 @@ class ProjectAdaptor:
         for role_id in role_assignment.role_ids:
             if role_id not in user_roles:
                 user_roles.append(role_id)
+        # TODO: what is id in role assignment supposed to be?
         self.__project.update_permission(role_assignment.id,
-                                         {'role_ids': user_roles})
+                                         RolesRoleAssignment(id=None, role_ids=user_roles))
 
     def add_admin_users(self,
                         permissions: List[PermissionAccessPermission]) -> None:
