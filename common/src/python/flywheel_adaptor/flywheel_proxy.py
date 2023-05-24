@@ -2,7 +2,7 @@
 import logging
 from typing import List, Mapping, Optional
 
-import flywheel  
+import flywheel
 from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
                       GroupRole, RolesRole, ViewerApp, ViewIdOutput)
 from flywheel.models.project_parents import ProjectParents
@@ -48,7 +48,7 @@ class FlywheelProxy:
             existing: a list of all matching projects.
         """
         return self.__fw.projects.find(
-            f"parents.group={group_id},label={project_label}")  
+            f"parents.group={group_id},label={project_label}")
 
     def find_groups(self, group_id: str) -> List[flywheel.Group]:
         """Searches for and returns a group if it exists.
@@ -59,7 +59,7 @@ class FlywheelProxy:
         Returns:
             the group (or empty list if not found)
         """
-        return self.__fw.groups.find(f'_id={group_id}')  
+        return self.__fw.groups.find(f'_id={group_id}')
 
     def find_groups_by_tag(self, tag_pattern: str) -> List[flywheel.Group]:
         """Searches for groups with tags matching the pattern.
@@ -70,7 +70,7 @@ class FlywheelProxy:
         Returns:
           the list of groups
         """
-        return self.__fw.groups.find(f"tags=~{tag_pattern}")  
+        return self.__fw.groups.find(f"tags=~{tag_pattern}")
 
     def find_users(self, user_id: str) -> List[flywheel.User]:
         """Searches for and returns a user if it exists.
@@ -81,7 +81,7 @@ class FlywheelProxy:
         Returns:
             a list with the user, or an empty list if not found
         """
-        return self.__fw.users.find(f'_id={user_id}')  
+        return self.__fw.users.find(f'_id={user_id}')
 
     def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
         """Returns the flywheel group with the given ID and label.
@@ -108,7 +108,8 @@ class FlywheelProxy:
 
         log.info('creating group...')
         # This just returns a string of the group ID
-        added_group_id = self.__fw.add_group(flywheel.Group(group_id, group_label))
+        added_group_id = self.__fw.add_group(
+            flywheel.Group(group_id, group_label))
         # we must fw.get_group() with ID string to get the actual Group object.
         group = self.__fw.get_group(added_group_id)
         log.info("success")
@@ -191,8 +192,7 @@ class FlywheelProxy:
             return
 
         if self.dry_run:
-            # TODO: does this work? GroupRole doesn't have a name
-            log.info("Dry run: would add role %s to group %s", role.name,
+            log.info("Dry run: would add role %s to group %s", role.id,
                      group.label)
             return
 
