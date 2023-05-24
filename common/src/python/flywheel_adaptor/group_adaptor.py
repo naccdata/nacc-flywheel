@@ -30,7 +30,7 @@ class GroupAdaptor:
         """Return projects for the group."""
         return self.__group.projects()
 
-    def get_tags(self) -> str:
+    def get_tags(self) -> List[str]:
         """Return the list of tags for the group.
 
         Returns:
@@ -124,7 +124,7 @@ class GroupAdaptor:
 
         self.__fw.add_group_role(group=self.__group, role=new_role)
 
-    def get_project(self, label: str) -> flywheel.Project:
+    def get_project(self, label: str) -> Optional[flywheel.Project]:
         """Returns a project in this group with the given label.
 
         Creates a new project if none exists.
