@@ -4,6 +4,3 @@ class GroupRole:
     def id(self) -> str:
         ...
 
-    @property
-    def name(self) -> str:
-        ...
