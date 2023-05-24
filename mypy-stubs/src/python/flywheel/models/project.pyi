@@ -4,6 +4,7 @@ from ..file_spec import FileSpec
 from ..typing.role_assignment import RoleAssignment
 from .file_entry import FileEntry
 from .project_parents import ProjectParents
+from .roles_role_assignment import RolesRoleAssignment
 
 
 class Project:
@@ -32,7 +33,7 @@ class Project:
         ...
 
     @property
-    def permissions(self) -> List[RoleAssignment]:
+    def permissions(self) -> List[RolesRoleAssignment]:
         ...
 
     # TODO: determine return type

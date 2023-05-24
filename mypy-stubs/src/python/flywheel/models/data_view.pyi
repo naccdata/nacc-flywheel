@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 
 from .data_strategy import DataStrategy
 
@@ -10,11 +10,11 @@ from .data_view_group_by import DataViewGroupBy
 class DataView:
 
     @property
-    def _id(self) -> str:
+    def _id(self) -> Optional[str]:
         ...
 
     @_id.setter
-    def _id(self, id: str) -> None:
+    def _id(self, id: Optional[str]) -> None:
         ...
 
     @property
