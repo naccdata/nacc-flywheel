@@ -1,12 +1,13 @@
+from typing import Optional
 from .access_level import AccessLevel
 
 
 class AccessPermission:
-    def __init__(self, id: str, access: AccessLevel) -> None: ...
+    def __init__(self, id: Optional[str], access: Optional[AccessLevel]) -> None: ...
     @property
-    def id(self) -> str:
+    def id(self) -> Optional[str]:
         ...
 
     @property
-    def access(self) -> AccessLevel:
+    def access(self) -> Optional[AccessLevel]:
         ...
