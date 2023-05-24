@@ -5,6 +5,7 @@ from typing import List, Mapping, Optional
 import flywheel  
 from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
                       GroupRole, RolesRole, ViewerApp, ViewIdOutput)
+from flywheel.models.project_parents import ProjectParents
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class FlywheelProxy:
         self.__fw = flywheel.Client(api_key)
         self.__dry_run = dry_run
         self.__roles: Optional[Mapping[str, RolesRole]] = None
-        self.__admin_role = Optional[RolesRole]
+        self.__admin_role: Optional[RolesRole] = None
 
     @property
     def dry_run(self):
@@ -146,7 +147,7 @@ class FlywheelProxy:
         if self.__dry_run:
             log.info('Dry Run: would create project %s', project_ref)
             return flywheel.Project(label=project_label,
-                                    parents={'group': group.id})
+                                    parents=ProjectParents(group=group.id))
 
         log.info('creating project...')
         project = group.add_project(label=project_label)
@@ -261,6 +262,7 @@ class FlywheelProxy:
         """
         temp_id = source._id  # pylint: disable=(protected-access)
         temp_parent = source.parent
+        # TODO: dataview._id has type str not Optional[str ]
         source._id = None  # pylint: disable=(protected-access)
         source.parent = destination.parent
         self.__fw.modify_view(destination.id, source)
