@@ -26,9 +26,8 @@ project for managing the consolodated data.
 import logging
 from typing import Dict, List, Optional
 
-import flywheel  # type: ignore
 from centers.center_group import CenterGroup
-from flywheel import PermissionAccessPermission, GroupRole
+from flywheel import AccessPermission, GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.group_adaptor import GroupAdaptor
 from flywheel_adaptor.project_adaptor import ProjectAdaptor
@@ -46,7 +45,7 @@ class ProjectMappingAdaptor:
                  project: Project,
                  flywheel_proxy: FlywheelProxy,
                  admin_access: Optional[
-                     List[PermissionAccessPermission]] = None,
+                     List[AccessPermission]] = None,
                  center_roles: List[GroupRole],
                  new_only: bool) -> None:
         """Creates an adaptor mapping the given project to the corresponding
@@ -220,7 +219,7 @@ class CenterMappingAdaptor:
                  center: Center,
                  flywheel_proxy: FlywheelProxy,
                  admin_access: Optional[
-                     List[PermissionAccessPermission]] = None,
+                     List[AccessPermission]] = None,
                  center_roles: Optional[List[GroupRole]]) -> None:
         """Initializes an adaptor for the given center using the Flywheel
         instance linked by the proxy.

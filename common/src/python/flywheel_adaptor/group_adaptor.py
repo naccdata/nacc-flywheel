@@ -4,7 +4,7 @@ import logging
 from typing import List, Optional
 
 import flywheel
-from flywheel import GroupRole, PermissionAccessPermission
+from flywheel import AccessPermission, GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 log = logging.getLogger(__name__)
@@ -71,7 +71,9 @@ class GroupAdaptor:
                 if access == permission.access
             ]
 
-        user_ids = [permission.id for permission in permissions]
+        user_ids = [
+            permission.id for permission in permissions if permission.id
+        ]
         users = []
         for user_id in user_ids:
             user = self.__fw.find_users(user_id)[0]
@@ -79,7 +81,7 @@ class GroupAdaptor:
                 users.append(user)
         return users
 
-    def get_user_access(self) -> List[PermissionAccessPermission]:
+    def get_user_access(self) -> List[AccessPermission]:
         """Returns the user access for the group.
 
         Returns:
@@ -87,13 +89,22 @@ class GroupAdaptor:
         """
         return self.__group.permissions
 
-    def add_user_access(self,
-                        new_permission: PermissionAccessPermission) -> None:
+    def add_user_access(self, new_permission: AccessPermission) -> None:
         """Adds permission for user to access the group of the center.
 
         Args:
           permission: permission object indicating user and group access
         """
+        if not new_permission.id:
+            log.error('new permission has no user ID to add to group %s',
+                      self.__group.label)
+            return
+
+        if not new_permission.access:
+            log.warning('new permission for user %s has no access, skipping',
+                        new_permission.id)
+            return
+
         if self.__fw.dry_run:
             log.info('Dry Run: would add access %s for user %s to group %s',
                      new_permission.access, new_permission.id,
@@ -108,8 +119,9 @@ class GroupAdaptor:
             self.__group.add_permission(new_permission)
             return
 
-        self.__group.update_permission(new_permission.id,
-                                       {'access': new_permission.access})
+        self.__group.update_permission(
+            new_permission.id,
+            AccessPermission(id=None, access=new_permission.access))
 
     def add_role(self, new_role: GroupRole) -> None:
         """Add the role to the the group for center.

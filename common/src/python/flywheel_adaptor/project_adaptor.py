@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import flywheel
 from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
-                      PermissionAccessPermission, RolesRoleAssignment,
+                      AccessPermission, RolesRoleAssignment,
                       ViewerApp)
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
@@ -100,11 +100,12 @@ class ProjectAdaptor:
             if role_id not in user_roles:
                 user_roles.append(role_id)
         # TODO: what is id in role assignment supposed to be?
-        self.__project.update_permission(role_assignment.id,
-                                         RolesRoleAssignment(id=None, role_ids=user_roles))
+        self.__project.update_permission(
+            role_assignment.id,
+            RolesRoleAssignment(id=None, role_ids=user_roles))
 
     def add_admin_users(self,
-                        permissions: List[PermissionAccessPermission]) -> None:
+                        permissions: List[AccessPermission]) -> None:
         """Adds the users with admin access in the given group permissions.
 
         Args:
