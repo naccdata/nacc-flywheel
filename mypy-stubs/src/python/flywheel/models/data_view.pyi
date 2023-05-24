@@ -1,7 +1,6 @@
 from typing import Any, List, Optional
 
 from .data_strategy import DataStrategy
-
 from .data_view_column_spec import DataViewColumnSpec
 from .data_view_file_spec import DataViewFileSpec
 from .data_view_group_by import DataViewGroupBy
