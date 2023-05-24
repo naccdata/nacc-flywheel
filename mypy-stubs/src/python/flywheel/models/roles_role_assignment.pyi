@@ -1,9 +1,16 @@
-from typing import List
+from typing import List, Optional
 
 
 class RolesRoleAssignment:
-    def __init__(self, id:str, role_ids: List[str]) -> None: ...
+
+    def __init__(self, id: Optional[str],
+                 role_ids: Optional[List[str]]) -> None:
+        ...
+
     @property
-    def id(self) -> str: ...
+    def id(self) -> str:
+        ...
+
     @property
-    def role_ids(self) -> List[str]: ...
+    def role_ids(self) -> List[str]:
+        ...

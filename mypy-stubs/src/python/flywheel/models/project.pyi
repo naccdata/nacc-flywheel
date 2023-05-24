@@ -1,13 +1,13 @@
-from typing import Any, List
+from typing import List
 
-from .roles_backwards_compatible_role_assignment import RolesBackwardsCompatibleRoleAssignment
-
-from .project_parents import ProjectParents
-
+from ..file_spec import FileSpec
+from ..typing.role_assignment import RoleAssignment
 from .file_entry import FileEntry
+from .project_parents import ProjectParents
 
 
 class Project:
+
     def __init__(self, label: str, parents: ProjectParents) -> None:
         ...
 
@@ -20,18 +20,40 @@ class Project:
         ...
 
     @property
-    def description(self) -> str: ...
+    def description(self) -> str:
+        ...
 
     @property
     def group(self) -> str:
         ...
+
     @property
     def tags(self) -> List[str]:
         ...
+
     @property
-    def permissions(self) -> List[RolesBackwardsCompatibleRoleAssignment]: ...
+    def permissions(self) -> List[RoleAssignment]:
+        ...
+
+    # TODO: determine return type
+    def add_permission(self, permission: RoleAssignment) -> None:
+        ...
+
+    def update_permission(self, user_id: str,
+                          permission: RoleAssignment) -> None:
+        ...
 
     def add_tag(self, tag: str) -> None:
         ...
-    
-    def get_file(self, name: str) -> FileEntry: ...
+
+    def get_file(self, name: str) -> FileEntry:
+        ...
+
+    # update takes *args, if used for other attributes add as needed
+    # probably have to change types to Optional[str]
+    def update(self, description: str) -> None:
+        ...
+
+    # TODO: determine return type
+    def upload_file(self, file: FileSpec) -> FileEntry:
+        ...
