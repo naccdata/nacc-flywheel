@@ -4,9 +4,8 @@ import logging
 from typing import List, Optional
 
 import flywheel
-from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
-                      AccessPermission, RolesRoleAssignment,
-                      ViewerApp)
+from flywheel import (AccessPermission, ContainerIdViewInput, DataView,
+                      GearRule, GearRuleInput, RolesRoleAssignment, ViewerApp)
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 log = logging.getLogger(__name__)
@@ -104,8 +103,7 @@ class ProjectAdaptor:
             role_assignment.id,
             RolesRoleAssignment(id=None, role_ids=user_roles))
 
-    def add_admin_users(self,
-                        permissions: List[AccessPermission]) -> None:
+    def add_admin_users(self, permissions: List[AccessPermission]) -> None:
         """Adds the users with admin access in the given group permissions.
 
         Args:
