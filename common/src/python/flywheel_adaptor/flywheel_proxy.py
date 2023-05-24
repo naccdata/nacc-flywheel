@@ -23,8 +23,8 @@ class FlywheelProxy:
         """
         self.__fw = flywheel.Client(api_key)
         self.__dry_run = dry_run
-        self.__roles: Optional[Mapping[str, RolesRole]] = None
-        self.__admin_role: Optional[RolesRole] = None
+        self.__project_roles: Optional[Mapping[str, RolesRole]] = None
+        self.__project_admin_role: Optional[RolesRole] = None
 
     @property
     def dry_run(self):
@@ -157,14 +157,17 @@ class FlywheelProxy:
         return project
 
     def __get_roles(self) -> Mapping[str, RolesRole]:
-        """Gets all roles for the FW instance."""
-        if not self.__roles:
+        """Gets all roles for the FW instance.
+
+        Does not include GroupRoles.
+        """
+        if not self.__project_roles:
             all_roles = self.__fw.get_all_roles()
-            self.__roles = {role.label: role for role in all_roles}
-        return self.__roles
+            self.__project_roles = {role.label: role for role in all_roles}
+        return self.__project_roles
 
     def get_role(self, label: str) -> Optional[RolesRole]:
-        """Gets role with label.
+        """Gets project role with label.
 
         Args:
           label: the name of the role
@@ -176,12 +179,12 @@ class FlywheelProxy:
 
     def get_admin_role(self) -> Optional[RolesRole]:
         """Gets admin role."""
-        if not self.__admin_role:
-            self.__admin_role = self.get_role('admin')
-        return self.__admin_role
+        if not self.__project_admin_role:
+            self.__project_admin_role = self.get_role('admin')
+        return self.__project_admin_role
 
     def add_group_role(self, *, group: flywheel.Group,
-                       role: GroupRole) -> None:
+                       role: RolesRole) -> None:
         """Add role to the group.
 
         Args:
