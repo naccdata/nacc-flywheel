@@ -2,7 +2,7 @@
 user management gear."""
 import logging
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import flywheel
 import yaml
@@ -98,7 +98,7 @@ def main() -> None:
 
 
 def get_admin_project(admin_group_name: str, dry_run: bool,
-                      api_key: str) -> flywheel.Project:
+                      api_key: str) -> Optional[flywheel.Project]:
     """Gets the admin project from the admin group.
 
     Args:
