@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from .finder import Finder
 from .models.container_id_view_input import ContainerIdViewInput
@@ -18,11 +18,12 @@ from .models.project_sharing_settings_project_settings_output import \
 from .models.roles_role import RolesRole
 from .models.user import User
 from .models.view_id_output import ViewIdOutput
+from .typing.role_type import RoleType
 
 
 class Client:
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: Optional[str]) -> None:
         ...
 
     @property
@@ -47,7 +48,8 @@ class Client:
     def get_all_roles(self) -> List[RolesRole]:
         ...
 
-    def add_role_to_group(self, group_id: str, body: GroupRole) -> None:
+    # body in SDK is GroupRole, but use RoleType to allow passing RolesRole
+    def add_role_to_group(self, group_id: str, body: RoleType) -> None:
         ...
 
     def get_project_rules(self, project_id: str) -> List[GearRule]:

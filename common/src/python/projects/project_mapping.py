@@ -27,7 +27,7 @@ import logging
 from typing import Dict, List, Optional
 
 from centers.center_group import CenterGroup
-from flywheel import AccessPermission, GroupRole
+from flywheel import AccessPermission, RolesRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.group_adaptor import GroupAdaptor
 from flywheel_adaptor.project_adaptor import ProjectAdaptor
@@ -44,9 +44,8 @@ class ProjectMappingAdaptor:
                  *,
                  project: Project,
                  flywheel_proxy: FlywheelProxy,
-                 admin_access: Optional[
-                     List[AccessPermission]] = None,
-                 center_roles: List[GroupRole],
+                 admin_access: Optional[List[AccessPermission]] = None,
+                 center_roles: List[RolesRole],
                  new_only: bool) -> None:
         """Creates an adaptor mapping the given project to the corresponding
         objects in the flywheel instance linked by the proxy.
@@ -54,9 +53,9 @@ class ProjectMappingAdaptor:
         Args:
             project: the domain project
             flywheel_proxy: the proxy for the flywheel instance
-            admin_access: the administrative users
-            template_map: mapping from data types to template projects
+            admin_access: the access permissions for administrative users
             center_roles: the roles for center users
+            new_only: whether to only process new centers
         """
         self.__fw = flywheel_proxy
         self.__project = project
@@ -218,9 +217,8 @@ class CenterMappingAdaptor:
                  *,
                  center: Center,
                  flywheel_proxy: FlywheelProxy,
-                 admin_access: Optional[
-                     List[AccessPermission]] = None,
-                 center_roles: Optional[List[GroupRole]]) -> None:
+                 admin_access: Optional[List[AccessPermission]] = None,
+                 center_roles: Optional[List[RolesRole]]) -> None:
         """Initializes an adaptor for the given center using the Flywheel
         instance linked by the proxy.
 
