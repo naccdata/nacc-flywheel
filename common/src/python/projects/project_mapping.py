@@ -28,7 +28,7 @@ from typing import Dict, List, Optional
 
 import flywheel  # type: ignore
 from centers.center_group import CenterGroup
-from flywheel import PermissionAccessPermission, RolesRole
+from flywheel import PermissionAccessPermission, GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.group_adaptor import GroupAdaptor
 from flywheel_adaptor.project_adaptor import ProjectAdaptor
@@ -47,7 +47,7 @@ class ProjectMappingAdaptor:
                  flywheel_proxy: FlywheelProxy,
                  admin_access: Optional[
                      List[PermissionAccessPermission]] = None,
-                 center_roles: List[RolesRole],
+                 center_roles: List[GroupRole],
                  new_only: bool) -> None:
         """Creates an adaptor mapping the given project to the corresponding
         objects in the flywheel instance linked by the proxy.
@@ -150,7 +150,7 @@ class ProjectMappingAdaptor:
             self.__release_group = GroupAdaptor(group=group, proxy=self.__fw)
         return self.__release_group
 
-    def get_master_project(self) -> Optional[flywheel.Project]:
+    def get_master_project(self) -> Optional[ProjectAdaptor]:
         """Returns the FW consolidation project for this project if it is
         published. Otherwise, returns None.
 
@@ -221,7 +221,7 @@ class CenterMappingAdaptor:
                  flywheel_proxy: FlywheelProxy,
                  admin_access: Optional[
                      List[PermissionAccessPermission]] = None,
-                 center_roles: Optional[List[RolesRole]]) -> None:
+                 center_roles: Optional[List[GroupRole]]) -> None:
         """Initializes an adaptor for the given center using the Flywheel
         instance linked by the proxy.
 
@@ -361,8 +361,7 @@ class CenterMappingAdaptor:
             ingest_project = self.get_ingest_project(project=project,
                                                      datatype=datatype)
             if ingest_project:
-                project_map[datatype] = ProjectAdaptor(project=ingest_project,
-                                                       proxy=self.__fw)
+                project_map[datatype] = ingest_project
                 self.add_tags(ingest_project)
 
         return project_map
@@ -388,8 +387,7 @@ class CenterMappingAdaptor:
             retrospective_project = self.get_retrospective_project(
                 project=project, datatype=datatype)
             if retrospective_project:
-                project_map[datatype] = ProjectAdaptor(
-                    project=retrospective_project, proxy=self.__fw)
+                project_map[datatype] = retrospective_project
                 self.add_tags(retrospective_project)
 
         return project_map
