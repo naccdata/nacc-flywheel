@@ -4,7 +4,7 @@ from typing import List, Mapping, Optional
 
 import flywheel
 from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
-                      GroupRole, RolesRole, ViewerApp, ViewIdOutput)
+                      RolesRole, ViewerApp, ViewIdOutput)
 from flywheel.models.project_parents import ProjectParents
 
 log = logging.getLogger(__name__)
