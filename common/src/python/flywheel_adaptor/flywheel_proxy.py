@@ -265,7 +265,6 @@ class FlywheelProxy:
         """
         temp_id = source._id  # pylint: disable=(protected-access)
         temp_parent = source.parent
-        # TODO: dataview._id has type str not Optional[str ]
         source._id = None  # pylint: disable=(protected-access)
         source.parent = destination.parent
         self.__fw.modify_view(destination.id, source)
