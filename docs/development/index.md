@@ -6,24 +6,31 @@ This is the development guide for the NACC flywheel gear extensions repo.
 
 ```bash
 .
+├── bin                 # utility scripts
 ├── common              # shared code
 │   ├── src
 │   └── test
-├── docs
+├── directory_pull      # gear script to pull users from directory
+│   ├── src
+│   └── test
+├── docs                # documentation
 │   ├── development
 │   ├── directory_pull
 │   ├── index.md
 │   ├── project_management
 │   ├── push_template
 │   └── user_management
-├── project_management  # script for managing NACC projects
+
+├── mypy-stubs          # type stubs for flywheel SDK
+│   └── src
+├── project_management  # gear script for managing NACC projects
 │   ├── data
 │   ├── src
 │   └── test
-├── push_template
+├── push_template       # gear script to push template projects
 │   ├── src
 │   └── test
-├── user_management     # script for managing project users
+├── user_management     # gear script for managing project users
 │   ├── directory
 │   ├── src
 │   └── test
@@ -47,7 +54,7 @@ This respository is managed using [Pants](https://www.pantsbuild.org).
 To get started, first run
 
 ```bash
-bash get-pants.sh
+bash bin/get-pants.sh
 ```
 
 It may also be opened in a VS Code devcontainer with a Python 3 environment and whatever is needed installed.
@@ -75,11 +82,9 @@ To add a new project
     .
     ├── src
     │   ├── docker
-    │   │   ├── BUILD
     │   │   ├── Dockerfile
     │   │   └── manifest.json
     │   └── python
-    │       ├── BUILD
     │       └── run.py
     └── test
         └── python
@@ -146,18 +151,18 @@ To add a new project
 
 ### Adding common code
 
-If you need to add a file to the common library, either place it in the current subdirectory for the package that makes the most sense.
+If you need to add a file to the common library, either place it in an existing subdirectory for the package that makes the most sense, or create a directory for a new package.
 
-If you need to create a new package structure, add the subdirectory with the code, add an `__init__.py` file, and then run `pants tailor ::` like above.
-Make sure the BUILD file contains the line `python_sources(name="lib")`
+If you need to create a new package structure, add the subdirectory with the code, add an `__init__.py` file, and then run `pants tailor ::`.
+Then change the new BUILD file so that it contains the line `python_sources(name="lib")`
 
 
 ### Adding new dependencies
 
 If you add new python dependencies
 
-1. Edit requirements.txt and add your new dependencies
-2. Update dependencies (after editing requirements.txt)
+1. Edit `requirements.txt` in the top directory and add your new dependencies.
+2. Regenerate the lock file
     ```bash
     pants generate-lockfiles
     ```
@@ -189,7 +194,7 @@ If you add new python dependencies
     pants check common::
     ```
 
-5. Run the create project script (The `--` is required before the arguments)
+5. Run the project management script (The `--` is required before the arguments)
     ```bash
     pants run project_management/src/python/run.py --  project_management/data/test-project.yaml
     ```
@@ -198,9 +203,9 @@ If you add new python dependencies
     pants run project_management/src/python:bin --  project_management/data/test-project.yaml
     ```
 
-> Scripts will expect that `FW_API_KEY` is set.
-> Do this by using `export FW_API_KEY=XXXXXX` using your FW key at the command line.
-> Do not set the environment variable in the pants configuration, or otherwise commit your key into the repo.
+    > Scripts will expect that `FW_API_KEY` is set.
+    > Do this by using `export FW_API_KEY=XXXXXX` using your FW key at the command line.
+    > Do not set the environment variable in the pants configuration, or otherwise commit your key into the repo.
 
 ### Working with docker images
 
@@ -219,7 +224,7 @@ Note: don't use `pants publish` with Gears, you need to use the `fw gear` comman
 ### Working with a gear
 
 For `fw gear` commands to work properly, the manifest.json file needs to be in the current working directory.
-So, start by changing to ing docker directory where manifest.json is located.
+So, start by changing to the docker directory where manifest.json is located.
 For instance,
 
     ```bash
