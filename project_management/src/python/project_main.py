@@ -10,7 +10,9 @@ from projects.project_mapping import ProjectMappingAdaptor
 
 log = logging.getLogger(__name__)
 
-def get_project_roles(flywheel_proxy, role_names: List[str]) -> List[RolesRole]:
+
+def get_project_roles(flywheel_proxy,
+                      role_names: List[str]) -> List[RolesRole]:
     """Get the named roles.
 
     Returns all roles matching a name in the list.
