@@ -78,7 +78,7 @@ class Client:
     def get_project_settings(self, project_id: str) -> ProjectSettingsOutput:
         ...
 
-    # TODO: what's the actual type of body?
+    # This works if you provide a dictionary as body with field to change
     def modify_project_settings(
         self, project_id: str, body: ProjectSharingSettingsProjectSettingsInput
     ) -> ProjectSharingSettingsProjectSettingsOutput:
