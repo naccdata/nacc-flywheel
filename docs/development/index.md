@@ -65,42 +65,50 @@ For details, see the files in `.devcontainer`, or just use the devcontainer.
 
 If things are setup correctly, you will be able to run `pants version` and get a version number as a response, and `which fw` and find the FW cli executable.
 
-## Care and feeding
+## How each gear project is setup
 
-### Adding new project
+### Directory structure
 
-To add a new project
-
-1. Create directory structure
-    ```bash
-    bash bin/new_gear.sh <new-project-name>
-    ```
-
-    This will create a directory with the name given and the structure
+Each gear project will have a directory structure like this
 
     ```bash
     .
     ├── src
+    │   ├── docker              # gear configuration
+    │   │   ├── BUILD           # - build file for gear
+    │   │   ├── Dockerfile      # - Docker configuration for gear
+    │   │   └── manifest.json   # - gear manifest
+    │   └── python              # script configuration
+    │       ├── BUILD           # - build file for script
+    │       ├── main.py         # - main function for script
+    │       └── run.py          # - run script 
+    └── test
+        └── python              # script tests
+    ```
+
+A project might include other subdirectories, and the `main.py` script should have a name specific to the app.
+For instance, the directory for project management gear looks like the following
+
+    ```bash
+    project_management/
+    ├── data
+    │   └── test-project.yaml   # sample project definition file
+    ├── src
     │   ├── docker
+    │   │   ├── BUILD
     │   │   ├── Dockerfile
     │   │   └── manifest.json
     │   └── python
+    │       ├── BUILD
+    │       ├── project_main.py # main script named to match app
     │       └── run.py
     └── test
         └── python
     ```
-    
-2. Add configuration for new code/directories
 
-    ```bash
-    pants tailor ::
-    ```
+The [build file](https://www.pantsbuild.org/docs/targets) contains metadata about the code and indicates build sources and targets.
 
-    this will add a `BUILD` file in the `src/docker` and `src/python` subdirectories.
-
-3. Edit the BUILD files
-
-   The python BUILD file will look like
+For instance, the `project_management/src/python/BUILD` file contains
 
    ```python
    python_sources(name="project_app", )
@@ -108,22 +116,67 @@ To add a new project
    pex_binary(name="bin", entry_point="run.py")
    ```
 
-   Replace `project_app` with the new app name.
+which indicates the python directory contains the sources for the `project_app`, and has a build target named `bin` with the `run.py` script as the entrypoint.
 
-   The docker BUILD file should look like 
+And `project_management/src/docker/BUILD` contains
 
    ```python
    file(name="manifest", source="manifest.json")
 
    docker_image(name="project-management",
-                source="Dockerfile",
-                dependencies=[":manifest", "project_management/src/python:bin"],
-                image_tags=["0.0.1", "latest"])
+               source="Dockerfile",
+               dependencies=[":manifest", "project_management/src/python:bin"],
+               image_tags=["0.0.1", "latest"])
+
+   experimental_run_shell_command(
+       name="gear",
+       command="/home/vscode/bin/fw-beta gear",
+       description="run fw gear command for project_management",
+       workdir="project_management/src/docker")
    ```
 
-   where you should replace the `project-management` image name, and `project_management` directory name.
+which describes a Docker image target that depends on the manifest file, and the pex target in the python directory.
+It also enables a target `gear` that allows running `fw gear` in the context of the `project_management/src/docker` directory.
 
-4. Edit the docker file so that it has the content
+### Gear scripts
+
+The scripts follow the same framework as outlined by Flwheel in the template project.
+(That project assumes one Gear per repository, so we don't just borrow that structure directly for this monorepo.)
+
+In this scheme, the Gear has two scripts `run.py` and `main.py` (or, rather, a file with a name specific to the app).
+The `run.py` script manages the environment, and the `main.py` does the computation.
+
+Each `run.py` script will have this structure, where the first check is whether `--gear` was given as a command line argument.
+That determines whether to get the remainder of the arguments from the gear context or from the command line arguments.
+
+```python
+def main():
+    parser = <call_appropriate_command_line_parser>
+    args = parser.parse_args()
+
+    if args.gear: # script is being run as a gear
+        ... # get arguments from gear context (refs manifest file)
+    else:
+        ... # get arguments from command line parser
+    
+    ... # get api key and connect to FW
+    ... # gather any information based on arguments
+    run(...) # call run method from main.py
+```
+
+The file `common/src/python/inputs/arguments.py` defines three variants of command line parsers, which can be used in different scenarios:
+
+ - `build_base_parser` -- command line parser with arguments to indicate whether running a gear, whether doing a dry run, whether to only work on centers (e.g., groups) tagged as new, and what the admin group is for the system
+ - `build_parser_with_output` -- builds a base parser with a file argument for output
+ - `build_parser_with_input` -- builds a base parser with a file argument for input
+
+
+The `main.py` script defines a `run` method that performs the computation.
+Most of the work is done by calling code from the `common` subdirectory. 
+
+### Dockerfile
+
+The Dockerfile sets up the Gear's working environment
 
    ```docker
    FROM python:3.10
@@ -139,25 +192,147 @@ To add a new project
    ENTRYPOINT [ "/bin/run" ]
    ```
 
-   where `project_management` is replaced with the directory of your new project.
+The key details are setting up the `/flywheel/v0` directory with the manifest file, and copying the binary pex file into the image with it set as the entrypoint for the container.
 
-4. Edit the manifest.
+### Gear manifest
 
-   For the manifest, copy the file from an existing project. 
+The manifest is a JSON file that defines the metadata for the gear.
+Look at the FW gear documentation for more detail, but there are three key details and how they relate to other files in the directories for each gear project.
+
+1. The `docker/BUILD` file defines the Docker image target, which should correspond to `custome.gear-builder.image` in the manifest file.
+   For instance, the manifest file for `project_management` has
+
+   ```json
+   {
+    ...
+       "custom": {
+           "gear-builder": {
+               "category": "utility",
+               "image": "naccdata/project-management"
+           },
+           ...
+       },
+    ...
+   }
+   ```
+   where the image corresponds to the name of the image in the build script.
+   (The category indicates this is a utility gear within FW.)
+
+2. If the gear takes an input file, this should be named in the `inputs` within the manifest.
+   The name has to be used within the `run.py` script to find the file.
+
+   For instance, the project_management gear manifest has 
+
+   ```json
+   {
+    ...
+       "inputs": {
+           "project_file": {
+               "description": "The project YAML file",
+               "base": "file",
+               "type": {
+                   "enum": [
+                       "source code"
+                   ]
+               }
+           }
+       },
+    ...
+   }
+   ```
+
+3. Any other arguments to the  script collected in `run.py` should be given in the `config` of the manifest
+
+   For instance, the project_management manifest file has
+
+   ```json
+   {
+    ...
+       "config": {
+           "dry_run": {
+               "description": "Whether to do a dry run",
+               "type": "boolean",
+               "default": false
+           },
+           "admin_group": {
+               "description": "Name of the admin group",
+               "type": "string",
+               "default": "nacc"
+           },
+           "new_only": {
+               "description": "Only create projects for centers tagged as new",
+               "type": "boolean",
+               "default": false
+           }
+       },
+    ...
+   }
+   ```
+
+4. The manifest indicates how to run the script.
+   For this we need to know that the Dockerfile places the pex file in `/bin/run`, and the `run.py` script assumes it is given the `--gear` command line argument when run as a gear.
+   So, the gear is executed as `/bin/run --gear`, which is indicated in the manifest as
+
+   ```json
+   {
+       "command": "/bin/run --gear"
+   }
+   ```
+
+### Gear documentation
+
+In addition to the project directory, each gear has a directory in `docs` that contains an `index.md` file.
+
+
+## Adding a new gear
+
+The `bin/new_gear.sh` script will set up the directories for a new gear.
+The script takes the project name
+
+```bash
+bash bin/new_gear.sh new_project_name
+```
+
+This will create a directory with the name given and the structure
+
+```bash
+new_project_name
+├── src
+│   ├── docker
+│   │   ├── BUILD
+│   │   ├── Dockerfile
+│   │   └── manifest.json
+│   └── python
+│       ├── BUILD
+│       ├── main.py
+│       └── run.py
+└── test
+    └── python
+```
+
+Make the following changes:
+
+1. Check the `BUILD` files and make sure the target and dependency names match what you expect.
+
+   You may want to edit the `python_sources` name argument in `new_project_name/src/python/BUILD` to set a new app name.
+   Also, check the Dockerfile to ensure it is using the right gear project directory.
+
+2. Edit the `manifest.json` file
+
    At the top level, change the `name`, `label`, `description`, `version`, `author`.
    Under `custom.gear-builder` update `image` with the information from the `docker/BUILD` file.
    Then make any changes needed for the command line arguments to `inputs` and `config`.
    These details should match up with the information used by your `run.py` script to get parameters.
 
-### Adding common code
+
+## Adding common code
 
 If you need to add a file to the common library, either place it in an existing subdirectory for the package that makes the most sense, or create a directory for a new package.
 
 If you need to create a new package structure, add the subdirectory with the code, add an `__init__.py` file, and then run `pants tailor ::`.
-Then change the new BUILD file so that it contains the line `python_sources(name="lib")`
+Then change the new `BUILD` file so that it contains the line `python_sources(name="lib")`
 
-
-### Adding new dependencies
+## Adding new dependencies
 
 If you add new python dependencies
 
@@ -167,7 +342,7 @@ If you add new python dependencies
     pants generate-lockfiles
     ```
 
-### Working with code
+## Working with code
 
 1. Format everything
     ```bash
@@ -207,7 +382,7 @@ If you add new python dependencies
     > Do this by using `export FW_API_KEY=XXXXXX` using your FW key at the command line.
     > Do not set the environment variable in the pants configuration, or otherwise commit your key into the repo.
 
-### Working with docker images
+## Working with docker images
 
 1. Create docker image
     ```bash
@@ -221,17 +396,33 @@ If you add new python dependencies
 
 Note: don't use `pants publish` with Gears, you need to use the `fw gear` commands to push to the FW instance instead.
 
-### Working with a gear
+## Working with a gear
 
-For `fw gear` commands to work properly, the manifest.json file needs to be in the current working directory.
-So, start by changing to the docker directory where manifest.json is located.
+The repo is setup to use the [`fw-beta` CLI tool](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/).
+(If you are working within the VSCode devcontainer, `fw` is an alias for `fw-beta`.)
+
+To get started, first login to the FW instance using `fw login`.
+
+After that you can use the `gear` target defined in the `docker/BUILD` file of the gear project.
+For instance, the command 
+
+```bash
+pants run project_management/src/docker:gear
+```
+
+runs `fw gear` within the `project_management/src/docker` directory.
+See the [`fw gear` documentation](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/) for details on the options to this command.
+
+Remember that in pants to provide arguments you need to use `--` between the command and the options.
 For instance,
 
-    ```bash
-    cd project_management/src/docker
-    ```
+```bash
+pants run project_management/src/docker:gear -- ls
+```
 
-At which point you can use the [fw gear local](https://docs.flywheel.io/hc/en-us/articles/360037690613-Gear-Building-Tutorial-Part-2e-Gear-Testing-Debugging-Uploading) commands.
+lists the gears installed on the instance.
+
+This should enable doing things such as [local debugging](https://docs.flywheel.io/hc/en-us/articles/360037690613-Gear-Building-Tutorial-Part-2e-Gear-Testing-Debugging-Uploading).
 
 ## Working within VSCode
 
