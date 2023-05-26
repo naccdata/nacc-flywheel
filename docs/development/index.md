@@ -106,7 +106,7 @@ For instance, the directory for project management gear looks like the following
         └── python
     ```
 
-The [build file](https://www.pantsbuild.org/docs/targets) contains metadata about the code and indicates build sources and targets.
+Each [build file](https://www.pantsbuild.org/docs/targets) contains metadata about the code and indicates build sources and targets.
 
 For instance, the `project_management/src/python/BUILD` file contains
 
@@ -140,8 +140,8 @@ It also enables a target `gear` that allows running `fw gear` in the context of 
 
 ### Gear scripts
 
-The scripts follow the same framework as outlined by Flwheel in the template project.
-(That project assumes one Gear per repository, so we don't just borrow that structure directly for this monorepo.)
+The scripts are inspired by Flwheel's [template project](https://gitlab.com/flywheel-io/scientific-solutions/gears/templates/skeleton).
+(Note that project assumes one Gear per repository, so we don't just borrow from that structure directly for this monorepo.)
 
 In this scheme, the Gear has two scripts `run.py` and `main.py` (or, rather, a file with a name specific to the app).
 The `run.py` script manages the environment, and the `main.py` does the computation.
@@ -275,6 +275,7 @@ Look at the FW gear documentation for more detail, but there are three key detai
 
    ```json
    {
+    ...
        "command": "/bin/run --gear"
    }
    ```
@@ -287,16 +288,16 @@ In addition to the project directory, each gear has a directory in `docs` that c
 ## Adding a new gear
 
 The `bin/new_gear.sh` script will set up the directories for a new gear.
-The script takes the project name
+The script takes the project name (and assumes snakecase)
 
 ```bash
-bash bin/new_gear.sh new_project_name
+bash bin/new_gear.sh zebra_management
 ```
 
 This will create a directory with the name given and the structure
 
 ```bash
-new_project_name
+zebra_management
 ├── src
 │   ├── docker
 │   │   ├── BUILD
@@ -314,15 +315,27 @@ Make the following changes:
 
 1. Check the `BUILD` files and make sure the target and dependency names match what you expect.
 
-   You may want to edit the `python_sources` name argument in `new_project_name/src/python/BUILD` to set a new app name.
-   Also, check the Dockerfile to ensure it is using the right gear project directory.
+   You may want to edit the `python_sources` name argument in `zebra_management/src/python/BUILD` to set a new app name.
+   By default it will pick the prefix before the underscore, so the default app name for a gear named `zebra_management` will be `zebra_app`.
+   Similarly, the Docker image will be named `zebra-management`, replacing the underscore with a hyphen.
+   If you want to change this, you'll need to change the image name in both the `docker/BUILD` and `docker/manifest.json` files.
 
 2. Edit the `manifest.json` file
 
    At the top level, change the `name`, `label`, `description`, `version`, `author`.
    Under `custom.gear-builder` update `image` with the information from the `docker/BUILD` file.
    Then make any changes needed for the command line arguments to `inputs` and `config`.
-   These details should match up with the information used by your `run.py` script to get parameters.
+   By default the script will use the prefix before the underscore to name the file key for `inputs`, and for a project named `zebra_management` will use `zebra_file` as the key in the manifest and the `run.py` script.
+   Make sure these details should match up with the information used by your `run.py` script to get parameters.
+
+To complete the gear, you will likely need to make changes to `run.py` and the `main` scripts.
+In `run.py`, add anything that needs to be done gathering information from the environment, and the main script will do the actual computation mostly using code from the `common` directory.
+There may be exceptions to this scheme.
+For instance, the `directory_pull` script uses `run.py` without a main script because it behaves differently depending on whether it is run as a gear.
+
+Note that the main script is named using the project prefix described above.
+So, for `zebra_management` it will be named `zebra_main.py`.
+
 
 
 ## Adding common code
