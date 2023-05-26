@@ -2,12 +2,19 @@
 
 echo "making new gear directories named '$1'"
 
-DIRNAME=$1
-IMAGENAME=`echo $1 | tr '_' '-'`
+project=$1
+prefix="${project%%_*}"
+export DIRNAME=$1
+export IMAGENAME=`echo $1 | tr '_' '-'`
+export APPNAME="${prefix}_app"
+export FILEKEY="${prefix}_file"
+export MAINFILE="${prefix}_main"
+
 
 mkdir -p $1/src/python
-touch $1/src/python/main.py
-touch $1/src/python/run.py
+cat templates/python/build-template.txt | envsubst > $1/src/python/BUILD
+cat templates/python/run-template.txt | envsubst > $1/src/python/run.py
+cat templates/python/main-template.txt | envsubst > "$1/src/python/${MAINFILE}.py"
 
 mkdir -p $1/test/python
 touch $1/test/python/.gitkeep

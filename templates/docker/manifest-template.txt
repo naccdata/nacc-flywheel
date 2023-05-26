@@ -23,7 +23,7 @@
         }
     },
     "inputs": {
-        "project_file": {
+        "${FILEKEY}": {
             "description": "The project YAML file",
             "base": "file",
             "type": {
