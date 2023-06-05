@@ -25,6 +25,7 @@ def main():
       * admin_group: the name of the admin group in the instance
         default is `nacc`
       * dry_run: whether to run as a dry run, default is False
+      * new_only: whether to only run on groups tagged as new
       * the project file
 
     Gear rules are taken from template projects in the admin group.
