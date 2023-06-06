@@ -1,4 +1,5 @@
-from typing import List, Optional
+"""Module for getting proxy object for AWS SSM parameter store object."""
+from typing import Optional
 
 from inputs.environment import get_environment_variable
 from ssm_parameter_store import EC2ParameterStore

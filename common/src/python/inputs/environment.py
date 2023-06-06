@@ -3,7 +3,7 @@ import os
 from typing import Optional
 
 from inputs.parameter_store import get_parameter_store
-from ssm_parameter_store import EC2ParameterStore # type: ignore
+from ssm_parameter_store import EC2ParameterStore  # type: ignore
 
 
 def get_environment_variable(name: str) -> Optional[str]:
