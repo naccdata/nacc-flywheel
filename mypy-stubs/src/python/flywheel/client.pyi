@@ -89,5 +89,6 @@ class Client:
     #
     # This is the type that matches the working code
     def modify_project_settings(
-        self, project_id: str, body: Dict[str, List[ViewerApp]]) -> ProjectSharingSettingsProjectSettingsOutput: ...
-
+        self, project_id: str, body: Dict[str, List[ViewerApp]]
+    ) -> ProjectSharingSettingsProjectSettingsOutput:
+        ...
