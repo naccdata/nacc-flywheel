@@ -8,7 +8,7 @@ from inputs.arguments import build_base_parser
 from inputs.context_parser import parse_config
 from inputs.environment import get_api_key
 from inputs.templates import get_template_projects
-from template_app.push_template_main import run
+from template_app.main import run
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
