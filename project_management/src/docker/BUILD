@@ -7,6 +7,6 @@ docker_image(name="project-management",
 
 experimental_run_shell_command(
     name="gear",
-    command="/home/vscode/bin/fw-beta gear",
+    command="fw-beta gear",
     description="run fw gear command for project_management",
     workdir="project_management/src/docker")

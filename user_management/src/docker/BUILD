@@ -7,6 +7,6 @@ docker_image(name="user-management",
 
 experimental_run_shell_command(
     name="gear",
-    command="/home/vscode/bin/fw-beta gear",
+    command="fw-beta gear",
     description="run fw gear command for user_management",
     workdir="user_management/src/docker")

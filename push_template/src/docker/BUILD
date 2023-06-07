@@ -7,6 +7,6 @@ docker_image(name="push-template",
 
 experimental_run_shell_command(
     name="gear",
-    command="/home/vscode/bin/fw-beta gear",
+    command="fw-beta gear",
     description="run fw gear command for push_template",
     workdir="push_template/src/docker")
