@@ -1,4 +1,6 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
+
+from flywheel.models.viewer_app import ViewerApp
 
 from .finder import Finder
 from .models.container_id_view_input import ContainerIdViewInput
@@ -78,8 +80,15 @@ class Client:
     def get_project_settings(self, project_id: str) -> ProjectSettingsOutput:
         ...
 
-    # This works if you provide a dictionary as body with field to change
+    # This is the formaly defined type
+    #
+    # def modify_project_settings(
+    #     self, project_id: str, body: ProjectSharingSettingsProjectSettingsInput
+    # ) -> ProjectSharingSettingsProjectSettingsOutput:
+    #     ...
+    #
+    # This is the type that matches the working code
     def modify_project_settings(
-        self, project_id: str, body: ProjectSharingSettingsProjectSettingsInput
+        self, project_id: str, body: Dict[str, List[ViewerApp]]
     ) -> ProjectSharingSettingsProjectSettingsOutput:
         ...

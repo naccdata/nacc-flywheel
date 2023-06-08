@@ -11,10 +11,11 @@ export FILEKEY="${prefix}_file"
 export MAINFILE="${prefix}_main"
 
 
-mkdir -p $1/src/python
-cat templates/python/build-template.txt | envsubst > $1/src/python/BUILD
-cat templates/python/run-template.txt | envsubst > $1/src/python/run.py
-cat templates/python/main-template.txt | envsubst > "$1/src/python/${MAINFILE}.py"
+mkdir -p $1/src/python/${APPNAME}
+cat templates/python/build-template.txt | envsubst > "$1/src/python/${APPNAME}/BUILD"
+cat templates/python/run-template.txt | envsubst > "$1/src/python/${APPNAME}/run.py"
+cat templates/python/main-template.txt | envsubst > "$1/src/python/${APPNAME}/main.py"
+touch "$1/src/python/${APPNAME}/__init__.py"
 
 mkdir -p $1/test/python
 touch $1/test/python/.gitkeep
