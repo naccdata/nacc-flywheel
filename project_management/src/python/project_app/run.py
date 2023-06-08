@@ -69,7 +69,7 @@ def main():
 
     api_key = get_api_key()
     if not api_key:
-        log.error('No API key: expecting FW_API_KEY to be set')
+        log.error('No API key found. Cannot connect to Flywheel')
         sys.exit(1)
 
     flywheel_proxy = FlywheelProxy(api_key=api_key, dry_run=dry_run)

@@ -47,7 +47,7 @@ def main() -> None:
 
     api_key = get_api_key()
     if not api_key:
-        log.error('No API key: expecting FW_API_KEY to be set')
+        log.error('No API key found. Cannot connect to Flywheel')
         sys.exit(1)
 
     url_variable = 'NACC_DIRECTORY_URL'
