@@ -49,21 +49,29 @@ This is the development guide for the NACC flywheel gear extensions repo.
 
 ## Working with this repository
 
-This respository is managed using [Pants](https://www.pantsbuild.org).
+This repository can be used within a VS Code devcontainer.
+To use it, open the repository in VS Code configured to run a devcontainer, and start the container.
 
-To get started, first run
+If you don't use the devcontainer you'll need to install the FW cli and be sure it is on your path.
+Information on installing the `fw-beta` CLI can be found [here](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/).
+
+The build is managed using [Pants](https://www.pantsbuild.org), which comes with it's own Python interpreter.
+So, you only need to install Pants.
+
+To install Pants, run the command 
 
 ```bash
 bash bin/get-pants.sh
 ```
 
-It may also be opened in a VS Code devcontainer with a Python 3 environment and whatever is needed installed.
-See the details [below](#working-within-vscode).
+At this point, you should be able to run the commands
 
-If you don't want to use the devcontainer you'll need to make sure you have a compatible environment setup along with the FW cli.
-For details, see the files in `.devcontainer`, or just use the devcontainer.
+- `pants version`, and
+- `fw-beta --version`
 
-If things are setup correctly, you will be able to run `pants version` and get a version number as a response, and `which fw` and find the FW cli executable.
+without error.
+
+If you are working in VS Code, see the details [below](#working-within-vscode) to get the code environment setup.
 
 ## How each gear project is setup
 
@@ -79,36 +87,41 @@ Each gear project will have a directory structure like this
     │   │   ├── Dockerfile      # - Docker configuration for gear
     │   │   └── manifest.json   # - gear manifest
     │   └── python              # script configuration
-    │       ├── BUILD           # - build file for script
-    │       ├── main.py         # - main function for script
-    │       └── run.py          # - run script 
+    │       └── app_package     # app specific directory name
+    │           ├── BUILD       # - build file for script
+    │           ├── main.py     # - main function for script
+    │           └── run.py      # - entry point script 
     └── test
         └── python              # script tests
     ```
 
-A project might include other subdirectories, and the `main.py` script should have a name specific to the app.
-For instance, the directory for project management gear looks like the following
+A project might include other subdirectories, and the directory `src/python/app_package` should have a name specific to the app.
+For instance, the `project_management` directory looks like
 
-    ```bash
-    project_management/
-    ├── data
-    │   └── test-project.yaml   # sample project definition file
-    ├── src
-    │   ├── docker
-    │   │   ├── BUILD
-    │   │   ├── Dockerfile
-    │   │   └── manifest.json
-    │   └── python
-    │       ├── BUILD
-    │       ├── project_main.py # main script named to match app
-    │       └── run.py
-    └── test
-        └── python
-    ```
+```bash
+project_management/
+├── data
+│   └── test-project.yaml
+├── src
+│   ├── docker
+│   │   ├── BUILD
+│   │   ├── Dockerfile
+│   │   └── manifest.json
+│   └── python
+│       └── project_app
+│           ├── BUILD
+│           ├── __init__.py
+│           ├── main.py
+│           └── run.py
+└── test
+    └── python
+```
+
+where the `app_package` directory is named `project_app`.
 
 Each [build file](https://www.pantsbuild.org/docs/targets) contains metadata about the code and indicates build sources and targets.
 
-For instance, the `project_management/src/python/BUILD` file contains
+For instance, the `project_management/src/python/project_app/BUILD` file contains
 
    ```python
    python_sources(name="project_app", )
@@ -117,6 +130,7 @@ For instance, the `project_management/src/python/BUILD` file contains
    ```
 
 which indicates the python directory contains the sources for the `project_app`, and has a build target named `bin` with the `run.py` script as the entrypoint.
+(There is no requirement that the sources name and the subdirectory name match.)
 
 And `project_management/src/docker/BUILD` contains
 
@@ -141,9 +155,8 @@ It also enables a target `gear` that allows running `fw gear` in the context of 
 ### Gear scripts
 
 The scripts are inspired by Flwheel's [template project](https://gitlab.com/flywheel-io/scientific-solutions/gears/templates/skeleton).
-(Note that project assumes one Gear per repository, so we don't just borrow from that structure directly for this monorepo.)
-
-In this scheme, the Gear has two scripts `run.py` and `main.py` (or, rather, a file with a name specific to the app).
+(Flywheel's template assumes one Gear per repository, which doesn't work for a monorepo.)
+In that template, the Gear has two scripts `run.py` and `main.py` (or, rather, a file with a name specific to the app).
 The `run.py` script manages the environment, and the `main.py` does the computation.
 
 Each `run.py` script will have this structure, where the first check is whether `--gear` was given as a command line argument.
@@ -304,9 +317,10 @@ zebra_management
 │   │   ├── Dockerfile
 │   │   └── manifest.json
 │   └── python
-│       ├── BUILD
-│       ├── main.py
-│       └── run.py
+│       └── zebra_app
+│           ├── BUILD
+│           ├── main.py
+    │       └── run.py
 └── test
     └── python
 ```
@@ -315,7 +329,7 @@ Make the following changes:
 
 1. Check the `BUILD` files and make sure the target and dependency names match what you expect.
 
-   You may want to edit the `python_sources` name argument in `zebra_management/src/python/BUILD` to set a new app name.
+   You may want to edit the `python_sources` name argument in `zebra_management/src/python/zebra_app/BUILD` to set a new app name.
    By default it will pick the prefix before the underscore, so the default app name for a gear named `zebra_management` will be `zebra_app`.
    Similarly, the Docker image will be named `zebra-management`, replacing the underscore with a hyphen.
    If you want to change this, you'll need to change the image name in both the `docker/BUILD` and `docker/manifest.json` files.
@@ -332,10 +346,6 @@ To complete the gear, you will likely need to make changes to `run.py` and the `
 In `run.py`, add anything that needs to be done gathering information from the environment, and the main script will do the actual computation mostly using code from the `common` directory.
 There may be exceptions to this scheme.
 For instance, the `directory_pull` script uses `run.py` without a main script because it behaves differently depending on whether it is run as a gear.
-
-Note that the main script is named using the project prefix described above.
-So, for `zebra_management` it will be named `zebra_main.py`.
-
 
 
 ## Adding common code
@@ -372,12 +382,12 @@ If you add new python dependencies
     pants lint ::
     ```
 
-4. Run tests for common subproject
+4. Run tests for the common subproject
     ```bash
     pants test common::
     ```
 
-5. Run type checker for common subproject
+5. Run type checker for the common subproject
     ```bash
     pants check common::
     ```
@@ -407,7 +417,7 @@ If you add new python dependencies
     pants run project_management/src/docker::
     ```
 
-Note: don't use `pants publish` with Gears, you need to use the `fw gear` commands to push to the FW instance instead.
+Note: don't use `pants publish` with Gears, you need to use the gear commands below to push to the FW instance instead.
 
 ## Working with a gear
 
