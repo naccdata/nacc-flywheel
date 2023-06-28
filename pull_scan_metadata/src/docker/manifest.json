@@ -1,0 +1,30 @@
+{
+    "name": "pull-scan-metadata",
+    "label": "pull-scan-metadata",
+    "description": "Pulls metadata from SCAN API",
+    "version": "0.0.1",
+    "author": "zstark@uw.edu",
+    "maintainer": "nacchelp@uw.edu",
+    "cite": "",
+    "license": "MPL-2.0",
+    "url": "",
+    "source": "https://github.com/naccdata/flywheel-gear-extensions",
+    "environment": {
+        "FLYWHEEL": "/flywheel/v0"
+    },
+    "custom": {
+        "gear-builder": {
+            "category": "utility",
+            "image": "naccdata/pull-scan-metadata"
+        },
+        "flywheel": {
+            "suite": "NACC Admin Gears",
+            "show-job": true
+        }
+    },
+    "inputs": {
+    },
+    "config": {
+    },
+    "command": "/bin/run --gear"
+}
