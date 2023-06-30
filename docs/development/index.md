@@ -47,16 +47,24 @@ This is the development guide for the NACC flywheel gear extensions repo.
 
 [To update this structure, use `tree -L 2` and select missing chunks for inclusion.]
 
-## Working with this repository
+## Getting Started
 
-This repository can be used within a VS Code devcontainer.
-To use it, open the repository in VS Code configured to run a devcontainer, and start the container.
+### Basic environment
 
-If you don't use the devcontainer you'll need to install the FW cli and be sure it is on your path.
+This repository can be used within a VS Code devcontainer using a python3 environment with the Flywheel cli installed. 
+To use it you will need to install VSCode, Docker, and enable dev containers within VSCode.
+Then open the repository in VS Code and start the container.
+
+Because the build tool comes with its own Python interpreter, you may be able to work without the devcontainer.
+However, this hasn't been tried. 
+But, if you don't use the devcontainer you will at least need to install the FW cli and be sure it is on your path.
 Information on installing the `fw-beta` CLI can be found [here](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/).
 
-The build is managed using [Pants](https://www.pantsbuild.org), which comes with it's own Python interpreter.
-So, you only need to install Pants.
+### Setting up build tool
+
+The build is managed using [Pants](https://www.pantsbuild.org).
+
+You will need to install Pants; it is not installed in the devcontainer.
 
 To install Pants, run the command 
 
@@ -71,9 +79,29 @@ At this point, you should be able to run the commands
 
 without error.
 
-If you are working in VS Code, see the details [below](#working-within-vscode) to get the code environment setup.
 
-## How each gear project is setup
+## Working within VSCode
+
+Do the following to enable VSCode access to the python dependencies:
+
+1. create a `.env` file that sets the `PYTHONPATH` for source code in the project.
+   ```bash
+   bash bin/set-source-roots.sh
+   ```
+
+2. Update dependencies
+   ```bash
+   pants generate-lockfiles
+   ```
+
+3. Export virtual environment
+   ```bash
+   bash bin/set-venv.sh
+   ``` 
+
+If you run into any issues, consult the [instructions for setting up an IDE](https://www.pantsbuild.org/docs/setting-up-an-ide)
+
+## Gear project organization
 
 ### Directory structure
 
@@ -147,10 +175,16 @@ And `project_management/src/docker/BUILD` contains
        command="/home/vscode/bin/fw-beta gear",
        description="run fw gear command for project_management",
        workdir="project_management/src/docker")
+
+    experimental_run_shell_command(
+        name="validate",
+        command="fw-beta gear --validate manifest.json",
+        description="validate gear manifest for project_management",
+        workdir="project_management/src/docker")
    ```
 
 which describes a Docker image target that depends on the manifest file, and the pex target in the python directory.
-It also enables a target `gear` that allows running `fw gear` in the context of the `project_management/src/docker` directory.
+It also enables a target `gear` that allows running `fw gear` in the context of the `project_management/src/docker` directory, as well as validating the gear manifest.
 
 ### Gear scripts
 
@@ -212,24 +246,45 @@ The key details are setting up the `/flywheel/v0` directory with the manifest fi
 The manifest is a JSON file that defines the metadata for the gear.
 Look at the FW gear documentation for more detail, but there are three key details and how they relate to other files in the directories for each gear project.
 
-1. The `docker/BUILD` file defines the Docker image target, which should correspond to `custome.gear-builder.image` in the manifest file.
-   For instance, the manifest file for `project_management` has
+1. The manifest has fields that should correspond to the `docker/BUILD` file.
+   This build file defines the Docker image target, which needs to be referenced in the manifest.
+
+   To illustrate, the `docker/BUILD` file for `project_management` defines 
+
+   ```python
+   docker_image(name="project-management",
+             source="Dockerfile",
+             dependencies=[":manifest", "project_management/src/python/project_app:bin"],
+             image_tags=["0.0.1", "latest"])
+   ```
+
+   Running `package` on `projectmanagement/src/docker` builds two images `naccdata/project-management:0.0.1` and `naccdata/project-management:latest`.
+   (Note that the `naccdata/` prefix to the repository name is set in `pants.toml`.)
+   
+   The mainfest file needs to match these image details in three ways.
+   First, the `name` field should correspond to the `docker_image` target name in the build file.
+   Second, the `custom.gear-builder.image` should be the full repository name for the image.
+   And, third, the `version` field should correspond to tag of the image used in `custom.gear-builder.image`.
+
+   So, for instance, the manifest file for `project_management` has
 
    ```json
    {
-    ...
+       "name": "project-management",
+       ...
+       "version": "0.0.1",
+       ...
        "custom": {
            "gear-builder": {
                "category": "utility",
-               "image": "naccdata/project-management"
+               "image": "naccdata/project-management:0.0.1"
            },
            ...
        },
-    ...
+       ...
    }
    ```
-   where the image corresponds to the name of the image in the build script.
-   (The category indicates this is a utility gear within FW.)
+   
 
 2. If the gear takes an input file, this should be named in the `inputs` within the manifest.
    The name has to be used within the `run.py` script to find the file.
@@ -447,27 +502,7 @@ lists the gears installed on the instance.
 
 This should enable doing things such as [local debugging](https://docs.flywheel.io/hc/en-us/articles/360037690613-Gear-Building-Tutorial-Part-2e-Gear-Testing-Debugging-Uploading).
 
-## Working within VSCode
+Additional targets configured are
 
-This repository is setup with a VSCode devcontainer. 
-To use it you will need to install VSCode, Docker, and enable dev containers within VSCode.
-When you open the repository within the devcontainer, the environment is a python3 container, with the flywheel cli installed.
+1. `validate` which runs the validate command on the manifest
 
-To enable VSCode access to the python dependencies.
-
-1. to create a `.env` file that sets the `PYTHONPATH` for source code in the project.
-   ```bash
-   bash bin/set-source-roots.sh
-   ```
-
-2. Update dependencies
-   ```bash
-   pants generate-lockfiles
-   ```
-
-3. Export virtual environment
-   ```bash
-   bash bin/set-venv.sh
-   ``` 
-
-If you run into any issues, consult the [instructions for setting up an IDE](https://www.pantsbuild.org/docs/setting-up-an-ide)
