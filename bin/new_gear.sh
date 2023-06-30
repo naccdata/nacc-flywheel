@@ -6,6 +6,7 @@ project=$1
 prefix="${project%%_*}"
 export DIRNAME=$1
 export IMAGENAME=`echo $1 | tr '_' '-'`
+export IMAGETAG="0.0.1"
 export APPNAME="${prefix}_app"
 export FILEKEY="${prefix}_file"
 export MAINFILE="${prefix}_main"
