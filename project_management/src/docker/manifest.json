@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/project-management"
+            "image": "naccdata/project-management:0.0.1"
         },
         "flywheel": {
             "suite": "NACC Admin Gears",

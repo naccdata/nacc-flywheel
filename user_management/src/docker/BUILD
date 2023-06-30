@@ -10,3 +10,9 @@ experimental_run_shell_command(
     command="fw-beta gear",
     description="run fw gear command for user_management",
     workdir="user_management/src/docker")
+
+experimental_run_shell_command(
+    name="validate",
+    command="fw-beta gear --validate manifest.json",
+    description="validate gear manifest for user_management",
+    workdir="user_management/src/docker")
