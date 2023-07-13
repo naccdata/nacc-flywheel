@@ -6,7 +6,7 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.arguments import build_base_parser
 from inputs.context_parser import parse_config
-from inputs.environment import get_api_key
+from inputs.api_key import get_api_key
 from inputs.templates import get_template_projects
 from template_app.main import run
 
