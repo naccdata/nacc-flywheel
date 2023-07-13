@@ -29,7 +29,7 @@ def get_template_projects(
     template_map: Dict[str, Dict[str, TemplateProject]] = defaultdict(dict)
     if group:
         template_matcher = re.compile(r"^((\w+)-)?(\w+)-template$")
-        # match group for pipeline datatype 
+        # match group for pipeline datatype
         datatype_group = 2
         # match group for pipeline stage
         stage_group = 3
