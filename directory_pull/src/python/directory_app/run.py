@@ -1,5 +1,6 @@
 """Script to pull directory information and convert to file expected by the
 user management gear."""
+import argparse
 import logging
 import sys
 from typing import Any, Dict, List, Optional
@@ -29,7 +30,7 @@ def main() -> None:
     be given as environment variables.
     """
 
-    parser = build_parser_with_output()
+    parser = build_parser()
     args = parser.parse_args()
 
     if args.gear:
@@ -78,10 +79,11 @@ def main() -> None:
         log.error('Failed to pull users from directory: %s', error.error)
         sys.exit(1)
 
-    # TODO: add argument to allow uploading file if not run as gear
-    if args.gear:
+    if args.gear or args.upload:
         admin_project = get_admin_project(admin_group_name, dry_run, api_key)
         if not admin_project:
+            log.error('No admin group %s, cannot upload file %s',
+                      admin_group_name, user_filename)
             sys.exit(1)
 
         if dry_run:
@@ -155,6 +157,17 @@ def get_user_records(*, directory_token: str, directory_url: str,
         if entry:
             user_entries.append(entry.as_dict())
     return user_entries
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Creates an argument parser customized to pulling from directory."""
+    parser = build_parser_with_output()
+    parser.add_argument('-u',
+                        '--upload',
+                        help='whether to upload to file to admin group',
+                        default=False,
+                        action='store_true')
+    return parser
 
 
 if __name__ == "__main__":
