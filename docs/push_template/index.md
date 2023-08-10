@@ -32,7 +32,7 @@ These tags can be set using the project management script.
 The script can be run with 
 
 ```bash
-./pants run push_template/src/python:bin
+pants run push_template/src/python/template_app:bin
 ```
 
 which will push all template projects to pipeline stage projects within tagged groups.
