@@ -64,13 +64,17 @@ Information on installing the `fw-beta` CLI can be found [here](https://flywheel
 
 The build is managed using [Pants](https://www.pantsbuild.org).
 
-You will need to install Pants; it is not installed in the devcontainer.
+Pants is installed in the devcontainer.
+You can double check that it is available by running the command `pants version`.
+If pants hasn't been run before the command will bootstrap the pants environment.
 
-To install Pants, run the command 
-
-```bash
-bash bin/get-pants.sh
-```
+> If at any point you get an error that the pants command is not found, run the command 
+>
+> ```bash
+> bash bin/get-pants.sh
+> ```
+>
+> and the commands in this document should work.
 
 At this point, you should be able to run the commands
 
