@@ -3,11 +3,11 @@
     "label": "User Management",
     "description": "Creates and updates user and user roles",
     "version": "0.0.1",
-    "author": "bjkeller@uw.edu",
-    "maintainer": "nacchelp@uw.edu",
+    "author": "NACC",
+    "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
     "license": "MPL-2.0",
-    "url": "",
+    "url": "https://naccdata.github.io/flywheel-gear-extensions/user_management",
     "source": "https://github.com/naccdata/flywheel-extensions",
     "environment": {
         "FLYWHEEL": "/flywheel/v0"
