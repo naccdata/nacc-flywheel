@@ -507,6 +507,8 @@ runs validates the file `project_management/src/docker/manifest.json`.
 
 For this target, remember that in pants to provide arguments you need to use `--` between the command and the options.
 
-3. The `upload` target, run after building the docker image, [uploads the image and manifest to Flywheel](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/upload/).
+3. The `upload` target [uploads the image and manifest to Flywheel](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/upload/).
+   Run this after building the docker image to publish the gear to Flywheel.
 
->Note: the guide for [local debugging](https://docs.flywheel.io/hc/en-us/articles/360037690613-Gear-Building-Tutorial-Part-2e-Gear-Testing-Debugging-Uploading) may be useful, though it uses the previous `fw` cli (and doesn't use pants) so some translation will be required.
+
+>Note: the guide for [local debugging](https://docs.flywheel.io/hc/en-us/articles/360037690613-Gear-Building-Tutorial-Part-2e-Gear-Testing-Debugging-Uploading) may be useful, though it uses the previous `fw` cli, doesn't use pants, and so some translation will be required.
