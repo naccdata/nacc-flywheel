@@ -175,8 +175,8 @@ And `project_management/src/docker/BUILD` contains
                image_tags=["0.0.1", "latest"])
 
    experimental_run_shell_command(
-       name="gear",
-       command="/home/vscode/bin/fw-beta gear",
+       name="upload",
+       command="/home/vscode/bin/fw-beta gear upload ./",
        description="run fw gear command for project_management",
        workdir="project_management/src/docker")
 
@@ -188,7 +188,7 @@ And `project_management/src/docker/BUILD` contains
    ```
 
 which describes a Docker image target that depends on the manifest file, and the pex target in the python directory.
-It also enables a target `gear` that allows running `fw gear` in the context of the `project_management/src/docker` directory, as well as validating the gear manifest.
+It also enables a target `validate` and `upload` that allows running gear validation and upload in the context of the `project_management/src/docker` directory.
 
 ### Gear scripts
 
