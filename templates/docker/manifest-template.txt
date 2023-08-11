@@ -23,6 +23,9 @@
         }
     },
     "inputs": {
+        "api-key": {
+            "base": "api-key"
+        },
         "${FILEKEY}": {
             "description": "The project YAML file",
             "base": "file",

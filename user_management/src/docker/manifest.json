@@ -23,6 +23,9 @@
         }
     },
     "inputs": {
+        "api-key": {
+            "base": "api-key"
+        },
         "user_file": {
             "description": "The user YAML file",
             "base": "file",
