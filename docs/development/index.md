@@ -185,10 +185,16 @@ And `project_management/src/docker/BUILD` contains
         command="fw-beta gear --validate manifest.json",
         description="validate gear manifest for project_management",
         workdir="project_management/src/docker")
+
+    experimental_run_shell_command(
+        name="local",
+        command="fw-beta gear run",
+        description="run project_management gear locally",
+        workdir="project_management/src/docker")
    ```
 
 which describes a Docker image target that depends on the manifest file, and the pex target in the python directory.
-It also enables a target `validate` and `upload` that allows running gear validation and upload in the context of the `project_management/src/docker` directory.
+It also enables a target `validate` and `upload` that allows running gear [manifest validation](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/), [local run](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/) and [upload](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/upload/) in the context of the `project_management/src/docker` directory.
 
 ### Gear scripts
 
@@ -485,28 +491,22 @@ The repo is setup to use the [`fw-beta` CLI tool](https://flywheel-io.gitlab.io/
 
 To get started, first login to the FW instance using `fw login`.
 
-After that you can use the `gear` target defined in the `docker/BUILD` file of the gear project.
-For instance, the command 
+> Note: The point of these targets is to make it easier to run certain commands. If you prefer, you can change to the `src/docker` directory and run `fw-beta` commands there without using pants.
+
+Once logged in, you can use the gear targets `validate`, `local` and `upload` defined in the `docker/BUILD` file of the gear project.
+
+1. The `validate` target runs the validation on the manifest for the project. So, the command 
 
 ```bash
-pants run project_management/src/docker:gear
+pants run project_management/src/docker:validate
 ```
 
-runs `fw gear` within the `project_management/src/docker` directory.
-See the [`fw gear` documentation](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/) for details on the options to this command.
+runs validates the file `project_management/src/docker/manifest.json`.
 
-Remember that in pants to provide arguments you need to use `--` between the command and the options.
-For instance,
+2. The `local` target [runs the gear locally](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/)
 
-```bash
-pants run project_management/src/docker:gear -- ls
-```
+For this target, remember that in pants to provide arguments you need to use `--` between the command and the options.
 
-lists the gears installed on the instance.
+3. The `upload` target, run after building the docker image, [uploads the image and manifest to Flywheel](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/upload/).
 
-This should enable doing things such as [local debugging](https://docs.flywheel.io/hc/en-us/articles/360037690613-Gear-Building-Tutorial-Part-2e-Gear-Testing-Debugging-Uploading).
-
-Additional targets configured are
-
-1. `validate` which runs the validate command on the manifest
-
+>Note: the guide for [local debugging](https://docs.flywheel.io/hc/en-us/articles/360037690613-Gear-Building-Tutorial-Part-2e-Gear-Testing-Debugging-Uploading) may be useful, though it uses the previous `fw` cli (and doesn't use pants) so some translation will be required.
