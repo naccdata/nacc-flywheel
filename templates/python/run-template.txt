@@ -35,6 +35,8 @@ def main():
             dry_run = context_args['dry_run']
             new_only = context_args['new_only']
             input_file = context_args[filename] # gets the file name
+            # get api-key from gear context if appropriate
+            api_key = gear_context.get_input('api-key')
     else:
         #
         # get argument values from args
@@ -50,9 +52,11 @@ def main():
         log.error('No objects read from input')
         sys.exit(1)
 
-    # connect to AWS SSM parameter store 
-    parameter_store = get_parameter_store()
-    api_key = get_api_key(parameter_store)
+    if not api_key:
+        # connect to AWS SSM parameter store     
+        parameter_store = get_parameter_store()
+        api_key = get_api_key(parameter_store)
+    
     if not api_key:
         log.error('No API key found. Cannot connect to Flywheel')
         sys.exit(1)

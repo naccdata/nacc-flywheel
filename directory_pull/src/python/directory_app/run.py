@@ -42,12 +42,13 @@ def main() -> None:
             admin_group_name = context_args['admin_group']
             dry_run = context_args['dry_run']
             user_filename = context_args[filename]
+            api_key = gear_context.get_input('api-key')
     else:
         dry_run = args.dry_run
         user_filename = args.filename
         admin_group_name = args.admin_group
+        api_key = get_api_key()
 
-    api_key = get_api_key()
     if not api_key:
         log.error('No API key found. Cannot connect to Flywheel')
         sys.exit(1)
