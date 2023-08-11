@@ -12,6 +12,12 @@ experimental_run_shell_command(
     workdir="push_template/src/docker")
 
 experimental_run_shell_command(
+    name="local",
+    command="fw-beta gear run",
+    description="run push_template gear locally",
+    workdir="push_template/src/docker")
+
+experimental_run_shell_command(
     name="upload",
     command="fw-beta gear upload ./",
     description="run fw gear command for push_template",

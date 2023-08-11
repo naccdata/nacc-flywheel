@@ -16,3 +16,9 @@ experimental_run_shell_command(
     command="fw-beta gear --validate manifest.json",
     description="validate gear manifest for ${DIRNAME}",
     workdir="${DIRNAME}/src/docker")
+
+experimental_run_shell_command(
+    name="local",
+    command="fw-beta gear run",
+    description="run ${DIRNAME} gear locally",
+    workdir="${DIRNAME}/src/docker")
