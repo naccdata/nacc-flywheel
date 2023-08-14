@@ -477,45 +477,65 @@ If you add new python dependencies
     > Do this by using `export FW_API_KEY=XXXXXX` using your FW key at the command line.
     > Do not set the environment variable in the pants configuration, or otherwise commit your key into the repo.
 
-## Working with docker images
+## Working with a gear
+
+Most actions on gears use the Flywheel CLI.
+The repo is setup to use the [`fw-beta` CLI tool](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/).
+(If you are working within the VSCode devcontainer, `fw` is an alias for `fw-beta`.)
+
+The `<project-dir>/src/docker/BUILD` file of each gear project defines the gear targets `validate`, `local` and `upload` to make it easier to run certain commands.
+If you prefer, you can change (`cd`) to the `<project-dir>/src/docker` directory and run `fw-beta` commands there without using pants.
+
+### Validating the manifest
+
+The `validate` target runs the validation on the manifest for the project. So, the command
+
+```bash
+pants run <project-dir>/src/docker:validate
+```
+
+runs validates the file `<project-dir>/src/docker/manifest.json`.
+
+### Publishing a gear
+
+The steps for publishing a project as a gear are
 
 1. Create docker image
 
     ```bash
-    pants package project_management/src/docker::
+    pants package <project-dir>/src/docker::
     ```
 
-2. Run docker image
+2. Login to the FW instance using `fw login` and your API key.
 
-    ```bash
-    pants run project_management/src/docker::
-    ```
-
-Note: don't use `pants publish` with Gears, you need to use the gear commands below to push to the FW instance instead.
-
-## Working with a gear
-
-The repo is setup to use the [`fw-beta` CLI tool](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/).
-(If you are working within the VSCode devcontainer, `fw` is an alias for `fw-beta`.)
-
-To get started, first login to the FW instance using `fw login` and your API key.
-
-The `docker/BUILD` file of each gear project defines the gear targets `validate`, `local` and `upload` to make it easier to run certain commands.
-If you prefer, you can change (`cd`) to the `src/docker` directory and run `fw-beta` commands there without using pants.
-
-1. The `validate` target runs the validation on the manifest for the project. So, the command
+3. [Upload the gear (the image and manifest) to Flywheel](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/upload/)
 
    ```bash
-   pants run project_management/src/docker:validate
+   pants run <project-dir>/src/docker:upload
    ```
 
-   runs validates the file `project_management/src/docker/manifest.json`.
+> The details of the Docker image and the `upload` target are defined in the `<project-dir>/src/docker/BUILD` file.
 
-2. The `local` target [runs the gear locally](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/)
+> Don't use `pants publish` with Gears, you need to use the gear commands below to push to the FW instance instead.
 
-   For this target, remember that in pants to provide arguments you need to use `--` between the command and the options.
+### Running a gear locally
 
-3. The `upload` target [uploads the image and manifest to Flywheel](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/upload/).
-   Run this after building the docker image to publish the gear to Flywheel.
+Because a gear is a docker image, you can just run the script within docker by using
+
+```bash
+pants run <project-dir>/src/docker::
+```
+
+**The rest of this has not been tried**
+
+The FW CLI also provides the `gear run` command, which can be executed with pants using the `local` target [to run the gear locally](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/).
+
+```bash
+pants run <project-dir>/src/docker:local
+```
+
+For this target, remember that in pants to provide arguments you need to use `--` between the command and the options.
 
 >Note: the guide for [local debugging](https://docs.flywheel.io/hc/en-us/articles/360037690613-Gear-Building-Tutorial-Part-2e-Gear-Testing-Debugging-Uploading) may be useful, though it uses the previous `fw` cli, doesn't use pants, and so some translation will be required.
+
+
