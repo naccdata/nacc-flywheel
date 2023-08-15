@@ -19,7 +19,7 @@ The following are copied from a template project:
 A template project has a name like `form-ingest-template` where the first word is the datatype and the second is a pipeline stage.
 Concretely, the name should match the regex `^((\w+)-)?(\w+)-template$`.
 Note that the first group is optional, so possible names are `form-ingest-template` or `accepted-template`.
-The datatype names must match those used in the project description file used in the project management script.
+The datatype names must match those used in the project description file used in the [project management script](../project_management/index.md).
 
 The stage names are hard-coded in the project management script, and are `ingest`, `accepted` and `retrospective`.
 
@@ -43,3 +43,32 @@ The default admin group is `nacc`.
 
 
 If run with `--gear`, the script will read the other arguments from the Gear context.
+
+## Running from a batch script
+
+Flywheel utility gears are either triggered by a gear rule, or run from a batch script.
+
+```python
+import flywheel
+
+client = flywheel.Client(os.environment.get("FW_API_KEY"))
+push_gear = client.lookup("gears/push-template")
+```
+
+The equivalent of the command line arguments above are given in the `config` argument shown here with default values
+
+```python
+config = {
+    "dry_run": False,
+    "admin_group": "nacc",
+    "new_only": False
+}
+```
+
+You can also specify `"debug": True`
+
+To run the gear use
+
+```python
+push_gear.run(config=config)
+```
