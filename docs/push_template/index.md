@@ -2,6 +2,8 @@
 
 Script to push settings from template projects in an admin group, to projects in center groups.
 
+## [Source directory](https://github.com/naccdata/flywheel-gear-extensions/tree/main/push_template)
+
 ## Environment
 
 The script expects the `FW_API_KEY` environment variables to be set, which should be an API key for the FW instance.
