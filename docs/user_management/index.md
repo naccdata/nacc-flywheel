@@ -37,7 +37,7 @@ This file should contain a list of user information
   The script can be run with
 
   ```bash
-  pants run user_management/src/python/user_app:bin -- <filename>
+  pants run user_management/src/python/user_app:bin -- --no-gear <filename>
   ```
 
   which will update users listed in the named file.

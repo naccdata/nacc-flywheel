@@ -34,7 +34,7 @@ The following are assumed to be columns in the report
 The script can be run with
 
 ```bash
-pants run directory_pull/src/python/directory_app/run.py -- <output-file-path>
+pants run directory_pull/src/python/directory_app/run.py -- --no-gear <output-file-path>
 ```
 
 which will pull the current user access report from the REDCap instance and write YAML text to the given file.

@@ -464,13 +464,13 @@ If you add new python dependencies
 6. Run the project management script (The `--` is required before the arguments)
 
     ```bash
-    pants run project_management/src/python/run.py --  project_management/data/test-project.yaml
+    pants run project_management/src/python/run.py --  --no-gear project_management/data/test-project.yaml
     ```
 
     or
 
     ```bash
-    pants run project_management/src/python:bin --  project_management/data/test-project.yaml
+    pants run project_management/src/python:bin --  --no-gear project_management/data/test-project.yaml
     ```
 
     > Scripts will expect that `FW_API_KEY` is set.
