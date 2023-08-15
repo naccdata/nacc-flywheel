@@ -28,6 +28,11 @@
         }
     },
     "config": {
+        "gear": {
+            "description": "Whether to run as gear, should always be true",
+            "type": "boolean",
+            "default": true
+        },
         "dry_run": {
             "description": "Whether to do a dry run",
             "type": "boolean",
