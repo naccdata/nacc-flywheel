@@ -13,7 +13,9 @@
 	// "postStartCommand": "",
 	"features": {
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {
-			"version": "latest"
+			"version": "latest",
+			"enableNonRootDocker": true,
+			"moby": true
 		}
 	},
 	"remoteEnv": {
@@ -23,6 +25,9 @@
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
+			"settings": {
+				"dev.containers.dockerCredentialHelper": false
+			},
 			"extensions": [
 				"ms-python.python",
 				"ms-azuretools.vscode-docker"
