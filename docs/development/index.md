@@ -56,7 +56,6 @@ To use it you will need to install VSCode, Docker, and enable dev containers wit
 Then open the repository in VS Code and start the container.
 
 Because the build tool comes with its own Python interpreter, you may be able to work without the devcontainer.
-However, this hasn't been tried.
 But, if you don't use the devcontainer you will at least need to install the FW cli and be sure it is on your path.
 Information on installing the `fw-beta` CLI can be found [here](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/).
 
@@ -205,29 +204,22 @@ The scripts are inspired by Flwheel's [template project](https://gitlab.com/flyw
 In that template, the Gear has two scripts `run.py` and `main.py` (or, rather, a file with a name specific to the app).
 The `run.py` script manages the environment, and the `main.py` does the computation.
 
-Each `run.py` script will have this structure, where the first check is whether `--gear` was given as a command line argument.
-That determines whether to get the remainder of the arguments from the gear context or from the command line arguments.
+Each `run.py` script will have this structure.
 
 ```python
 def main():
-    parser = <call_appropriate_command_line_parser>
-    args = parser.parse_args()
-
-    if args.gear: # script is being run as a gear
+    with GearToolkitContext() as gear_context:
+        gear_context.init_logging()
         ... # get arguments from gear context (refs manifest file)
-    else:
-        ... # get arguments from command line parser
     
     ... # get api key and connect to FW
     ... # gather any information based on arguments
     run(...) # call run method from main.py
 ```
 
-The file `common/src/python/inputs/arguments.py` defines three variants of command line parsers, which can be used in different scenarios:
-
-- `build_base_parser` -- command line parser with arguments to indicate whether running a gear, whether doing a dry run, whether to only work on centers (e.g., groups) tagged as new, and what the admin group is for the system
-- `build_parser_with_output` -- builds a base parser with a file argument for output
-- `build_parser_with_input` -- builds a base parser with a file argument for input
+The `GearToolkitContext` parses command-line arguments and sets them within the context.
+Extra command-line arguments given when the script is run are added to the context.
+However, any checks that would be enforced by an argument parser are not available, and have to be written explicitly.
 
 The `main.py` script defines a `run` method that performs the computation.
 Most of the work is done by calling code from the `common` subdirectory.
