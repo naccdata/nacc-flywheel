@@ -25,6 +25,7 @@ mkdir -p $1/src/docker
 cat templates/docker/build-template.txt | envsubst > $1/src/docker/BUILD
 cat templates/docker/dockerfile-template.txt | envsubst '${DIRNAME}' > $1/src/docker/Dockerfile
 cat templates/docker/manifest-template.txt | envsubst > $1/src/docker/manifest.json
+cat templates/docker/gitignore-template.txt > $1/src/docker/.gitignore
 
 mkdir -p docs/$1
 touch docs/$1/index.md
