@@ -16,18 +16,14 @@ log = logging.getLogger(__name__)
 def main():
     """Main method to copy template projects to center projects.
 
-    Uses command line argument `gear` to indicate whether being run as a gear.
-    If running as a gear, the arguments are taken from the gear context.
-    Otherwise, arguments are taken from the command line.
-
+    Arguments are taken from the gear context.
     Arguments are
       * admin_group: the name of the admin group in the instance
         default is `nacc`
       * dry_run: whether to run as a dry run, default is False
       * new_only: whether to only run on groups tagged as new
-      * the project file
 
-    Gear rules are taken from template projects in the admin group.
+    Gear pushes contents from the template projects in the admin group.
     These projects are expected to be named `<datatype>-<stage>-template`,
     where `datatype` is one of the datatypes that occur in the project file,
     and `stage` is one of 'accepted', 'ingest' or 'retrospective'.
@@ -45,7 +41,7 @@ def main():
 
         if not api_key:
             api_key = get_api_key()
-    
+
     if not api_key:
         log.error('No API key found. Cannot connect to Flywheel')
         sys.exit(1)
