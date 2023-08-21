@@ -4,7 +4,6 @@ import sys
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.arguments import build_base_parser
 from inputs.context_parser import parse_config
 from inputs.api_key import get_api_key
 from inputs.templates import get_template_projects
@@ -34,23 +33,18 @@ def main():
     and `stage` is one of 'accepted', 'ingest' or 'retrospective'.
     (These are pipeline stages that can be created for the project)
     """
-    parser = build_base_parser()
-    args = parser.parse_args()
 
-    if args.gear:
-        with GearToolkitContext() as gear_context:
-            gear_context.init_logging()
-            context_args = parse_config(gear_context=gear_context,
-                                        filename=None)
-            admin_group_name = context_args['admin_group']
-            new_only = context_args['new_only']
-            dry_run = context_args['dry_run']
-            api_key = gear_context.get_input('api-key')
-    else:
-        dry_run = args.dry_run
-        new_only = args.new_only
-        admin_group_name = args.admin_group
-        api_key = get_api_key()
+    with GearToolkitContext() as gear_context:
+        gear_context.init_logging()
+        context_args = parse_config(gear_context=gear_context,
+                                    filename=None)
+        admin_group_name = context_args['admin_group']
+        new_only = context_args['new_only']
+        dry_run = context_args['dry_run']
+        api_key = gear_context.get_input('api-key')
+
+        if not api_key:
+            api_key = get_api_key()
     
     if not api_key:
         log.error('No API key found. Cannot connect to Flywheel')

@@ -6,7 +6,6 @@ import sys
 from admin.users import get_admin_users
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.arguments import build_parser_with_input
 from inputs.context_parser import parse_config
 from inputs.api_key import get_api_key
 from inputs.yaml import get_object_list
@@ -19,23 +18,17 @@ log = logging.getLogger(__name__)
 def main() -> None:
     """Main method to manage users."""
 
-    parser = build_parser_with_input()
-    args = parser.parse_args()
+    filename = 'user_file'
+    with GearToolkitContext() as gear_context:
+        gear_context.init_logging()
+        context_args = parse_config(gear_context=gear_context,
+                                    filename=filename)
+        admin_group_name = context_args['admin_group']
+        dry_run = context_args['dry_run']
+        user_file = context_args[filename]
+        api_key = gear_context.get_input('api-key')
 
-    if args.gear:
-        filename = 'user_file'
-        with GearToolkitContext() as gear_context:
-            gear_context.init_logging()
-            context_args = parse_config(gear_context=gear_context,
-                                        filename=filename)
-            admin_group_name = context_args['admin_group']
-            dry_run = context_args['dry_run']
-            user_file = context_args[filename]
-            api_key = gear_context.get_input('api-key')
-    else:
-        dry_run = args.dry_run
-        user_file = args.filename
-        admin_group_name = args.admin_group
+    if not api_key:
         api_key = get_api_key()        
 
     user_list = get_object_list(user_file)
