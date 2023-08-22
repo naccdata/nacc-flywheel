@@ -174,28 +174,9 @@ And `project_management/src/docker/BUILD` contains
                source="Dockerfile",
                dependencies=[":manifest", "project_management/src/python:bin"],
                image_tags=["0.0.1", "latest"])
-
-   experimental_run_shell_command(
-       name="upload",
-       command="/home/vscode/bin/fw-beta gear upload ./",
-       description="run fw gear command for project_management",
-       workdir="project_management/src/docker")
-
-    experimental_run_shell_command(
-        name="validate",
-        command="fw-beta gear --validate manifest.json",
-        description="validate gear manifest for project_management",
-        workdir="project_management/src/docker")
-
-    experimental_run_shell_command(
-        name="local",
-        command="fw-beta gear run",
-        description="run project_management gear locally",
-        workdir="project_management/src/docker")
    ```
 
 which describes a Docker image target that depends on the manifest file, and the pex target in the python directory.
-It also enables a target `validate` and `upload` that allows running gear [manifest validation](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/), [local run](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/) and [upload](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/upload/) in the context of the `project_management/src/docker` directory.
 
 ### Gear scripts
 
@@ -340,13 +321,13 @@ Look at the FW gear documentation for more detail, but there are three key detai
    ```
 
 4. The manifest indicates how to run the script.
-   For this we need to know that the Dockerfile places the pex file in `/bin/run`, and the `run.py` script assumes it is given the `--gear` command line argument when run as a gear.
-   So, the gear is executed as `/bin/run --gear`, which is indicated in the manifest as
+   For this we need to know that the Dockerfile places the pex file in `/bin/run`.
+   So, the gear is executed as `/bin/run`, which is indicated in the manifest as
 
    ```json
    {
     ...
-       "command": "/bin/run --gear"
+       "command": "/bin/run"
    }
    ```
 
@@ -475,18 +456,14 @@ Most actions on gears use the Flywheel CLI.
 The repo is setup to use the [`fw-beta` CLI tool](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/).
 (If you are working within the VSCode devcontainer, `fw` is an alias for `fw-beta`.)
 
-The `<project-dir>/src/docker/BUILD` file of each gear project defines the gear targets `validate`, `local` and `upload` to make it easier to run certain commands.
-If you prefer, you can change (`cd`) to the `<project-dir>/src/docker` directory and run `fw-beta` commands there without using pants.
 
 ### Validating the manifest
 
-The `validate` target runs the validation on the manifest for the project. So, the command
+Validate the manifest with the command
 
 ```bash
-pants run <project-dir>/src/docker:validate
+fw-beta gear --validate <project-dir>/src/docker/manifest.json
 ```
-
-runs validates the file `<project-dir>/src/docker/manifest.json`.
 
 ### Publishing a gear
 
@@ -494,40 +471,53 @@ The steps for publishing a project as a gear are
 
 1. Create docker image
 
-    ```bash
-    pants package <project-dir>/src/docker::
-    ```
+   ```bash
+   pants package <project-dir>/src/docker::
+   ```
+
+   > Use pants to build the image rather than fw-beta
 
 2. Login to the FW instance using `fw login` and your API key.
 
 3. [Upload the gear (the image and manifest) to Flywheel](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/upload/)
 
    ```bash
-   pants run <project-dir>/src/docker:upload
+   fw-beta gear upload <project-dir>/src/docker
    ```
 
-> The details of the Docker image and the `upload` target are defined in the `<project-dir>/src/docker/BUILD` file.
-
-> Don't use `pants publish` with Gears, you need to use the gear commands below to push to the FW instance instead.
+   > Don't use `pants publish` with Gears, you need to use the gear commands below to push to the FW instance instead.
 
 ### Running a gear locally
 
-Because a gear is a docker image, you can just run the script within docker by using
+Before you run the following be sure that `<project-dir>/src/docker/.gitignore` has a line `config.json`.
+
+First [configure](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/config/) the gear:
+
+1. Use defaults from the manifest
+
+   ```bash
+   fw-beta gear config --create <project-dir>/src/docker
+   ```
+
+2. set api key
+
+   ```
+   fw-beta gear config -i api_key=$FW_API_KEY
+   ```
+
+3. Set destination for output
+
+   ```bash
+   fw-beta gear config -d <FW path>
+   ```
+
+   The destination should be the path for a Flywheel container.
+   For instance, if the gear has no output, could use the admin project: `nacc/project-admin` .
+
+Then to [run the gear](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/)  use the command
 
 ```bash
-pants run <project-dir>/src/docker::
+fw-beta gear run <project-dir>/src/docker
 ```
-
-**The rest of this has not been tried**
-
-The FW CLI also provides the `gear run` command, which can be executed with pants using the `local` target [to run the gear locally](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/).
-
-```bash
-pants run <project-dir>/src/docker:local
-```
-
-For this target, remember that in pants to provide arguments you need to use `--` between the command and the options.
-
->Note: the guide for [local debugging](https://docs.flywheel.io/hc/en-us/articles/360037690613-Gear-Building-Tutorial-Part-2e-Gear-Testing-Debugging-Uploading) may be useful, though it uses the previous `fw` cli, doesn't use pants, and so some translation will be required.
 
 
