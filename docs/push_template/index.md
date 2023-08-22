@@ -34,17 +34,15 @@ These tags can be set using the project management script.
 The script can be run with 
 
 ```bash
-pants run push_template/src/python/template_app:bin -- --no-gear
+pants run push_template/src/python/template_app:bin
 ```
 
 which will push all template projects to pipeline stage projects within tagged groups.
 
 To give command line arguments, add `--` to the command line and give the arguments.
-The arguments are `--dry_run` to run the script without making changes, and `--admin_group` to indicate the group in which templates occur. 
-The default admin group is `nacc`.
-
-
-If run with `--gear`, the script will read the other arguments from the Gear context.
+Available arguments are
+- `--dry_run` to run the script without making changes, and 
+- `--admin_group` to indicate the group in which templates occur. The default admin group is `nacc`.
 
 ## Running from a batch script
 
@@ -67,10 +65,12 @@ config = {
 }
 ```
 
-You can also specify `"debug": True`
-
 To run the gear use
 
 ```python
-push_gear.run(config=config)
+push_gear.run(config=config, destination=admin_project)
 ```
+
+This gear doesn't use the destination, but it needs to be set.
+Set `admin_project` to a project in the admin group. 
+For NACC, use the group `nacc/project-admin`.
