@@ -4,21 +4,3 @@ docker_image(name="user-management",
              source="Dockerfile",
              dependencies=[":manifest", "user_management/src/python/user_app:bin"],
              image_tags=["0.0.1", "latest"])
-
-experimental_run_shell_command(
-    name="upload",
-    command="fw-beta gear upload ./",
-    description="run fw gear command for user_management",
-    workdir="user_management/src/docker")
-
-experimental_run_shell_command(
-    name="validate",
-    command="fw-beta gear --validate manifest.json",
-    description="validate gear manifest for user_management",
-    workdir="user_management/src/docker")
-
-experimental_run_shell_command(
-    name="local",
-    command="fw-beta gear run",
-    description="run user_management gear locally",
-    workdir="user_management/src/docker")
