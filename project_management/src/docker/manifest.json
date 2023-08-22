@@ -53,5 +53,5 @@
             "default": false
         }
     },
-    "command": "/bin/run --gear"
+    "command": "/bin/run"
 }
