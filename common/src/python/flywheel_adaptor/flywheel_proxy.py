@@ -307,3 +307,8 @@ class FlywheelProxy:
           apps: the list of viewer apps
         """
         self.__fw.modify_project_settings(project.id, {"viewer_apps": apps})
+
+    def get_site(self):
+        """Returns URL for site of this instance."""
+        return self.__fw.get_config()["site"]["redirect_url"]
+    
