@@ -467,25 +467,33 @@ fw-beta gear --validate <project-dir>/src/docker/manifest.json
 
 ### Publishing a gear
 
+An important detail in publishing a gear is that Flywheel wont let you overwrite a previous version of a gear.
+So, the image tag needs to be incremented in order to upload a modified version of the gear.
+
 The steps for publishing a project as a gear are
 
-1. Create docker image
+1. If this is an updated version, increment the image tag in both `<project-dir>/src/docker/BUILD` and `<project-dir>/src/docker/manifest.json`.
+   The tags in these files need to match.
+
+2. Create docker image
 
    ```bash
    pants package <project-dir>/src/docker::
    ```
 
-   > Use pants to build the image rather than fw-beta
+   > Using `fw-beta gear build` will build the image incorrectly because `fw-beta` is unaware of the need to pull the pex file from `<project-dir>/src/python`.
 
-2. Login to the FW instance using `fw login` and your API key.
+3. Login to the FW instance using `fw-beta login` and your API key.
 
-3. [Upload the gear (the image and manifest) to Flywheel](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/upload/)
+4. [Upload the gear (the image and manifest) to Flywheel](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/upload/)
 
    ```bash
    fw-beta gear upload <project-dir>/src/docker
    ```
 
-   > Don't use `pants publish` with Gears, you need to use the gear commands below to push to the FW instance instead.
+   > The `pants publish` command is meant to push an image to an image repository such as dockerhub, and cannot be used to upload a gear to Flywheel.
+
+   If you get a message that `Gear already exists`, start over at the first step.
 
 ### Running a gear locally
 
@@ -502,13 +510,13 @@ First [configure](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/confi
 2. set api key
 
    ```
-   fw-beta gear config -i api_key=$FW_API_KEY
+   fw-beta gear config -i api_key=$FW_API_KEY <project-dir>/src/docker
    ```
 
 3. Set destination for output
 
    ```bash
-   fw-beta gear config -d <FW path>
+   fw-beta gear config -d <FW path> <project-dir>/src/docker
    ```
 
    The destination should be the path for a Flywheel container.
@@ -519,5 +527,4 @@ Then to [run the gear](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/
 ```bash
 fw-beta gear run <project-dir>/src/docker
 ```
-
 
