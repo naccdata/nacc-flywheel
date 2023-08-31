@@ -181,7 +181,9 @@ class CenterGroup(GroupAdaptor):
             template_project = stage_map.get(stage)
             if template_project:
                 template_project.copy_to(project,
-                                         value_map={'adrc': self.label})
+                                         value_map={'adrc': self.label,
+                                                    'project_id': project.id,
+                                                    'site': self.proxy.get_site()})
 
     def apply_template_map(
             self, template_map: Dict[str, Dict[str, TemplateProject]]) -> None:
