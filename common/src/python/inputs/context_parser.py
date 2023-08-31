@@ -12,5 +12,8 @@ def parse_config(*, gear_context: GearToolkitContext, filename: Optional[str]):
     if filename:
         args[filename] = gear_context.get_input_path(filename)
     args['admin_group'] = gear_context.config.get('admin_group', 'nacc')
+    api_key_dict = gear_context.get_input('api-key')
+    if api_key_dict:
+        args['api_key'] = api_key_dict.get('key')
 
     return args
