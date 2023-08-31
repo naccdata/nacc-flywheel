@@ -5,7 +5,6 @@ import sys
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.context_parser import parse_config
-from inputs.api_key import get_api_key
 from inputs.templates import get_template_projects
 from template_app.main import run
 
@@ -32,21 +31,17 @@ def main():
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
-        context_args = parse_config(gear_context=gear_context,
-                                    filename=None)
+        context_args = parse_config(gear_context=gear_context, filename=None)
         admin_group_name = context_args['admin_group']
         new_only = context_args['new_only']
         dry_run = context_args['dry_run']
-        api_key = gear_context.get_input('api-key')
+        client = gear_context.client
 
-        if not api_key:
-            api_key = get_api_key()
-
-    if not api_key:
-        log.error('No API key found. Cannot connect to Flywheel')
+    if not client:
+        log.error('No Flywheel connection. Check API key configuration.')
         sys.exit(1)
 
-    flywheel_proxy = FlywheelProxy(api_key=api_key, dry_run=dry_run)
+    flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
 
     groups = flywheel_proxy.find_groups(admin_group_name)
     if not groups:
