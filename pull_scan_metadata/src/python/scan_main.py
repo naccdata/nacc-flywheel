@@ -18,9 +18,12 @@ def run(*, flywheel_proxy: FlywheelProxy, loni_proxy: LONIConnection):
       loni_proxy: the proxy for the LONI IDA server
     """
 
-    upload_data = pull_table(proxy=loni_proxy, table_name="v_scan_upload_with_qc")
-    mri_dashboard = pull_table(proxy=loni_proxy, table_name="v_scan_mri_dashboard")
-    pet_dashboard = pull_table(proxy=loni_proxy, table_name="v_scan_pet_dashboard")
+    upload_data = pull_table(proxy=loni_proxy,
+                             table_name="v_scan_upload_with_qc")
+    mri_dashboard = pull_table(proxy=loni_proxy,
+                               table_name="v_scan_mri_dashboard")
+    pet_dashboard = pull_table(proxy=loni_proxy,
+                               table_name="v_scan_pet_dashboard")
 
     try:
         mri_dashboard = loni_proxy.get_table(database_name="scan",
@@ -34,10 +37,10 @@ def run(*, flywheel_proxy: FlywheelProxy, loni_proxy: LONIConnection):
     except LONIConnectionError as error:
         log.error("%s", error)
 
+
 def pull_table(*, proxy, table_name) -> Optional[Mapping[str, str]]:
     try:
-        table = proxy.get_table(database_name="scan",
-                                            table_name=table_name)
+        table = proxy.get_table(database_name="scan", table_name=table_name)
     except LONIConnectionError as error:
         log.error("%s", error)
         return None
@@ -46,5 +49,5 @@ def pull_table(*, proxy, table_name) -> Optional[Mapping[str, str]]:
     reader = DictReader(table_lines)
     table_map = {}
     #
-    
+
     return table

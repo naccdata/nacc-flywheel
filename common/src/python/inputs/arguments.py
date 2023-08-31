@@ -26,10 +26,11 @@ def build_base_parser() -> argparse.ArgumentParser:
     whether to do a dry run, and the name of the admin group."""
     parser = argparse.ArgumentParser(
         description="Create FW structures for Project")
-    parser.add_argument('--gear',
-                        help='read arguments from gear input, use --no-gear for cli arguments',
-                        default=True,
-                        action=argparse.BooleanOptionalAction)
+    parser.add_argument(
+        '--gear',
+        help='read arguments from gear input, use --no-gear for cli arguments',
+        default=True,
+        action=argparse.BooleanOptionalAction)
     parser.add_argument('--dry_run',
                         help='do a dry run to check input file',
                         default=False,

@@ -6,8 +6,8 @@ import sys
 from admin.users import get_admin_users
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.context_parser import parse_config
 from inputs.api_key import get_api_key
+from inputs.context_parser import parse_config
 from inputs.yaml import get_object_list
 from user_app.main import run
 
@@ -29,7 +29,7 @@ def main() -> None:
         api_key = gear_context.get_input('api-key')
 
     if not api_key:
-        api_key = get_api_key()        
+        api_key = get_api_key()
 
     user_list = get_object_list(user_file)
     if not user_list:
