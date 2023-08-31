@@ -30,8 +30,14 @@ def main():
         dry_run = context_args['dry_run']
         new_only = context_args['new_only']
         input_file = context_args[filename] # gets the file name
-        # get api-key from gear context if appropriate
-        api_key = gear_context.get_input('api-key')
+
+        # uses api_key passed to gear
+        client = gear_context.client
+        # will need different code if want client using the bot API key
+
+    if not client:
+        log.error('No Flywheel connection. Check API key configuration.')
+        sys.exit(1)
 
     # assumes input file is a YAML file
     object_list = get_object_list(input_file)
@@ -39,21 +45,11 @@ def main():
         log.error('No objects read from input')
         sys.exit(1)
 
-    if not api_key:
-        # connect to AWS SSM parameter store     
-        parameter_store = get_parameter_store()
-        api_key = get_api_key(parameter_store)
-    
-    if not api_key:
-        log.error('No API key found. Cannot connect to Flywheel')
-        sys.exit(1)
-
-    flywheel_proxy = FlywheelProxy(api_key=api_key, dry_run=dry_run)
+    flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
 
     run(proxy=flywheel_proxy,
         object_list=object_list,
         new_only=new_only)
-    
 
     if __name__ == "__main__":
         main()
