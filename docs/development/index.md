@@ -193,7 +193,6 @@ def main():
         gear_context.init_logging()
         ... # get arguments from gear context (refs manifest file)
     
-    ... # get api key and connect to FW
     ... # gather any information based on arguments
     run(...) # call run method from main.py
 ```
@@ -204,6 +203,24 @@ However, any checks that would be enforced by an argument parser are not availab
 
 The `main.py` script defines a `run` method that performs the computation.
 Most of the work is done by calling code from the `common` subdirectory.
+
+### On API Keys
+
+Most gears will require an API key with the most common scenario being using the user's API key.
+In this case, `api-key` should be included in the `inputs` section of the manifest, and then the client can be pulled from the `GearToolkitContext` as
+
+```python
+...
+    with GearToolkitContext() as gear_context:
+        ...
+        client = gear_context.client
+...
+```
+
+An alternate scenario is to use the gear bot API key.
+NACC's Flywheel instance is configured to provide environment variables with 
+AWS credentials for accessing the gear bot key in the parameter store.
+This is done with `inputs.parameter_store.get_parameter_store()`.
 
 ### Dockerfile
 
@@ -292,7 +309,23 @@ Look at the FW gear documentation for more detail, but there are three key detai
    }
    ```
 
-3. Any other arguments to the  script collected in `run.py` should be given in the `config` of the manifest
+3. If the gear requires a user API key, the following needs to be added to the `inputs`:
+
+```json
+{
+ ...
+    "inputs": {
+        ...
+        "api-key": {
+            "base": "api-key"
+        }
+        ...
+    }
+ ...
+}
+```
+
+4. Any other arguments to the  script collected in `run.py` should be given in the `config` of the manifest
 
    For instance, the project_management manifest file has
 
@@ -320,7 +353,7 @@ Look at the FW gear documentation for more detail, but there are three key detai
    }
    ```
 
-4. The manifest indicates how to run the script.
+5. The manifest indicates how to run the script.
    For this we need to know that the Dockerfile places the pex file in `/bin/run`.
    So, the gear is executed as `/bin/run`, which is indicated in the manifest as
 
