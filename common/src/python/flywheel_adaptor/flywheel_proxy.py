@@ -311,4 +311,3 @@ class FlywheelProxy:
     def get_site(self):
         """Returns URL for site of this instance."""
         return self.__fw.get_config()["site"]["redirect_url"]
-    
