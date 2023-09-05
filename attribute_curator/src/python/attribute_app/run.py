@@ -6,9 +6,7 @@ import sys
 from attribute_app.main import run
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.api_key import get_api_key
 from inputs.context_parser import parse_config
-from inputs.parameter_store import get_parameter_store
 from inputs.yaml import get_object_list
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -26,7 +24,6 @@ def main():
         #
         # get argument values from context_args
         #
-        admin_group_name = context_args['admin_group']
         dry_run = context_args['dry_run']
         new_only = context_args['new_only']
         input_file = context_args[filename]  # gets the file name

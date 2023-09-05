@@ -17,4 +17,3 @@ def run(*,
     Args:
       proxy: the proxy for the Flywheel instance
     """
-    pass
