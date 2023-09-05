@@ -12,10 +12,12 @@
 //     "flywheel-gear-toolkit>=0.2",
 //     "flywheel-sdk>=16.14.8",
 //     "pytest>=7.2.0",
+//     "pytz>=2023.3",
 //     "pyyaml==6.0",
 //     "requests>=2.18.4",
 //     "ssm-parameter-store>=19.11.0",
 //     "types-PyYAML>=6.0.12",
+//     "types-pytz>=2023.3",
 //     "types-requests"
 //   ],
 //   "manylinux": "manylinux2014",
@@ -78,36 +80,36 @@
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "48d1ea0918088df0e59a37a88ce53de7f4500108638c81255f5b1cb8edea28f4",
-              "url": "https://files.pythonhosted.org/packages/6a/22/a9272e54f32aedf82c6b27f989765025365c2a529516bb60a0b11f0db88c/boto3-1.28.39-py3-none-any.whl"
+              "hash": "bd7c760afb195eaeaab907dc6b2c21fa64ddbba3fed4a869e80d820ddbd6cc70",
+              "url": "https://files.pythonhosted.org/packages/81/09/be4b462f1aef33ffd789dbcfbd626a261fa0acc3b1499990ce8b71474d89/boto3-1.28.40-py3-none-any.whl"
             },
             {
               "algorithm": "sha256",
-              "hash": "3ac38ad8afafc6ed6c8dd6cc58ddd22b6352c6a413b969aef928c6aacf555c56",
-              "url": "https://files.pythonhosted.org/packages/a1/63/3b5b4161e6d20dc0b5922018413815bd761bb81b947eec86375c2c443736/boto3-1.28.39.tar.gz"
+              "hash": "6ff9a5b815e106656596064d51c9b6ba97a307807baa5f89634384b7d3f7ecc6",
+              "url": "https://files.pythonhosted.org/packages/fb/00/20a7ddef854c51347165d114c879203d656e12f7d9b7b30dd8cd244adcf1/boto3-1.28.40.tar.gz"
             }
           ],
           "project_name": "boto3",
           "requires_dists": [
-            "botocore<1.32.0,>=1.31.39",
+            "botocore<1.32.0,>=1.31.40",
             "botocore[crt]<2.0a0,>=1.21.0; extra == \"crt\"",
             "jmespath<2.0.0,>=0.7.1",
             "s3transfer<0.7.0,>=0.6.0"
           ],
           "requires_python": ">=3.7",
-          "version": "1.28.39"
+          "version": "1.28.40"
         },
         {
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "8ce716925284c1c0d04c796016a1e0e9c29ca3e196afefacacc16bc4e80c978f",
-              "url": "https://files.pythonhosted.org/packages/e2/b6/57921210119bf0b3acff423a3493ac08a717dc120cd192782aa0d15484ee/botocore-1.31.39-py3-none-any.whl"
+              "hash": "df766969f0d9ef9eda1a9c9946e0e173c10199f37a9e4c92861f11ddb5c9e702",
+              "url": "https://files.pythonhosted.org/packages/ba/2e/8b3b13bcd625115c6d65b0bbfa3312d983ef4508391e3bb09f4887fb34f5/botocore-1.31.40-py3-none-any.whl"
             },
             {
               "algorithm": "sha256",
-              "hash": "61aefac8b44f86a4581d4128cce30806f633357e8d8efc4f73367a8e62009e70",
-              "url": "https://files.pythonhosted.org/packages/bc/87/e7a751e707a1e996a617f30d6200e6b8f2dc4c600cb369bb798236ee2225/botocore-1.31.39.tar.gz"
+              "hash": "ce22a82ef8674f49691477d09558992cc87e7331f65c6a5b0da897ab192240ca",
+              "url": "https://files.pythonhosted.org/packages/96/b2/810868e32687760da8666ca65d2e307d7f50ed38276b5aef6cdf0a9fde14/botocore-1.31.40.tar.gz"
             }
           ],
           "project_name": "botocore",
@@ -118,7 +120,7 @@
             "urllib3<1.27,>=1.25.4"
           ],
           "requires_python": ">=3.7",
-          "version": "1.31.39"
+          "version": "1.31.40"
         },
         {
           "artifacts": [
@@ -542,6 +544,24 @@
           "artifacts": [
             {
               "algorithm": "sha256",
+              "hash": "a151b3abb88eda1d4e34a9814df37de2a80e301e68ba0fd856fb9b46bfbbbffb",
+              "url": "https://files.pythonhosted.org/packages/7f/99/ad6bd37e748257dd70d6f85d916cafe79c0b0f5e2e95b11f7fbc82bf3110/pytz-2023.3-py2.py3-none-any.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "1d8ce29db189191fb55338ee6d0387d82ab59f3d00eac103412d64e0ebd0c588",
+              "url": "https://files.pythonhosted.org/packages/5e/32/12032aa8c673ee16707a9b6cdda2b09c0089131f35af55d443b6a9c69c1d/pytz-2023.3.tar.gz"
+            }
+          ],
+          "project_name": "pytz",
+          "requires_dists": [],
+          "requires_python": null,
+          "version": "2023.3"
+        },
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
               "hash": "f84fbc98b019fef2ee9a1cb3ce93e3187a6df0b2538a651bfb890254ba9f90b5",
               "url": "https://files.pythonhosted.org/packages/02/25/6ba9f6bb50a3d4fbe22c1a02554dc670682a07c8701d1716d19ddea2c940/PyYAML-6.0-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl"
             },
@@ -783,6 +803,24 @@
           "artifacts": [
             {
               "algorithm": "sha256",
+              "hash": "65152e872137926bb67a8fe6cc9cfd794365df86650c5d5fdc7b167b0f38892e",
+              "url": "https://files.pythonhosted.org/packages/97/54/936703c579135395210c6819cfaeda02264e024b2a1a11990fd8bf1d5dc2/types_pytz-2023.3.0.1-py3-none-any.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "1a7b8d4aac70981cfa24478a41eadfcd96a087c986d6f150d77e3ceb3c2bdfab",
+              "url": "https://files.pythonhosted.org/packages/78/04/f1a77be852ae8102dc6ab531a3095ce1c1cc80cfa8a12afe015eeec68aa5/types-pytz-2023.3.0.1.tar.gz"
+            }
+          ],
+          "project_name": "types-pytz",
+          "requires_dists": [],
+          "requires_python": null,
+          "version": "2023.3.0.1"
+        },
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
               "hash": "a461508f3096d1d5810ec5ab95d7eeecb651f3a15b71959999988942063bf01d",
               "url": "https://files.pythonhosted.org/packages/da/14/7ee3c82b073aa56ba51a7c61e1c37045171fde3d7e60a6e2b1763bdb455c/types_PyYAML-6.0.12.11-py3-none-any.whl"
             },
@@ -876,10 +914,12 @@
     "flywheel-gear-toolkit>=0.2",
     "flywheel-sdk>=16.14.8",
     "pytest>=7.2.0",
+    "pytz>=2023.3",
     "pyyaml==6.0",
     "requests>=2.18.4",
     "ssm-parameter-store>=19.11.0",
     "types-PyYAML>=6.0.12",
+    "types-pytz>=2023.3",
     "types-requests"
   ],
   "requires_python": [

@@ -2,6 +2,8 @@ flywheel-gear-toolkit>=0.2
 flywheel-sdk>=16.14.8
 pyyaml==6.0
 pytest>=7.2.0
+pytz >= 2023.3
 requests>=2.18.4
 ssm-parameter-store>=19.11.0
 types-PyYAML>=6.0.12
+types-pytz >= 2023.3
