@@ -1,3 +1,6 @@
+from typing import Any, Dict
+
+
 class FileEntry:
 
     @property
@@ -13,4 +16,7 @@ class FileEntry:
         ...
 
     def read(self) -> str:
+        ...
+
+    def get(self, key: str) -> Dict[str, Any]:
         ...
