@@ -1,4 +1,6 @@
 from typing import Dict, List, Optional
+from flywheel.models.session import Session
+from flywheel.models.subject import Subject
 
 from flywheel.models.viewer_app import ViewerApp
 
@@ -91,4 +93,12 @@ class Client:
     def modify_project_settings(
         self, project_id: str, body: Dict[str, List[ViewerApp]]
     ) -> ProjectSharingSettingsProjectSettingsOutput:
+        ...
+
+    # these are methods forwarded to the Flywheel object by Client.__getattr__
+    #
+    def get_session(self, session_id: str) -> Session:
+        ...
+
+    def get_subject(self, subject_id: str) -> Subject:
         ...

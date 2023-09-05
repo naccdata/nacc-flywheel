@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 
 
 class Subject:
@@ -8,8 +8,9 @@ class Subject:
     def label(self) -> str:
         ...
 
+    # info is "defined" as object
     @property
-    def info(self) -> object:
+    def info(self) -> Dict[str, Any]:
         ...
 
     @property
