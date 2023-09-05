@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Optional
 
 from flywheel.models.file_entry import FileEntry
@@ -21,3 +22,7 @@ class Form(ABC):
         """
         return self.__file_object.get("info").get("forms",
                                                   {}).get("json").get(key)
+
+    @abstractmethod
+    def get_session_date(self) -> Optional[datetime]:
+        return None
