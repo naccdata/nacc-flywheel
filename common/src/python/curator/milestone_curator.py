@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict
 
-from files.form_curator import FormCurator, curate_session_timestamp
+from curator.form_curator import FormCurator, curate_session_timestamp
 from files.milestone_form import MilestoneForm
 
 log = logging.getLogger(__name__)

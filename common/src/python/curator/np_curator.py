@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict
 
-from files.form_curator import FormCurator, curate_session_timestamp
+from curator.form_curator import FormCurator, curate_session_timestamp
 from files.np_form import NPv11Form
 
 log = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, Optional
 
 from dates.dates import datetime_from_form_date, get_localized_timestamp
-from files.form_curator import FormCurator, curate_session_timestamp
+from curator.form_curator import FormCurator, curate_session_timestamp
 from files.uds_form import UDSV3Form
 from flywheel import Session, Subject
 
