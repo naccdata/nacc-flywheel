@@ -1,3 +1,4 @@
+"""Defines base class for forms."""
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional
@@ -6,6 +7,7 @@ from flywheel.models.file_entry import FileEntry
 
 
 class Form(ABC):
+    """Base class for forms."""
 
     @abstractmethod
     def __init__(self, file_object: FileEntry) -> None:
@@ -25,4 +27,9 @@ class Form(ABC):
 
     @abstractmethod
     def get_session_date(self) -> Optional[datetime]:
+        """Gets the date of the session of form.
+
+        Returns:
+          the date of session
+        """
         return None

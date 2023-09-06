@@ -1,3 +1,4 @@
+"""Defines form class for NPv11 forms."""
 from datetime import datetime
 from typing import Optional
 
@@ -7,7 +8,9 @@ from flywheel.models.file_entry import FileEntry
 
 
 class NPv11Form(Form):
+    """NPv11 form class usef for attribute curation."""
 
+    # pylint: disable=useless-super-delegation
     def __init__(self, file_object: FileEntry) -> None:
         super().__init__(file_object)
 

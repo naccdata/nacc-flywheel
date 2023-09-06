@@ -1,3 +1,4 @@
+"""Defines form class for milestone forms."""
 from datetime import datetime
 from typing import Optional
 
@@ -7,7 +8,9 @@ from flywheel.models.file_entry import FileEntry
 
 
 class MilestoneForm(Form):
+    """Milestone form class used for attribute curation."""
 
+    # pylint: disable=useless-super-delegation
     def __init__(self, file_object: FileEntry) -> None:
         super().__init__(file_object)
 

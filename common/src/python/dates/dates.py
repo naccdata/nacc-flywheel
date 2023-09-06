@@ -1,3 +1,4 @@
+"""Utility functions for converting datetime values."""
 import re
 from datetime import datetime
 
@@ -29,9 +30,9 @@ def get_localized_timestamp(datetime_obj: datetime) -> datetime:
       the datetime localized to utc
     """
 
-    # Change the timestamp hour (to prevent shifting to a different date in FW UI)
+    # Change timestamp hour (prevents shifting to a different date in FW UI)
     datetime_obj = datetime_obj.replace(hour=12)
 
-    # TODO: Could add a "get site timezone" function, depending on ADCID and site's geographical location
+    # TODO: Could add a "get site timezone" function, using site location
     timezone = pytz.utc
     return timezone.localize(datetime_obj)

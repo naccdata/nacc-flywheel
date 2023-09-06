@@ -1,3 +1,4 @@
+"""Defines the form class for UDSv3 forms."""
 import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
@@ -10,7 +11,9 @@ log = logging.getLogger(__name__)
 
 
 class UDSV3Form(Form):
+    """Class for UDSv3 forms."""
 
+    # pylint: disable=useless-super-delegation
     def __init__(self, file_object: FileEntry) -> None:
         super().__init__(file_object)
 
@@ -24,40 +27,41 @@ class UDSV3Form(Form):
         88: "Unknown or Not Reported",
         99: "Unknown or Not Reported",
     }
+    MORE_THAN_ONE = "More Than One Race"
 
     def get_subject_race(self) -> str:
         """Gets the race from a UDSv3 file.
 
-        Uses variables race, racesec, and raceter to determine race for subject in
-        Flywheel.
+        Uses variables race, racesec, and raceter to determine race for subject
+        in Flywheel.
 
         Returns:
           Flywheel race value
         """
-        UNKNOWN = "Unknown or Not Reported"
-        MORE_THAN_ONE = "More Than One Race"
         race_code = self.get_metadata("race")
         if not race_code:
-            return UNKNOWN
+            return self.UNKNOWN
         if race_code in ['50', '88', '99']:
-            return UNKNOWN
+            return self.UNKNOWN
 
         race = self.RACE_MAPPING.get(int(race_code))
         if not race:
             log.warning(
-                f"race value ({race_code}) unknown, setting to Unknown or Not Reported"
-            )
-            return UNKNOWN
+                "race value %s unknown, setting to Unknown or Not Reported",
+                race_code)
+            return self.UNKNOWN
 
         secondary_code = self.get_metadata("racesec")
         if secondary_code:
-            if self.RACE_MAPPING.get(int(secondary_code), UNKNOWN) != UNKNOWN:
-                return MORE_THAN_ONE
+            if self.RACE_MAPPING.get(int(secondary_code),
+                                     self.UNKNOWN) != self.UNKNOWN:
+                return self.MORE_THAN_ONE
 
         tertiary_code = self.get_metadata("raceter")
         if tertiary_code:
-            if self.RACE_MAPPING.get(int(tertiary_code), UNKNOWN) != UNKNOWN:
-                return MORE_THAN_ONE
+            if self.RACE_MAPPING.get(int(tertiary_code),
+                                     self.UNKNOWN) != self.UNKNOWN:
+                return self.MORE_THAN_ONE
 
         return race
 
@@ -66,6 +70,7 @@ class UDSV3Form(Form):
         1: "Hispanic or Latino",
         9: "Unknown or Not Reported",
     }
+    UNKNOWN = "Unknown or Not Reported"
 
     def get_subject_ethnicity(self) -> str:
         """Gets the ethnicity from the file.
@@ -73,21 +78,20 @@ class UDSV3Form(Form):
         Returns:
           FW subject ethnicity value
         """
-        UNKNOWN = "Unknown or Not Reported"
         ethnicity_code = self.get_metadata("ethnicity")
         if not ethnicity_code:
-            return UNKNOWN
+            return self.UNKNOWN
         if ethnicity_code == 9:
-            return UNKNOWN
+            return self.UNKNOWN
 
         ethnicity = self.ETHNICITY_MAPPING.get(int(ethnicity_code))
         if ethnicity:
             return ethnicity
 
         log.warning(
-            f"ethnicity value ({ethnicity_code}) unknown, setting to Unknown or Not Reported"
-        )
-        return UNKNOWN
+            "ethnicity value %s unknown, setting to Unknown or Not Reported",
+            ethnicity_code)
+        return self.UNKNOWN
 
     SEX_MAPPING = {1: "male", 2: "female"}
 
@@ -105,7 +109,7 @@ class UDSV3Form(Form):
         if sex:
             return sex
 
-        log.warning(f"sex value ({sex_code}) unknown, and won't be set")
+        log.warning("sex value %s unknown, and won't be set", sex_code)
         return None
 
     def get_subject_dob(self) -> Optional[datetime]:
@@ -197,7 +201,7 @@ class UDSV3Form(Form):
         """Gets CDR data from the file.
 
         Returns:
-          dictionary containing the CDR global score and sum-of-boxes from the form
+          dictionary with the CDR global score and sum-of-boxes from the form
         """
         visit_date = self.get_metadata("vstdate_a1")
         cdr_global = self.get_metadata("cdrglob")
