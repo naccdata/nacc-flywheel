@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import logging
 from typing import Any, Dict
 from dates.dates import get_localized_timestamp
@@ -15,6 +16,24 @@ class FormCurator(FileCurator):
     """Curator for form files."""
     def __init__(self) -> None:
         super().__init__()
+
+    def curate_file(self, file_: Dict[str, Any]):
+        """Curate form data.
+        
+        Args:
+          file_: JSON data for file
+        """
+        file_entry = self.get_file(file_)
+        self.curate_form(file_entry)
+
+    @abstractmethod
+    def curate_form(self, file_entry: FileEntry):
+        """Curates data for the form.
+        
+        Args:
+          file_entry: the file entry for the form
+        """
+        pass
 
     def get_file(self, file_object: Dict[str, Any]) -> FileEntry:
         """Get the file entry for the file object.

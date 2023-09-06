@@ -7,6 +7,7 @@ from dates.dates import datetime_from_form_date, get_localized_timestamp
 from curator.form_curator import FormCurator, curate_session_timestamp
 from files.uds_form import UDSV3Form
 from flywheel import Session, Subject
+from flywheel.models.file_entry import FileEntry
 
 log = logging.getLogger(__name__)
 
@@ -14,10 +15,12 @@ log = logging.getLogger(__name__)
 class UDSv3Curator(FormCurator):
     """File Curator for UDSv3 Forms."""
 
-    def curate_file(self, file_: Dict[str, Any]):
-        """Look in UDSv3 file for demographic information and set subject
-        attributes."""
-        file_entry = self.get_file(file_)
+    def curate_form(self, file_entry: FileEntry):
+        """Curates metadata for UDSv3 forms.
+        
+        Arg:
+          file_entry: the file entry for the form
+        """
         form = UDSV3Form(file_entry)
         subject = self.get_subject(file_entry)
 
@@ -27,7 +30,6 @@ class UDSv3Curator(FormCurator):
 
         session = self.get_session(file_entry)
         curate_session(subject, session, form)
-
 
 def curate_session(subject: Subject, session: Session, form: UDSV3Form):
     """Set session attributes.
