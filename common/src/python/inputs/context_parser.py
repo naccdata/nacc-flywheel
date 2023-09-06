@@ -1,7 +1,7 @@
 """Gear context parser for user management."""
 from typing import Optional
 
-from flywheel_gear_toolkit import GearToolkitContext  # type: ignore
+from flywheel_gear_toolkit import GearToolkitContext
 
 
 def parse_config(*, gear_context: GearToolkitContext, filename: Optional[str]):
