@@ -1,0 +1,3 @@
+# ignore config files generated when running gear
+config.json
+run.sh
