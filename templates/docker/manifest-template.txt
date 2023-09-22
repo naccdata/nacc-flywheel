@@ -2,12 +2,12 @@
     "name": "${IMAGENAME}",
     "label": "ADD GEAR LABEL",
     "description": "DESCRIBE GEAR",
-    "version": "0.0.1",
-    "author": "bjkeller@uw.edu",
-    "maintainer": "nacchelp@uw.edu",
+    "version": "${IMAGETAG}",
+    "author": "NACC",
+    "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
     "license": "MPL-2.0",
-    "url": "",
+    "url": "https://naccdata.github.io/flywheel-gear-extensions",
     "source": "https://github.com/naccdata/flywheel-gear-extensions",
     "environment": {
         "FLYWHEEL": "/flywheel/v0"
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/${IMAGENAME}"
+            "image": "naccdata/${IMAGENAME}:${IMAGETAG}"
         },
         "flywheel": {
             "suite": "NACC Admin Gears",
@@ -23,6 +23,9 @@
         }
     },
     "inputs": {
+        "api-key": {
+            "base": "api-key"
+        },
         "${FILEKEY}": {
             "description": "The project YAML file",
             "base": "file",
@@ -50,5 +53,5 @@
             "default": false
         }
     },
-    "command": "/bin/run --gear"
+    "command": "/bin/run"
 }

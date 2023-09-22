@@ -37,13 +37,12 @@ This file should contain a list of user information
   The script can be run with
 
   ```bash
-  ./pants run user_management/src/python:bin -- <filename>
+  pants run user_management/src/python/user_app:bin -- <filename>
   ```
 
   which will update users listed in the named file.
 
   Additional command line arguments are `--dry_run` to run the script without making changes, and `--admin_group` to indicate the group in which the file is found.
   The default admin group is `nacc`.
-
-  If run with `--gear`, the script will read other arguments from the Gear context.
+  
   

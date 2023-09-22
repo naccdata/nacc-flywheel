@@ -3,8 +3,8 @@ import logging
 from typing import List, Mapping, Optional
 
 import flywheel
-from flywheel import (ContainerIdViewInput, DataView, GearRule, GearRuleInput,
-                      RolesRole, ViewerApp, ViewIdOutput)
+from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
+                      GearRuleInput, RolesRole, ViewerApp, ViewIdOutput)
 from flywheel.models.project_parents import ProjectParents
 
 log = logging.getLogger(__name__)
@@ -14,14 +14,14 @@ class FlywheelProxy:
     """Defines a proxy object for group and project creation on a Flywheel
     instance."""
 
-    def __init__(self, api_key: str, dry_run: bool = True) -> None:
+    def __init__(self, client: Client, dry_run: bool = True) -> None:
         """Initializes a flywheel proxy object.
 
         Args:
           api_key: the API key
           dry_run: whether proxy will be used for a dry run
         """
-        self.__fw = flywheel.Client(api_key)
+        self.__fw = client
         self.__dry_run = dry_run
         self.__project_roles: Optional[Mapping[str, RolesRole]] = None
         self.__project_admin_role: Optional[RolesRole] = None
@@ -307,3 +307,7 @@ class FlywheelProxy:
           apps: the list of viewer apps
         """
         self.__fw.modify_project_settings(project.id, {"viewer_apps": apps})
+
+    def get_site(self):
+        """Returns URL for site of this instance."""
+        return self.__fw.get_config()["site"]["redirect_url"]
