@@ -84,27 +84,24 @@ without error.
 
 ## Working within VSCode
 
-Do the following to enable VSCode access to the python dependencies:
-
-1. create a `.env` file that sets the `PYTHONPATH` for source code in the project.
-
-   ```bash
-   bash bin/set-source-roots.sh
-   ```
-
-2. Update dependencies
-
-   ```bash
-   pants generate-lockfiles
-   ```
-
-3. Export virtual environment
+You need to export the virtual environment to enable VSCode access to the python dependencies:
 
    ```bash
    bash bin/set-venv.sh
    ```
 
-If you run into any issues, consult the [instructions for setting up an IDE](https://www.pantsbuild.org/docs/setting-up-an-ide)
+You may need to reopen the repository in VSCode for it to catch the virtual environment.
+
+This script creates a new `python-default.lock` file if it does not exist.
+If you update requirements.txt, you need to update dependencies using
+
+   ```bash
+   pants generate-lockfiles
+   ```
+
+and then export the environment again.
+
+Pants details may change, so if you run into any warnings/errors, consult the [instructions for setting up an IDE](https://www.pantsbuild.org/docs/setting-up-an-ide).
 
 ## Gear project organization
 
