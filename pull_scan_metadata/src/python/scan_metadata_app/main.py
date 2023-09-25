@@ -6,7 +6,7 @@ from io import BytesIO
 from typing import Dict, List, Optional
 
 import pandas as pd
-from flywheel import FileSpec, Group
+from flywheel import FileSpec, Group, Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 log = logging.getLogger(__name__)
@@ -130,7 +130,8 @@ def build_center_map(*, proxy: FlywheelProxy,
     return center_map
 
 
-def upload_file(*, project, site_table, file_name) -> None:
+def upload_file(*, project: Project, site_table: pd.DataFrame,
+                file_name: str) -> None:
     """Creates CSV file and uploads to Flywheel project.
 
     Args:
@@ -186,7 +187,8 @@ def run(*, proxy: FlywheelProxy, table_list: List[str], s3_client,
             continue
 
         log.info("Splitting table %s", table_name)
-        for site_key, adcid in table.site_keys():
+        site_map = table.site_keys()
+        for site_key, adcid in site_map.items():
             if not adcid:
                 log.warning('Site %s has no matching ADCID', site_key)
                 continue
