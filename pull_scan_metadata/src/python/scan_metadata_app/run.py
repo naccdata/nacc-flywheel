@@ -1,4 +1,3 @@
-# COPIED FROM ANOTHER PROJECT. MUST BE ALTERED FOR PULL SCAN PROJECT
 """Main function for running template push process."""
 import logging
 import sys
