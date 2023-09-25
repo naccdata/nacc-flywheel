@@ -157,6 +157,8 @@ def run(*, proxy: FlywheelProxy, table_list: List[str], s3_client,
       table_list: the list of metadata table names
       s3_client: the S3 client for accessing files
       center_tag_pattern: regex pattern to match center tags
+      bucket_name: name of the source bucket
+      destination_label: label for destination project w/in each center group
     """
 
     center_map = build_center_map(proxy=proxy,
@@ -171,6 +173,9 @@ def run(*, proxy: FlywheelProxy, table_list: List[str], s3_client,
                              file_name=filename)
         except s3_client.exceptions.NoSuchKey:
             log.error('File %s not found in bucket %s', filename, bucket_name)
+            continue
+        except s3_client.exceptions.InvalidObjectState as obj_error:
+            log.error('Unable to access file %s: %s', filename, obj_error)
             continue
 
         table = SCANTable.create_from(load_table(data))
