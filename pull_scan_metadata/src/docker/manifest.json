@@ -1,13 +1,13 @@
 {
     "name": "pull-scan-metadata",
-    "label": "pull-scan-metadata",
-    "description": "Pulls metadata from SCAN API",
+    "label": "Pull SCAN Metadata",
+    "description": "Pulls SCAN metadata from S3 and distributes to centers",
     "version": "0.0.1",
     "author": "zstark@uw.edu",
-    "maintainer": "nacchelp@uw.edu",
+    "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
     "license": "MPL-2.0",
-    "url": "https://naccdata.github.io/flywheel-gear-extensions",
+    "url": "https://naccdata.github.io/flywheel-gear-extensions/pull_scan_metadata",
     "source": "https://github.com/naccdata/flywheel-gear-extensions",
     "environment": {
         "FLYWHEEL": "/flywheel/v0"
@@ -25,6 +25,11 @@
     "inputs": {
     },
     "config": {
+        "dry_run": {
+            "description": "Whether to do a dry run",
+            "type": "boolean",
+            "default": false
+        }
     },
     "command": "/bin/run"
 }
