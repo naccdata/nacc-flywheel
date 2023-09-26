@@ -2,11 +2,11 @@
 
 import logging
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from flywheel import FileSpec, Group, Project
+from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from tabular_data.site_table import SiteTable
+from tabular_data.site_table import SiteTable, upload_split_table
 
 log = logging.getLogger(__name__)
 
@@ -23,13 +23,15 @@ def read_data(*, s3_client, bucket_name: str, file_name: str):
     return response['Body'].read()
 
 
-def build_center_map(*, proxy: FlywheelProxy,
-                     center_tag_pattern: str) -> Dict[str, Group]:
-    """Builds a map from adcid to group.
+def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
+                      destination_label: str) -> Dict[str, Project]:
+    """Builds a map from adcid to the project of center group with the given
+    label.
 
     Args:
-      center_tag_pattern:
       proxy: the flywheel instance proxy
+      center_tag_pattern: the regex for adcid-tags
+      destination_label: the project of center to map to
     Returns:
       dictionary mapping from adcid to group
     """
@@ -39,66 +41,47 @@ def build_center_map(*, proxy: FlywheelProxy,
                     center_tag_pattern)
         return {}
 
-    center_map = {}
+    project_map = {}
     for group in group_list:
+        project = proxy.get_project(group=group,
+                                    project_label=destination_label)
+        if not project:
+            continue
+
         pattern = re.compile(center_tag_pattern)
         tags = list(filter(pattern.match, group.tags))
         for tag in tags:
-            center_map[tag] = group
+            project_map[tag] = project
 
-    return center_map
+    return project_map
 
 
-def split_table(*, proxy: FlywheelProxy, table: SiteTable,
-                center_map: Dict[str, Group], filename: str,
-                destination_label: str) -> None:
-    """Splits the table by center ID and uploads to matching projects in FW.
+def build_site_map(*, site_map: Dict[str, Optional[str]],
+                   project_map: Dict[str, Project]) -> Dict[str, Project]:
+    """Composes the site and project maps to create mapping that can be used to
+    split a site table and upload partitions to projects.
 
     Args:
       proxy: the proxy object for Flywheel instance
-      table: the table to split
+      site_map: the map from site keys to adcids
       center_map: the map from adcid tags to center groups
       filename: the name of the file to use
       destination_label: the name of the project in center group
     """
-    site_map = table.site_keys()
+    project_map = {}
     for site_key, adcid in site_map.items():
         if not adcid:
             log.warning('Site %s has no matching ADCID', site_key)
             continue
 
-        site_table = table.select_site(site_key)
-        if not site_table:
-            log.error('Unable to select site data for ADCID %s', adcid)
-            continue
-
-        center_group = center_map.get(f'adcid-{adcid}')
-        if not center_group:
-            log.error('Did not find group for ADCID %s', adcid)
-            continue
-
-        project = proxy.get_project(group=center_group,
-                                    project_label=destination_label)
+        project = project_map.get(f'adcid-{adcid}')
         if not project:
-            log.error('Unable to access project %s', destination_label)
+            log.error('Did not find project for ADCID %s', adcid)
             continue
 
-        log.info("Uploading file %s for adcid %s", filename, adcid)
-        upload_file(project=project, site_table=site_table, file_name=filename)
+        project_map[site_key] = project
 
-
-def upload_file(*, project: Project, site_table: str, file_name: str) -> None:
-    """Creates CSV file and uploads to Flywheel project.
-
-    Args:
-      project: the Flywheel project
-      site_table: the CSV site data
-      file_name: the name of the file on Flywheel
-    """
-    file_spec = FileSpec(name=file_name,
-                         contents=site_table,
-                         content_type='text/csv')
-    project.upload_file(file_spec)
+    return project_map
 
 
 def run(*, proxy: FlywheelProxy, table_list: List[str], s3_client,
@@ -116,8 +99,9 @@ def run(*, proxy: FlywheelProxy, table_list: List[str], s3_client,
       destination_label: label for destination project w/in each center group
     """
 
-    center_map = build_center_map(proxy=proxy,
-                                  center_tag_pattern=center_tag_pattern)
+    project_map = build_project_map(proxy=proxy,
+                                   center_tag_pattern=center_tag_pattern,
+                                   destination_label=destination_label)
 
     for table_name in table_list:
         log.info("Downloading %s from S3", table_name)
@@ -141,8 +125,10 @@ def run(*, proxy: FlywheelProxy, table_list: List[str], s3_client,
             continue
 
         log.info("Splitting table %s", table_name)
-        split_table(proxy=proxy,
-                    table=table,
-                    center_map=center_map,
-                    filename=filename,
-                    destination_label=destination_label)
+        project_map = build_site_map(
+            site_map=table.site_keys(),
+            project_map=project_map,
+        )
+        upload_split_table(table=table,
+                           project_map=project_map,
+                           file_name=filename)

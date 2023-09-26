@@ -1,9 +1,13 @@
 """Defines class for handling tabular data that needs to be split by site."""
 from io import BytesIO
+import logging
 import re
 from typing import Dict, Optional
 import pandas as pd
 
+from flywheel import FileSpec, Project
+
+log = logging.getLogger(__name__)
 
 class SiteTable:
     """Wrapper for data frame for table with Center ID column.
@@ -75,3 +79,20 @@ class SiteTable:
         site_table = self.__data_table.loc[self.__data_table[self.__site_column] ==
                                      site_id]
         return site_table.to_csv(index=False)
+    
+
+def upload_split_table(*, table: SiteTable, project_map: Dict[str, Project], file_name: str) -> None:
+    for site_key, project in project_map.items():
+        if not project:
+            log.warning('No project for site %s', site_key)
+            continue
+
+        site_table = table.select_site(site_key)
+        if not site_table:
+            log.error('Unable to select site data for %s', site_key)
+            continue
+
+        file_spec = FileSpec(name=file_name,
+                        contents=site_table,
+                        content_type='text/csv')
+        project.upload_file(file_spec)
