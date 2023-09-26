@@ -11,4 +11,11 @@ class EC2ParameterStore:
                       decrypt: bool) -> Dict[str, str]:
         ...
 
+    def get_parameters_by_path(self,
+                               path: str,
+                               decrypt: bool = True,
+                               recursive: bool = True,
+                               strip_path: bool = True) -> Dict[str, str]:
+        ...
+
     ...
