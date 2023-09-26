@@ -2,10 +2,8 @@
 
 import logging
 import re
-from io import BytesIO
 from typing import Dict, List
 
-import pandas as pd
 from flywheel import FileSpec, Group, Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from tabular_data.site_table import SiteTable
@@ -23,17 +21,6 @@ def read_data(*, s3_client, bucket_name: str, file_name: str):
     """
     response = s3_client.get_object(Bucket=bucket_name, Key=file_name)
     return response['Body'].read()
-
-
-def load_table(object_data) -> pd.DataFrame:
-    """Converts the data to a DataFrame.
-
-    Args:
-      object_data: CSV file object from S3
-    Returns:
-      DataFrame containing data
-    """
-    return pd.read_csv(BytesIO(object_data))
 
 
 def build_center_map(*, proxy: FlywheelProxy,
@@ -146,7 +133,7 @@ def run(*, proxy: FlywheelProxy, table_list: List[str], s3_client,
             log.error('Unable to access file %s: %s', filename, obj_error)
             continue
 
-        table = SiteTable.create_from(load_table(data))
+        table = SiteTable.create_from(data)
         if not table:
             log.error(
                 'Table %s does not have a column with recognized center ID',

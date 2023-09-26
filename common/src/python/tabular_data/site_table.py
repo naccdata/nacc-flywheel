@@ -1,4 +1,5 @@
 """Defines class for handling tabular data that needs to be split by site."""
+from io import BytesIO
 import re
 from typing import Dict, Optional
 import pandas as pd
@@ -16,7 +17,7 @@ class SiteTable:
         self.__site_column = site_id_column
 
     @classmethod
-    def create_from(cls, table_data: pd.DataFrame) -> Optional['SiteTable']:
+    def create_from(cls, object_data: BytesIO) -> Optional['SiteTable']:
         """Creates table object and recognizes which column is used for site ID.
 
         Args:
@@ -24,6 +25,8 @@ class SiteTable:
         Returns:
           a wrapper object for the data frame or None if no center id column
         """
+        table_data = pd.read_csv(object_data)
+        
         if 'ADCID' in table_data.columns:
             site_id_name = 'ADCID'
         elif 'SITE' in table_data.columns:
