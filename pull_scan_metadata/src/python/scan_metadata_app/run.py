@@ -1,9 +1,10 @@
 """Main function for running template push process."""
 import logging
+import re
 import sys
+from typing import Dict
 
-import boto3
-from flywheel import Client
+from flywheel import Client, Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.api_key import get_api_key
@@ -11,9 +12,41 @@ from inputs.context_parser import parse_config
 from inputs.parameter_store import get_parameter_store
 from s3.s3_client import get_s3_client
 from scan_metadata_app.main import run
-from ssm_parameter_store import EC2ParameterStore
 
 log = logging.getLogger(__name__)
+
+# TODO: link to CenterGroup (?)
+def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
+                      destination_label: str) -> Dict[str, Project]:
+    """Builds a map from adcid to the project of center group with the given
+    label.
+
+    Args:
+      proxy: the flywheel instance proxy
+      center_tag_pattern: the regex for adcid-tags
+      destination_label: the project of center to map to
+    Returns:
+      dictionary mapping from adcid to group
+    """
+    group_list = proxy.find_groups_by_tag(center_tag_pattern)
+    if not group_list:
+        log.warning('no centers found matching tag pattern %s',
+                    center_tag_pattern)
+        return {}
+
+    project_map = {}
+    for group in group_list:
+        project = proxy.get_project(group=group,
+                                    project_label=destination_label)
+        if not project:
+            continue
+
+        pattern = re.compile(center_tag_pattern)
+        tags = list(filter(pattern.match, group.tags))
+        for tag in tags:
+            project_map[tag] = project
+
+    return project_map
 
 
 def main():
@@ -36,6 +69,12 @@ def main():
         sys.exit(1)
 
     proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
+    project_map = build_project_map(proxy=proxy,
+                                    center_tag_pattern=r'adcid-\d+',
+                                    destination_label='ingest-scan')
+    if not project_map:
+        log.error('No ADCID groups found')
+        sys.exit(1)
 
     s3_client = get_s3_client(store=parameter_store,
                               path='/prod/flywheel/gearbot/loni')
@@ -47,12 +86,10 @@ def main():
         "v_scan_upload_with_qc", "v_scan_mri_dashboard", "v_scan_pet_dashboard"
     ]
 
-    run(proxy=proxy,
-        table_list=table_list,
+    run(table_list=table_list,
         s3_client=s3_client,
         bucket_name='loni-table-data',
-        center_tag_pattern=r'adcid-\d+',
-        destination_label='ingest-scan')
+        project_map=project_map)
 
 
 if __name__ == "__main__":
