@@ -36,3 +36,6 @@ resolves = { python-default = "python-default.lock"}
 [python-bootstrap]
 #  https://www.pantsbuild.org/docs/python-interpreter-compatibility#changing-the-interpreter-search-path.
 search_path = ["<PATH>", "<PYENV>"]
+
+[python-infer]
+use_rust_parser = true
