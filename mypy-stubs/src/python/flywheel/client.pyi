@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from flywheel.models.viewer_app import ViewerApp
 
@@ -91,4 +91,8 @@ class Client:
     def modify_project_settings(
         self, project_id: str, body: Dict[str, List[ViewerApp]]
     ) -> ProjectSharingSettingsProjectSettingsOutput:
+        ...
+
+    # return type is ConfigOut which seems to be JSON response
+    def get_config(self, **kwargs) -> Dict[str, Any]:
         ...
