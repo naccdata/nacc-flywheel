@@ -26,3 +26,15 @@ def get_s3_client(*, store: EC2ParameterStore, path: str):
                           region_name=region)
 
     return client
+
+
+def read_data(*, s3_client, bucket_name: str, file_name: str):
+    """Reads the file object from S3 with bucket name and file name.
+
+    Args:
+      s3_client: client for S3
+      bucket_name: bucket prefix
+      file_name: name of file
+    """
+    response = s3_client.get_object(Bucket=bucket_name, Key=file_name)
+    return response['Body'].read()
