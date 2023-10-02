@@ -58,27 +58,25 @@ def main():
         gear_context.init_logging()
         context_args = parse_config(gear_context=gear_context, filename=None)
         dry_run = context_args['dry_run']
-        # '/prod/flywheel/gearbot/loni'
-        s3_param_path = gear_context.config.get('s3_path')
-        # 'loni-table-data'
-        bucket_name = gear_context.config.get('bucket_name')
-        # 'ingest-scan'
-        destination_label = gear_context.config.get('destination_label')
-        # [ "v_scan_upload_with_qc", "v_scan_mri_dashboard", "v_scan_pet_dashboard" ]
-        table_list = gear_context.config.get('table_list')
+        s3_param_path = gear_context.config.get('s3_param_path')
+        if not s3_param_path:
+            log.error('Incomplete configuration, no S3 path')
+            sys.exit(1)
 
-    if not s3_param_path:
-        log.error('Incomplete configuration, no S3 path')
-        sys.exit(1)
-    if not bucket_name:
-        log.error('Incomplete configuration, no bucket name')
-        sys.exit(1)
-    if not destination_label:
-        log.error('Incomplete configuration, no destination label')
-        sys.exit(1)
-    if not table_list:
-        log.error('Incomplete configuration, no table names')
-        sys.exit(1)
+        bucket_name = gear_context.config.get('bucket_name')
+        if not bucket_name:
+            log.error('Incomplete configuration, no bucket name')
+            sys.exit(1)
+
+        destination_label = gear_context.config.get('destination_label')
+        if not destination_label:
+            log.error('Incomplete configuration, no destination label')
+            sys.exit(1)
+
+        table_list = gear_context.config.get('table_list')
+        if not table_list:
+            log.error('Incomplete configuration, no table names')
+            sys.exit(1)
 
     parameter_store = get_parameter_store()
     if not parameter_store:
