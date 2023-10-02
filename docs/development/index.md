@@ -20,11 +20,13 @@ This is the development guide for the NACC flywheel gear extensions repo.
 │   ├── project_management
 │   ├── push_template
 │   └── user_management
-
 ├── mypy-stubs          # type stubs for flywheel SDK
 │   └── src
 ├── project_management  # gear script for managing NACC projects
 │   ├── data
+│   ├── src
+│   └── test
+├── pull_scan_metadata  # gear script to pull metadata from S3 to projects
 │   ├── src
 │   └── test
 ├── push_template       # gear script to push template projects
