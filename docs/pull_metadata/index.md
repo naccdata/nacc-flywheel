@@ -1,6 +1,6 @@
-# Pull SCAN Metadata
+# Pull Metadata
 
-Script to pull metadata files from S3 Bucket and distribute to `ingest-scan` project in group of each center with data in the data files.
+Script to pull metadata files from S3 Bucket and distribute to the same project in group of each center with data in the data files.
 
 ## Environment
 

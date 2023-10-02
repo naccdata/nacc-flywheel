@@ -26,7 +26,7 @@ This is the development guide for the NACC flywheel gear extensions repo.
 │   ├── data
 │   ├── src
 │   └── test
-├── pull_scan_metadata  # gear script to pull metadata from S3 to projects
+├── pull_metadata  # gear script to pull metadata from S3 to projects
 │   ├── src
 │   └── test
 ├── push_template       # gear script to push template projects
