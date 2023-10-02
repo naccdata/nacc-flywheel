@@ -3,14 +3,14 @@ import logging
 from collections import defaultdict
 from typing import List
 
-import flywheel
+from flywheel import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from redcap.nacc_directory import UserDirectoryEntry
 
 log = logging.getLogger(__name__)
 
 
-def run(*, proxy: FlywheelProxy, user_list, admin_users: List[flywheel.User]):
+def run(*, proxy: FlywheelProxy, user_list, admin_users: List[User]):
     """does the work."""
 
     # ignore administrative users in directory
@@ -25,6 +25,7 @@ def run(*, proxy: FlywheelProxy, user_list, admin_users: List[flywheel.User]):
             log.info('Skipping admin user: %s', user_entry.credentials['id'])
             continue
         center_map[f"{center_prefix}{user_entry.center_id}"].append(user_entry)
+        user = User(id=user_entry.credentials['id'], firstname=user_entry.name['first_name'], lastname=user_entry.name['last_name'], email=user_entry.email)
 
     for center_tag, center_users in center_map.items():
         group_list = proxy.find_groups_by_tag(center_tag)
