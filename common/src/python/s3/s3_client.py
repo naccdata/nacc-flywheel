@@ -3,7 +3,7 @@ import boto3
 from ssm_parameter_store import EC2ParameterStore
 
 
-def get_s3_client(*, store: EC2ParameterStore, path: str):
+def get_s3_client(*, store: EC2ParameterStore, param_path: str):
     """Returns the S3 client for the access credentials in the parameter store
     at the given path.
 
@@ -14,7 +14,7 @@ def get_s3_client(*, store: EC2ParameterStore, path: str):
       the boto3 S3 client
     """
     # Get S3 credentials
-    parameters = store.get_parameters_by_path(path=path)
+    parameters = store.get_parameters_by_path(path=param_path)
     access_key = parameters.get('accesskey')
     secret_key = parameters.get('secretkey')
     region = parameters.get('region')

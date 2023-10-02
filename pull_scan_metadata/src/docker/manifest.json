@@ -1,7 +1,7 @@
 {
     "name": "pull-scan-metadata",
     "label": "Pull SCAN Metadata",
-    "description": "Pulls SCAN metadata from S3 and distributes to centers",
+    "description": "Pulls CSV metadata from S3, partitions by center and distributes to centers",
     "version": "0.0.1",
     "author": "zstark@uw.edu",
     "maintainer": "NACC <nacchelp@uw.edu>",
@@ -29,6 +29,18 @@
             "description": "Whether to do a dry run",
             "type": "boolean",
             "default": false
+        },
+        "s3_param_path": {
+            "description": "Parameter path for S3 credentials",
+            "type": "string"
+        },
+        "bucket_name": {
+            "description": "Bucket prefix for input tables",
+            "type": "string"
+        },
+        "destination_label": {
+            "description": "Label of destination project",
+            "type": "array"
         }
     },
     "command": "/bin/run"
