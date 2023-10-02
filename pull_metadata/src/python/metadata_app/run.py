@@ -11,7 +11,7 @@ from inputs.api_key import get_api_key
 from inputs.context_parser import parse_config
 from inputs.parameter_store import get_parameter_store
 from s3.s3_client import get_s3_client
-from scan_metadata_app.main import run
+from metadata_app.main import run
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
 
 
 def main():
-    """Main method to distribute SCAN metadata from S3 bucket to center
+    """Main method to distribute metadata from S3 bucket to center
     projects."""
 
     with GearToolkitContext() as gear_context:

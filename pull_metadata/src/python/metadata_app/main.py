@@ -1,4 +1,4 @@
-"""Pulls SCAN metadata from LONI."""
+"""Pulls metadata from LONI."""
 
 import logging
 from typing import Dict, List
