@@ -22,9 +22,8 @@ def run(*, table_list: List[str], s3_client, bucket_name: str,
       project_map: map from ADCID to FW project for upload
     """
 
-    for table_name in table_list:
-        log.info("Downloading %s from S3", table_name)
-        filename = f"{table_name}.csv"
+    for filename in table_list:
+        log.info("Downloading %s from S3", filename)
         try:
             data = read_data(s3_client=s3_client,
                              bucket_name=bucket_name,
@@ -40,7 +39,7 @@ def run(*, table_list: List[str], s3_client, bucket_name: str,
         if not table:
             log.error(
                 'Table %s does not have a column with recognized center ID',
-                table_name)
+                filename)
             continue
 
         # remap projects from ADCID instead of center tag
@@ -50,7 +49,7 @@ def run(*, table_list: List[str], s3_client, bucket_name: str,
             for adcid in table.get_adcids()
         }
 
-        log.info("Splitting table %s", table_name)
+        log.info("Splitting table %s", filename)
         upload_split_table(table=table,
                            project_map=upload_map,
                            file_name=filename)
