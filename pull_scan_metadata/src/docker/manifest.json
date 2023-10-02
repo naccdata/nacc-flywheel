@@ -40,7 +40,14 @@
         },
         "destination_label": {
             "description": "Label of destination project",
-            "type": "array"
+            "type": "string"
+        },
+        "table_list": {
+            "description": "List of table file names",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
         }
     },
     "command": "/bin/run"
