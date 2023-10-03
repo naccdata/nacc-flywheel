@@ -77,7 +77,7 @@ def main():
         if not table_list:
             log.error('Incomplete configuration, no table names')
             sys.exit(1)
-
+        
     parameter_store = get_parameter_store()
     if not parameter_store:
         log.error('Unable to connect to parameter store')
@@ -100,6 +100,9 @@ def main():
     if not s3_client:
         log.error('Unable to connect to S3')
         sys.exit(1)
+
+    log.info('Pulling metadata from S3 bucket %s into center %s projects', bucket_name, destination_label)
+    log.info('Including files %s', table_list)
 
     run(table_list=table_list,
         s3_client=s3_client,
