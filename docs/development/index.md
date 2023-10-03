@@ -592,7 +592,15 @@ If the gear needs environment variables, these will need to be set before the ge
 
 #### Run the gear
 
-Once the values in the `config.json` are as needed, and any environment variables set, [run the gear](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/)  with the command
+Once the values in the `config.json` are as needed, and any environment variables set, you need to "prepare" the gear which creates the work environment
+
+```bash
+fw-beta gear run -p <project-dir>/src/docker
+```
+
+this will build a file structure in `tmp/gear` using the image name.
+
+Then [run the gear](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/)  with the command
 
 ```bash
 fw-beta gear run <project-dir>/src/docker
