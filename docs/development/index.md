@@ -586,9 +586,11 @@ In this case, it can be easier to give a dummy value and edit the `config.json` 
 
 Consult `fw-beta gear config --help` for details on the command.
 
-#### Set Environment Variables
+#### Environment Variables
 
-If the gear needs environment variables, these will need to be set before the gear will run locally.
+Environment variables are set in the `manifest.json`.
+
+>Secrets should not be added to the manifest file since it is version controlled.
 
 #### Run the gear
 
