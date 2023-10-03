@@ -6,9 +6,18 @@ Script to pull metadata files from S3 Bucket and distribute to the same project 
 
 This gear assumes it is running within the NACC admin group in Flywheel which is configured to provide AWS credentials for the gear bot user.
 
+If running locally the following environment variables will need to be set
+`AWS_SECRET_ACCESS_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_DEFAULT_REGION`
+
 Also, assumes the data has been placed in an S3 bucket.
 
 ## Flywheel configuration
+
+Center groups are expected to have a tag matching `r"adcid-\d+`. 
+The digits in the tag are used to match against the ADCID values in the input tables.
+
+Center groups are also expected to have projects with uniform labels.
+This is managed by the [templating gear](../push_template/).
 
 ## Running
 
