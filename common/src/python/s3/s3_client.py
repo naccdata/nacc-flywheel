@@ -1,5 +1,5 @@
 """Utilities for using S3 client."""
-from io import BytesIO
+from io import StringIO
 
 import boto3
 from ssm_parameter_store import EC2ParameterStore
@@ -30,7 +30,7 @@ def get_s3_client(*, store: EC2ParameterStore, param_path: str):
     return client
 
 
-def read_data(*, s3_client, bucket_name: str, file_name: str) -> BytesIO:
+def read_data(*, s3_client, bucket_name: str, file_name: str) -> StringIO:
     """Reads the file object from S3 with bucket name and file name.
 
     Args:
@@ -38,5 +38,5 @@ def read_data(*, s3_client, bucket_name: str, file_name: str) -> BytesIO:
       bucket_name: bucket prefix
       file_name: name of file
     """
-    response = s3_client.get_object(Bucket=bucket_name, Key=file_name)
-    return BytesIO(response['Body'].read())
+    csv_obj = s3_client.get_object(Bucket=bucket_name, Key=file_name)
+    return StringIO(csv_obj['Body'].read().decode('utf-8'))
