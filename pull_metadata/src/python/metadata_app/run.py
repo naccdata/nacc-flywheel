@@ -10,8 +10,8 @@ from flywheel_gear_toolkit import GearToolkitContext
 from inputs.api_key import get_api_key
 from inputs.context_parser import parse_config
 from inputs.parameter_store import get_parameter_store
-from s3.s3_client import get_s3_client
 from metadata_app.main import run
+from s3.s3_client import get_s3_client
 
 log = logging.getLogger(__name__)
 
@@ -37,22 +37,21 @@ def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
 
     project_map = {}
     for group in group_list:
-        project = proxy.get_project(group=group,
-                                    project_label=destination_label)
-        if not project:
+        projects = proxy.find_projects(group_id=group.id,
+                                       project_label=destination_label)
+        if not projects:
             continue
 
         pattern = re.compile(center_tag_pattern)
         tags = list(filter(pattern.match, group.tags))
         for tag in tags:
-            project_map[tag] = project
+            project_map[tag] = projects[0]
 
     return project_map
 
 
 def main():
-    """Main method to distribute metadata from S3 bucket to center
-    projects."""
+    """Main method to distribute metadata from S3 bucket to center projects."""
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
@@ -77,7 +76,7 @@ def main():
         if not table_list:
             log.error('Incomplete configuration, no table names')
             sys.exit(1)
-        
+
     parameter_store = get_parameter_store()
     if not parameter_store:
         log.error('Unable to connect to parameter store')
@@ -101,7 +100,8 @@ def main():
         log.error('Unable to connect to S3')
         sys.exit(1)
 
-    log.info('Pulling metadata from S3 bucket %s into center %s projects', bucket_name, destination_label)
+    log.info('Pulling metadata from S3 bucket %s into center %s projects',
+             bucket_name, destination_label)
     log.info('Including files %s', table_list)
 
     run(table_list=table_list,
