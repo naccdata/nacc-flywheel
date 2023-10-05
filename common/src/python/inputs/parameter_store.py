@@ -7,6 +7,7 @@ from ssm_parameter_store import EC2ParameterStore
 
 log = logging.getLogger(__name__)
 
+
 def get_parameter_store() -> Optional[EC2ParameterStore]:
     """Gets a proxy object for the parameter store if AWS credentials are set.
     Expects AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, and AWS_DEFAULT_REGION.
