@@ -107,7 +107,8 @@ def main():
     run(table_list=table_list,
         s3_client=s3_client,
         bucket_name=bucket_name,
-        project_map=project_map)
+        project_map=project_map,
+        dry_run=dry_run)
 
 
 if __name__ == "__main__":
