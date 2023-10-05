@@ -31,6 +31,7 @@ def get_api_key(
     if not parameter_store:
         return None
 
-    parameter_name = '/prod/flywheel/gearbot/apikey'
-    parameter = parameter_store.get_parameter(parameter_name, decrypt=True)
+    parameter_name = 'apikey'
+    parameter_path = f'/prod/flywheel/gearbot/{parameter_name}'
+    parameter = parameter_store.get_parameter(parameter_path, decrypt=True)
     return parameter.get(parameter_name)
