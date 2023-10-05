@@ -1,7 +1,7 @@
 """Defines class for handling tabular data that needs to be split by site."""
 import logging
 import re
-from io import BytesIO
+from io import StringIO
 from typing import Dict, Optional, Set
 
 import pandas as pd
@@ -24,7 +24,7 @@ class SiteTable:
         self.__site_map = site_map
 
     @classmethod
-    def create_from(cls, object_data: BytesIO) -> Optional['SiteTable']:
+    def create_from(cls, object_data: StringIO) -> Optional['SiteTable']:
         """Creates table object and recognizes which column is used for site
         ID.
 
@@ -42,11 +42,11 @@ class SiteTable:
         else:
             return None
 
-        site_ids = table_data.loc(site_id_name)
+        site_ids = table_data[site_id_name].to_list()
         site_map = {}
         for site_key in site_ids:
             if site_id_name == 'ADCID':
-                adcid = site_key
+                adcid = str(site_key)
             else:
                 match = re.search(r"([^(]+)\(ADC\s?(\d+)\)", site_key)
                 if not match:
@@ -85,7 +85,7 @@ class SiteTable:
 
 def upload_split_table(*, table: SiteTable,
                        project_map: Dict[str, Optional[Project]],
-                       file_name: str) -> None:
+                       file_name: str, dry_run: bool) -> None:
     """Splits the site table by ADCID and uploads partitions to a project.
 
     Args:
@@ -100,6 +100,11 @@ def upload_split_table(*, table: SiteTable,
         site_table = table.select_site(adcid)
         if not site_table:
             log.error('Unable to select site data for ADCID %s', adcid)
+            continue
+
+        if dry_run:
+            log.info('Dry run: would upload file %s to project %s', file_name,
+                     project.label)
             continue
 
         file_spec = FileSpec(name=file_name,
