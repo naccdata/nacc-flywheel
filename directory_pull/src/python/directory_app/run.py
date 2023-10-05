@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 import flywheel
 import yaml
-from flywheel import FileSpec
+from flywheel import Client, FileSpec
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.api_key import get_api_key
@@ -33,6 +33,7 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
+    client = None
     if args.gear:
         filename = 'user_file'
         with GearToolkitContext() as gear_context:
@@ -42,14 +43,16 @@ def main() -> None:
             admin_group_name = context_args['admin_group']
             dry_run = context_args['dry_run']
             user_filename = context_args[filename]
-            api_key = gear_context.get_input('api-key')
+            client = gear_context.client
     else:
         dry_run = args.dry_run
         user_filename = args.filename
         admin_group_name = args.admin_group
         api_key = get_api_key()
+        if api_key:
+            client = Client(api_key)
 
-    if not api_key:
+    if not client:
         log.error('No API key found. Cannot connect to Flywheel')
         sys.exit(1)
 
@@ -71,17 +74,22 @@ def main() -> None:
         log.error('No report ID: expecting %s to be set', report_id_variable)
         sys.exit(1)
 
+    directory_proxy = REDCapConnection(token=directory_token,
+                                       url=directory_url)
+
     user_entries = []
     try:
-        user_entries = get_user_records(directory_token=directory_token,
-                                        directory_url=directory_url,
+        user_entries = get_user_records(proxy=directory_proxy,
                                         user_report_id=user_report_id)
     except REDCapConnectionError as error:
         log.error('Failed to pull users from directory: %s', error.error)
         sys.exit(1)
 
     if args.gear or args.upload:
-        admin_project = get_admin_project(admin_group_name, dry_run, api_key)
+        flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
+        admin_project = get_admin_project(proxy=flywheel_proxy,
+                                          group_name=admin_group_name,
+                                          project_name='project-admin')
         if not admin_project:
             log.error('No admin group %s, cannot upload file %s',
                       admin_group_name, user_filename)
@@ -101,8 +109,8 @@ def main() -> None:
             yaml.safe_dump(user_entries, user_file)
 
 
-def get_admin_project(admin_group_name: str, dry_run: bool,
-                      api_key: str) -> Optional[flywheel.Project]:
+def get_admin_project(*, proxy: FlywheelProxy, group_name: str,
+                      project_name: str) -> Optional[flywheel.Project]:
     """Gets the admin project from the admin group.
 
     Args:
@@ -110,18 +118,17 @@ def get_admin_project(admin_group_name: str, dry_run: bool,
       dry_run: whether to do a dry run on FW operations
       api_key: the FW API key
     """
-    flywheel_proxy = FlywheelProxy(api_key=api_key, dry_run=dry_run)
+
     admin_group = None
-    groups = flywheel_proxy.find_groups(admin_group_name)
-    if groups:
-        admin_group = groups[0]
-    else:
-        log.error("Admin group %s not found", admin_group_name)
+    groups = proxy.find_groups(group_name)
+    if not groups:
+        log.error("Admin group %s not found", group_name)
         return None
 
-    project_name = 'project-admin'
-    admin_project = flywheel_proxy.get_project(group=admin_group,
-                                               project_label=project_name)
+    admin_group = groups[0]
+
+    admin_project = proxy.get_project(group=admin_group,
+                                      project_label=project_name)
     if not admin_project:
         log.error('Unable to access admin project: %s', project_name)
         return None
@@ -129,7 +136,7 @@ def get_admin_project(admin_group_name: str, dry_run: bool,
     return admin_project
 
 
-def get_user_records(*, directory_token: str, directory_url: str,
+def get_user_records(*, proxy: REDCapConnection,
                      user_report_id: str) -> List[Dict[str, Any]]:
     """Convert records in directory user report to UserDirectoryEntry and save
     as list of dictionary objects.
@@ -138,10 +145,7 @@ def get_user_records(*, directory_token: str, directory_url: str,
       user_report: the list of user records from directory report
     """
 
-    directory_proxy = REDCapConnection(token=directory_token,
-                                       url=directory_url)
-
-    user_report = directory_proxy.request_json_value(
+    user_report = proxy.request_json_value(
         data={
             'content': 'report',
             'report_id': str(user_report_id),
