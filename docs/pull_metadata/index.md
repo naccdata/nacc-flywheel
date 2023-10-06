@@ -4,12 +4,11 @@ Script to pull metadata files from S3 Bucket and distribute to the same project 
 
 ## Environment
 
-This gear assumes it is running within the NACC admin group in Flywheel which is configured to provide AWS credentials for the gear bot user.
+This gear assumes it is running within the NACC admin group in Flywheel which is configured to provide environment variables for AWS credentials for the gear bot user:
+`AWS_SECRET_ACCESS_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_DEFAULT_REGION`.
 
-If running locally the following environment variables will need to be set
-`AWS_SECRET_ACCESS_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_DEFAULT_REGION`
-
-Also, assumes the data has been placed in an S3 bucket.
+You cannot replicate this environment for a local run without putting these values in the gear `manifest.json` and risk checking them into version control.
+So, please don't try -- instead use pytest to test non-gear aspects.
 
 ## Flywheel configuration
 
