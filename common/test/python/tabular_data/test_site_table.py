@@ -8,8 +8,9 @@ from tabular_data.site_table import SiteTable
 
 @pytest.fixture(scope="function")
 def site_data_stream():
-    data = [[u'SITE', u'BLAH'], [u'alpha(ADC1)', u'blah1'],
-            [u'beta(ADC2)', u'blah2']]
+    """Create data stream for table with SITE column."""
+    data = [['SITE', 'BLAH'], ['alpha(ADC1)', 'blah1'],
+            ['beta(ADC2)', 'blah2']]
     stream = StringIO()
     writer = csv.writer(stream,
                         delimiter=',',
@@ -23,7 +24,8 @@ def site_data_stream():
 
 @pytest.fixture(scope='function')
 def adcid_data_stream():
-    data = [[u'ADCID', u'BLAH'], [u'1', u'blah1'], [u'2', u'blah2']]
+    """Create data stream for table with ADCID column."""
+    data = [['ADCID', 'BLAH'], ['1', 'blah1'], ['2', 'blah2']]
     stream = StringIO()
     writer = csv.writer(stream,
                         delimiter=',',
@@ -35,9 +37,12 @@ def adcid_data_stream():
     yield stream
 
 
+# pylint: disable=no-self-use,redefined-outer-name
 class TestSiteTable:
+    """Tests for SiteTable."""
 
     def test_create_from_site(self, site_data_stream):
+        """Test create_from with table has SITE column."""
         table = SiteTable.create_from(site_data_stream)
         assert table
         assert table.get_adcids() == {'1', '2'}
@@ -45,6 +50,7 @@ class TestSiteTable:
         assert table.select_site('2') == 'SITE,BLAH\nbeta(ADC2),blah2\n'
 
     def test_create_from_adcid(self, adcid_data_stream):
+        """Test create_from with table that has ADCID column."""
         table = SiteTable.create_from(adcid_data_stream)
         assert table
         assert table.get_adcids() == {'1', '2'}
