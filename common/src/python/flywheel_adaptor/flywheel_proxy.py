@@ -150,7 +150,7 @@ class FlywheelProxy:
             return flywheel.Project(label=project_label,
                                     parents=ProjectParents(group=group.id))
 
-        log.info('creating project...')
+        log.info('creating project %s', project_ref)
         project = group.add_project(label=project_label)
         log.info('success')
 
