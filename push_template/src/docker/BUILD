@@ -4,6 +4,6 @@ docker_image(
     name="push-template",
     source="Dockerfile",
     dependencies=[":manifest", "push_template/src/python/template_app:bin"],
-    image_tags=["0.0.6", "latest"])
+    image_tags=["0.0.7", "latest"])
 
 shell_sources()
