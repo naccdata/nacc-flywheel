@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from ..file_spec import FileSpec
 from ..typing.role_assignment import RoleAssignment
@@ -36,6 +36,10 @@ class Project:
     def permissions(self) -> List[RolesRoleAssignment]:
         ...
 
+    @property
+    def copyable(self) -> bool:
+        ...
+
     # TODO: determine return type
     def add_permission(self, permission: RoleAssignment) -> None:
         ...
@@ -52,7 +56,7 @@ class Project:
 
     # update takes *args, if used for other attributes add as needed
     # probably have to change types to Optional[str]
-    def update(self, description: str) -> None:
+    def update(self, copyable: Optional[bool] = False, description: Optional[str] = '') -> None:
         ...
 
     # TODO: determine return type
