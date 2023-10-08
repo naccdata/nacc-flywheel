@@ -20,11 +20,13 @@ This is the development guide for the NACC flywheel gear extensions repo.
 │   ├── project_management
 │   ├── push_template
 │   └── user_management
-
 ├── mypy-stubs          # type stubs for flywheel SDK
 │   └── src
 ├── project_management  # gear script for managing NACC projects
 │   ├── data
+│   ├── src
+│   └── test
+├── pull_metadata  # gear script to pull metadata from S3 to projects
 │   ├── src
 │   └── test
 ├── push_template       # gear script to push template projects
@@ -521,7 +523,7 @@ The steps for publishing a project as a gear are
    fw-beta gear upload <project-dir>/src/docker
    ```
 
-   > The `pants publish` command is meant to push an image to an image repository such as dockerhub, and cannot be used to upload a gear to Flywheel.
+   > Do not use the `pants publish` command. This command is meant to push an image to an image repository such as dockerhub, and cannot be used to upload a gear to Flywheel.
 
    If you get a message that `Gear already exists`, start over at the first step.
 
@@ -529,7 +531,7 @@ The steps for publishing a project as a gear are
 
 Before you run the following be sure that `<project-dir>/src/docker/.gitignore` has a line `config.json`.
 
-First [configure](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/config/) the gear:
+#### Basic configuration
 
 1. Use defaults from the manifest
 
@@ -550,9 +552,57 @@ First [configure](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/confi
    ```
 
    The destination should be the path for a Flywheel container.
-   For instance, if the gear has no output, could use the admin project: `nacc/project-admin` .
+   For instance, if the gear has no output, could use the admin project: `nacc/project-admin`.
 
-Then to [run the gear](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/)  use the command
+#### Gear-specific configuration
+
+<i>To see what values need to be set</i>, use the command
+
+```bash
+fw-beta gear config --show <project-dir>/src/docker
+```
+
+>Defaults should already be set in `config.json` for any config or input keys that have them in the manifest.
+You may need to set these for your local run, which may be easy to do by editing the `config.json` file directly.
+
+<i>For any config values that need a value</i> use the command
+   
+```bash
+fw-beta gear config -c <key-value-assignment> <project-dir>/src/docker
+```
+
+where `<key-value-assignment>` should be of the form `key=value` using a key from the manifest.
+
+<i>To set input values</i>, the command is similar except use the `-i` option instead of `-c`.
+
+```bash
+fw-beta gear config -i <key-value-assignment> <project-dir>/src/docker
+```
+
+where `<key-value-assignment>` should be of the form `key=value` using a key from the manifest.
+
+If a parameter value has a complex type, it may be difficult to convince your command shell to pass the value correctly.
+In this case, it can be easier to give a dummy value and edit the `config.json` afterward.
+
+Consult `fw-beta gear config --help` for details on the command.
+
+#### Environment Variables
+
+Environment variables are set in the `manifest.json`.
+
+>Secrets should not be added to the manifest file since it is version controlled.
+
+#### Run the gear
+
+Once the values in the `config.json` are as needed, and any environment variables set, you need to "prepare" the gear which creates the work environment
+
+```bash
+fw-beta gear run -p <project-dir>/src/docker
+```
+
+this will build a file structure in `tmp/gear` using the image name.
+
+Then [run the gear](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/)  with the command
 
 ```bash
 fw-beta gear run <project-dir>/src/docker

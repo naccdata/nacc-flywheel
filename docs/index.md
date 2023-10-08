@@ -8,4 +8,6 @@ Home for documentation of Flywheel extensions for the Nationl Alzheimer's Coordi
 - Users
     1. [Pull user information from directory](directory_pull/)
     2. [User Management](user_management/)
+- Data
+    1. [Pull metadata](pull_metadata/)
 - [Development Guide](development/)

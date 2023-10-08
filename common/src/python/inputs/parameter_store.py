@@ -1,8 +1,11 @@
 """Module for getting proxy object for AWS SSM parameter store object."""
+import logging
 from typing import Optional
 
 from inputs.environment import get_environment_variable
 from ssm_parameter_store import EC2ParameterStore
+
+log = logging.getLogger(__name__)
 
 
 def get_parameter_store() -> Optional[EC2ParameterStore]:
@@ -16,6 +19,7 @@ def get_parameter_store() -> Optional[EC2ParameterStore]:
     access_id = get_environment_variable('AWS_ACCESS_KEY_ID')
     region = get_environment_variable('AWS_DEFAULT_REGION')
     if not secret_key or not access_id or not region:
+        log.error("Did not find environment variables for parameter store")
         return None
 
     return EC2ParameterStore(aws_access_key_id=access_id,

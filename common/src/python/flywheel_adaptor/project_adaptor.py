@@ -44,6 +44,14 @@ class ProjectAdaptor:
         if tag not in self.__project.tags:
             self.__project.add_tag(tag)
 
+    def set_copyable(self, state: bool) -> None:
+        """Sets the copyable state of the project to the value.
+
+        Args:
+          state: the copyable state to set
+        """
+        self.__project.update(copyable=state)
+
     def set_description(self, description: str) -> None:
         """Sets the description of the project.
 

@@ -52,6 +52,18 @@ class TemplateProject:
         if value_map:
             self.copy_description(destination=destination, values=value_map)
         self.copy_apps(destination)
+        self.copy_copyable_setting(destination)
+
+    def copy_copyable_setting(self, destination: ProjectAdaptor) -> None:
+        """Copies the value of template copyable to the destination.
+
+        Args:
+          destination: the destination project
+        """
+        log.info('copying copyable state from template %s to %s/%s',
+                 self.__source_project.label, destination.group,
+                 destination.label)
+        destination.set_copyable(self.__source_project.copyable)
 
     def copy_apps(self, destination: ProjectAdaptor) -> None:
         """Performs copy of viewer apps to the destination.
