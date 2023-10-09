@@ -76,7 +76,7 @@ class GroupAdaptor:
         ]
         users = []
         for user_id in user_ids:
-            user = self.__fw.find_users(user_id)[0]
+            user = self.__fw.find_user(user_id)
             if user:
                 users.append(user)
         return users

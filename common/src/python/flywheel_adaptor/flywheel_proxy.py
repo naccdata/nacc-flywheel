@@ -72,16 +72,26 @@ class FlywheelProxy:
         """
         return self.__fw.groups.find(f"tags=~{tag_pattern}")
 
-    def find_users(self, user_id: str) -> List[flywheel.User]:
+    def find_user(self, user_id: str) -> Optional[flywheel.User]:
         """Searches for and returns a user if it exists.
 
         Args:
             user_id: the ID to search for
 
         Returns:
-            a list with the user, or an empty list if not found
+            a list with the user, or None if not found
         """
-        return self.__fw.users.find(f'_id={user_id}')
+        return self.__fw.users.find_first(f'_id={user_id}')
+
+    def add_user(self, user: flywheel.User) -> str:
+        """Adds the user and returns the user id
+        
+        Args:
+          user: the user to add
+        Returns:
+          the user id for the user added
+        """
+        return self.__fw.add_user(user)
 
     def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
         """Returns the flywheel group with the given ID and label.

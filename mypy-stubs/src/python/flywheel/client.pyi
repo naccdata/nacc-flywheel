@@ -64,6 +64,9 @@ class Client:
     def remove_project_rule(self, project_id: str, rule_id: str) -> None:
         ...
 
+    def add_user(self, user: User) -> str:
+        ...
+
     def get_views(self, view_id: str) -> List[DataView]:
         ...
 
