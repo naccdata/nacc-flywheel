@@ -13,7 +13,6 @@ from inputs.parameter_store import get_parameter_store
 from redcap.redcap_connection import (REDCapConnectionError,
                                       get_report_connection)
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
