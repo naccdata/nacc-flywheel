@@ -2,9 +2,7 @@
 user management gear."""
 import logging
 import sys
-from typing import Optional
 
-import flywheel
 from directory_app.main import run
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
@@ -33,10 +31,16 @@ def main() -> None:
         context_args = parse_config(gear_context=gear_context,
                                     filename=filename)
         admin_group_name = context_args['admin_group']
-        project_name = gear_context.config.get('admin_project',
-                                               'project-admin')
-        param_path = gear_context.config.get(
-            'param_path', '/prod/flywheel/gearbot/naccdirectory')
+        destination_label = gear_context.config.get('destination')
+        if not destination_label:
+            log.error('Incomplete configuration, no destination label')
+            sys.exit(1)
+
+        param_path = gear_context.config.get('parameter_path')
+        if not param_path:
+            log.error('Incomplete configuration, no directory report path')
+            sys.exit(1)
+
         dry_run = context_args['dry_run']
         user_filename = context_args[filename]
 
@@ -64,45 +68,22 @@ def main() -> None:
 
     flywheel_proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
 
-    admin_project = get_admin_project(proxy=flywheel_proxy,
-                                      group_name=admin_group_name,
-                                      project_name=project_name)
-    if not admin_project:
+    groups = flywheel_proxy.find_groups(admin_group_name)
+    if not groups:
+        log.warning("Admin group %s not found", admin_group_name)
+        sys.exit(1)
+
+    destination = flywheel_proxy.get_project(group=groups[0],
+                                             project_label=destination_label)
+    if not destination:
         log.error('No admin group %s, cannot upload file %s', admin_group_name,
                   user_filename)
         sys.exit(1)
 
     run(user_report=user_report,
         user_filename=user_filename,
-        project=admin_project,
+        project=destination,
         dry_run=dry_run)
-
-
-def get_admin_project(*, proxy: FlywheelProxy, group_name: str,
-                      project_name: str) -> Optional[flywheel.Project]:
-    """Gets the admin project from the admin group.
-
-    Args:
-      admin_group_name: the name of the admin group
-      dry_run: whether to do a dry run on FW operations
-      api_key: the FW API key
-    """
-
-    admin_group = None
-    groups = proxy.find_groups(group_name)
-    if not groups:
-        log.error("Admin group %s not found", group_name)
-        return None
-
-    admin_group = groups[0]
-
-    admin_project = proxy.get_project(group=admin_group,
-                                      project_label=project_name)
-    if not admin_project:
-        log.error('Unable to access admin project: %s', project_name)
-        return None
-
-    return admin_project
 
 
 if __name__ == "__main__":

@@ -44,10 +44,15 @@
             "type": "string",
             "default": "nacc"
         },
-        "admin_project": {
-            "description": "Name of the admin project",
+        "destination": {
+            "description": "Name of the destination project",
             "type": "string",
             "default": "project-admin"
+        },
+        "parameter_path": {
+            "description": "Parameter path for NACC directory",
+            "type": "string",
+            "default": "/prod/flywheel/gearbot/naccdirectory"
         }
     },
     "command": "/bin/run"
