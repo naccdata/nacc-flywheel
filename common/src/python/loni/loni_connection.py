@@ -33,7 +33,7 @@ class LONIConnection:
         if response.status_code == 401:
             # handle invalid key
             raise LONIConnectionError(
-                f"Unable to access tables in {database_name}: {response.reason}"
+                f"Unable to access {database_name} tables: {response.reason}"
             )
 
         if response.status_code == 500:
@@ -111,7 +111,7 @@ class LONIConnection:
         """Creates a connection object using the credentials (email and
         password).
 
-        A connection is only valid for 2 hours after which the connection key expires.
+        A connection is valid for 2 hours after which the key expires.
 
         Args:
           email: email address for a LONI IDA account.
