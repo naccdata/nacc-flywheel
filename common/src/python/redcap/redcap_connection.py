@@ -151,25 +151,6 @@ class REDCapConnectionError(Exception):
         return self._message
 
 
-def get_report(connection: REDCapConnection,
-               report_id: str) -> List[Dict[str, str]]:
-    """Pull the contents for the indicated report from the REDCap connection.
-
-    Args:
-      connection: the connection to the REDCap instance
-      report_id: the ID for the report
-    """
-    data = {
-        'content': 'report',
-        'report_id': report_id,
-        'rawOrLabel': 'raw',
-        'rawOrLabelHeaders': 'raw',
-        'exportCheckboxLabel': 'false'
-    }
-    message = "Unable to get report contents"
-    return connection.request_json_value(data=data, message=message)
-
-
 def get_report_connection(*, store: EC2ParameterStore,
                           param_path: str) -> Optional[REDCapReportConnection]:
     """Pulls URL and Token for REDCap project from SSM parameter store.
