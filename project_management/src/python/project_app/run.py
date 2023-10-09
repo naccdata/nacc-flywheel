@@ -14,7 +14,6 @@ import sys
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.group_adaptor import GroupAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.api_key import get_api_key
 from inputs.context_parser import parse_config
 from inputs.yaml import get_object_list
 from project_app.main import run

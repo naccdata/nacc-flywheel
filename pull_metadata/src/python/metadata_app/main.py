@@ -52,5 +52,5 @@ def run(*, table_list: List[str], s3_client, bucket_name: str,
         log.info("Splitting table %s", filename)
         upload_split_table(table=table,
                            project_map=upload_map,
-                           file_name=filename, 
+                           file_name=filename,
                            dry_run=dry_run)
