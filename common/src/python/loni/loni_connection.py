@@ -33,8 +33,7 @@ class LONIConnection:
         if response.status_code == 401:
             # handle invalid key
             raise LONIConnectionError(
-                f"Unable to access {database_name} tables: {response.reason}"
-            )
+                f"Unable to access {database_name} tables: {response.reason}")
 
         if response.status_code == 500:
             # handle system error
