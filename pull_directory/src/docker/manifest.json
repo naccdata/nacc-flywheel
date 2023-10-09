@@ -1,0 +1,54 @@
+{
+    "name": "pull-directory",
+    "label": "Pull Directory",
+    "description": "Pull user information from NACC directory and save to admin project",
+    "version": "0.0.1",
+    "author": "NACC",
+    "maintainer": "NACC <nacchelp@uw.edu>",
+    "cite": "",
+    "license": "MPL-2.0",
+    "url": "https://naccdata.github.io/flywheel-gear-extensions/pull_directory",
+    "source": "https://github.com/naccdata/flywheel-gear-extensions",
+    "environment": {
+        "FLYWHEEL": "/flywheel/v0"
+    },
+    "custom": {
+        "gear-builder": {
+            "category": "utility",
+            "image": "naccdata/pull-directory:0.0.1"
+        },
+        "flywheel": {
+            "suite": "NACC Admin Gears",
+            "show-job": true
+        }
+    },
+    "inputs": {
+        "user_file": {
+            "description": "The name for the directory users",
+            "base": "file",
+            "type": {
+                "enum": [
+                    "source code"
+                ]
+            }
+        }
+    },
+    "config": {
+        "dry_run": {
+            "description": "Whether to do a dry run",
+            "type": "boolean",
+            "default": false
+        },
+        "admin_group": {
+            "description": "Name of the admin group",
+            "type": "string",
+            "default": "nacc"
+        },
+        "admin_project": {
+            "description": "Name of the admin project",
+            "type": "string",
+            "default": "project-admin"
+        }
+    },
+    "command": "/bin/run"
+}
