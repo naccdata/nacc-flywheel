@@ -10,12 +10,12 @@ This is the development guide for the NACC flywheel gear extensions repo.
 ├── common              # shared code
 │   ├── src
 │   └── test
-├── directory_pull      # gear script to pull users from directory
+├── pull_directory      # gear script to pull users from directory
 │   ├── src
 │   └── test
 ├── docs                # documentation
 │   ├── development
-│   ├── directory_pull
+│   ├── pull_directory
 │   ├── index.md
 │   ├── project_management
 │   ├── push_template
@@ -414,7 +414,6 @@ Make the following changes:
 To complete the gear, you will likely need to make changes to `run.py` and the `main` scripts.
 In `run.py`, add anything that needs to be done gathering information from the environment, and the main script will do the actual computation mostly using code from the `common` directory.
 There may be exceptions to this scheme.
-For instance, the `directory_pull` script uses `run.py` without a main script because it behaves differently depending on whether it is run as a gear.
 
 ## Adding common code
 
