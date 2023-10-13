@@ -46,5 +46,5 @@
             "default": "nacc-directory-users.yaml"
         }
     },
-    "command": "bin/run"
+    "command": "/bin/run"
 }
