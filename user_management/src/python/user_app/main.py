@@ -1,7 +1,7 @@
 """Run method for user management."""
 import logging
 from collections import defaultdict
-from typing import List, Set, TypedDict
+from typing import Set, TypedDict
 
 from flywheel import RolesRoleAssignment, User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
@@ -17,7 +17,7 @@ def create_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
 
     Flywheel constraints (true as of version 17):
     1. user IDs should be lowercase b/c FW treats them as case sensitive.
-    2. the user ID and email have to be the same even if ID is an ePPN in add_user
+    2. the user ID and email must be the same even if ID is an ePPN in add_user
 
     Args:
       proxy: the proxy object for the FW instance
@@ -48,6 +48,7 @@ class UserAuthorizations(TypedDict):
     authorizations: Authorizations
 
 
+# pylint: disable=(too-many-locals)
 def run(*, proxy: FlywheelProxy, user_list, skip_list: Set[str]):
     """Manages users based on user list."""
 
@@ -90,5 +91,5 @@ def run(*, proxy: FlywheelProxy, user_list, skip_list: Set[str]):
         project_adaptor = ProjectAdaptor(project=project, proxy=proxy)
         for user_authorization in center_users:
             project_adaptor.add_user_roles(
-                RolesRoleAssignment(id=user_authorization.user.id,
+                RolesRoleAssignment(id=user_authorization['user'].id,
                                     role_ids=[read_only_role.id]))
