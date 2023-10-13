@@ -19,11 +19,9 @@ log = logging.getLogger(__name__)
 def main() -> None:
     """Main method to manage users."""
 
-    filename = 'user_file'
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
-        context_args = parse_config(gear_context=gear_context,
-                                    filename=filename)
+        context_args = parse_config(gear_context=gear_context)
         admin_group_name = context_args['admin_group']
         source_label = gear_context.config.get('source')
         if not source_label:
@@ -31,7 +29,7 @@ def main() -> None:
             sys.exit(1)
 
         dry_run = context_args['dry_run']
-        user_filename = context_args[filename]
+        user_filename = gear_context.config.get('user_file')
 
     parameter_store = get_parameter_store()
     if not parameter_store:
