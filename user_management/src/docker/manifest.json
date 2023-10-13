@@ -23,9 +23,6 @@
         }
     },
     "inputs": {
-        "api-key": {
-            "base": "api-key"
-        },
         "user_file": {
             "description": "The user YAML file",
             "base": "file",
@@ -41,7 +38,17 @@
             "description": "Whether to do a dry run",
             "type": "boolean",
             "default": false
-        }        
+        },
+        "admin_group": {
+            "description": "Name of the admin group",
+            "type": "string",
+            "default": "nacc"
+        },
+        "source": {
+            "description": "Name of the source project",
+            "type": "string",
+            "default": "project-admin"
+        }     
     },
     "command": "bin/run"
 }
