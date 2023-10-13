@@ -136,6 +136,7 @@ class GroupAdaptor:
 
         self.__fw.add_group_role(group=self.__group, role=new_role)
 
+    # TODO: should return ProjectAdaptor
     def get_project(self, label: str) -> Optional[flywheel.Project]:
         """Returns a project in this group with the given label.
 
