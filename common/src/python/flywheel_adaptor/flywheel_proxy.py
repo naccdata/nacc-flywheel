@@ -91,6 +91,11 @@ class FlywheelProxy:
         Returns:
           the user id for the user added
         """
+        if self.dry_run:
+            log.info('Dry run: would create user %s', user.id)
+            assert user.id
+            return user.id
+        
         return self.__fw.add_user(user)
 
     def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
@@ -166,7 +171,7 @@ class FlywheelProxy:
 
         return project
 
-    def __get_roles(self) -> Mapping[str, RolesRole]:
+    def get_roles(self) -> Mapping[str, RolesRole]:
         """Gets all roles for the FW instance.
 
         Does not include GroupRoles.
@@ -184,7 +189,7 @@ class FlywheelProxy:
         Returns:
           the role with the name if one exists. None, otherwise
         """
-        role_map = self.__get_roles()
+        role_map = self.get_roles()
         return role_map.get(label)
 
     def get_admin_role(self) -> Optional[RolesRole]:
@@ -226,6 +231,10 @@ class FlywheelProxy:
     def add_project_rule(self, *, project: flywheel.Project,
                          rule_input: GearRuleInput) -> None:
         """Forwards call to the FW client."""
+        if self.dry_run:
+            log.info('Would add rule %s to project %s', rule_input, project.label)
+            return
+
         self.__fw.add_project_rule(project.id, rule_input)
 
     def remove_project_gear_rule(self, *, project: flywheel.Project,
@@ -263,6 +272,11 @@ class FlywheelProxy:
           project: the project to which to add the data view
           viewinput: the object representing the data view
         """
+        # TODO: setup dry run for add_dataview
+        # if self.dry_run:
+        #     log.info("Dry run: would add %s to project %s", viewinput, project.label)
+        #     return ""
+        
         return self.__fw.add_view(project.id, viewinput)
 
     def modify_dataview(self, *, source: DataView,
@@ -273,6 +287,11 @@ class FlywheelProxy:
           source: the source DataView
           destination: the DataView to modify
         """
+        if self.dry_run:
+            # TODO: add detail to dry run message
+            log.info('Dry run: would modify data view')
+            return
+    
         temp_id = source._id  # pylint: disable=(protected-access)
         temp_parent = source.parent
         source._id = None  # pylint: disable=(protected-access)
@@ -289,6 +308,10 @@ class FlywheelProxy:
         Returns:
           True if the dataview is deleted, False otherwise
         """
+        if self.dry_run:
+            log.info('Dry run: would delete dataview %s', view)
+            return False
+
         result = self.__fw.delete_view(view.id)
         return bool(result.deleted)
 
@@ -316,6 +339,10 @@ class FlywheelProxy:
           project: the project
           apps: the list of viewer apps
         """
+        if self.dry_run:
+            log.info('Dry run: would set viewer %s in project %s', apps, project.label)
+            return
+
         self.__fw.modify_project_settings(project.id, {"viewer_apps": apps})
 
     def get_site(self):
