@@ -10,6 +10,7 @@ from flywheel.models.project_parents import ProjectParents
 log = logging.getLogger(__name__)
 
 
+# pylint: disable=(too-many-public-methods)
 class FlywheelProxy:
     """Defines a proxy object for group and project creation on a Flywheel
     instance."""
@@ -84,8 +85,8 @@ class FlywheelProxy:
         return self.__fw.users.find_first(f'_id={user_id}')
 
     def add_user(self, user: flywheel.User) -> str:
-        """Adds the user and returns the user id
-        
+        """Adds the user and returns the user id.
+
         Args:
           user: the user to add
         Returns:
@@ -95,7 +96,7 @@ class FlywheelProxy:
             log.info('Dry run: would create user %s', user.id)
             assert user.id
             return user.id
-        
+
         return self.__fw.add_user(user)
 
     def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
@@ -232,7 +233,8 @@ class FlywheelProxy:
                          rule_input: GearRuleInput) -> None:
         """Forwards call to the FW client."""
         if self.dry_run:
-            log.info('Would add rule %s to project %s', rule_input, project.label)
+            log.info('Would add rule %s to project %s', rule_input,
+                     project.label)
             return
 
         self.__fw.add_project_rule(project.id, rule_input)
@@ -274,9 +276,10 @@ class FlywheelProxy:
         """
         # TODO: setup dry run for add_dataview
         # if self.dry_run:
-        #     log.info("Dry run: would add %s to project %s", viewinput, project.label)
+        #     log.info("Dry run: would add %s to project %s", viewinput,
+        #              project.label)
         #     return ""
-        
+
         return self.__fw.add_view(project.id, viewinput)
 
     def modify_dataview(self, *, source: DataView,
@@ -291,7 +294,7 @@ class FlywheelProxy:
             # TODO: add detail to dry run message
             log.info('Dry run: would modify data view')
             return
-    
+
         temp_id = source._id  # pylint: disable=(protected-access)
         temp_parent = source.parent
         source._id = None  # pylint: disable=(protected-access)
@@ -340,7 +343,8 @@ class FlywheelProxy:
           apps: the list of viewer apps
         """
         if self.dry_run:
-            log.info('Dry run: would set viewer %s in project %s', apps, project.label)
+            log.info('Dry run: would set viewer %s in project %s', apps,
+                     project.label)
             return
 
         self.__fw.modify_project_settings(project.id, {"viewer_apps": apps})
