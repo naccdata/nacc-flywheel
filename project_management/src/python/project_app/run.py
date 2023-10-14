@@ -15,7 +15,7 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.group_adaptor import GroupAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.context_parser import parse_config
-from inputs.yaml import get_object_list
+from inputs.yaml import get_object_lists
 from project_app.main import run
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -59,7 +59,7 @@ def main():
 
     flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
 
-    project_list = get_object_list(project_file)
+    project_list = get_object_lists(project_file)
     if not project_list:
         sys.exit(1)
 
