@@ -11,7 +11,7 @@ def get_object_lists(yaml_file) -> Optional[List[List[Any]]]:
     """Gets lists of objects from the yaml file.
 
     Assumes the file can have more than one document.
-    
+
     Args:
       yaml_file: name of the yaml file
     Returns:
@@ -20,11 +20,13 @@ def get_object_lists(yaml_file) -> Optional[List[List[Any]]]:
     with open(yaml_file, 'r', encoding='utf-8') as stream:
         return get_object_lists_from_stream(stream, yaml_file)
 
-def get_object_lists_from_stream(stream, yaml_file) -> Optional[List[List[Any]]]:
+
+def get_object_lists_from_stream(stream,
+                                 yaml_file) -> Optional[List[List[Any]]]:
     """Gets list of objects from the IO stream.
 
     Assumes the file can have more than one document.
-    
+
     Args:
       stream: IO stream
       yaml_file: the name of the file
@@ -38,7 +40,7 @@ def get_object_lists_from_stream(stream, yaml_file) -> Optional[List[List[Any]]]
         mark = exception.problem_mark
         if mark:
             log.error("Error: line %s, column %s", mark.line + 1,
-                        mark.column + 1)
+                      mark.column + 1)
         else:
             log.error("Error: %s", exception)
         return None
