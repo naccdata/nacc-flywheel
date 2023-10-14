@@ -33,5 +33,7 @@ def run(*, user_report: List[Dict[str, str]], user_filename: str,
 
     project.upload_file(
         FileSpec(user_filename,
-                 contents=yaml.safe_dump(user_entries),
+                 contents=yaml.safe_dump(user_entries,
+                                         allow_unicode=True,
+                                         default_flow_style=False),
                  content_type='text/yaml'))
