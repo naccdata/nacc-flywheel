@@ -149,16 +149,17 @@ class GroupAdaptor:
           the project in this group with the label
         """
         return self.__fw.get_project(group=self.__group, project_label=label)
-    
+
     def find_project(self, label: str) -> Optional[ProjectAdaptor]:
         """Returns the project adaptor in the group with the label.
-        
+
         Args:
           label: the label of the desired project
         Returns:
           Project adaptor for project with label if exists, None otherwise.
         """
-        projects = self.__fw.find_projects(group_id=self.__group.id, project_label=label)
+        projects = self.__fw.find_projects(group_id=self.__group.id,
+                                           project_label=label)
         if not projects:
             return None
 

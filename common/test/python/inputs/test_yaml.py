@@ -3,9 +3,11 @@ import yaml
 from inputs.yaml import get_object_lists_from_stream
 
 
+# pylint: disable=(too-few-public-methods)
 class TestYAML:
     """Test for handling of YAML documents."""
 
+    # pylint: disable=(no-self-use)
     def test_empty(self):
         """Test for empty list.
 

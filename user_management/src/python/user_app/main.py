@@ -62,12 +62,26 @@ def create_user_map(
 
     return center_map
 
+
 def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
+    """Updates user email on FW instance if email is different.
+
+    Checks whether user email is the same as new email.
+
+    Note: this needs to be applied after a user is created if the ID and email
+    are different, because the API wont allow a new user without this condition.
+
+    Args:
+      proxy: Flywheel proxy object
+      user: local user object
+      email: email address to set
+    """
     if user.email == email:
         return
-    
+
     log.info('Setting user %s email to %s', user.id, email)
     proxy.set_user_email(user=user, email=email)
+
 
 # pylint: disable=(too-many-locals)
 def run(*, proxy: FlywheelProxy, user_list, skip_list: Set[str]):
