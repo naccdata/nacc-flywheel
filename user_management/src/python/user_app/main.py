@@ -6,13 +6,12 @@ from typing import Dict, List, Set
 from flywheel import RolesRoleAssignment, User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.group_adaptor import GroupAdaptor
-from flywheel_adaptor.project_adaptor import ProjectAdaptor
 from redcap.nacc_directory import UserDirectoryEntry
 
 log = logging.getLogger(__name__)
 
 
-def create_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> str:
+def create_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
     """Creates a user object from the directory entry.
 
     Flywheel constraints (true as of version 17):
@@ -29,14 +28,16 @@ def create_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> str:
     user_id = user_entry.credentials['id'].lower()
     user = proxy.find_user(user_id)
     if user:
-        return user_id
+        return user
 
     new_id = proxy.add_user(
         User(id=user_id,
              firstname=user_entry.name['first_name'],
              lastname=user_entry.name['last_name'],
              email=user_id))
-    return new_id
+    user = proxy.find_user(new_id)
+    assert user, f"Failed to find user {new_id} that was just created"
+    return user
 
 
 def create_user_map(
@@ -61,6 +62,12 @@ def create_user_map(
 
     return center_map
 
+def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
+    if user.email == email:
+        return
+    
+    log.info('Setting user %s email to %s', user.id, email)
+    proxy.set_user_email(user=user, email=email)
 
 # pylint: disable=(too-many-locals)
 def run(*, proxy: FlywheelProxy, user_list, skip_list: Set[str]):
@@ -85,18 +92,18 @@ def run(*, proxy: FlywheelProxy, user_list, skip_list: Set[str]):
 
         # for now, just giving all users read-only access to 'ingest-scan'
         project_label = 'ingest-scan'
-        project = center_group.get_project(project_label)
+        project = center_group.find_project(project_label)
         if not project:
             log.warning('center %s does not have project %s',
                         center_group.label, project_label)
             continue
 
-        project_adaptor = ProjectAdaptor(project=project, proxy=proxy)
         for user_entry in center_users:
-            user_id = create_user(proxy=proxy, user_entry=user_entry)
-            log.info('Added user %s', user_id)
+            user = create_user(proxy=proxy, user_entry=user_entry)
+            update_email(proxy=proxy, user=user, email=user_entry.email)
+            log.info('Added user %s', user.id)
             log.info('Granting %s permission to user %s in project %s/%s',
-                     read_only_role.label, user_id, center_group.label,
-                     project_adaptor.label)
-            project_adaptor.add_user_roles(
-                RolesRoleAssignment(id=user_id, role_ids=[read_only_role.id]))
+                     read_only_role.label, user.id, center_group.label,
+                     project.label)
+            project.add_user_roles(
+                RolesRoleAssignment(id=user.id, role_ids=[read_only_role.id]))
