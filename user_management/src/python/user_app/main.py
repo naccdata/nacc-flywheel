@@ -97,7 +97,7 @@ def run(*, proxy: FlywheelProxy, user_list, skip_list: Set[str]):
         return
 
     for center_tag, center_users in center_map.items():
-        group_list = proxy.find_groups_by_tag(center_tag)
+        group_list = proxy.find_groups_by_tag(f"^{center_tag}$")
         if len(group_list) > 1:
             log.error('Error: expecting only one center for tag %s',
                       center_tag)
