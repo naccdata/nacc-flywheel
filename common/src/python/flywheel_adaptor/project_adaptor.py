@@ -19,6 +19,15 @@ class ProjectAdaptor:
         self.__project = project
         self.__fw = proxy
 
+    def __pull_project(self) -> None:
+        """Pulls the referenced project from Flywheel instance."""
+        projects = self.__fw.find_projects(group_id=self.group,
+                                           project_label=self.label)
+        if not projects:
+            return
+
+        self.__project = projects[0]
+
     # pylint: disable=(invalid-name)
     @property
     def id(self):
@@ -99,6 +108,7 @@ class ProjectAdaptor:
             user_role = RolesRoleAssignment(id=role_assignment.id,
                                             role_ids=role_assignment.role_ids)
             self.__project.add_permission(user_role)
+            self.__pull_project()
             return
 
         assignment = existing_assignments[0]
@@ -110,6 +120,7 @@ class ProjectAdaptor:
         self.__project.update_permission(
             role_assignment.id,
             RolesRoleAssignment(id=None, role_ids=user_roles))
+        self.__pull_project()
 
     def add_admin_users(self, permissions: List[AccessPermission]) -> None:
         """Adds the users with admin access in the given group permissions.
