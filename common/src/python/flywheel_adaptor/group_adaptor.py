@@ -6,6 +6,7 @@ from typing import List, Optional
 import flywheel
 from flywheel import AccessPermission, RolesRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.project_adaptor import ProjectAdaptor
 
 log = logging.getLogger(__name__)
 
@@ -148,3 +149,17 @@ class GroupAdaptor:
           the project in this group with the label
         """
         return self.__fw.get_project(group=self.__group, project_label=label)
+    
+    def find_project(self, label: str) -> Optional[ProjectAdaptor]:
+        """Returns the project adaptor in the group with the label.
+        
+        Args:
+          label: the label of the desired project
+        Returns:
+          Project adaptor for project with label if exists, None otherwise.
+        """
+        projects = self.__fw.find_projects(group_id=self.__group.id, project_label=label)
+        if not projects:
+            return None
+
+        return ProjectAdaptor(project=projects[0], proxy=self.__fw)
