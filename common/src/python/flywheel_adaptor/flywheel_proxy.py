@@ -87,6 +87,9 @@ class FlywheelProxy:
     def add_user(self, user: flywheel.User) -> str:
         """Adds the user and returns the user id.
 
+        Note: the user ID and email have to be the same here.
+        Update using set_user_email after the user has been added.
+
         Args:
           user: the user to add
         Returns:
@@ -98,6 +101,21 @@ class FlywheelProxy:
             return user.id
 
         return self.__fw.add_user(user)
+    
+    def set_user_email(self, user: flywheel.User, email: str) -> None:
+        """Sets user email on client.
+        
+        Args:
+          user: local instance of user
+          email: email address to set
+        """
+        assert user.id
+        if self.dry_run:
+            log.info('Dry run: would set user %s email to %s', user.id, email)
+            return
+        
+        self.__fw.modify_user(user.id, {'email': email})
+        
 
     def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
         """Returns the flywheel group with the given ID and label.
