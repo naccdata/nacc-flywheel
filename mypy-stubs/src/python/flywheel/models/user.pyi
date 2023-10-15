@@ -29,3 +29,7 @@ class User:
     @property
     def id(self) -> Optional[str]:
         ...
+
+    @property
+    def email(self) -> Optional[str]:
+        ...

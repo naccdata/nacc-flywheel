@@ -67,6 +67,9 @@ class Client:
     def add_user(self, user: User) -> str:
         ...
 
+    def modify_user(self, user_id: str, body: Dict[str,str]) -> None:
+        ...
+
     def get_views(self, view_id: str) -> List[DataView]:
         ...
 
