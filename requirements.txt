@@ -2,6 +2,8 @@ boto3>=1.28.53
 boto3-stubs[boto3]
 flywheel-gear-toolkit>=0.2
 flywheel-sdk==16.19.2
+fw-client>=0.7.0
+fw-utils>=3
 moto[s3,ssm]>=4.2.5
 pandas>=2.1.1
 pandas-stubs>=2.0.3
