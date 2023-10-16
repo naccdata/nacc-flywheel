@@ -7,6 +7,8 @@ import logging
 from string import Template
 from typing import Dict, List, Optional
 
+from fw_utils import AttrDict
+
 import flywheel
 from flywheel import (DataView, FileEntry, FixedInput, GearRule, GearRuleInput,
                       ViewerApp)
@@ -32,7 +34,7 @@ class TemplateProject:
         self.__source_project = project
         self.__rules: List[GearRule] = []
         self.__dataviews: List[DataView] = []
-        self.__apps: List[ViewerApp] = []
+        self.__apps: List[AttrDict] = []
 
     def copy_to(self,
                 destination: ProjectAdaptor,

@@ -3,9 +3,11 @@
 import logging
 from typing import List, Optional
 
+from fw_utils import AttrDict 
+
 import flywheel
 from flywheel import (AccessPermission, ContainerIdViewInput, DataView,
-                      GearRule, GearRuleInput, RolesRoleAssignment, ViewerApp)
+                      GearRule, GearRuleInput, RolesRoleAssignment)
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 log = logging.getLogger(__name__)
@@ -183,7 +185,7 @@ class ProjectAdaptor:
         """
         self.__fw.remove_project_gear_rule(project=self.__project, rule=rule)
 
-    def get_apps(self) -> List[ViewerApp]:
+    def get_apps(self) -> List[AttrDict]:
         """Returns the list of viewer apps for the project.
 
         Returns:
@@ -191,7 +193,7 @@ class ProjectAdaptor:
         """
         return self.__fw.get_project_apps(self.__project)
 
-    def set_apps(self, apps: List[ViewerApp]) -> None:
+    def set_apps(self, apps: List[AttrDict]) -> None:
         """Sets the viewer apps for the project.
 
         Args:
