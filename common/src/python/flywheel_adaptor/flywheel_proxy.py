@@ -1,11 +1,14 @@
 """Defines project creation functions for calls to Flywheel."""
+import json
 import logging
 from typing import List, Mapping, Optional
 
 import flywheel
 from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
-                      GearRuleInput, RolesRole, ViewerApp, ViewIdOutput)
+                      GearRuleInput, RolesRole, ViewIdOutput)
 from flywheel.models.project_parents import ProjectParents
+from fw_client import FWClient
+from fw_utils import AttrDict
 
 log = logging.getLogger(__name__)
 
@@ -15,14 +18,19 @@ class FlywheelProxy:
     """Defines a proxy object for group and project creation on a Flywheel
     instance."""
 
-    def __init__(self, client: Client, dry_run: bool = True) -> None:
+    def __init__(self,
+                 client: Client,
+                 fw_client: Optional[FWClient] = None,
+                 dry_run: bool = True) -> None:
         """Initializes a flywheel proxy object.
 
         Args:
-          api_key: the API key
+          client: the Flywheel SDK client
+          fw-client: the fw-client client
           dry_run: whether proxy will be used for a dry run
         """
         self.__fw = client
+        self.__fw_client = fw_client
         self.__dry_run = dry_run
         self.__project_roles: Optional[Mapping[str, RolesRole]] = None
         self.__project_admin_role: Optional[RolesRole] = None
@@ -335,36 +343,102 @@ class FlywheelProxy:
         result = self.__fw.delete_view(view.id)
         return bool(result.deleted)
 
-    def get_project_apps(self, project: flywheel.Project) -> List[ViewerApp]:
-        """Returns the viewer apps for the project.
+    # def get_project_apps(self, project: flywheel.Project) -> List[ViewerApp]:
+    #     """Returns the viewer apps for the project.
+
+    #     Args:
+    #       project: the project
+    #     Returns:
+    #       The list of apps for the project
+    #     """
+    #     settings = self.__fw.get_project_settings(project.id)
+    #     if not settings:
+    #         return []
+
+    #     return settings.viewer_apps
+
+    def get_project_settings(self, project: flywheel.Project) -> AttrDict:
+        """Returns the settings object for the project.
 
         Args:
           project: the project
         Returns:
-          The list of apps for the project
+          the project settings
         """
-        settings = self.__fw.get_project_settings(project.id)
+        assert self.__fw_client, "Requires FWClient to be instantiated"
+        return self.__fw_client.get(
+            f"/api/projects/{project.id}/settings")  # type: ignore
+
+    def set_project_settings(self, *, project: flywheel.Project,
+                             settings: AttrDict) -> None:
+        """Sets the project settings to the argument.
+
+        Args:
+          project: the project
+          settings: the settings dictionary
+        """
+        assert self.__fw_client, "Requires FWClient to be instantiated"
+        self.__fw_client.put(url=f"/api/projects/{project.id}/settings",
+                             data=json.dumps(settings))
+
+    def get_project_apps(self, project: flywheel.Project) -> List[AttrDict]:
+        """Returns the viewer apps for the project.
+
+        Note: Temporary fix using FWClient because flywheel-sdk doesn't manage
+        type of viewer_apps.
+
+        Args:
+          project: the project
+        """
+        settings = self.get_project_settings(project)
         if not settings:
             return []
 
-        return settings.viewer_apps
+        return settings.viewer_apps  # type: ignore
+
+    # def set_project_apps(self, *, project: flywheel.Project,
+    #                      apps: List[ViewerApp]):
+    #     """Sets the apps to the project settings to the list of apps.
+
+    #     Note: this will replace any existing apps
+
+    #     Args:
+    #       project: the project
+    #       apps: the list of viewer apps
+    #     """
+    #     if self.dry_run:
+    #         log.info('Dry run: would set viewer %s in project %s', apps,
+    #                  project.label)
+    #         return
+
+    #     self.__fw.modify_project_settings(project.id, {"viewer_apps": apps})
 
     def set_project_apps(self, *, project: flywheel.Project,
-                         apps: List[ViewerApp]):
-        """Sets the apps to the project settings to the list of apps.
+                         apps: List[AttrDict]) -> None:
+        """Sets the viewer apps of the project to the list of apps.
 
-        Note: this will replace any existing apps
+        Note: this will replace any existing apps.
+
+        Note: temporary fix using FWCliennt because flywheel-sdk doesn't manage
+        type of viewer_apps.
 
         Args:
           project: the project
           apps: the list of viewer apps
         """
+        assert self.__fw_client, "Requires FWClient to be instantiated"
         if self.dry_run:
             log.info('Dry run: would set viewer %s in project %s', apps,
                      project.label)
             return
 
-        self.__fw.modify_project_settings(project.id, {"viewer_apps": apps})
+        settings = self.get_project_settings(project)
+        if not settings:
+            log.warning('Project %s has no settings', project.label)
+            return
+
+        settings['viewer_apps'] = apps  # type: ignore
+        self.set_project_settings(project=project, settings=settings)
 
     def get_site(self):
         """Returns URL for site of this instance."""
