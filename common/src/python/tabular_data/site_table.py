@@ -24,7 +24,7 @@ class SiteTable:
         self.__site_map = site_map
 
     @classmethod
-    def create_from(cls, object_data: StringIO) -> Optional['SiteTable']:
+    def create_from(cls, *, object_data: StringIO, site_id_name: str = 'ADCID') -> Optional['SiteTable']:
         """Creates table object and recognizes which column is used for site
         ID.
 
@@ -35,23 +35,15 @@ class SiteTable:
         """
         table_data = pd.read_csv(object_data)
 
-        if 'ADCID' in table_data.columns:
-            site_id_name = 'ADCID'
-        elif 'SITE' in table_data.columns:
-            site_id_name = 'SITE'
-        else:
+        if site_id_name not in table_data.columns:
             return None
 
         site_ids = table_data[site_id_name].to_list()
         site_map = {}
         for site_key in site_ids:
-            if site_id_name == 'ADCID':
-                adcid = str(site_key)
-            else:
-                match = re.search(r"([^(]+)\(ADC\s?(\d+)\)", site_key)
-                if not match:
-                    continue
-                adcid = match.group(2).strip()
+            # TODO: check if site_key is digits
+
+            adcid = str(site_key)
             site_map[adcid] = site_key
 
         return SiteTable(data=table_data,
