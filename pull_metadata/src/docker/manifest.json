@@ -46,7 +46,18 @@
             "description": "List of table file names",
             "type": "array",
             "items": {
-                "type": "string"
+                "type": "object",
+                "properties": {
+                    "table_name": {
+                        "description": "table file name",
+                        "type": "string"
+                    },
+                    "site_id_column": {
+                        "description": "name of the ADCID column in table",
+                        "type": "string"
+                    }
+                },
+                "required": [ "table_name", "site_id_column"]
             }
         }
     },
