@@ -41,7 +41,9 @@ class SiteTable:
         site_ids = table_data[site_id_name].to_list()
         site_map = {}
         for site_key in site_ids:
-            # TODO: check if site_key is digits
+            if not site_key.isnumeric():
+                log.warning('Skipping records for nonnumeric Site ID %s', site_key)
+                continue
 
             adcid = str(site_key)
             site_map[adcid] = site_key
