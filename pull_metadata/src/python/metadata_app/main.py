@@ -39,7 +39,8 @@ def run(*,
             log.error('Unable to access file %s: %s', filename, obj_error)
             continue
 
-        table = SiteTable.create_from(data)
+        # TODO: need to know ADCID column name for file
+        table = SiteTable.create_from(object_data=data, site_id_name='ADCID')
         if not table:
             log.error(
                 'Table %s does not have a column with recognized center ID',
