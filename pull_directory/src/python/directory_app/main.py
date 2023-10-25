@@ -1,13 +1,28 @@
 """Module for handling user data from directory."""
 import logging
-from collections import defaultdict
 from typing import Any, Dict, List
 
 import yaml
 from flywheel import FileSpec, Project
-from redcap.nacc_directory import UserDirectoryEntry
+from redcap.nacc_directory import UserDirectory, UserDirectoryEntry
 
 log = logging.getLogger(__name__)
+
+
+def upload_yaml(*, project: Project, filename: str, data: Any):
+    """Uploads data as YAML to file on project.
+    
+    Args:
+      project: destination project
+      filename: name of file
+      data: data object to write as contents
+    """
+    project.upload_file(
+        FileSpec(filename,
+                 contents=yaml.safe_dump(data=data,
+                                         allow_unicode=True,
+                                         default_flow_style=False),
+                 content_type='text/yaml'))
 
 
 def run(*, user_report: List[Dict[str, str]], user_filename: str,
@@ -26,32 +41,18 @@ def run(*, user_report: List[Dict[str, str]], user_filename: str,
                  user_filename, project.label)
         return
 
-    entry_map: Dict[str, Any] = {}
-    conflicts: Dict[str, List[Any]] = defaultdict(list)
+    directory = UserDirectory()
     for user_record in user_report:
         entry = UserDirectoryEntry.create_from_record(user_record)
-
         if not entry:
             continue
 
-        user_id = entry.credentials['id']
-        if user_id not in entry_map.keys():
-            entry_map[user_id] = entry.as_dict()
-            continue
+        directory.add(entry)
 
-        conflicts[user_id].append(entry.as_dict())
-        conflicts[user_id].append(entry_map.pop(user_id))
+    upload_yaml(project=project,
+                filename=user_filename,
+                data=directory.get_entries())
 
-    project.upload_file(
-        FileSpec(user_filename,
-                 contents=yaml.safe_dump(list(entry_map.values()),
-                                         allow_unicode=True,
-                                         default_flow_style=False),
-                 content_type='text/yaml'))
-
-    project.upload_file(
-        FileSpec(f"conflicts-{user_filename}",
-                 contents=yaml.safe_dump(conflicts,
-                                         allow_unicode=True,
-                                         default_flow_style=False),
-                 content_type='text/yaml'))
+    upload_yaml(project=project,
+                filename=f"conflicts-{user_filename}",
+                data=directory.get_conflicts())
