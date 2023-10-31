@@ -102,6 +102,8 @@ def main():
 
     log.info('Pulling metadata from S3 bucket %s into center %s projects',
              bucket_name, destination_label)
+    if dry_run:
+        log.info('Performing dry run')
     log.info('Including files %s', table_list)
 
     run(table_list=table_list,

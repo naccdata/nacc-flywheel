@@ -4,4 +4,4 @@ docker_image(
     name="pull-directory",
     source="Dockerfile",
     dependencies=[":manifest", "pull_directory/src/python/directory_app:bin"],
-    image_tags=["0.0.3", "latest"])
+    image_tags=["0.0.4", "latest"])

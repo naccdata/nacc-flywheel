@@ -89,40 +89,66 @@ class ProjectAdaptor:
         """
         self.__project.upload_file(file_spec)
 
-    def add_user_roles(self, role_assignment: RolesRoleAssignment) -> None:
+    def get_user_roles(self, user_id: str) -> List[str]:
+        """Gets the list of user role ids in this project.
+
+        Args:
+          user_id: the user id for the user
+        Returns:
+          list of role ids
+        """
+        assignments = [
+            assignment for assignment in self.__project.permissions
+            if assignment.id == user_id
+        ]
+        if not assignments:
+            return []
+
+        return assignments[0].role_ids
+
+    def add_user_roles(self, role_assignment: RolesRoleAssignment) -> bool:
         """Adds role assignment to the project.
 
         Args:
           role_assignment: the role assignment
+        Returns:
+          True if role is new, False otherwise
         """
-        if self.__fw.dry_run:
-            log.info("Dry Run: would add role to user %s for project %s",
-                     role_assignment.id, self.__project.label)
-            return
+        user_roles = self.get_user_roles(role_assignment.id)
+        if not user_roles:
+            log_message = (f"User {role_assignment.id}"
+                           " has no permissions for "
+                           f"project {self.__project.label}"
+                           ", adding roles")
+            if self.__fw.dry_run:
+                log.info("Dry Run: %s", log_message)
+                return True
 
-        existing_assignments = [
-            assignment for assignment in self.__project.permissions
-            if assignment.id == role_assignment.id
-        ]
-        if not existing_assignments:
-            log.info("User %s has no permissions for project %s, adding roles",
-                     role_assignment.id, self.__project.label)
+            log.info(log_message)
             user_role = RolesRoleAssignment(id=role_assignment.id,
                                             role_ids=role_assignment.role_ids)
             self.__project.add_permission(user_role)
             self.__pull_project()
-            return
+            return True
 
-        assignment = existing_assignments[0]
-        user_roles = assignment.role_ids
+        different = False
         for role_id in role_assignment.role_ids:
             if role_id not in user_roles:
+                different = True
                 user_roles.append(role_id)
+        if not different:
+            return False
+
+        log_message = f"Adding roles to user {role_assignment.id}"
+        if self.__fw.dry_run:
+            log.info("Dry Run: %s", log_message)
+            return True
 
         self.__project.update_permission(
             role_assignment.id,
             RolesRoleAssignment(id=None, role_ids=user_roles))
         self.__pull_project()
+        return True
 
     def add_admin_users(self, permissions: List[AccessPermission]) -> None:
         """Adds the users with admin access in the given group permissions.

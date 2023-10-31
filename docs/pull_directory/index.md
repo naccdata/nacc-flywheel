@@ -1,16 +1,22 @@
 # NACC Directory Pull
 
 This utility pulls user information from a Flywheel-access report in the NACC REDCap instance,
-and then creates a file with the user information in a form that can be loaded by the user management utility.
+and then creates a file with the user information in a form that can be loaded by the [user management utility](../user_management/index.md).
 
-## Environment
+The NACC directory in REDCap ensures that emails are unique, but not user credentials (user IDs).
+Since the user IDs are used to create FW accounts, we don't want to create user accounts with a "disputed" user ID.
+So, any entries with the same user ID are saved in the file `conflicts-nacc-directory-users.yaml`, and the incorrect entries will have to be invalidated in the directory in REDCap.
 
-The script expects the following environment variables to be set:
+## Configuration
 
-1. `FW_API_KEY` an API key for the FW instance
-2. `NACC_DIRECTORY_URL` the URL for the REDCap instance
-3. `NACC_DIRECTORY_TOKEN` the API token for the NACC Directory project
-4. `USER_REPORT_ID` the report ID for the user access report
+The gear uses the following from the AWS parameter store:
+
+- API key for Flywheel
+- API token, URL and report ID for the Flywheel Access report of the NACC directory on REDCap
+
+Remaining configuration are listed in the manifest. 
+Defaults are set so that the gear is ready to run in the NACC instance.
+Using these defaults, files will be written in the project `nacc/project-admin` and are named `nacc-directory-users.yaml` and `conflicts-nacc-directory-users.yaml`
 
 ## REDCap configuration
 
@@ -29,21 +35,4 @@ The following are assumed to be columns in the report
 - `email` - user email
 - `fw_cred_sub_time` - submission time for credentials
 
-## Running from command-line
 
-The script can be run with
-
-```bash
-pants run pull_directory/src/python/directory_app/run.py -- --no-gear <output-file-path>
-```
-
-which will pull the current user access report from the REDCap instance and write YAML text to the given file.
-
-If run with `--gear`, the script will read the remaining arguments from the Gear context, and will write the file to the `project-admin` project of the admin group (default is `nacc`).
-
-The admin group may be given with `--admin_group`.
-
-To do a dry run, use `--dry_run`
-
-If run with `--gear`, the file will be uploaded to the `project-admin` project of the admin group.
-The file path will be used as the file name.
