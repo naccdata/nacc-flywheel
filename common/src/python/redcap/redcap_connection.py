@@ -41,7 +41,11 @@ class REDCapConnection:
         data.update({'token': self.__token, 'returnFormat': return_format})
         if result_format:
             data['format'] = result_format
-        response = requests.post(self.__url, data=data)
+        try:
+          response = requests.post(self.__url, data=data)
+        except requests.exceptions.SSLError as error:
+          # TODO: make sure there is a message
+          raise REDCapConnectionError(message="", error=error)
 
         return response
 
