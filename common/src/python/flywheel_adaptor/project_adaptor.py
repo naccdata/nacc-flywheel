@@ -3,12 +3,11 @@
 import logging
 from typing import List, Optional
 
-from fw_utils import AttrDict 
-
 import flywheel
 from flywheel import (AccessPermission, ContainerIdViewInput, DataView,
                       GearRule, GearRuleInput, RolesRoleAssignment)
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from fw_utils import AttrDict
 
 log = logging.getLogger(__name__)
 
