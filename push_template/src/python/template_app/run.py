@@ -2,10 +2,9 @@
 import logging
 import sys
 
-from fw_client import FWClient
-
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
+from fw_client import FWClient
 from inputs.context_parser import parse_config
 from inputs.templates import get_template_projects
 from template_app.main import run
@@ -48,7 +47,9 @@ def main():
     # used for copying viewer apps from template projects.
     fw_client = FWClient(api_key=api_key, client_name="push-template")
 
-    flywheel_proxy = FlywheelProxy(client=client, fw_client=fw_client, dry_run=dry_run)
+    flywheel_proxy = FlywheelProxy(client=client,
+                                   fw_client=fw_client,
+                                   dry_run=dry_run)
 
     groups = flywheel_proxy.find_groups(admin_group_name)
     if not groups:

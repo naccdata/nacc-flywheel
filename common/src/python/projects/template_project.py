@@ -7,13 +7,12 @@ import logging
 from string import Template
 from typing import Dict, List, Optional
 
-from fw_utils import AttrDict
-
 import flywheel
 from flywheel import (DataView, FileEntry, FixedInput, GearRule, GearRuleInput,
                       ViewerApp)
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.project_adaptor import ProjectAdaptor
+from fw_utils import AttrDict
 
 log = logging.getLogger()
 
