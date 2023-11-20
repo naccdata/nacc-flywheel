@@ -1,7 +1,8 @@
 """Classes for NACC directory user credentials."""
 
+from collections import defaultdict
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, Iterable, List, NewType, Optional, TypedDict
 
 
 class Authorizations(TypedDict):
@@ -22,6 +23,12 @@ class PersonName(TypedDict):
     """Type class for a person's name."""
     first_name: str
     last_name: str
+
+
+EntryDictType = NewType(
+    'EntryDictType',
+    Dict[str,
+         str | int | PersonName | Authorizations | Credentials | datetime])
 
 
 class UserDirectoryEntry:
@@ -84,13 +91,13 @@ class UserDirectoryEntry:
         """The submission time for credentials."""
         return self.__submit_time
 
-    def as_dict(self):
+    def as_dict(self) -> EntryDictType:
         """Builds a dictionary for this directory entry.
 
         Returns:
           A dictionary with values of this entry
         """
-        result = {}
+        result: EntryDictType = {}  # type: ignore
         result['org_name'] = self.__org_name
         result['center_id'] = self.__center_id
         result['name'] = self.__name
@@ -150,7 +157,7 @@ class UserDirectoryEntry:
 
         credentials: Credentials = {
             "type": record['fw_credential_type'],
-            "id": record['fw_credential_id']
+            "id": record['fw_credential_id'].lower()
         }
 
         name: PersonName = {
@@ -168,9 +175,93 @@ class UserDirectoryEntry:
         return UserDirectoryEntry(org_name=org_name,
                                   center_id=int(center_id),
                                   name=name,
-                                  email=record['email'],
+                                  email=record['email'].lower(),
                                   credentials=credentials,
                                   submit_time=datetime.strptime(
                                       record['fw_cred_sub_time'],
                                       "%Y-%m-%d %H:%M"),
                                   authorizations=authorizations)
+
+
+class DirectoryConflict(TypedDict):
+    """Entries with conflicting user_id and/or emails."""
+    user_id: str
+    entries: List[EntryDictType]
+
+
+class UserDirectory:
+    """Collection of UserDirectoryEntry objects.
+
+    NACC directory identifies entries by name and email.
+    """
+
+    def __init__(self) -> None:
+        """Initializes a user directory."""
+        self.__email_map: Dict[str, UserDirectoryEntry] = {}
+        self.__id_map: Dict[str, List[str]] = defaultdict(list)
+
+    def add(self, entry: UserDirectoryEntry) -> None:
+        """Adds a directory entry to the user directory.
+
+        Ignores the entry another entry already has the email address.
+
+        Args:
+          entry: the directory entry
+        """
+        if self.has_entry_email(entry.email):
+            return
+
+        self.__email_map[entry.email] = entry
+        self.__id_map[entry.credentials['id']].append(entry.email)
+
+    def get_entries(self) -> List[EntryDictType]:
+        """Returns the list of entries with no conflicts between email address
+        and user IDs.
+
+        Returns:
+          List of UserDirectoryEntry with no email/ID conflicts
+        """
+        non_conflicts = {
+            email_list[0]
+            for email_list in self.__id_map.values() if len(email_list) == 1
+        }
+        entries = self.__get_entry_list(non_conflicts)
+        return entries
+
+    def __get_entry_list(self,
+                         email_list: Iterable[str]) -> List[EntryDictType]:
+        """Returns the list of entries for the emails in the email list.
+
+        Args:
+          email_list: list of email addresses
+        Returns:
+          Directory entries for the email addresses
+        """
+        return [
+            entry.as_dict()
+            for entry in [self.__email_map.get(email) for email in email_list]
+            if entry
+        ]
+
+    def get_conflicts(self) -> List[DirectoryConflict]:
+        """Returns the list of conflicting directory entries.
+
+        Return:
+          List of DirectoryConflict objects for entries with conflicting IDs
+        """
+        return [
+            DirectoryConflict(user_id=user_id,
+                              entries=self.__get_entry_list(email_list))
+            for user_id, email_list in self.__id_map.items()
+            if len(email_list) > 1
+        ]
+
+    def has_entry_email(self, email):
+        """Determines whether directory has an entry for the email address.
+
+        Args:
+          email: the email address
+        Returns:
+          True if there is an entry with this address, False otherwise
+        """
+        return email in self.__email_map
