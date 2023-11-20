@@ -7,7 +7,7 @@ from attribute_app.main import run
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.context_parser import parse_config
-from inputs.yaml import get_object_list
+from inputs.yaml import get_object_lists
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ def main():
         sys.exit(1)
 
     # assumes input file is a YAML file
-    object_list = get_object_list(input_file)
+    object_list = get_object_lists(input_file)
     if not object_list:
         log.error('No objects read from input')
         sys.exit(1)
