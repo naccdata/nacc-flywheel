@@ -4,6 +4,7 @@ import sys
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
+from fw_client import FWClient
 from inputs.context_parser import parse_config
 from inputs.templates import get_template_projects
 from template_app.main import run
@@ -36,12 +37,19 @@ def main():
         new_only = context_args['new_only']
         dry_run = context_args['dry_run']
         client = gear_context.client
+        api_key = context_args['api_key']
 
     if not client:
         log.error('No Flywheel connection. Check API key configuration.')
         sys.exit(1)
 
-    flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
+    # Need fw-client because the SDK doesn't properly implement ViewerApp type
+    # used for copying viewer apps from template projects.
+    fw_client = FWClient(api_key=api_key, client_name="push-template")
+
+    flywheel_proxy = FlywheelProxy(client=client,
+                                   fw_client=fw_client,
+                                   dry_run=dry_run)
 
     groups = flywheel_proxy.find_groups(admin_group_name)
     if not groups:

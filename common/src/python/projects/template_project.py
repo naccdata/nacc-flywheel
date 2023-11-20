@@ -12,6 +12,7 @@ from flywheel import (DataView, FileEntry, FixedInput, GearRule, GearRuleInput,
                       ViewerApp)
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.project_adaptor import ProjectAdaptor
+from fw_utils import AttrDict
 
 log = logging.getLogger()
 
@@ -32,7 +33,7 @@ class TemplateProject:
         self.__source_project = project
         self.__rules: List[GearRule] = []
         self.__dataviews: List[DataView] = []
-        self.__apps: List[ViewerApp] = []
+        self.__apps: List[AttrDict] = []
 
     def copy_to(self,
                 destination: ProjectAdaptor,

@@ -103,8 +103,8 @@ def upload_split_table(*, table: SiteTable,
             continue
 
         if dry_run:
-            log.info('Dry run: would upload file %s to project %s', file_name,
-                     project.label)
+            log.info('Dry run: would upload file %s to  %s/%s', file_name,
+                     project.group, project.label)
             continue
 
         file_spec = FileSpec(name=file_name,

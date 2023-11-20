@@ -10,8 +10,12 @@ from tabular_data.site_table import SiteTable, upload_split_table
 log = logging.getLogger(__name__)
 
 
-def run(*, table_list: List[str], s3_client, bucket_name: str,
-        project_map: Dict[str, Project], dry_run: bool = False) -> None:
+def run(*,
+        table_list: List[str],
+        s3_client,
+        bucket_name: str,
+        project_map: Dict[str, Project],
+        dry_run: bool = False) -> None:
     """Pulls tabular data from S3, splits the data by center, and uploads the
     data to the center-specific FW project indicated by the project map.
 
@@ -52,5 +56,5 @@ def run(*, table_list: List[str], s3_client, bucket_name: str,
         log.info("Splitting table %s", filename)
         upload_split_table(table=table,
                            project_map=upload_map,
-                           file_name=filename, 
+                           file_name=filename,
                            dry_run=dry_run)

@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 from requests import Response
+from ssm_parameter_store import EC2ParameterStore
 
 
 class REDCapConnection:
@@ -87,6 +88,31 @@ class REDCapConnection:
         return response.text
 
 
+class REDCapReportConnection(REDCapConnection):
+    """Defines a REDCap connection meant for reading a particular report."""
+
+    def __init__(self, *, token: str, url: str, report_id: str) -> None:
+        super().__init__(token=token, url=url)
+        self.report_id = report_id
+
+    def get_report_records(self) -> List[Dict[str, str]]:
+        """Gets the report from the REDCap connection.
+
+        Returns:
+          list of records from the report
+        """
+        return self.request_json_value(
+            data={
+                'content': 'report',
+                'report_id': str(self.report_id),
+                'csvDelimiter': '',
+                'rawOrLabel': 'raw',
+                'rawOrLabelHeaders': 'raw',
+                'exportCheckboxLabel': 'false'
+            },
+            message="pulling user report from NACC Directory")
+
+
 def error_message(*, message: str, response: Response) -> str:
     """Build an error message from the given message and HTTP response.
 
@@ -125,20 +151,19 @@ class REDCapConnectionError(Exception):
         return self._message
 
 
-def get_report(connection: REDCapConnection,
-               report_id: str) -> List[Dict[str, str]]:
-    """Pull the contents for the indicated report from the REDCap connection.
+def get_report_connection(*, store: EC2ParameterStore,
+                          param_path: str) -> Optional[REDCapReportConnection]:
+    """Pulls URL and Token for REDCap project from SSM parameter store.
 
     Args:
-      connection: the connection to the REDCap instance
-      report_id: the ID for the report
+      store: the parameter store object
+      param_path: the path of the REDCap parameters
     """
-    data = {
-        'content': 'report',
-        'report_id': report_id,
-        'rawOrLabel': 'raw',
-        'rawOrLabelHeaders': 'raw',
-        'exportCheckboxLabel': 'false'
-    }
-    message = "Unable to get report contents"
-    return connection.request_json_value(data=data, message=message)
+    parameters = store.get_parameters_by_path(path=param_path)
+    url = parameters.get('url')
+    token = parameters.get('token')
+    report_id = parameters.get('reportid')
+    if not url or not token or not report_id:
+        return None
+
+    return REDCapReportConnection(token=token, url=url, report_id=report_id)

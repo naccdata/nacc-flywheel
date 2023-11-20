@@ -54,9 +54,14 @@ class Project:
     def get_file(self, name: str) -> FileEntry:
         ...
 
+    def read_file(self, name: str) -> bytes:
+        ...
+
     # update takes *args, if used for other attributes add as needed
     # probably have to change types to Optional[str]
-    def update(self, copyable: Optional[bool] = False, description: Optional[str] = '') -> None:
+    def update(self,
+               copyable: Optional[bool] = False,
+               description: Optional[str] = '') -> None:
         ...
 
     # TODO: determine return type

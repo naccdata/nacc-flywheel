@@ -1,27 +1,36 @@
 """Defines project creation functions for calls to Flywheel."""
+import json
 import logging
 from typing import List, Mapping, Optional
 
 import flywheel
 from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
-                      GearRuleInput, RolesRole, ViewerApp, ViewIdOutput)
+                      GearRuleInput, RolesRole, ViewIdOutput)
 from flywheel.models.project_parents import ProjectParents
+from fw_client import FWClient
+from fw_utils import AttrDict
 
 log = logging.getLogger(__name__)
 
 
+# pylint: disable=(too-many-public-methods)
 class FlywheelProxy:
     """Defines a proxy object for group and project creation on a Flywheel
     instance."""
 
-    def __init__(self, client: Client, dry_run: bool = True) -> None:
+    def __init__(self,
+                 client: Client,
+                 fw_client: Optional[FWClient] = None,
+                 dry_run: bool = True) -> None:
         """Initializes a flywheel proxy object.
 
         Args:
-          api_key: the API key
+          client: the Flywheel SDK client
+          fw-client: the fw-client client
           dry_run: whether proxy will be used for a dry run
         """
         self.__fw = client
+        self.__fw_client = fw_client
         self.__dry_run = dry_run
         self.__project_roles: Optional[Mapping[str, RolesRole]] = None
         self.__project_admin_role: Optional[RolesRole] = None
@@ -72,16 +81,48 @@ class FlywheelProxy:
         """
         return self.__fw.groups.find(f"tags=~{tag_pattern}")
 
-    def find_users(self, user_id: str) -> List[flywheel.User]:
+    def find_user(self, user_id: str) -> Optional[flywheel.User]:
         """Searches for and returns a user if it exists.
 
         Args:
             user_id: the ID to search for
 
         Returns:
-            a list with the user, or an empty list if not found
+            a list with the user, or None if not found
         """
-        return self.__fw.users.find(f'_id={user_id}')
+        return self.__fw.users.find_first(f'_id={user_id}')
+
+    def add_user(self, user: flywheel.User) -> str:
+        """Adds the user and returns the user id.
+
+        Note: the user ID and email have to be the same here.
+        Update using set_user_email after the user has been added.
+
+        Args:
+          user: the user to add
+        Returns:
+          the user id for the user added
+        """
+        if self.dry_run:
+            log.info('Dry run: would create user %s', user.id)
+            assert user.id
+            return user.id
+
+        return self.__fw.add_user(user)
+
+    def set_user_email(self, user: flywheel.User, email: str) -> None:
+        """Sets user email on client.
+
+        Args:
+          user: local instance of user
+          email: email address to set
+        """
+        assert user.id
+        if self.dry_run:
+            log.info('Dry run: would set user %s email to %s', user.id, email)
+            return
+
+        self.__fw.modify_user(user.id, {'email': email})
 
     def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
         """Returns the flywheel group with the given ID and label.
@@ -156,7 +197,7 @@ class FlywheelProxy:
 
         return project
 
-    def __get_roles(self) -> Mapping[str, RolesRole]:
+    def get_roles(self) -> Mapping[str, RolesRole]:
         """Gets all roles for the FW instance.
 
         Does not include GroupRoles.
@@ -174,7 +215,7 @@ class FlywheelProxy:
         Returns:
           the role with the name if one exists. None, otherwise
         """
-        role_map = self.__get_roles()
+        role_map = self.get_roles()
         return role_map.get(label)
 
     def get_admin_role(self) -> Optional[RolesRole]:
@@ -216,6 +257,11 @@ class FlywheelProxy:
     def add_project_rule(self, *, project: flywheel.Project,
                          rule_input: GearRuleInput) -> None:
         """Forwards call to the FW client."""
+        if self.dry_run:
+            log.info('Would add rule %s to project %s', rule_input,
+                     project.label)
+            return
+
         self.__fw.add_project_rule(project.id, rule_input)
 
     def remove_project_gear_rule(self, *, project: flywheel.Project,
@@ -253,6 +299,12 @@ class FlywheelProxy:
           project: the project to which to add the data view
           viewinput: the object representing the data view
         """
+        # TODO: setup dry run for add_dataview
+        # if self.dry_run:
+        #     log.info("Dry run: would add %s to project %s", viewinput,
+        #              project.label)
+        #     return ""
+
         return self.__fw.add_view(project.id, viewinput)
 
     def modify_dataview(self, *, source: DataView,
@@ -263,6 +315,11 @@ class FlywheelProxy:
           source: the source DataView
           destination: the DataView to modify
         """
+        if self.dry_run:
+            # TODO: add detail to dry run message
+            log.info('Dry run: would modify data view')
+            return
+
         temp_id = source._id  # pylint: disable=(protected-access)
         temp_parent = source.parent
         source._id = None  # pylint: disable=(protected-access)
@@ -279,34 +336,109 @@ class FlywheelProxy:
         Returns:
           True if the dataview is deleted, False otherwise
         """
+        if self.dry_run:
+            log.info('Dry run: would delete dataview %s', view)
+            return False
+
         result = self.__fw.delete_view(view.id)
         return bool(result.deleted)
 
-    def get_project_apps(self, project: flywheel.Project) -> List[ViewerApp]:
-        """Returns the viewer apps for the project.
+    # def get_project_apps(self, project: flywheel.Project) -> List[ViewerApp]:
+    #     """Returns the viewer apps for the project.
+
+    #     Args:
+    #       project: the project
+    #     Returns:
+    #       The list of apps for the project
+    #     """
+    #     settings = self.__fw.get_project_settings(project.id)
+    #     if not settings:
+    #         return []
+
+    #     return settings.viewer_apps
+
+    def get_project_settings(self, project: flywheel.Project) -> AttrDict:
+        """Returns the settings object for the project.
 
         Args:
           project: the project
         Returns:
-          The list of apps for the project
+          the project settings
         """
-        settings = self.__fw.get_project_settings(project.id)
+        assert self.__fw_client, "Requires FWClient to be instantiated"
+        return self.__fw_client.get(
+            f"/api/projects/{project.id}/settings")  # type: ignore
+
+    def set_project_settings(self, *, project: flywheel.Project,
+                             settings: AttrDict) -> None:
+        """Sets the project settings to the argument.
+
+        Args:
+          project: the project
+          settings: the settings dictionary
+        """
+        assert self.__fw_client, "Requires FWClient to be instantiated"
+        self.__fw_client.put(url=f"/api/projects/{project.id}/settings",
+                             data=json.dumps(settings))
+
+    def get_project_apps(self, project: flywheel.Project) -> List[AttrDict]:
+        """Returns the viewer apps for the project.
+
+        Note: Temporary fix using FWClient because flywheel-sdk doesn't manage
+        type of viewer_apps.
+
+        Args:
+          project: the project
+        """
+        settings = self.get_project_settings(project)
         if not settings:
             return []
 
-        return settings.viewer_apps
+        return settings.viewer_apps  # type: ignore
+
+    # def set_project_apps(self, *, project: flywheel.Project,
+    #                      apps: List[ViewerApp]):
+    #     """Sets the apps to the project settings to the list of apps.
+
+    #     Note: this will replace any existing apps
+
+    #     Args:
+    #       project: the project
+    #       apps: the list of viewer apps
+    #     """
+    #     if self.dry_run:
+    #         log.info('Dry run: would set viewer %s in project %s', apps,
+    #                  project.label)
+    #         return
+
+    #     self.__fw.modify_project_settings(project.id, {"viewer_apps": apps})
 
     def set_project_apps(self, *, project: flywheel.Project,
-                         apps: List[ViewerApp]):
-        """Sets the apps to the project settings to the list of apps.
+                         apps: List[AttrDict]) -> None:
+        """Sets the viewer apps of the project to the list of apps.
 
-        Note: this will replace any existing apps
+        Note: this will replace any existing apps.
+
+        Note: temporary fix using FWCliennt because flywheel-sdk doesn't manage
+        type of viewer_apps.
 
         Args:
           project: the project
           apps: the list of viewer apps
         """
-        self.__fw.modify_project_settings(project.id, {"viewer_apps": apps})
+        assert self.__fw_client, "Requires FWClient to be instantiated"
+        if self.dry_run:
+            log.info('Dry run: would set viewer %s in project %s', apps,
+                     project.label)
+            return
+
+        settings = self.get_project_settings(project)
+        if not settings:
+            log.warning('Project %s has no settings', project.label)
+            return
+
+        settings['viewer_apps'] = apps  # type: ignore
+        self.set_project_settings(project=project, settings=settings)
 
     def get_site(self):
         """Returns URL for site of this instance."""
