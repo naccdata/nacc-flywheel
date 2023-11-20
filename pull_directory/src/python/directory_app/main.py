@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 def upload_yaml(*, project: Project, filename: str, data: Any):
     """Uploads data as YAML to file on project.
-    
+
     Args:
       project: destination project
       filename: name of file
