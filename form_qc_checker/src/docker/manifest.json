@@ -1,7 +1,7 @@
 {
     "name": "form-qc-checker",
-    "label": "ADD GEAR LABEL",
-    "description": "DESCRIBE GEAR",
+    "label": "Form QC Checker",
+    "description": "Gear to check form data as JSON with QC rule set",
     "version": "0.0.1",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
@@ -23,11 +23,8 @@
         }
     },
     "inputs": {
-        "api-key": {
-            "base": "api-key"
-        },
-        "form_file": {
-            "description": "The project YAML file",
+        "form_data_file": {
+            "description": "The form data JSON file",
             "base": "file",
             "type": {
                 "enum": [
@@ -42,15 +39,9 @@
             "type": "boolean",
             "default": false
         },
-        "admin_group": {
-            "description": "Name of the admin group",
-            "type": "string",
-            "default": "nacc"
-        },
-        "new_only": {
-            "description": "Only create projects for centers tagged as new",
-            "type": "boolean",
-            "default": false
+        "parameter_path": {
+            "description": "Parameter path for QC rules on S3",
+            "type": "string"
         }
     },
     "command": "/bin/run"

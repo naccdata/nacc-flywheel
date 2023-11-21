@@ -9,8 +9,7 @@ log = logging.getLogger(__name__)
 
 def run(*,
         proxy: FlywheelProxy,
-        object_list: List[Any],
-        new_only: bool = False):
+        s3_client):
     """Runs ADD DETAIL process.
     
     Args:
