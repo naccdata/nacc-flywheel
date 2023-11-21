@@ -4,7 +4,7 @@ import logging
 from typing import Dict, List
 
 from flywheel import Project
-from s3.s3_client import S3BucketReader, read_data
+from s3.s3_client import S3BucketReader
 from tabular_data.site_table import SiteTable, upload_split_table
 
 log = logging.getLogger(__name__)
