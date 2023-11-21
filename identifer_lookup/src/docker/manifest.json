@@ -1,7 +1,7 @@
 {
     "name": "identifer-lookup",
-    "label": "ADD GEAR LABEL",
-    "description": "DESCRIBE GEAR",
+    "label": "NACC ID Lookup",
+    "description": "Gear to check for NACC ID for incoming data",
     "version": "0.0.1",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
@@ -46,11 +46,6 @@
             "description": "Name of the admin group",
             "type": "string",
             "default": "nacc"
-        },
-        "new_only": {
-            "description": "Only create projects for centers tagged as new",
-            "type": "boolean",
-            "default": false
         }
     },
     "command": "/bin/run"

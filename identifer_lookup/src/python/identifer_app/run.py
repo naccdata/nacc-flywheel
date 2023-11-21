@@ -28,7 +28,6 @@ def main():
         #
         admin_group_name = context_args['admin_group']
         dry_run = context_args['dry_run']
-        new_only = context_args['new_only']
         input_file = context_args[filename] # gets the file name
 
         # uses api_key passed to gear
