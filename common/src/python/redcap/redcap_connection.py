@@ -42,10 +42,10 @@ class REDCapConnection:
         if result_format:
             data['format'] = result_format
         try:
-          response = requests.post(self.__url, data=data)
+            response = requests.post(self.__url, data=data)
         except requests.exceptions.SSLError as error:
-          # TODO: make sure there is a message
-          raise REDCapConnectionError(message="", error=error)
+            raise REDCapConnectionError(
+                message=f"SSL error connecting to {self.__url}", error=error)
 
         return response
 
