@@ -16,7 +16,9 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 def main():
-    """Describe gear detail here"""
+    """Gear main method to transform CSV where row is participant data to
+    set of JSON files, one per participant.
+    """
 
     filename = 'csv_file'
     with GearToolkitContext() as gear_context:
@@ -26,7 +28,6 @@ def main():
         #
         # get argument values from context_args
         #
-        admin_group_name = context_args['admin_group']
         dry_run = context_args['dry_run']
         input_file = context_args[filename] # gets the file name
 
