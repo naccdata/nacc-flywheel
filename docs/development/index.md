@@ -389,7 +389,7 @@ zebra_management
 │       └── zebra_app
 │           ├── BUILD
 │           ├── main.py
-    │       └── run.py
+│           └── run.py
 └── test
     └── python
 ```
