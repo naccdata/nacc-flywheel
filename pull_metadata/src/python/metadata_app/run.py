@@ -8,7 +8,6 @@ from flywheel import Client, Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.api_key import get_api_key
-from inputs.context_parser import parse_config
 from inputs.parameter_store import get_parameter_store
 from metadata_app.main import run
 from s3.s3_client import S3BucketReader
@@ -55,8 +54,7 @@ def main():
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
-        context_args = parse_config(gear_context=gear_context, filename=None)
-        dry_run = context_args['dry_run']
+ 
         s3_param_path = gear_context.config.get('s3_param_path')
         if not s3_param_path:
             log.error('Incomplete configuration, no S3 path')
@@ -72,40 +70,42 @@ def main():
             log.error('Incomplete configuration, no table names')
             sys.exit(1)
 
-    parameter_store = get_parameter_store()
-    if not parameter_store:
-        log.error('Unable to connect to parameter store')
-        sys.exit(1)
+        parameter_store = get_parameter_store()
+        if not parameter_store:
+            log.error('Unable to connect to parameter store')
+            sys.exit(1)
 
-    api_key = get_api_key(parameter_store)
-    if not api_key:
-        log.error('No API key found. Check API key configuration')
-        sys.exit(1)
+        api_key = get_api_key(parameter_store)
+        if not api_key:
+            log.error('No API key found. Check API key configuration')
+            sys.exit(1)
 
-    proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
-    project_map = build_project_map(proxy=proxy,
-                                    center_tag_pattern=r'adcid-\d+',
-                                    destination_label=destination_label)
-    if not project_map:
-        log.error('No ADCID groups found')
-        sys.exit(1)
+        dry_run = gear_context.config.get("dry_run", False)
+        proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
 
-    s3_client = S3BucketReader.create_from(store=parameter_store,
-                                           param_path=s3_param_path)
-    if not s3_client:
-        log.error('Unable to connect to S3')
-        sys.exit(1)
+        project_map = build_project_map(proxy=proxy,
+                                        center_tag_pattern=r'adcid-\d+',
+                                        destination_label=destination_label)
+        if not project_map:
+            log.error('No ADCID groups found')
+            sys.exit(1)
 
-    log.info('Pulling metadata from S3 bucket %s into center %s projects',
-             s3_client.bucket_name, destination_label)
-    if dry_run:
-        log.info('Performing dry run')
-    log.info('Including files %s', table_list)
+        s3_client = S3BucketReader.create_from(store=parameter_store,
+                                               param_path=s3_param_path)
+        if not s3_client:
+            log.error('Unable to connect to S3')
+            sys.exit(1)
 
-    run(table_list=table_list,
-        s3_client=s3_client,
-        project_map=project_map,
-        dry_run=dry_run)
+        log.info('Pulling metadata from S3 bucket %s into center %s projects',
+                 s3_client.bucket_name, destination_label)
+        if dry_run:
+            log.info('Performing dry run')
+        log.info('Including files %s', table_list)
+
+        run(table_list=table_list,
+            s3_client=s3_client,
+            project_map=project_map,
+            dry_run=dry_run)
 
 
 if __name__ == "__main__":

@@ -21,35 +21,64 @@ def main():
     filename = '${FILEKEY}'
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
-        context_args = parse_config(gear_context=gear_context,
-                                    filename=filename)
-        #
-        # get argument values from context_args
-        #
-        admin_group_name = context_args['admin_group']
-        dry_run = context_args['dry_run']
-        new_only = context_args['new_only']
-        input_file = context_args[filename] # gets the file name
 
-        # uses api_key passed to gear
-        client = gear_context.client
-        # will need different code if want client using the bot API key
+        # check for any necessary config arguments first and exit if not there
 
-    if not client:
-        log.error('No Flywheel connection. Check API key configuration.')
-        sys.exit(1)
+        # the following assumes using gearbot using parameter store and S3
+        # path to parameters for S3 bucket
+        s3_param_path = gear_context.config.get('s3_param_path')
+        if not s3_param_path:
+            log.error('Incomplete configuration, no S3 path')
+            sys.exit(1)
+        
+        # uses environment variables in FW environment to access AWS
+        parameter_store = get_parameter_store()
+        if not parameter_store:
+            log.error('Unable to connect to parameter store')
+            sys.exit(1)
 
-    # assumes input file is a YAML file
-    object_list = get_object_list(input_file)
-    if not object_list:
-        log.error('No objects read from input')
-        sys.exit(1)
+        api_key = get_api_key(parameter_store)
+        if not api_key:
+            log.error('No API key found. Check API key configuration')
+            sys.exit(1)
+        dry_run = gear_context.config.get("dry_run", False)
+        flywheel_proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
 
-    flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
+        # only needed if gear reads from S3
+        s3_client = S3BucketReader.create_from(store=parameter_store,
+                                               param_path=s3_param_path)
+        if not s3_client:
+           log.error('Unable to connect to S3')
+           sys.exit(1)
 
-    run(proxy=flywheel_proxy,
-        object_list=object_list,
-        new_only=new_only)
+        # if the geare isn't run as as gearbot, use api-key passed in context
+        # client = gear_context.client
+        # if not client:
+        #     log.error('No Flywheel connection. Check API key configuration.')
+        #     sys.exit(1)
+        # dry_run = gear_context.config.get("dry_run", False)
+        # flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
+
+        # keep if gear needs admin group
+        admin_group_name = gear_context.config.get('admin_group', 'nacc')
+        admin_group = None
+        groups = flywheel_proxy.find_groups(admin_group_name)
+        if groups:
+            admin_group = GroupAdaptor(group=groups[0], proxy=flywheel_proxy)
+        else:
+            log.warning("Admin group %s not found", admin_group_name)
+
+        # reads YAML input file with list of objects
+        input_file = gear_context.get_input_path(filename) 
+        object_list = get_object_lists(input_file)
+        if not object_list:
+            log.error('No objects read from input')
+            sys.exit(1)
+
+        new_only = gear_context.config.get("new_only", False)
+        run(proxy=flywheel_proxy,
+            object_list=object_list,
+            new_only=new_only)
 
     if __name__ == "__main__":
         main()
