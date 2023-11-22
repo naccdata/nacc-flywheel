@@ -34,10 +34,6 @@
             "description": "Parameter path for S3 credentials",
             "type": "string"
         },
-        "bucket_name": {
-            "description": "Bucket prefix for input tables",
-            "type": "string"
-        },
         "destination_label": {
             "description": "Label of destination project",
             "type": "string"

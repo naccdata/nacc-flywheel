@@ -4,7 +4,7 @@ import logging
 from typing import Dict, List
 
 from flywheel import Project
-from s3.s3_client import read_data
+from s3.s3_client import S3BucketReader
 from tabular_data.site_table import SiteTable, upload_split_table
 
 log = logging.getLogger(__name__)
@@ -12,8 +12,7 @@ log = logging.getLogger(__name__)
 
 def run(*,
         table_list: List[str],
-        s3_client,
-        bucket_name: str,
+        s3_client: S3BucketReader,
         project_map: Dict[str, Project],
         dry_run: bool = False) -> None:
     """Pulls tabular data from S3, splits the data by center, and uploads the
@@ -29,11 +28,10 @@ def run(*,
     for filename in table_list:
         log.info("Downloading %s from S3", filename)
         try:
-            data = read_data(s3_client=s3_client,
-                             bucket_name=bucket_name,
-                             file_name=filename)
+            data = s3_client.read_data(filename=filename)
         except s3_client.exceptions.NoSuchKey:
-            log.error('File %s not found in bucket %s', filename, bucket_name)
+            log.error('File %s not found in bucket %s', filename,
+                      s3_client.bucket_name)
             continue
         except s3_client.exceptions.InvalidObjectState as obj_error:
             log.error('Unable to access file %s: %s', filename, obj_error)

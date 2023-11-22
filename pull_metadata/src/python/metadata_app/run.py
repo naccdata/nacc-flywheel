@@ -11,7 +11,7 @@ from inputs.api_key import get_api_key
 from inputs.context_parser import parse_config
 from inputs.parameter_store import get_parameter_store
 from metadata_app.main import run
-from s3.s3_client import get_s3_client
+from s3.s3_client import S3BucketReader
 
 log = logging.getLogger(__name__)
 
@@ -62,11 +62,6 @@ def main():
             log.error('Incomplete configuration, no S3 path')
             sys.exit(1)
 
-        bucket_name = gear_context.config.get('bucket_name')
-        if not bucket_name:
-            log.error('Incomplete configuration, no bucket name')
-            sys.exit(1)
-
         destination_label = gear_context.config.get('destination_label')
         if not destination_label:
             log.error('Incomplete configuration, no destination label')
@@ -95,20 +90,20 @@ def main():
         log.error('No ADCID groups found')
         sys.exit(1)
 
-    s3_client = get_s3_client(store=parameter_store, param_path=s3_param_path)
+    s3_client = S3BucketReader.create_from(store=parameter_store,
+                                           param_path=s3_param_path)
     if not s3_client:
         log.error('Unable to connect to S3')
         sys.exit(1)
 
     log.info('Pulling metadata from S3 bucket %s into center %s projects',
-             bucket_name, destination_label)
+             s3_client.bucket_name, destination_label)
     if dry_run:
         log.info('Performing dry run')
     log.info('Including files %s', table_list)
 
     run(table_list=table_list,
         s3_client=s3_client,
-        bucket_name=bucket_name,
         project_map=project_map,
         dry_run=dry_run)
 
