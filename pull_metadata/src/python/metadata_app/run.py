@@ -5,8 +5,9 @@ import sys
 from typing import Dict
 
 from centers.center_group import CenterGroup
-from flywheel import Client, Project
+from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.project_adaptor import ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import ParameterError, ParameterStore
@@ -17,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
-                      destination_label: str) -> Dict[str, Project]:
+                      destination_label: str) -> Dict[str, ProjectAdaptor]:
     """Builds a map from adcid to the project of center group with the given
     label.
 
@@ -71,7 +72,8 @@ def main():
         try:
             parameter_store = ParameterStore.create_from_environment()
             api_key = parameter_store.get_api_key()
-            s3_parameters = parameter_store.get_s3_parameters(param_path=s3_param_path)
+            s3_parameters = parameter_store.get_s3_parameters(
+                param_path=s3_param_path)
         except ParameterError as error:
             log.error('Parameter error: %s', error)
             sys.exit(1)

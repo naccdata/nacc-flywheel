@@ -3,7 +3,7 @@
 import logging
 from typing import Dict, List
 
-from flywheel import Project
+from flywheel_adaptor.project_adaptor import ProjectAdaptor
 from s3.s3_client import S3BucketReader
 from tabular_data.site_table import SiteTable, upload_split_table
 
@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 def run(*,
         table_list: List[str],
         s3_client: S3BucketReader,
-        project_map: Dict[str, Project],
+        project_map: Dict[str, ProjectAdaptor],
         dry_run: bool = False) -> None:
     """Pulls tabular data from S3, splits the data by center, and uploads the
     data to the center-specific FW project indicated by the project map.
