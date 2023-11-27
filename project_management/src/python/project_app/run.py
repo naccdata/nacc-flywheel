@@ -12,12 +12,11 @@ import logging
 import sys
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from flywheel_adaptor.group_adaptor import GroupAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.yaml import get_object_lists
+from inputs.configuration import ConfigurationError, get_group
+from inputs.yaml import YAMLReadError, get_object_lists
 from project_app.main import run
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
@@ -53,21 +52,22 @@ def main():
         flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
 
         project_file = gear_context.get_input_path(filename)
-        project_list = get_object_lists(project_file)
-        if not project_list:
+
+        try:
+            project_list = get_object_lists(project_file)
+        except YAMLReadError as error:
+            log.error('Unable to read YAML file %s: %s', project_file, error)
             sys.exit(1)
 
-        admin_group_name = gear_context.config.get('admin_group', 'nacc')
-        admin_group = None
-        groups = flywheel_proxy.find_groups(admin_group_name)
-        if groups:
-            admin_group = GroupAdaptor(group=groups[0], proxy=flywheel_proxy)
-        else:
-            log.warning("Admin group %s not found", admin_group_name)
-
         admin_access = []
-        if admin_group:
+        try:
+            admin_group = get_group(context=gear_context,
+                                    proxy=flywheel_proxy,
+                                    key='admin_group',
+                                    default='nacc')
             admin_access = admin_group.get_user_access()
+        except ConfigurationError as error:
+            log.warning("Unable to load admin users: %s", error)
 
         new_only = gear_context.config.get("new_only", False)
         run(proxy=flywheel_proxy,

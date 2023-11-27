@@ -7,8 +7,8 @@ from typing import Dict
 from flywheel import Client, Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.api_key import get_api_key
-from inputs.parameter_store import get_parameter_store
+from inputs.context_parser import ConfigParseError, get_config
+from inputs.parameter_store import ParameterError, ParameterStore
 from metadata_app.main import run
 from s3.s3_client import S3BucketReader
 
@@ -54,30 +54,23 @@ def main():
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
- 
-        s3_param_path = gear_context.config.get('s3_param_path')
-        if not s3_param_path:
-            log.error('Incomplete configuration, no S3 path')
+
+        try:
+            s3_param_path = get_config(gear_context=gear_context,
+                                       key='s3_param_path')
+            destination_label = get_config(gear_context=gear_context,
+                                           key='destination_label')
+            table_list = get_config(gear_context=gear_context,
+                                    key='table_list')
+        except ConfigParseError as error:
+            log.error('Incomplete configuration: %s', error.message)
             sys.exit(1)
 
-        destination_label = gear_context.config.get('destination_label')
-        if not destination_label:
-            log.error('Incomplete configuration, no destination label')
-            sys.exit(1)
-
-        table_list = gear_context.config.get('table_list')
-        if not table_list:
-            log.error('Incomplete configuration, no table names')
-            sys.exit(1)
-
-        parameter_store = get_parameter_store()
-        if not parameter_store:
-            log.error('Unable to connect to parameter store')
-            sys.exit(1)
-
-        api_key = get_api_key(parameter_store)
-        if not api_key:
-            log.error('No API key found. Check API key configuration')
+        try:
+            parameter_store = ParameterStore.create_from_environment()
+            api_key = parameter_store.get_api_key()
+        except ParameterError as error:
+            log.error('Parameter error: %s', error)
             sys.exit(1)
 
         dry_run = gear_context.config.get("dry_run", False)
