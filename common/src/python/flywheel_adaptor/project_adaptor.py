@@ -80,6 +80,16 @@ class ProjectAdaptor:
         """
         return self.__project.get_file(name)
 
+    def read_file(self, name: str) -> bytes:
+        """Reads file from the named file.
+
+        Args:
+          name: the file name
+        Returns:
+          the bytes from the file
+        """
+        return self.__project.read_file(name)
+
     def upload_file(self, file_spec: flywheel.FileSpec) -> None:
         """Uploads the indicated file to enclosed project.
 
