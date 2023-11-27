@@ -4,16 +4,14 @@ import re
 from collections import defaultdict
 from typing import Dict
 
-import flywheel
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.group_adaptor import GroupAdaptor
 from projects.template_project import TemplateProject
 
 log = logging.getLogger(__name__)
 
 
 def get_template_projects(
-        *, group: flywheel.Group,
-        proxy: FlywheelProxy) -> Dict[str, Dict[str, TemplateProject]]:
+        group: GroupAdaptor) -> Dict[str, Dict[str, TemplateProject]]:
     """Returns template projects from the group on the indicated FW instance.
 
     Expects template project names to match `<datatype>-<stage>-template`.
@@ -52,7 +50,7 @@ def get_template_projects(
 
                 stage_map = template_map[datatype]
                 stage_map[stage] = TemplateProject(project=project,
-                                                   proxy=proxy)
+                                                   proxy=group.proxy())
                 template_map[datatype] = stage_map
 
     return template_map
