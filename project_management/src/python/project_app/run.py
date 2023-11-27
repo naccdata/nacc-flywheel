@@ -40,7 +40,6 @@ def main():
     (These are pipeline stages that can be created for the project)
     """
 
-    filename = 'project_file'
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
 
@@ -51,7 +50,7 @@ def main():
         dry_run = gear_context.config.get("dry_run", False)
         flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
 
-        project_file = gear_context.get_input_path(filename)
+        project_file = gear_context.get_input_path('project_file')
 
         try:
             project_list = get_object_lists(project_file)
