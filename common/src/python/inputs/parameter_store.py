@@ -15,6 +15,14 @@ class REDCapReportParameters(TypedDict):
     reportid: str
 
 
+class S3Parameters(TypedDict):
+    """Dictionary type for parameters to access an S3 bucket."""
+    accesskey: str
+    secretkey: str
+    region: str
+    bucket: str
+
+
 class ParameterError(Exception):
     """Error class for errors that occur when reading parameters."""
 
@@ -48,9 +56,37 @@ class ParameterStore:
         token = parameters.get('token')
         report_id = parameters.get('reportid')
         if not url or not token or not report_id:
-            raise ParameterError("Missing REDCap report parameters")
+            raise ParameterError(
+                f"Missing REDCap report parameters at {param_path}")
 
         return {'reportid': report_id, 'token': token, 'url': url}
+
+    def get_s3_parameters(self, param_path: str) -> S3Parameters:
+        """Pulls S3 access credentials from the SSM parameter store at the
+        given path.
+
+        Args:
+          param_path: the path in the parameter store
+        Returns:
+          the S3 credentials stored at the parameter path
+        Raises:
+          ParameterError if any of the credentials are missing
+        """
+        parameters = self.__store.get_parameters_by_path(path=param_path)
+        access_key = parameters.get('accesskey')
+        secret_key = parameters.get('secretkey')
+        region = parameters.get('region')
+        bucket_name = parameters.get('bucket')
+        if not access_key or not secret_key or not region or not bucket_name:
+            raise ParameterError(
+                f'Missing S3 bucket parameters at {param_path}')
+
+        return {
+            'accesskey': access_key,
+            'bucket': bucket_name,
+            'region': region,
+            'secretkey': secret_key
+        }
 
     @classmethod
     def create_from_environment(cls) -> 'ParameterStore':
