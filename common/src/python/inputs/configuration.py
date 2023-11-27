@@ -1,6 +1,5 @@
 """Functions to support gathering Flywheel objects based on the gear context
-config object.
-"""
+config object."""
 from typing import Optional
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
@@ -81,4 +80,4 @@ def read_file(*, context: GearToolkitContext, source: ProjectAdaptor,
 
 class ConfigurationError(Exception):
     """Exception class for errors that occur when reading objects from gear
-    context config object"""
+    context config object."""
