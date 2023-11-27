@@ -38,7 +38,7 @@ def main():
             log.error('No Flywheel connection. Check API key configuration.')
             sys.exit(1)
 
-        # Need fw-client because the SDK doesn't properly implement 
+        # Need fw-client because the SDK doesn't properly implement
         # ViewerApp type used for copying viewer apps from template projects.
         api_key = get_api_key(gear_context)
         fw_client = FWClient(api_key=api_key, client_name="push-template")
