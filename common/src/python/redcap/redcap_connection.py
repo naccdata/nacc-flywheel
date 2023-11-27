@@ -3,8 +3,8 @@ from json import JSONDecodeError
 from typing import Any, Dict, List, Optional
 
 import requests
+from inputs.parameter_store import REDCapReportParameters
 from requests import Response
-from ssm_parameter_store import EC2ParameterStore
 
 
 class REDCapConnection:
@@ -45,7 +45,8 @@ class REDCapConnection:
             response = requests.post(self.__url, data=data)
         except requests.exceptions.SSLError as error:
             raise REDCapConnectionError(
-                message=f"SSL error connecting to {self.__url}", error=error)
+                message=f"SSL error connecting to {self.__url}",
+                error=error) from error
 
         return response
 
@@ -98,6 +99,21 @@ class REDCapReportConnection(REDCapConnection):
     def __init__(self, *, token: str, url: str, report_id: str) -> None:
         super().__init__(token=token, url=url)
         self.report_id = report_id
+
+    @classmethod
+    def create_from(
+            cls,
+            parameters: REDCapReportParameters) -> 'REDCapReportConnection':
+        """Creates a REDCap connection with report parameters.
+
+        Args:
+          parameters: the parameters
+        Returns:
+          the connection using the parameters
+        """
+        return REDCapReportConnection(token=parameters['token'],
+                                      url=parameters['url'],
+                                      report_id=parameters['reportid'])
 
     def get_report_records(self) -> List[Dict[str, str]]:
         """Gets the report from the REDCap connection.
@@ -153,21 +169,3 @@ class REDCapConnectionError(Exception):
     def message(self):
         """The error message."""
         return self._message
-
-
-def get_report_connection(*, store: EC2ParameterStore,
-                          param_path: str) -> Optional[REDCapReportConnection]:
-    """Pulls URL and Token for REDCap project from SSM parameter store.
-
-    Args:
-      store: the parameter store object
-      param_path: the path of the REDCap parameters
-    """
-    parameters = store.get_parameters_by_path(path=param_path)
-    url = parameters.get('url')
-    token = parameters.get('token')
-    report_id = parameters.get('reportid')
-    if not url or not token or not report_id:
-        return None
-
-    return REDCapReportConnection(token=token, url=url, report_id=report_id)
