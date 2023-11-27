@@ -2,14 +2,17 @@
 
 import logging
 import sys
+from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.context_parser import parse_config
-from inputs.api_key import get_api_key
-from inputs.parameter_store import get_parameter_store
-from inputs.yaml import get_object_list
+from inputs.configuration import ConfigurationError, get_group, get_project
+from inputs.context_parser import ConfigParseError, get_config
+from inputs.parameter_store import ParameterError, ParameterStore
 from ${APPNAME}.main import run
+from inputs.yaml import YAMLReadError, get_object_lists
+
+from s3.s3_client import S3BucketReader
 
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -23,35 +26,37 @@ def main():
         gear_context.init_logging()
 
         # check for any necessary config arguments first and exit if not there
-
-        # the following assumes using gearbot using parameter store and S3
-        # path to parameters for S3 bucket
-        s3_param_path = gear_context.config.get('s3_param_path')
-        if not s3_param_path:
-            log.error('Incomplete configuration, no S3 path')
+        try:
+            # the following assumes using gearbot using parameter store and S3
+            # path to parameters for S3 bucket
+            s3_param_path: str = get_config(gear_context=gear_context, key='s3_param_path')
+        except ConfigParseError as error:
+            log.error('Incomplete configuration: %s', error.message)
             sys.exit(1)
         
-        # uses environment variables in FW environment to access AWS
-        parameter_store = get_parameter_store()
-        if not parameter_store:
-            log.error('Unable to connect to parameter store')
-            sys.exit(1)
+        try:
+            # assumes environment variables are available in FW
+            # this has to be configured by FW to make the variables available
+            # to the gear
+            parameter_store = ParameterStore.create_from_environment()
+            api_key = parameter_store.get_api_key()
 
-        api_key = get_api_key(parameter_store)
-        if not api_key:
-            log.error('No API key found. Check API key configuration')
+            s3_parameters = parameter_store.get_s3_parameters(
+                param_path=s3_param_path)
+        except ParameterError as error:
+            log.error('Parameter error: %s', error)
             sys.exit(1)
+        
         dry_run = gear_context.config.get("dry_run", False)
         flywheel_proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
 
         # only needed if gear reads from S3
-        s3_client = S3BucketReader.create_from(store=parameter_store,
-                                               param_path=s3_param_path)
+        s3_client = s3_client = S3BucketReader.create_from(s3_parameters)
         if not s3_client:
            log.error('Unable to connect to S3')
            sys.exit(1)
 
-        # if the geare isn't run as as gearbot, use api-key passed in context
+        # if the gear isn't run as as gearbot, use api-key passed in context
         # client = gear_context.client
         # if not client:
         #     log.error('No Flywheel connection. Check API key configuration.')
@@ -59,19 +64,30 @@ def main():
         # dry_run = gear_context.config.get("dry_run", False)
         # flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
 
-        # keep if gear needs admin group
-        admin_group_name = gear_context.config.get('admin_group', 'nacc')
-        admin_group = None
-        groups = flywheel_proxy.find_groups(admin_group_name)
-        if groups:
-            admin_group = GroupAdaptor(group=groups[0], proxy=flywheel_proxy)
-        else:
-            log.warning("Admin group %s not found", admin_group_name)
+        try:
+            # use functions from inputs.configuration to get FW objects
+            # based on context config keys. These raise exceptions 
+            admin_group = get_group(context=gear_context,
+                                    proxy=flywheel_proxy,
+                                    key='admin_group',
+                                    default='nacc')
+            destination = get_project(context=gear_context,
+                                      group=admin_group,
+                                      project_key='destination')
+            user_filename: str = get_config(gear_context=gear_context,
+                                            key='user_file')
+        except ConfigParseError as error:
+            log.error('Incomplete configuration: %s', error.message)
+            sys.exit(1)
+        except ConfigurationError as error:
+            log.error('Unable to save directory file: %s', error)
+            sys.exit(1)
 
         # reads YAML input file with list of objects
         input_file = gear_context.get_input_path(filename) 
-        object_list = get_object_lists(input_file)
-        if not object_list:
+        try:
+            object_list = get_object_lists(input_file)
+        except YAMLReadError as error:
             log.error('No objects read from input')
             sys.exit(1)
 
