@@ -4,6 +4,7 @@ import re
 import sys
 from typing import Dict
 
+from centers.center_group import CenterGroup
 from flywheel import Client, Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
@@ -15,7 +16,6 @@ from s3.s3_client import S3BucketReader
 log = logging.getLogger(__name__)
 
 
-# TODO: link to CenterGroup (?)
 def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
                       destination_label: str) -> Dict[str, Project]:
     """Builds a map from adcid to the project of center group with the given
@@ -28,7 +28,10 @@ def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
     Returns:
       dictionary mapping from adcid to group
     """
-    group_list = proxy.find_groups_by_tag(center_tag_pattern)
+    group_list = [
+        CenterGroup(group=group, proxy=proxy)
+        for group in proxy.find_groups_by_tag(center_tag_pattern)
+    ]
     if not group_list:
         log.warning('no centers found matching tag pattern %s',
                     center_tag_pattern)
@@ -36,15 +39,14 @@ def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
 
     project_map = {}
     for group in group_list:
-        projects = proxy.find_projects(group_id=group.id,
-                                       project_label=destination_label)
-        if not projects:
+        project = group.find_project(destination_label)
+        if not project:
             continue
 
         pattern = re.compile(center_tag_pattern)
-        tags = list(filter(pattern.match, group.tags))
+        tags = list(filter(pattern.match, group.get_tags()))
         for tag in tags:
-            project_map[tag] = projects[0]
+            project_map[tag] = project
 
     return project_map
 
@@ -69,6 +71,7 @@ def main():
         try:
             parameter_store = ParameterStore.create_from_environment()
             api_key = parameter_store.get_api_key()
+            s3_parameters = parameter_store.get_s3_parameters(param_path=s3_param_path)
         except ParameterError as error:
             log.error('Parameter error: %s', error)
             sys.exit(1)
@@ -83,8 +86,7 @@ def main():
             log.error('No ADCID groups found')
             sys.exit(1)
 
-        s3_client = S3BucketReader.create_from(store=parameter_store,
-                                               param_path=s3_param_path)
+        s3_client = S3BucketReader.create_from(s3_parameters)
         if not s3_client:
             log.error('Unable to connect to S3')
             sys.exit(1)
