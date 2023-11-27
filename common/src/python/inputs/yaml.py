@@ -37,10 +37,8 @@ def get_object_lists_from_stream(stream) -> Optional[List[List[Any]]]:
     except yaml.MarkedYAMLError as error:
         mark = error.problem_mark
         if mark:
-            raise YAMLReadError(
-                f'Error in YAML: line {mark.line + 1}, '
-                'column {mark.column + 1}'
-            ) from error
+            raise YAMLReadError(f'Error in YAML: line {mark.line + 1}, '
+                                'column {mark.column + 1}') from error
         raise YAMLReadError(f'Error in YAML file: {error}') from error
     except yaml.YAMLError as error:
         raise YAMLReadError(f'Error in YAML file: {error}') from error
