@@ -10,7 +10,7 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.configuration import (ConfigurationError, get_group, get_project,
                                   read_file)
-from inputs.context_parser import ConfigParseError, get_config
+from inputs.context_parser import ConfigParseError
 from inputs.parameter_store import ParameterError, ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists_from_stream
 from user_app.main import run

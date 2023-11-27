@@ -9,13 +9,14 @@ log = logging.getLogger(__name__)
 
 
 class REDCapReportParameters(TypedDict):
+    """Dictionary type for parameters needed to access a REDCap report."""
     url: str
     token: str
     reportid: str
 
 
 class ParameterError(Exception):
-    pass
+    """Error class for errors that occur when reading parameters."""
 
 
 class ParameterStore:

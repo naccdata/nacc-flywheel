@@ -37,15 +37,17 @@ def get_object_lists_from_stream(stream) -> Optional[List[List[Any]]]:
     except yaml.MarkedYAMLError as error:
         mark = error.problem_mark
         if mark:
-            raise YAMLReadError('Error in YAML: line %s, column %s',
-                                mark.line + 1, mark.column + 1) from error
-        else:
-            raise YAMLReadError('Error in YAML file: %s', error) from error
+            raise YAMLReadError(
+                f'Error in YAML: line {mark.line + 1}, '
+                'column {mark.column + 1}'
+            ) from error
+        raise YAMLReadError(f'Error in YAML file: {error}') from error
     except yaml.YAMLError as error:
-        raise YAMLReadError('Error in YAML file: %s', error) from error
+        raise YAMLReadError(f'Error in YAML file: {error}') from error
     else:
         return [*element_gen]
 
 
 class YAMLReadError(Exception):
-    pass
+    """Exception class for errors that occur when reading objects from a YAML
+    file."""

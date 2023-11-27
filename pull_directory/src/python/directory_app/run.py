@@ -35,8 +35,9 @@ def main() -> None:
                                          key='parameter_path')
             report_parameters = parameter_store.get_redcap_report_connection(
                 param_path=param_path)
-            directory_proxy = REDCapReportConnection.create_from(report_parameters)
-            user_report = directory_proxy.get_report_records()            
+            directory_proxy = REDCapReportConnection.create_from(
+                report_parameters)
+            user_report = directory_proxy.get_report_records()
         except ParameterError as error:
             log.error('Parameter error: %s', error)
             sys.exit(1)
