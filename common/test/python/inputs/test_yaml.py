@@ -17,5 +17,5 @@ class TestYAML:
         yaml_object = yaml.safe_dump(empty_list,
                                      allow_unicode=True,
                                      default_flow_style=False)
-        object_list = get_object_lists_from_stream(yaml_object, 'empty-list')
+        object_list = get_object_lists_from_stream(yaml_object)
         assert object_list == [[]]

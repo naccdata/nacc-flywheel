@@ -7,6 +7,7 @@ import flywheel
 from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
                       GearRuleInput, RolesRole, ViewIdOutput)
 from flywheel.models.project_parents import ProjectParents
+from flywheel_adaptor.group_adaptor import GroupAdaptor
 from fw_client import FWClient
 from fw_utils import AttrDict
 
@@ -69,6 +70,20 @@ class FlywheelProxy:
             the group (or empty list if not found)
         """
         return self.__fw.groups.find(f'_id={group_id}')
+
+    def find_group(self, group_id: str) -> Optional[GroupAdaptor]:
+        """Returns group for group id.
+
+        Args:
+          group_id: the group ID
+        Returns:
+          group with ID if exists, None otherwise
+        """
+        groups = self.find_groups(group_id)
+        if not groups:
+            return None
+
+        return GroupAdaptor(group=groups[0], proxy=self)
 
     def find_groups_by_tag(self, tag_pattern: str) -> List[flywheel.Group]:
         """Searches for groups with tags matching the pattern.
