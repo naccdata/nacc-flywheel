@@ -27,7 +27,7 @@
             "base": "api-key"
         },
         "csv_file": {
-            "description": "The project YAML file",
+            "description": "The project-level CSV file",
             "base": "file",
             "type": {
                 "enum": [
@@ -41,11 +41,6 @@
             "description": "Whether to do a dry run",
             "type": "boolean",
             "default": false
-        },
-        "admin_group": {
-            "description": "Name of the admin group",
-            "type": "string",
-            "default": "nacc"
         }
     },
     "command": "/bin/run"
