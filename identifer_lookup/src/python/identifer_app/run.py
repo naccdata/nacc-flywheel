@@ -2,14 +2,13 @@
 
 import logging
 import sys
+from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.context_parser import parse_config
-from inputs.api_key import get_api_key
-from inputs.parameter_store import get_parameter_store
-from inputs.yaml import get_object_list
+from inputs.context_parser import ConfigParseError, get_config
 from identifer_app.main import run
+from inputs.parameter_store import ParameterError, ParameterStore
 
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -18,37 +17,32 @@ log = logging.getLogger(__name__)
 def main():
     """Describe gear detail here"""
 
-    filename = 'identifer_file'
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
-        context_args = parse_config(gear_context=gear_context,
-                                    filename=filename)
-        #
-        # get argument values from context_args
-        #
-        admin_group_name = context_args['admin_group']
-        dry_run = context_args['dry_run']
-        input_file = context_args[filename] # gets the file name
 
-        # uses api_key passed to gear
-        client = gear_context.client
-        # will need different code if want client using the bot API key
+        try:
+            s3_param_path = get_config(gear_context=gear_context,
+                                       key='s3_param_path')
+        except ConfigParseError as error:
+            log.error('Incomplete configuration: %s', error.message)
+            sys.exit(1)
 
-    if not client:
-        log.error('No Flywheel connection. Check API key configuration.')
-        sys.exit(1)
+        try:
+            parameter_store = ParameterStore.create_from_environment()
+            api_key = parameter_store.get_api_key()
+            s3_parameters = parameter_store.get_s3_parameters(
+                param_path=s3_param_path)
+        except ParameterError as error:
+            log.error('Parameter error: %s', error)
+            sys.exit(1)
 
-    # assumes input file is a YAML file
-    object_list = get_object_list(input_file)
-    if not object_list:
-        log.error('No objects read from input')
-        sys.exit(1)
+        dry_run = gear_context.config.get("dry_run", False)
+        proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
 
-    flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
+        input_file = gear_context.get_input_path('input_file')
 
-    run(proxy=flywheel_proxy,
-        object_list=object_list,
-        new_only=new_only)
+    run(proxy=proxy,
+        file=input_file)
 
     if __name__ == "__main__":
         main()
