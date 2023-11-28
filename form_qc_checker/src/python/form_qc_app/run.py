@@ -6,11 +6,11 @@ from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.context_parser import parse_config
+from inputs.context_parser import ConfigParseError, get_config, parse_config
 from inputs.api_key import get_api_key
-from inputs.parameter_store import get_parameter_store
+from inputs.parameter_store import ParameterError, ParameterStore, get_parameter_store
 from form_qc_app.main import run
-from s3.s3_client import get_s3_client
+from s3.s3_client import S3BucketReader, get_s3_client
 
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -19,42 +19,36 @@ log = logging.getLogger(__name__)
 def main():
     """Describe gear detail here"""
 
-    filename = 'form_data_file'
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
-        context_args = parse_config(gear_context=gear_context,
-                                    filename=filename)
-        dry_run = context_args['dry_run']
-        parameter_path = gear_context.config.get('parameter_path')
-        if not parameter_path:
-            log.error('Incomplete configuration, no QC rule parameter path')
+
+        try:
+            parameter_store = ParameterStore.create_from_environment()
+            api_key = parameter_store.get_api_key()
+
+            s3_param_path = get_config(gear_context=gear_context,
+                                       key='parameter_path')
+            s3_parameters = parameter_store.get_s3_parameters(
+                param_path=s3_param_path)
+        except ParameterError as error:
+            log.error('Parameter error: %s', error)
             sys.exit(1)
-
-        input_file = context_args[filename] # gets the file name
-        if not input_file:
-            log.error('No input file given')
+        except ConfigParseError as error:
+            log.error('Incomplete configuration: %s', error.message)
             sys.exit(1)
+            
+        dry_run = gear_context.config.get("dry_run", False)
+        proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
 
+        s3_client = S3BucketReader.create_from(s3_parameters)
 
-    parameter_store = get_parameter_store()
-    if not parameter_store:
-        log.error('Unable to connect to parameter store')
-        sys.exit(1)
+        form_file = gear_context.get_input_path('form_data_file')
 
-    api_key = get_api_key(parameter_store)
-    if not api_key:
-        log.error('No API key found. Check API key configuration')
-        sys.exit(1)
-
-    proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
-
-    s3_client = get_s3_client(store=parameter_store, param_path=parameter_path)
-    if not s3_client:
-        log.error('Unable to connect to S3')
 
 
     run(proxy=proxy,
-        s3_client=s3_client)
+        s3_client=s3_client,
+        form_file=form_file)
 
     if __name__ == "__main__":
         main()
