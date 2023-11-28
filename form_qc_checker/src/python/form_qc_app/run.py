@@ -9,7 +9,7 @@ from flywheel_gear_toolkit import GearToolkitContext
 from inputs.context_parser import parse_config
 from inputs.api_key import get_api_key
 from inputs.parameter_store import get_parameter_store
-from form_app.main import run
+from form_qc_app.main import run
 from s3.s3_client import get_s3_client
 
 
