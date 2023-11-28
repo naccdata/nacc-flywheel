@@ -18,11 +18,10 @@ def get_object_lists(yaml_file) -> Optional[List[List[Any]]]:
       List of lists of object read from the file
     """
     with open(yaml_file, 'r', encoding='utf-8') as stream:
-        return get_object_lists_from_stream(stream, yaml_file)
+        return get_object_lists_from_stream(stream)
 
 
-def get_object_lists_from_stream(stream,
-                                 yaml_file) -> Optional[List[List[Any]]]:
+def get_object_lists_from_stream(stream) -> Optional[List[List[Any]]]:
     """Gets list of objects from the IO stream.
 
     Assumes the file can have more than one document.
@@ -35,18 +34,18 @@ def get_object_lists_from_stream(stream,
     """
     try:
         element_gen = yaml.safe_load_all(stream)
-    except yaml.MarkedYAMLError as exception:
-        log.error("Error in YAML file: %s", yaml_file)
-        mark = exception.problem_mark
+    except yaml.MarkedYAMLError as error:
+        mark = error.problem_mark
         if mark:
-            log.error("Error: line %s, column %s", mark.line + 1,
-                      mark.column + 1)
-        else:
-            log.error("Error: %s", exception)
-        return None
-    except yaml.YAMLError as exception:
-        log.error("Error in YAML file: %s", yaml_file)
-        log.error("Error: %s", exception)
-        return None
+            raise YAMLReadError(f'Error in YAML: line {mark.line + 1}, '
+                                'column {mark.column + 1}') from error
+        raise YAMLReadError(f'Error in YAML file: {error}') from error
+    except yaml.YAMLError as error:
+        raise YAMLReadError(f'Error in YAML file: {error}') from error
     else:
         return [*element_gen]
+
+
+class YAMLReadError(Exception):
+    """Exception class for errors that occur when reading objects from a YAML
+    file."""

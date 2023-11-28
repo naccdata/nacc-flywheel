@@ -3,13 +3,14 @@ import logging
 from typing import Any, Dict, List
 
 import yaml
-from flywheel import FileSpec, Project
+from flywheel import FileSpec
+from flywheel_adaptor.project_adaptor import ProjectAdaptor
 from redcap.nacc_directory import UserDirectory, UserDirectoryEntry
 
 log = logging.getLogger(__name__)
 
 
-def upload_yaml(*, project: Project, filename: str, data: Any):
+def upload_yaml(*, project: ProjectAdaptor, filename: str, data: Any):
     """Uploads data as YAML to file on project.
 
     Args:
@@ -26,7 +27,7 @@ def upload_yaml(*, project: Project, filename: str, data: Any):
 
 
 def run(*, user_report: List[Dict[str, str]], user_filename: str,
-        project: Project, dry_run: bool):
+        project: ProjectAdaptor, dry_run: bool):
     """Converts user report records to UserDirectoryEntry and saves as list of
     dictionary objects to the project.
 

@@ -4,7 +4,7 @@ from io import StringIO
 from typing import Optional
 
 import boto3
-from ssm_parameter_store import EC2ParameterStore
+from inputs.parameter_store import S3Parameters
 
 log = logging.getLogger(__name__)
 
@@ -47,28 +47,21 @@ class S3BucketReader:
         return StringIO(file_obj['Body'].read().decode('utf-8'))
 
     @classmethod
-    def create_from(cls, *, store: EC2ParameterStore,
-                    param_path: str) -> Optional['S3BucketReader']:
+    def create_from(cls,
+                    parameters: S3Parameters) -> Optional['S3BucketReader']:
         """Returns the bucket reader using the access credentials in the
-        parameter store at the given path.
+        parameters object.
 
         Args:
-          store: the parameter store with the credentials
-          path: the parameter store path for the S3 credentials
+          parameters: dictionary of S3 parameters
         Returns:
           the S3BucketReader
         """
-        parameters = store.get_parameters_by_path(path=param_path)
-        access_key = parameters.get('accesskey')
-        secret_key = parameters.get('secretkey')
-        region = parameters.get('region')
-        bucket_name = parameters.get('bucket')
 
         client = boto3.client('s3',
-                              aws_access_key_id=access_key,
-                              aws_secret_access_key=secret_key,
-                              region_name=region)
-        if not bucket_name:
-            return None
+                              aws_access_key_id=parameters['accesskey'],
+                              aws_secret_access_key=parameters['secretkey'],
+                              region_name=parameters['region'])
 
-        return S3BucketReader(boto_client=client, bucket_name=bucket_name)
+        return S3BucketReader(boto_client=client,
+                              bucket_name=parameters['bucket'])
