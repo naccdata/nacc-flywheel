@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 import yaml
 from flywheel import FileSpec
-from flywheel_adaptor.project_adaptor import ProjectAdaptor
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from redcap.nacc_directory import UserDirectory, UserDirectoryEntry
 
 log = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ def run(*, user_report: List[Dict[str, str]], user_filename: str,
 
     upload_yaml(project=project,
                 filename=user_filename,
-                data=directory.get_entries())
+                data=[entry.as_dict() for entry in directory.get_entries()])
 
     upload_yaml(project=project,
                 filename=f"conflicts-{user_filename}",

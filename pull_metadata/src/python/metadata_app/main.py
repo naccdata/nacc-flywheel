@@ -3,7 +3,7 @@
 import logging
 from typing import Dict, List
 
-from flywheel_adaptor.project_adaptor import ProjectAdaptor
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from s3.s3_client import S3BucketReader
 from tabular_data.site_table import SiteTable, upload_split_table
 
