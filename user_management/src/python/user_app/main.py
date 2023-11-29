@@ -4,8 +4,7 @@ from collections import defaultdict
 from typing import Dict, List, Set
 
 from flywheel import RolesRoleAssignment, User
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from flywheel_adaptor.group_adaptor import GroupAdaptor
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor
 from redcap.nacc_directory import UserDirectoryEntry
 
 log = logging.getLogger(__name__)

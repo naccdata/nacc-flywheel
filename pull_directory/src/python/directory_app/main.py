@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 import yaml
 from flywheel import FileSpec
-from flywheel_adaptor.project_adaptor import ProjectAdaptor
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from redcap.nacc_directory import UserDirectory, UserDirectoryEntry
 
 log = logging.getLogger(__name__)

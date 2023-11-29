@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 from typing import Dict
 
-from flywheel_adaptor.group_adaptor import GroupAdaptor
+from flywheel_adaptor.flywheel_proxy import GroupAdaptor
 from projects.template_project import TemplateProject
 
 log = logging.getLogger(__name__)
