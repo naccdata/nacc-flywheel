@@ -2,9 +2,8 @@
 config object."""
 from typing import Optional
 
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from flywheel_adaptor.group_adaptor import GroupAdaptor
-from flywheel_adaptor.project_adaptor import ProjectAdaptor
+from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
+                                             ProjectAdaptor)
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.context_parser import get_config
 
