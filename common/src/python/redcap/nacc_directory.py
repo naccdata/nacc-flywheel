@@ -186,7 +186,7 @@ class UserDirectoryEntry:
 class DirectoryConflict(TypedDict):
     """Entries with conflicting user_id and/or emails."""
     user_id: str
-    entries: List[UserDirectoryEntry]
+    entries: List[EntryDictType]
 
 
 class UserDirectory:
@@ -250,9 +250,12 @@ class UserDirectory:
           List of DirectoryConflict objects for entries with conflicting IDs
         """
         return [
-            DirectoryConflict(user_id=user_id,
-                              entries=self.__get_entry_list(email_list))
-            for user_id, email_list in self.__id_map.items()
+            DirectoryConflict(
+                user_id=user_id,
+                entries=[
+                    entry.as_dict()
+                    for entry in self.__get_entry_list(email_list)
+                ]) for user_id, email_list in self.__id_map.items()
             if len(email_list) > 1
         ]
 
