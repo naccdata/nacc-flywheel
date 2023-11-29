@@ -15,7 +15,7 @@ def create_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
 
     Flywheel constraint (true as of version 17): the user ID and email must be
     the same even if ID is an ePPN in add_user
-    
+
     Case can be an issue for IDs both with ORCID and ePPNs.
     Best we can do is assume ID from directory is correct.
 
@@ -65,7 +65,7 @@ def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
     Checks whether user email is the same as new email.
 
     Note: this needs to be applied after a user is created if the ID and email
-    are different, because the API wont allow a creating new user with ID and 
+    are different, because the API wont allow a creating new user with ID and
     email different.
 
     Args:
