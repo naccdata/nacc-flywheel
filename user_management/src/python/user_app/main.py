@@ -23,7 +23,7 @@ def create_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
     Returns:
       the ID for flywheel User created from the directory entry
     """
-    user_id = user_entry.credentials['id'].lower()
+    user_id = user_entry.credentials['id']
     new_id = proxy.add_user(
         User(id=user_id,
              firstname=user_entry.name['first_name'],
@@ -63,8 +63,8 @@ def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
     Checks whether user email is the same as new email.
 
     Note: this needs to be applied after a user is created if the ID and email
-    are different, because the API wont allow a new user without this
-    condition.
+    are different, because the API wont allow a creating new user with ID and 
+    email different.
 
     Args:
       proxy: Flywheel proxy object
@@ -108,7 +108,7 @@ def run(*, proxy: FlywheelProxy, user_list, skip_list: Set[str]):
             continue
 
         for user_entry in center_users:
-            user = proxy.find_user(user_entry.credentials['id'].lower())
+            user = proxy.find_user(user_entry.credentials['id'])
             if not user:
                 user = create_user(proxy=proxy, user_entry=user_entry)
                 log.info('Added user %s', user.id)
