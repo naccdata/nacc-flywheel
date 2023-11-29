@@ -460,6 +460,7 @@ class FlywheelProxy:
         """Returns URL for site of this instance."""
         return self.__fw.get_config()["site"]["redirect_url"]
 
+
 class GroupAdaptor:
     """Defines an adaptor for a flywheel group."""
 
@@ -613,6 +614,7 @@ class GroupAdaptor:
             return None
 
         return ProjectAdaptor(project=projects[0], proxy=self.__fw)
+
 
 class ProjectAdaptor:
     """Defines an adaptor for a flywheel project."""
