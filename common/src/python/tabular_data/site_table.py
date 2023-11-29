@@ -6,7 +6,7 @@ from typing import Dict, Optional, Set
 
 import pandas as pd
 from flywheel import FileSpec
-from flywheel_adaptor.project_adaptor import ProjectAdaptor
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 
 log = logging.getLogger(__name__)
 
