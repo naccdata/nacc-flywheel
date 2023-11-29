@@ -13,9 +13,11 @@ log = logging.getLogger(__name__)
 def create_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
     """Creates a user object from the directory entry.
 
-    Flywheel constraints (true as of version 17):
-    1. user IDs should be lowercase b/c FW treats them as case sensitive.
-    2. the user ID and email must be the same even if ID is an ePPN in add_user
+    Flywheel constraint (true as of version 17): the user ID and email must be
+    the same even if ID is an ePPN in add_user
+    
+    Case can be an issue for IDs both with ORCID and ePPNs.
+    Best we can do is assume ID from directory is correct.
 
     Args:
       proxy: the proxy object for the FW instance
