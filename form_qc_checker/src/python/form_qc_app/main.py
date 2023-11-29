@@ -7,12 +7,10 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 
 log = logging.getLogger(__name__)
 
-def run(*,
-        proxy: FlywheelProxy,
-        s3_client,
-        form_file):
+
+def run(*, proxy: FlywheelProxy, s3_client, form_file):
     """Runs ADD DETAIL process.
-    
+
     Args:
       proxy: the proxy for the Flywheel instance
       s3_client: boto3 client for rules S3 bucket
