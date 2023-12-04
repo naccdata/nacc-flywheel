@@ -203,11 +203,15 @@ class UserDirectory:
     def add(self, entry: UserDirectoryEntry) -> None:
         """Adds a directory entry to the user directory.
 
-        Ignores the entry if another entry already has the email address.
+        Ignores the entry if it has no ID, or another entry already has the
+        email address.
 
         Args:
           entry: the directory entry
         """
+        if not entry.credentials['id']:
+            return
+
         if self.has_entry_email(entry.email):
             return
 
