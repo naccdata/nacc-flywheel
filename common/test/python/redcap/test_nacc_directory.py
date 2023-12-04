@@ -86,9 +86,23 @@ class TestNACCDirectory:
         second_entry = user_entry(email='cah@one.org', user_id='bah@one.org')
         directory.add(second_entry)
         entries = directory.get_entries()
-        assert not entries
+        assert len(entries) == 1
+        assert entries[0].email == 'bah@one.org'
         conflicts = directory.get_conflicts()
         assert len(conflicts) == 1
+        assert conflicts[0]['entries'][0]['email'] == 'cah@one.org'
+
+    def test_id_id_conflict(self):
+        """Test adding record with conflicting ids."""
+        directory = UserDirectory()
+        first_entry = user_entry(email='aah@two.org', user_id='1111@two.org')
+        directory.add(first_entry)
+        second_entry = user_entry(email='bah@two.org', user_id='1111@two.org')
+        directory.add(second_entry)
+        assert not directory.get_entries()
+        conflicts = directory.get_conflicts()
+        assert conflicts[0]['entries'][0]['email'] == 'aah@two.org'
+        assert conflicts[0]['entries'][1]['email'] == 'bah@two.org'
 
     def test_missing_id(self):
         """Test record with missing ID is not added."""
