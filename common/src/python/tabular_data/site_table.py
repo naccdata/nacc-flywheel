@@ -5,7 +5,8 @@ from io import StringIO
 from typing import Dict, Optional, Set
 
 import pandas as pd
-from flywheel import FileSpec, Project
+from flywheel import FileSpec
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ class SiteTable:
 
 
 def upload_split_table(*, table: SiteTable,
-                       project_map: Dict[str, Optional[Project]],
+                       project_map: Dict[str, Optional[ProjectAdaptor]],
                        file_name: str, dry_run: bool) -> None:
     """Splits the site table by ADCID and uploads partitions to a project.
 

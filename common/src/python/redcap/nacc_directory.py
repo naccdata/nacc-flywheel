@@ -203,7 +203,7 @@ class UserDirectory:
     def add(self, entry: UserDirectoryEntry) -> None:
         """Adds a directory entry to the user directory.
 
-        Ignores the entry another entry already has the email address.
+        Ignores the entry if another entry already has the email address.
 
         Args:
           entry: the directory entry
@@ -214,7 +214,7 @@ class UserDirectory:
         self.__email_map[entry.email] = entry
         self.__id_map[entry.credentials['id']].append(entry.email)
 
-    def get_entries(self) -> List[EntryDictType]:
+    def get_entries(self) -> List[UserDirectoryEntry]:
         """Returns the list of entries with no conflicts between email address
         and user IDs.
 
@@ -228,8 +228,8 @@ class UserDirectory:
         entries = self.__get_entry_list(non_conflicts)
         return entries
 
-    def __get_entry_list(self,
-                         email_list: Iterable[str]) -> List[EntryDictType]:
+    def __get_entry_list(
+            self, email_list: Iterable[str]) -> List[UserDirectoryEntry]:
         """Returns the list of entries for the emails in the email list.
 
         Args:
@@ -238,7 +238,7 @@ class UserDirectory:
           Directory entries for the email addresses
         """
         return [
-            entry.as_dict()
+            entry
             for entry in [self.__email_map.get(email) for email in email_list]
             if entry
         ]
@@ -250,9 +250,12 @@ class UserDirectory:
           List of DirectoryConflict objects for entries with conflicting IDs
         """
         return [
-            DirectoryConflict(user_id=user_id,
-                              entries=self.__get_entry_list(email_list))
-            for user_id, email_list in self.__id_map.items()
+            DirectoryConflict(
+                user_id=user_id,
+                entries=[
+                    entry.as_dict()
+                    for entry in self.__get_entry_list(email_list)
+                ]) for user_id, email_list in self.__id_map.items()
             if len(email_list) > 1
         ]
 
