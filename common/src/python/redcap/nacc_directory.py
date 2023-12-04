@@ -157,7 +157,7 @@ class UserDirectoryEntry:
 
         credentials: Credentials = {
             "type": record['fw_credential_type'],
-            "id": record['fw_credential_id'].lower()
+            "id": record['fw_credential_id']
         }
 
         name: PersonName = {
