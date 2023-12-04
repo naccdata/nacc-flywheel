@@ -50,10 +50,14 @@ def run(*, user_report: List[Dict[str, str]], user_filename: str,
 
         directory.add(entry)
 
-    upload_yaml(project=project,
-                filename=user_filename,
-                data=[entry.as_dict() for entry in directory.get_entries()])
+    entries = [entry.as_dict() for entry in directory.get_entries()]
+    if entries:
+        upload_yaml(project=project,
+                    filename=user_filename,
+                    data=entries)
 
-    upload_yaml(project=project,
-                filename=f"conflicts-{user_filename}",
-                data=directory.get_conflicts())
+    conflicts = directory.get_conflicts()
+    if conflicts:
+        upload_yaml(project=project,
+                    filename=f"conflicts-{user_filename}",
+                    data=conflicts)

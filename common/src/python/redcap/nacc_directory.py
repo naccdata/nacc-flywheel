@@ -2,7 +2,8 @@
 
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, NewType, Optional, TypedDict
+from enum import Enum
+from typing import Any, Dict, Iterable, List, NewType, Optional, Set, TypedDict
 
 
 class Authorizations(TypedDict):
@@ -157,7 +158,7 @@ class UserDirectoryEntry:
 
         credentials: Credentials = {
             "type": record['fw_credential_type'],
-            "id": record['fw_credential_id'].lower()
+            "id": record['fw_credential_id']
         }
 
         name: PersonName = {
@@ -182,10 +183,16 @@ class UserDirectoryEntry:
                                       "%Y-%m-%d %H:%M"),
                                   authorizations=authorizations)
 
+class ConflictEnum(Enum):
+    """Enumerated type for directory conflicts"""
+    EMAIL = 1
+    IDENTIFIER = 2
+
 
 class DirectoryConflict(TypedDict):
     """Entries with conflicting user_id and/or emails."""
     user_id: str
+    conflict_type: ConflictEnum
     entries: List[EntryDictType]
 
 
@@ -198,20 +205,45 @@ class UserDirectory:
     def __init__(self) -> None:
         """Initializes a user directory."""
         self.__email_map: Dict[str, UserDirectoryEntry] = {}
+        self.__conflict_set: Set[str] = set()
         self.__id_map: Dict[str, List[str]] = defaultdict(list)
 
     def add(self, entry: UserDirectoryEntry) -> None:
         """Adds a directory entry to the user directory.
 
-        Ignores the entry if another entry already has the email address.
+        Ignores the entry if it has no ID, or another entry already has the
+        email address.
 
         Args:
           entry: the directory entry
         """
+        # check that entry has an ID
+        if not entry.credentials['id']:
+            return
+
+        # check that doesn't have duplicate email
+        # (REDCap directory uses email as key)
         if self.has_entry_email(entry.email):
             return
 
         self.__email_map[entry.email] = entry
+
+        # check that someone else's ID is not this entry's email
+        if entry.email in self.__id_map:
+            # other entry is in conflict
+            for other_email in self.__id_map[entry.email]:
+                self.__conflict_set.add(other_email)
+            return
+
+        if entry.email == entry.credentials['id']:
+            return
+
+        # check that ID is not someone else's email
+        if self.has_entry_email(entry.credentials['id']):
+            # new entry is in conflict
+            self.__conflict_set.add(entry.email)
+            return
+
         self.__id_map[entry.credentials['id']].append(entry.email)
 
     def get_entries(self) -> List[UserDirectoryEntry]:
@@ -221,10 +253,18 @@ class UserDirectory:
         Returns:
           List of UserDirectoryEntry with no email/ID conflicts
         """
+        id_conflicts = set()
+        for email_list in self.__id_map.values():
+            if len(email_list) > 1:
+                for email in email_list:
+                    id_conflicts.add(email)
+
         non_conflicts = {
-            email_list[0]
-            for email_list in self.__id_map.values() if len(email_list) == 1
+            email
+            for email in self.__email_map
+            if email not in self.__conflict_set and email not in id_conflicts
         }
+
         entries = self.__get_entry_list(non_conflicts)
         return entries
 
@@ -246,18 +286,32 @@ class UserDirectory:
     def get_conflicts(self) -> List[DirectoryConflict]:
         """Returns the list of conflicting directory entries.
 
+        Conflicts occur
+        - if two entries have the same ID, or
+        - if an entry has an ID that is the email of another entry.
+
         Return:
           List of DirectoryConflict objects for entries with conflicting IDs
         """
-        return [
-            DirectoryConflict(
-                user_id=user_id,
-                entries=[
-                    entry.as_dict()
-                    for entry in self.__get_entry_list(email_list)
-                ]) for user_id, email_list in self.__id_map.items()
-            if len(email_list) > 1
-        ]
+        conflicts = []
+        for user_id, email_list in self.__id_map.items():
+            if len(email_list) > 1:
+                conflicts.append(
+                    DirectoryConflict(
+                        user_id=user_id,
+                        entries=[
+                            entry.as_dict()
+                            for entry in self.__get_entry_list(email_list)
+                        ],
+                        conflict_type=ConflictEnum.IDENTIFIER))
+        for entry in self.__email_map.values():
+            if entry.email in self.__conflict_set:
+                conflicts.append(
+                    DirectoryConflict(user_id=entry.credentials['id'],
+                                      entries=[entry.as_dict()],
+                                      conflict_type=ConflictEnum.EMAIL))
+
+        return conflicts
 
     def has_entry_email(self, email):
         """Determines whether directory has an entry for the email address.
