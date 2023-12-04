@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from datetime import datetime
+from enum import Enum
 from typing import Any, Dict, Iterable, List, NewType, Optional, Set, TypedDict
 
 
@@ -182,10 +183,16 @@ class UserDirectoryEntry:
                                       "%Y-%m-%d %H:%M"),
                                   authorizations=authorizations)
 
+class ConflictEnum(Enum):
+    """Enumerated type for directory conflicts"""
+    EMAIL = 1
+    IDENTIFIER = 2
+
 
 class DirectoryConflict(TypedDict):
     """Entries with conflicting user_id and/or emails."""
     user_id: str
+    conflict_type: ConflictEnum
     entries: List[EntryDictType]
 
 
@@ -295,12 +302,14 @@ class UserDirectory:
                         entries=[
                             entry.as_dict()
                             for entry in self.__get_entry_list(email_list)
-                        ]))
+                        ],
+                        conflict_type=ConflictEnum.IDENTIFIER))
         for entry in self.__email_map.values():
             if entry.email in self.__conflict_set:
                 conflicts.append(
                     DirectoryConflict(user_id=entry.credentials['id'],
-                                      entries=[entry.as_dict()]))
+                                      entries=[entry.as_dict()],
+                                      conflict_type=ConflictEnum.EMAIL))
 
         return conflicts
 
