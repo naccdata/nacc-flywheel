@@ -3,6 +3,6 @@ file(name="manifest", source="manifest.json")
 docker_image(name="attribute-curator",
              source="Dockerfile",
              dependencies=[
-                 ":manifest", "attribute_curator/src/python/attribute_app:bin"
+                 ":manifest", "gear/attribute_curator/src/python/attribute_app:bin"
              ],
              image_tags=["0.0.1", "latest"])
