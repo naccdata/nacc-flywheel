@@ -183,8 +183,9 @@ class UserDirectoryEntry:
                                       "%Y-%m-%d %H:%M"),
                                   authorizations=authorizations)
 
+
 class ConflictEnum(Enum):
-    """Enumerated type for directory conflicts"""
+    """Enumerated type for directory conflicts."""
     EMAIL = 1
     IDENTIFIER = 2
 

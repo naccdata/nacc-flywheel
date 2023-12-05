@@ -52,9 +52,7 @@ def run(*, user_report: List[Dict[str, str]], user_filename: str,
 
     entries = [entry.as_dict() for entry in directory.get_entries()]
     if entries:
-        upload_yaml(project=project,
-                    filename=user_filename,
-                    data=entries)
+        upload_yaml(project=project, filename=user_filename, data=entries)
 
     conflicts = directory.get_conflicts()
     if conflicts:
