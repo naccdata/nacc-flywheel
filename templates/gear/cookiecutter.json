@@ -1,8 +1,8 @@
 {
     "gear_name": "Gear Name",
     "gear_description": "A NACC gear for Flywheel",
-    "package_name": "{{ cookiecutter.gear_name.lower.replace(' ', '-') }}",
-    "module_name": "{{ cookiecutter.gear_name.lower.replace(' ', '_').replace('-', '_') }}",
+    "package_name": "{{ cookiecutter.gear_name.lower().replace(' ', '-') }}",
+    "module_name": "{{ cookiecutter.gear_name.lower().replace(' ', '_').replace('-', '_') }}",
     "app_name": "{{ cookiecutter.module_name ~ \"_app\" }}",
     "image_tag": "0.0.1"
 }
