@@ -15,29 +15,17 @@ This is the development guide for the NACC flywheel gear extensions repo.
 │   └── test
 ├── docs                # documentation
 │   ├── development
-│   ├── pull_directory
-│   ├── index.md
-│   ├── project_management
-│   ├── push_template
-│   └── user_management
+│   └── index.md
+├── gear
+│   ├── project_management # gear script for managing NACC projects
+│   ├── pull_directory     # gear script to pull users from directory
+│   ├── pull_metadata      # gear script to pull metadata from S3 to projects
+│   ├── push_template      # gear script to push template projects
+│   └── user_management    # gear script for managing project users
 ├── mypy-stubs          # type stubs for flywheel SDK
 │   └── src
-├── project_management  # gear script for managing NACC projects
-│   ├── data
-│   ├── src
-│   └── test
-├── pull_metadata  # gear script to pull metadata from S3 to projects
-│   ├── src
-│   └── test
-├── push_template       # gear script to push template projects
-│   ├── src
-│   └── test
-├── user_management     # gear script for managing project users
-│   ├── directory
-│   ├── src
-│   └── test
 ├── dist                # Directory containing distributions built by Pants
-├── mypy.ini
+├── mypy.ini            # init file for mypy type checking
 ├── pants               # Pants script
 ├── pants.toml          # Pants configuration
 ├── python-default.lock # dependency lock file
