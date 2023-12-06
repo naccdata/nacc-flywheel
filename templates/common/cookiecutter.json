@@ -1,0 +1,4 @@
+{
+    "library_name": "Library Name",
+    "package_name": "{{ cookiecutter.library_name.lower().replace(' ', '_').replace('-', '_') }}"
+}
