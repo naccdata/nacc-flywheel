@@ -1,0 +1,21 @@
+---
+name: CI gear/base
+
+on:
+  pull_request:
+    paths:
+      - 'requirements.txt'
+      - 'python-default.lock'
+      - '.github/workflows/python_reusable.yaml'
+      - '.github/workflows/ci_project_management.yaml'
+      - 'gear/project_management/**'
+  workflow_dispatch:  # Allows to trigger the workflow manually in GitHub UI
+
+jobs:
+  ci-gear-{PACKAGE_NAME}:
+    uses:
+      ./.github/workflows/python_reusable.yml
+    with:
+      working-directory: gear/project_management
+    secrets: inherit"""
+    )
