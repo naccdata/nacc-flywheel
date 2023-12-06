@@ -2,6 +2,8 @@
 
 A cookiecutter template to create new Gear in the monorepo
 
+## Preliminaries 
+
 Within the VS Code devcontainer, run
 
 ```bash
@@ -9,6 +11,8 @@ pipx install cookiecutter
 ```
 
 If you are not using the devcontainer, see the [cookiecutter docs](https://cookiecutter.readthedocs.io/en/2.5.0/README.html) for installation.
+
+## Create Gear
 
 Run cookiecutter from the root directory of the monorepo
 
