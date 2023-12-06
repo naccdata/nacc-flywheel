@@ -15,6 +15,10 @@ backend_packages = [
     "pants.backend.docker.lint.hadolint",
     "pants.backend.shell"
 ]
+pants_ignore = [
+    '.devcontainer/**',
+    'templates/**'
+]
 
 [anonymous-telemetry]
 enabled = true
