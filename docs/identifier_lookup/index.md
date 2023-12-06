@@ -1,7 +1,9 @@
 # Identifier Lookup
 
-The identifier-lookup gear reads participant IDs from a tabular (CSV) input file, with one participant per row, and uses the Identifiers API to check whether each ID corresponds to a NACCID.
+The identifier-lookup gear reads participant IDs from a tabular (CSV) input file and checks whether each ID corresponds to a NACCID.
+The input file is assumed to have one participant per row with columns ADCID (NACC assigned center ID), and PTID (center assigned participant ID).
 
-The gear outputs a CSV file consisting of the rows for participants that have NACCIDs, but with a column for the NACCID.
+The gear outputs a copy of the CSV file consisting of the rows for participants that have NACCIDs, with an added column for the NACCID.
 
-For each participant ID without a corresponding NACCID, the gear flags an error through a (YTD) Flywheel error logging mechanism.
+If there are any rows where the participant ID has no corresponding NACCID, an error file is also output
+- An error file with a row for each input row in which participant ID has no corresponding NACCID.
