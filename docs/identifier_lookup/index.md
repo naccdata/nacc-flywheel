@@ -5,5 +5,5 @@ The input file is assumed to have one participant per row with columns ADCID (NA
 
 The gear outputs a copy of the CSV file consisting of the rows for participants that have NACCIDs, with an added column for the NACCID.
 
-If there are any rows where the participant ID has no corresponding NACCID, an error file is also output
-- An error file with a row for each input row in which participant ID has no corresponding NACCID.
+If there are any rows where the participant ID has no corresponding NACCID, an error file is also produced.
+The error file will have a row for each input row in which participant ID has no corresponding NACCID.
