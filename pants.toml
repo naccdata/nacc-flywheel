@@ -17,6 +17,8 @@ backend_packages = [
 ]
 pants_ignore = [
     '.devcontainer/**',
+    '.vscode/**',
+    'bin/**',
     'templates/**'
 ]
 
