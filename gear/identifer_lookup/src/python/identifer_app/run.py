@@ -39,10 +39,14 @@ def main():
         dry_run = gear_context.config.get("dry_run", False)
         proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
 
+        # TODO: check whehter there is a method to open this file in context
         input_file = gear_context.get_input_path('input_file')
 
-    run(proxy=proxy,
+    errors = run(proxy=proxy,
         file=input_file)
+    
+    # TODO: check this applies to correct file object
+    gear_context.metadata.add_qc_result(input_file, "valid_identifiers", "FAIL" if errors else "PASS" )
 
     if __name__ == "__main__":
         main()
