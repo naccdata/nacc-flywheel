@@ -1,6 +1,5 @@
 """Module for getting proxy object for AWS SSM parameter store object."""
 import logging
-from typing import cast
 
 from inputs.environment import get_environment_variable
 from pydantic import TypeAdapter, ValidationError
@@ -67,7 +66,8 @@ class ParameterStore:
             return type_adapter.validate_python(parameters)
         except ValidationError as error:
             raise ParameterError(
-                f"Missing REDCap report parameters at {param_path}: {error}")
+                f"Missing REDCap report parameters at {param_path}: {error}"
+            ) from error
 
     def get_s3_parameters(self, param_path: str) -> S3Parameters:
         """Pulls S3 access credentials from the SSM parameter store at the
@@ -87,7 +87,8 @@ class ParameterStore:
             return type_adapter.validate_python(parameters)
         except ValidationError as error:
             raise ParameterError(
-                f"Missing S3 bucket parameters at {param_path}: {error}")
+                f"Missing S3 bucket parameters at {param_path}: {error}"
+            ) from error
 
     def get_rds_parameters(self, param_path: str) -> RDSParameters:
         """Pulls RDS parameters from the SSM parameter store at the given path.
@@ -101,14 +102,12 @@ class ParameterStore:
         """
         parameters = self.__store.get_parameters_by_path(path=param_path)
 
-        # Note: parameter store has 'pass' instead of password, which causes
-        # errors when using typeddict b/c pass is reserved word in python
         type_adapter = TypeAdapter(RDSParameters)
         try:
             return type_adapter.validate_python(parameters)
         except ValidationError as error:
             raise ParameterError(
-                f"Missing RDS parameters at {param_path}: {error}")
+                f"Missing RDS parameters at {param_path}: {error}") from error
 
     @classmethod
     def create_from_environment(cls) -> 'ParameterStore':
