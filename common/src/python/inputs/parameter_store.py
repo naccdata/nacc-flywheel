@@ -1,9 +1,10 @@
 """Module for getting proxy object for AWS SSM parameter store object."""
 import logging
-from typing import TypedDict
 
 from inputs.environment import get_environment_variable
+from pydantic import TypeAdapter, ValidationError
 from ssm_parameter_store import EC2ParameterStore
+from typing_extensions import TypedDict
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +22,13 @@ class S3Parameters(TypedDict):
     secretkey: str
     region: str
     bucket: str
+
+
+class RDSParameters(TypedDict):
+    """Dictionary type for parameters to access MySQL RDS."""
+    host: str
+    user: str
+    password: str
 
 
 class ParameterError(Exception):
@@ -52,14 +60,14 @@ class ParameterStore:
         store: the parameter store object
         """
         parameters = self.__store.get_parameters_by_path(path=param_path)
-        url = parameters.get('url')
-        token = parameters.get('token')
-        report_id = parameters.get('reportid')
-        if not url or not token or not report_id:
-            raise ParameterError(
-                f"Missing REDCap report parameters at {param_path}")
 
-        return {'reportid': report_id, 'token': token, 'url': url}
+        type_adapter = TypeAdapter(REDCapReportParameters)
+        try:
+            return type_adapter.validate_python(parameters)
+        except ValidationError as error:
+            raise ParameterError(
+                f"Missing REDCap report parameters at {param_path}: {error}"
+            ) from error
 
     def get_s3_parameters(self, param_path: str) -> S3Parameters:
         """Pulls S3 access credentials from the SSM parameter store at the
@@ -73,20 +81,33 @@ class ParameterStore:
           ParameterError if any of the credentials are missing
         """
         parameters = self.__store.get_parameters_by_path(path=param_path)
-        access_key = parameters.get('accesskey')
-        secret_key = parameters.get('secretkey')
-        region = parameters.get('region')
-        bucket_name = parameters.get('bucket')
-        if not access_key or not secret_key or not region or not bucket_name:
-            raise ParameterError(
-                f'Missing S3 bucket parameters at {param_path}')
 
-        return {
-            'accesskey': access_key,
-            'bucket': bucket_name,
-            'region': region,
-            'secretkey': secret_key
-        }
+        type_adapter = TypeAdapter(S3Parameters)
+        try:
+            return type_adapter.validate_python(parameters)
+        except ValidationError as error:
+            raise ParameterError(
+                f"Missing S3 bucket parameters at {param_path}: {error}"
+            ) from error
+
+    def get_rds_parameters(self, param_path: str) -> RDSParameters:
+        """Pulls RDS parameters from the SSM parameter store at the given path.
+
+        Args:
+          param_path: the path in the parameter store
+        Returns:
+          the RDS credentials stored at the parameter path
+        Raises:
+          ParameterError if any of the credentials are missing
+        """
+        parameters = self.__store.get_parameters_by_path(path=param_path)
+
+        type_adapter = TypeAdapter(RDSParameters)
+        try:
+            return type_adapter.validate_python(parameters)
+        except ValidationError as error:
+            raise ParameterError(
+                f"Missing RDS parameters at {param_path}: {error}") from error
 
     @classmethod
     def create_from_environment(cls) -> 'ParameterStore':
