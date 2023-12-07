@@ -21,7 +21,7 @@ The JSON file will be added to a subject/session/acquisition for the participant
     - acquisition - MLSTv[`formver`]
 - NP
     - subject - [`naccid`]
-    - session - MILESTONE-[`visitdate`]
+    - session - NP-RECORD-[`visitdate`]
     - acquisition - NPv[`formver`]
     
 JSON filename: [subject]-[session]-[acquisition].json
