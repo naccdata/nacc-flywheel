@@ -4,7 +4,7 @@ import logging
 from inputs.environment import get_environment_variable
 from pydantic import TypeAdapter, ValidationError
 from ssm_parameter_store import EC2ParameterStore
-from typing_extensions import TypedDict
+from typing_extensions import Type, TypedDict, TypeVar
 
 log = logging.getLogger(__name__)
 
@@ -35,17 +35,47 @@ class ParameterError(Exception):
     """Error class for errors that occur when reading parameters."""
 
 
+# TODO: remove type ignore when using python 3.12 or above
+P = TypeVar('P', bound=TypedDict)  # type: ignore
+
+
 class ParameterStore:
     """Wrapper class for parameter store to pull particular parameters."""
 
     def __init__(self, parameter_store: EC2ParameterStore) -> None:
         self.__store = parameter_store
 
+    def get_parameters(self, *, param_type: Type[P], parameter_path: str) -> P:
+        """Pulls the parameters at the path and checks that they match the
+        given TypedDict.
+
+        Args:
+          type: the subclass of TypedDict
+          parameter_path: the path in the parameter store
+        Returns:
+          the dictionary of parameters
+        Raises:
+          ParameterError if the parameters don't match the type
+        """
+        parameters = self.__store.get_parameters_by_path(path=parameter_path)
+        type_adapter = TypeAdapter(param_type)
+        try:
+            return type_adapter.validate_python(parameters)
+        except ValidationError as error:
+            raise ParameterError(
+                f"Incorrect parameters at {parameter_path}: {error}"
+            ) from error
+
     def get_api_key(self) -> str:
         """Returns the GearBot API key."""
         parameter_name = 'apikey'
         parameter_path = f'/prod/flywheel/gearbot/{parameter_name}'
-        parameter = self.__store.get_parameter(parameter_path, decrypt=True)
+        try:
+            parameter = self.__store.get_parameter(parameter_path,
+                                                   decrypt=True)
+        except self.__store.client.exceptions.ParameterNotFound as error:  # type: ignore
+            raise ParameterError("No API Key found") from error
+
         apikey = parameter.get(parameter_name)
         if not apikey:
             raise ParameterError("No API Key found")
@@ -59,15 +89,8 @@ class ParameterStore:
         Args:
         store: the parameter store object
         """
-        parameters = self.__store.get_parameters_by_path(path=param_path)
-
-        type_adapter = TypeAdapter(REDCapReportParameters)
-        try:
-            return type_adapter.validate_python(parameters)
-        except ValidationError as error:
-            raise ParameterError(
-                f"Missing REDCap report parameters at {param_path}: {error}"
-            ) from error
+        return self.get_parameters(param_type=REDCapReportParameters,
+                                   parameter_path=param_path)
 
     def get_s3_parameters(self, param_path: str) -> S3Parameters:
         """Pulls S3 access credentials from the SSM parameter store at the
@@ -80,15 +103,8 @@ class ParameterStore:
         Raises:
           ParameterError if any of the credentials are missing
         """
-        parameters = self.__store.get_parameters_by_path(path=param_path)
-
-        type_adapter = TypeAdapter(S3Parameters)
-        try:
-            return type_adapter.validate_python(parameters)
-        except ValidationError as error:
-            raise ParameterError(
-                f"Missing S3 bucket parameters at {param_path}: {error}"
-            ) from error
+        return self.get_parameters(param_type=S3Parameters,
+                                   parameter_path=param_path)
 
     def get_rds_parameters(self, param_path: str) -> RDSParameters:
         """Pulls RDS parameters from the SSM parameter store at the given path.
@@ -100,14 +116,8 @@ class ParameterStore:
         Raises:
           ParameterError if any of the credentials are missing
         """
-        parameters = self.__store.get_parameters_by_path(path=param_path)
-
-        type_adapter = TypeAdapter(RDSParameters)
-        try:
-            return type_adapter.validate_python(parameters)
-        except ValidationError as error:
-            raise ParameterError(
-                f"Missing RDS parameters at {param_path}: {error}") from error
+        return self.get_parameters(param_type=RDSParameters,
+                                   parameter_path=param_path)
 
     @classmethod
     def create_from_environment(cls) -> 'ParameterStore':
