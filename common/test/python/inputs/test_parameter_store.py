@@ -21,22 +21,28 @@ def aws_credentials():
     os.environ['AWS_DEFAULT_REGION'] = "us-east-1"
 
 
+# pylint: disable=(redefined-outer-name,unused-argument)
 @pytest.fixture(scope="function")
 def ssm(aws_credentials):
+    """Fixture for mocking SSM service."""
     with mock_ssm():
         yield boto3.client('ssm', region_name="us-east-1")
 
 
 class TestParameters(TypedDict):
+    """Dummy class for testing get_parameters."""
     param1: str
     param2: str
 
 
+# pylint: disable=(no-self-use)
 @mock_ssm
 class TestParameterStore:
     """Tests for parameter store class."""
 
+    # pylint: disable=(unused-argument,import-outside-toplevel)
     def test_empty(self, aws_credentials):
+        """Test what happens when pull from empty store."""
         from inputs.parameter_store import ParameterError, ParameterStore
 
         store = ParameterStore.create_from_environment()
@@ -47,6 +53,7 @@ class TestParameterStore:
             store.get_api_key()
 
     def test_api_key(self, ssm):
+        """Test getting api key that is present in store."""
         from inputs.parameter_store import ParameterStore
 
         ssm.put_parameter(Name='/prod/flywheel/gearbot/apikey',
@@ -60,6 +67,7 @@ class TestParameterStore:
         assert value == 'dummy'
 
     def test_dict_parameters(self, ssm):
+        """Tests for pulling dictionary of parameters (aka, by path)"""
         from inputs.parameter_store import ParameterError, ParameterStore
 
         ssm.put_parameter(Name='/test/valid/param1', Type='String', Value='1')
