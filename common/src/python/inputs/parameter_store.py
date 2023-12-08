@@ -35,7 +35,8 @@ class ParameterError(Exception):
     """Error class for errors that occur when reading parameters."""
 
 
-P = TypeVar('P', bound=TypedDict)
+# TODO: remove type ignore when using python 3.12 or above
+P = TypeVar('P', bound=TypedDict)  # type: ignore
 
 
 class ParameterStore:
@@ -69,7 +70,12 @@ class ParameterStore:
         """Returns the GearBot API key."""
         parameter_name = 'apikey'
         parameter_path = f'/prod/flywheel/gearbot/{parameter_name}'
-        parameter = self.__store.get_parameter(parameter_path, decrypt=True)
+        try:
+            parameter = self.__store.get_parameter(parameter_path,
+                                                   decrypt=True)
+        except self.__store.client.exceptions.ParameterNotFound as error:  # type: ignore
+            raise ParameterError("No API Key found") from error
+
         apikey = parameter.get(parameter_name)
         if not apikey:
             raise ParameterError("No API Key found")
