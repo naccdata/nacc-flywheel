@@ -21,8 +21,8 @@ def main():
         gear_context.init_logging()
 
         try:
-            s3_param_path = get_config(gear_context=gear_context,
-                                       key='s3_param_path')
+            rds_param_path = get_config(gear_context=gear_context,
+                                       key='rds_parameter_path')
         except ConfigParseError as error:
             log.error('Incomplete configuration: %s', error.message)
             sys.exit(1)
@@ -30,8 +30,7 @@ def main():
         try:
             parameter_store = ParameterStore.create_from_environment()
             api_key = parameter_store.get_api_key()
-            s3_parameters = parameter_store.get_s3_parameters(
-                param_path=s3_param_path)
+            rds_parameters = parameter_store.get_rds_parameters(param_path=rds_param_path)
         except ParameterError as error:
             log.error('Parameter error: %s', error)
             sys.exit(1)

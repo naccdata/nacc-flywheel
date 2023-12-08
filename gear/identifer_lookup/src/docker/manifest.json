@@ -41,6 +41,11 @@
             "description": "Whether to do a dry run",
             "type": "boolean",
             "default": false
+        },
+        "rds_parameter_path": {
+            "description": "SSM parameter path for identifiers RDS credentials",
+            "type": "string",
+            "default": "/prod/flywheel/gearbot/identifiers"
         }
     },
     "command": "/bin/run"
