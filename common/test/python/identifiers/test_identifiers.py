@@ -64,7 +64,7 @@ class TestIdentifierRepository:
     def test_empty_repository(self, session):
         """Test empty repository behaves empty."""
         repo = IdentifierRepository(session)
-        assert repo.list() == []
+        assert not repo.list()
 
         with pytest.raises(NoMatchingIdentifier) as error:
             repo.get(nacc_id=1)
@@ -101,3 +101,22 @@ class TestIdentifierRepository:
         with pytest.raises(TypeError) as error:
             repo.get(adc_id=0, ptid="")  # type: ignore
         assert str(error.value) == "Invalid arguments"
+
+    def test_list_by_adcid(self, session):
+        """Test listing by ADCID."""
+
+        expected = [
+            Identifier(nacc_id=1, nacc_adc=2934, adc_id=0,
+                       patient_id="992321"),
+            Identifier(nacc_id=3, nacc_adc=7162, adc_id=0, patient_id="239451")
+        ]
+
+        for identifier in expected:
+            session.add(identifier)
+        session.add(
+            Identifier(nacc_id=2, nacc_adc=5397, adc_id=1,
+                       patient_id="168721"))
+        session.commit()
+
+        repo = IdentifierRepository(session)
+        assert repo.list(adc_id=0) == expected
