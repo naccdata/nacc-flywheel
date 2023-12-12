@@ -27,7 +27,7 @@
             "base": "api-key"
         },
         "input_file": {
-            "description": "The input file with identifiers",
+            "description": "The CSV input file. Each row must have ADCID and PTID",
             "base": "file",
             "type": {
                 "enum": [
