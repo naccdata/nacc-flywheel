@@ -7,6 +7,7 @@ import flywheel
 from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
                       GearRuleInput, RolesRole, ViewIdOutput)
 from flywheel.models.access_permission import AccessPermission
+from flywheel.models.file_entry import FileEntry
 from flywheel.models.project_parents import ProjectParents
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
 from fw_client import FWClient
@@ -139,6 +140,16 @@ class FlywheelProxy:
             return
 
         self.__fw.modify_user(user.id, {'email': email})
+
+    def get_file(self, file_id: str) -> FileEntry:
+        """Returns file object with the file ID.
+
+        Args:
+          file_id: the ID of the file
+        Returns:
+          file object for file with ID
+        """
+        return self.__fw.get_file(file_id)
 
     def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
         """Returns the flywheel group with the given ID and label.
