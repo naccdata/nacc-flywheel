@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional
+from flywheel.models.file_entry import FileEntry
 
 from flywheel.models.viewer_app import ViewerApp
 
@@ -38,6 +39,11 @@ class Client:
 
     @property
     def users(self) -> Finder[User]:
+        ...
+
+    # the code says returns FileOutput but has no definition
+    # documentation says returns FileEntry, so going with it
+    def get_file(self, file_id: str) -> FileEntry:
         ...
 
     # type of group is actually GroupInput which has a common mixin with group
