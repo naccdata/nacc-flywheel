@@ -11,6 +11,11 @@ class Identifier:
     patient_id: str
 
     @property
-    def naccid(self):
+    def naccid(self) -> str:
         """The string NACCID for this identifier."""
         return f"NACC{str(self.nacc_id).zfill(6)}"
+
+    @property
+    def ptid(self) -> str:
+        """The center assigned participant ID"""
+        return self.patient_id
