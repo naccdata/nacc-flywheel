@@ -8,6 +8,7 @@ from typing import List, Optional, overload
 
 from identifiers.identifiers_tables import metadata
 from identifiers.model import Identifier
+from inputs.parameter_store import RDSParameters
 from sqlalchemy import create_engine
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session, sessionmaker
@@ -23,14 +24,19 @@ class IdentifierRepository:
         self.__session = session
 
     @classmethod
-    def create_from(cls, database_url: str) -> 'IdentifierRepository':
+    def create_from(cls, parameters: RDSParameters) -> 'IdentifierRepository':
         """Creates an IdentifierRepository.
 
         Args:
-          database_url: the URL for the database connection
+          parameters: the credentials for the database connection
         Returns:
           the IdentifierRepository for the identifier database at the URL
         """
+        port = 3306
+        database = 'identifier'
+        database_url = (f"mysql+mysqlconnector://{parameters['user']}:"
+                        f"{parameters['password']}@{parameters['host']}:"
+                        f"{port}/{database}")
         engine = create_engine(url=database_url)
         metadata.create_all(engine)
         session = sessionmaker(bind=engine)()
@@ -52,6 +58,9 @@ class IdentifierRepository:
             adc_id: Optional[int] = None,
             ptid: Optional[str] = None) -> Identifier:
         """Returns Identifier object for the IDs given.
+
+        Note: some valid arguments can be falsey.
+        These are explicitly checked that they are not None.
 
         Args:
           nacc_id: the (integer part of the) NACCID
@@ -81,13 +90,29 @@ class IdentifierRepository:
 
         raise TypeError("Invalid arguments")
 
+    @overload
+    def list(self, adc_id: int) -> List[Identifier]:
+        ...
+
+    @overload
     def list(self) -> List[Identifier]:
+        ...
+
+    def list(self, adc_id: Optional[int] = None) -> List[Identifier]:
         """Returns the list of all identifiers in the repository.
+
+        If an ADCID is given filters identifiers by the center.
+
+        Args:
+          adc_id: the ADCID used for filtering
 
         Returns:
           List of all identifiers in the repository
         """
-        return self.__session.query(Identifier).all()
+        if adc_id is None:
+            return self.__session.query(Identifier).all()
+
+        return self.__session.query(Identifier).filter_by(adc_id=adc_id).all()
 
 
 class NoMatchingIdentifier(Exception):
