@@ -1,7 +1,7 @@
 """Utilities for writing errors to a CSV error file."""
-from csv import DictWriter
 from typing import Literal, Optional, TextIO
 
+from outputs.outputs import CSVWriter
 from pydantic import BaseModel, field_serializer
 
 
@@ -51,7 +51,7 @@ class FileError(BaseModel):
 
     # pylint: disable=no-self-use
     @field_serializer('error_type')
-    def serialize_type(self, type: Optional[ErrorType]):
+    def serialize_type(self, error_type: Optional[ErrorType]):
         """Serializes the error_type field to a JSON string.
 
         Args:
@@ -60,10 +60,10 @@ class FileError(BaseModel):
           JSON string representation of the error type
         """
 
-        if not type:
+        if not error_type:
             return None
 
-        return type.model_dump_json()
+        return error_type.model_dump_json()
 
 
 def identifier_error(line: int, value: str) -> FileError:
@@ -97,35 +97,23 @@ def missing_header_error() -> FileError:
 
 
 # pylint: disable=(too-few-public-methods)
-class ErrorWriter:
+class ErrorWriter(CSVWriter):
     """Writes FileErrors to a stream as CSV."""
 
     def __init__(self, stream: TextIO, flywheel_path: str,
                  container_id: str) -> None:
-        self.__writer = DictWriter(stream,
-                                   fieldnames=FileError.__annotations__.keys(),
-                                   dialect='unix')
+        super().__init__(stream,
+                         fieldnames=list(FileError.__annotations__.keys()))
         self.__flywheel_path = flywheel_path
         self.__container_id = container_id
-        self.__header_written = False
 
-    def __write_header(self):
-        """Writes the header to the output stream."""
-        if self.__header_written:
-            return
-
-        self.__writer.writeheader()
-        self.__header_written = True
-
-    def write(self, error: FileError) -> None:
+    def write_error(self, error: FileError) -> None:
         """Writes the error to the output stream with flywheel hierarchy
         information filled in for the reference file.
 
         Args:
           error: the file error object
         """
-        self.__write_header()
-
         error.flywheel_path = self.__flywheel_path
         error.container_id = self.__container_id
-        self.__writer.writerow(error.model_dump())
+        self.write(error.model_dump())

@@ -1,7 +1,12 @@
+"""Defines utilities for writing data files."""
+
 from csv import DictWriter
 from typing import Dict, List, Optional, TextIO
 
+SimpleJSONObject = Dict[str, Optional[int | str | bool | float]]
 
+
+# pylint: disable=(too-few-public-methods)
 class CSVWriter:
     """Wrapper for DictWriter that ensures header is written."""
 
@@ -19,15 +24,14 @@ class CSVWriter:
         self.__writer.writeheader()
         self.__header_written = True
 
-    def write(self, object: Dict[str,
-                                 Optional[int | str | bool | float]]) -> None:
+    def write(self, json_object: SimpleJSONObject) -> None:
         """Writes the dictionary to the stream.
 
         Dictionary is assumed to correspond to a row from a CSV file, and so
         the values all must have primitive types.
 
         Args:
-          object: dictionary with only primitive values
+          json_object: dictionary with only primitive values
         """
         self.__write_header()
-        self.__writer.writerow(object)
+        self.__writer.writerow(json_object)
