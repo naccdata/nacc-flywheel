@@ -22,6 +22,21 @@ class CenterGroup(GroupAdaptor):
         super().__init__(group=group, proxy=proxy)
         self.__datatypes: List[str] = []
         self.__ingest_stages = ['ingest', 'retrospective']
+        self.__center_id = None
+
+    def center_id(self) -> Optional[int]:
+        """Returns the center ID for this group."""
+        if self.__center_id:
+            return self.__center_id
+
+        pattern = re.compile(r'adcid-(\d+)')
+        tag = list(filter(pattern.match, self.get_tags()))[0]
+        # TODO: if there is more than one it is a problem
+        match = pattern.match(tag)
+        if not match:
+            return None
+
+        return int(match.group(1))
 
     def __get_matching_projects(self, prefix: str) -> List[ProjectAdaptor]:
         """Returns the projects for the center with labels that match the
