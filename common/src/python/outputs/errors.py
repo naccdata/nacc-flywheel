@@ -57,7 +57,6 @@ class FileError(BaseModel):
         """
         return type.model_dump_json()
 
-
 def identifier_error(line: int, value: str) -> FileError:
     """Creates a FileError for an unrecognized PTID error in a CSV file.
 
