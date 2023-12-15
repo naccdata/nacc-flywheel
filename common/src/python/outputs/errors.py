@@ -97,17 +97,16 @@ def missing_header_error() -> FileError:
 
 
 # pylint: disable=(too-few-public-methods)
-class ErrorWriter(CSVWriter):
+class ErrorWriter:
     """Writes FileErrors to a stream as CSV."""
 
     def __init__(self, stream: TextIO, flywheel_path: str,
                  container_id: str) -> None:
-        super().__init__(stream,
-                         fieldnames=list(FileError.__annotations__.keys()))
+        self.__writer = CSVWriter(stream=stream, fieldnames=list(FileError.__annotations__.keys()))
         self.__flywheel_path = flywheel_path
         self.__container_id = container_id
 
-    def write_error(self, error: FileError) -> None:
+    def write(self, error: FileError) -> None:
         """Writes the error to the output stream with flywheel hierarchy
         information filled in for the reference file.
 
@@ -116,4 +115,4 @@ class ErrorWriter(CSVWriter):
         """
         error.flywheel_path = self.__flywheel_path
         error.container_id = self.__container_id
-        self.write(error.model_dump())
+        self.__writer.write(error.model_dump())
