@@ -130,6 +130,8 @@ class TestIdentifierLookup:
                                               flywheel_path='dummy',
                                               container_id='dummy'))
         assert errors
+        assert empty(out_stream)
+        assert not empty(err_stream)
 
     def test_no_id_column_headers(self, no_ids_stream: StringIO,
                                   identifiers_map: dict[Any, Any]):
@@ -143,6 +145,8 @@ class TestIdentifierLookup:
                                               flywheel_path='dummy',
                                               container_id='dummy'))
         assert errors
+        assert empty(out_stream)
+        assert not empty(err_stream)
 
     def test_data_with_matching_ids(self, data_stream: StringIO,
                                     identifiers_map: dict[Any, Any]):
@@ -180,5 +184,7 @@ class TestIdentifierLookup:
                                               flywheel_path='dummy',
                                               container_id='dummy'))
         assert errors
+        assert empty(out_stream)
+        assert not empty(err_stream)
 
     # TODO: code assumes one adcid test that catch more than one
