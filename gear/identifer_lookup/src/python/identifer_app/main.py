@@ -29,11 +29,11 @@ def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
     sniffer = Sniffer()
     csv_sample = input_file.read(1024)
     if not csv_sample:
-        error_writer.write_error(empty_file_error())
+        error_writer.write(empty_file_error())
         return True
 
     if not sniffer.has_header(csv_sample):
-        error_writer.write_error(missing_header_error())
+        error_writer.write(missing_header_error())
         return True
 
     input_file.seek(0)
@@ -43,7 +43,7 @@ def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
 
     header_fields = list(reader.fieldnames)
     if 'ptid' not in header_fields:
-        error_writer.write_error(missing_header_error())
+        error_writer.write(missing_header_error())
         return True
 
     header_fields.append('naccid')
@@ -54,7 +54,7 @@ def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
         assert record['ptid']
         identifier = identifiers.get(record['ptid'])
         if not identifier:
-            error_writer.write_error(
+            error_writer.write(
                 identifier_error(line=reader.line_num, value=record['ptid']))
             found_error = True
             continue
