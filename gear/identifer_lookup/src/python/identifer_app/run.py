@@ -1,9 +1,10 @@
 """ADD DETAIL HERE."""
 
 import logging
-import re
 import sys
+from pathlib import Path
 
+from centers.center_group import CenterGroup
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
@@ -51,37 +52,37 @@ def main():
         # TODO: make sure parent is a project
         group = proxy.find_group(parent.group)
         assert group
-        pattern = re.compile(r'adcid-(\d+)')
-        tag = list(filter(pattern.match, group.get_tags()))[0]
-        # TODO: if there is more than one it is a problem
-        match = pattern.match(tag)
-        if not match:
+        # TODO: clean this up
+        center = CenterGroup(group=group.fw_group, proxy=proxy)
+        adcid = center.center_id()
+        if not adcid:
             log.error('Unable to determine center ID')
             sys.exit(1)
 
-        adcid = int(match.group(1))
-
         identifiers_repo = IdentifierRepository.create_from(rds_parameters)
+        center_identifiers = identifiers_repo.list(adc_id=adcid)
         identifiers = {
             identifier.ptid: identifier
-            for identifier in identifiers_repo.list(adc_id=adcid)
+            for identifier in center_identifiers
         }
 
-        with gear_context.open_input(
-                'input_file', mode='r', encoding='utf-8') as csv_file, gear_context.open_output(
-                    'updated_input_file'
-                ) as out_file, gear_context.open_output(
-                    'error_file') as err_file:
-            errors = run(proxy=proxy,
-                         input_file=csv_file,
-                         identifiers=identifiers,
-                         output_file=out_file,
-                         error_file=err_file)
+        input_path = Path(file_input['location']['path'])
+        with open(input_path, mode='r', encoding='utf-8') as csv_file:
+            with gear_context.open_output('updated_input_file',
+                                          mode='w',
+                                          encoding='utf-8') as out_file:
+                with gear_context.open_output('error_file',
+                                              mode='w',
+                                              encoding='utf-8') as err_file:
+                    errors = run(input_file=csv_file,
+                                 identifiers=identifiers,
+                                 output_file=out_file,
+                                 error_file=err_file)
 
-            # TODO: check this applies to correct file object
-            gear_context.metadata.add_qc_result(input_file,
-                                                "valid_identifiers",
-                                                "FAIL" if errors else "PASS")
+                    # TODO: check this applies to correct file object
+                    gear_context.metadata.add_qc_result(
+                        file_input, "valid_identifiers",
+                        "FAIL" if errors else "PASS")
 
     if __name__ == "__main__":
         main()
