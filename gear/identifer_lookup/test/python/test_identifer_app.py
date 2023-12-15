@@ -14,12 +14,21 @@ def empty_data_stream():
 
 
 def write_to_stream(data: List[List[Any]], stream: StringIO) -> None:
+    """Writes data to the StringIO object for use in a test.
+
+    Resets stream pointer to beginning.
+
+    Args:
+      data: tabular data
+      stream: the output stream
+    """
     writer = csv.writer(stream,
                         delimiter=',',
                         quotechar='\"',
                         quoting=csv.QUOTE_NONNUMERIC,
                         lineterminator='\n')
     writer.writerows(data)
+    stream.seek(0)
 
 
 @pytest.fixture(scope="function")
@@ -28,7 +37,6 @@ def no_header_stream():
     data = [[1, 1, 8], [1, 2, 99]]
     stream = StringIO()
     write_to_stream(data, stream)
-    stream.seek(0)
     yield stream
 
 
@@ -38,7 +46,6 @@ def no_ids_stream():
     data = [['dummy1', 'dummy2', 'dummy3'], [1, 1, 8], [1, 2, 99]]
     stream = StringIO()
     write_to_stream(data, stream)
-    stream.seek(0)
     yield stream
 
 
@@ -83,7 +90,10 @@ def mismatched_identifiers_map():
 
 
 def empty(stream) -> bool:
-    """Checks that the stream is empty."""
+    """Checks that the stream is empty.
+
+    Returns   True if no data is read from the stream, False otherwise
+    """
     stream.seek(0)
     return not bool(stream.readline())
 
@@ -103,11 +113,10 @@ class TestIdentifierLookup:
                      error_file=err_stream)
         assert errors
         assert empty(out_stream)
+        assert not empty(err_stream)
 
-        # TODO: add check for error output
-        # err_stream.seek(0)
-
-    def test_no_header(self, no_header_stream: StringIO, identifiers_map: dict[Any, Any]):
+    def test_no_header(self, no_header_stream: StringIO,
+                       identifiers_map: dict[Any, Any]):
         """Test case with no header."""
         out_stream = StringIO()
         err_stream = StringIO()
@@ -117,7 +126,8 @@ class TestIdentifierLookup:
                      error_file=err_stream)
         assert errors
 
-    def test_no_id_column_headers(self, no_ids_stream: StringIO, identifiers_map: dict[Any, Any]):
+    def test_no_id_column_headers(self, no_ids_stream: StringIO,
+                                  identifiers_map: dict[Any, Any]):
         """Test case where header doesn't have ID columns."""
         out_stream = StringIO()
         err_stream = StringIO()
@@ -127,7 +137,8 @@ class TestIdentifierLookup:
                      error_file=err_stream)
         assert errors
 
-    def test_data_with_matching_ids(self, data_stream: StringIO, identifiers_map: dict[Any, Any]):
+    def test_data_with_matching_ids(self, data_stream: StringIO,
+                                    identifiers_map: dict[Any, Any]):
         """Test case where everything should match."""
         out_stream = StringIO()
         err_stream = StringIO()
@@ -148,7 +159,8 @@ class TestIdentifierLookup:
         assert row['naccid'] == 'NACC000002'
 
     def test_data_with_mismatched_ids(self, data_stream: StringIO,
-                                      mismatched_identifiers_map: dict[Any, Any]):
+                                      mismatched_identifiers_map: dict[Any,
+                                                                       Any]):
         """Test case where there is no matching identifier."""
         out_stream = StringIO()
         err_stream = StringIO()
@@ -157,6 +169,5 @@ class TestIdentifierLookup:
                      output_file=out_stream,
                      error_file=err_stream)
         assert errors
-
 
     # TODO: code assumes one adcid test that catch more than one
