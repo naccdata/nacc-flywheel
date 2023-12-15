@@ -26,7 +26,8 @@
 	"customizations": {
 		"vscode": {
 			"settings": {
-				"dev.containers.dockerCredentialHelper": false
+				"dev.containers.dockerCredentialHelper": false,
+                "editor.detectIndentation": false
 			},
 			"extensions": [
 				"ms-python.python",
