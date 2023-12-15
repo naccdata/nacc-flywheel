@@ -12,6 +12,7 @@ from identifer_app.main import run
 from identifiers.identifiers_repository import IdentifierRepository
 from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import ParameterError, ParameterStore
+from outputs.errors import ErrorWriter
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -49,10 +50,9 @@ def main():
 
         # get the ADCID
         parent = gear_context.get_container_from_ref(file_input['hierarchy'])
-        # TODO: make sure parent is a project
+        # TODO: should this confirm that parent is a project?
         group = proxy.find_group(parent.group)
         assert group
-        # TODO: clean this up
         center = CenterGroup(group=group.fw_group, proxy=proxy)
         adcid = center.center_id()
         if not adcid:
@@ -74,10 +74,14 @@ def main():
                 with gear_context.open_output('error_file',
                                               mode='w',
                                               encoding='utf-8') as err_file:
+                    # TODO: need to reference Parker's code to get flywheel_path and container_id
                     errors = run(input_file=csv_file,
                                  identifiers=identifiers,
                                  output_file=out_file,
-                                 error_file=err_file)
+                                 error_writer=ErrorWriter(
+                                     stream=err_file,
+                                     flywheel_path='dummy-flywheel-path',
+                                     container_id='dummy-container-id'))
 
                     # TODO: check this applies to correct file object
                     gear_context.metadata.add_qc_result(
