@@ -35,7 +35,8 @@ class FileError(BaseModel):
 
     # pylint: disable=no-self-use
     @field_serializer('error_location')
-    def serialize_location(self, location: CSVLocation | JSONLocation):
+    def serialize_location(self,
+                           location: Optional[CSVLocation | JSONLocation]):
         """Serializes the error_location field to a JSON string.
 
         Args:
@@ -43,11 +44,14 @@ class FileError(BaseModel):
         Returns:
           JSON string representation of the location object
         """
+        if not location:
+            return None
+
         return location.model_dump_json()
 
     # pylint: disable=no-self-use
     @field_serializer('error_type')
-    def serialize_type(self, type: ErrorType):
+    def serialize_type(self, type: Optional[ErrorType]):
         """Serializes the error_type field to a JSON string.
 
         Args:
@@ -55,7 +59,12 @@ class FileError(BaseModel):
         Returns:
           JSON string representation of the error type
         """
+
+        if not type:
+            return None
+
         return type.model_dump_json()
+
 
 def identifier_error(line: int, value: str) -> FileError:
     """Creates a FileError for an unrecognized PTID error in a CSV file.
@@ -73,15 +82,19 @@ def identifier_error(line: int, value: str) -> FileError:
                      value=value,
                      message='Unrecognized participant ID')
 
+
 def empty_file_error() -> FileError:
     """Creates a FileError for an empty input file."""
     return FileError(error_type=ErrorType(type='error', detail='empty-file'),
                      message='Empty input file')
 
+
 def missing_header_error() -> FileError:
-    """Creates a FileError for a missing header"""
-    return FileError(error_type=ErrorType(type='error', detail='missing-header'),
+    """Creates a FileError for a missing header."""
+    return FileError(error_type=ErrorType(type='error',
+                                          detail='missing-header'),
                      message='No file header found')
+
 
 # pylint: disable=(too-few-public-methods)
 class ErrorWriter:
