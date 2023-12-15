@@ -26,10 +26,10 @@ class FileError(BaseModel):
     """Represents an error that might be found in file during a step in a
     pipeline."""
     error_type: ErrorType
-    error_location: CSVLocation | JSONLocation
+    error_location: Optional[CSVLocation | JSONLocation] = None
     flywheel_path: Optional[str] = None
     container_id: Optional[str] = None
-    value: str
+    value: Optional[str] = None
     expected: Optional[str] = None
     message: str
 
@@ -70,12 +70,18 @@ def identifier_error(line: int, value: str) -> FileError:
     """
     return FileError(error_type=ErrorType(type='error', detail='identifier'),
                      error_location=CSVLocation(line=line, column_name='ptid'),
-                     flywheel_path=None,
-                     container_id=None,
                      value=value,
-                     expected=None,
                      message='Unrecognized participant ID')
 
+def empty_file_error() -> FileError:
+    """Creates a FileError for an empty input file."""
+    return FileError(error_type=ErrorType(type='error', detail='empty-file'),
+                     message='Empty input file')
+
+def missing_header_error() -> FileError:
+    """Creates a FileError for a missing header"""
+    return FileError(error_type=ErrorType(type='error', detail='missing-header'),
+                     message='No file header found')
 
 # pylint: disable=(too-few-public-methods)
 class ErrorWriter:
