@@ -11,7 +11,6 @@ from outputs.errors import identifier_error
 log = logging.getLogger(__name__)
 
 
-    
 def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
         output_file: TextIO, error_file: TextIO) -> bool:
     """Runs ADD DETAIL process.
@@ -54,7 +53,8 @@ def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
         assert record['ptid']
         identifier = identifiers.get(record['ptid'])
         if not identifier:
-            error = identifier_error(line=reader.line_num, value=record['ptid'])
+            error = identifier_error(line=reader.line_num,
+                                     value=record['ptid'])
             found_error = True
             continue
 
