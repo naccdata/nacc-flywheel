@@ -6,13 +6,14 @@ from csv import DictReader, DictWriter, Sniffer
 from typing import Dict, TextIO
 
 from identifiers.model import Identifier
-from outputs.errors import identifier_error
+from outputs.errors import (ErrorWriter, empty_file_error, identifier_error,
+                            missing_header_error)
 
 log = logging.getLogger(__name__)
 
 
 def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
-        output_file: TextIO, error_file: TextIO) -> bool:
+        output_file: TextIO, error_writer: ErrorWriter) -> bool:
     """Runs ADD DETAIL process.
 
     Args:
@@ -27,17 +28,17 @@ def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
     sniffer = Sniffer()
     csv_sample = input_file.read(1024)
     if not csv_sample:
-        # TODO: output error for empty file
+        error_writer.write(empty_file_error())
         return True
 
     if not sniffer.has_header(csv_sample):
-        # TODO: need error that no header
+        error_writer.write(missing_header_error())
         return True
-    input_file.seek(0)
 
+    input_file.seek(0)
     detected_dialect = sniffer.sniff(csv_sample, delimiters=',')
     reader = DictReader(input_file, dialect=detected_dialect)
-    assert reader.fieldnames
+    assert reader.fieldnames, "File has header, reader should have fieldnames"
 
     header_fields = list(reader.fieldnames)
     if 'ptid' not in header_fields:
