@@ -4,7 +4,8 @@
 from csv import DictReader
 from io import StringIO
 
-from outputs.errors import CSVLocation, ErrorType, ErrorWriter, FileError, JSONLocation
+from outputs.errors import (CSVLocation, ErrorType, ErrorWriter, FileError,
+                            JSONLocation)
 
 
 class TestFileError:
@@ -13,7 +14,8 @@ class TestFileError:
     def test_serialization(self):
         """Tests that serialization produces a dict with the location a
         string."""
-        error = FileError(error_type=ErrorType(type='error', detail='the-error'),
+        error = FileError(error_type=ErrorType(type='error',
+                                               detail='the-error'),
                           error_location=JSONLocation(key_path='k1.k2.k3'),
                           value='the-value',
                           message='the-message')
@@ -48,4 +50,3 @@ class TestErrorWriter:
         row = next(reader)
         assert row['flywheel_path'] == 'the-path'
         assert row['container_id'] == 'the-id'
-
