@@ -5,7 +5,8 @@ from csv import DictReader
 from io import StringIO
 
 from outputs.errors import (CSVLocation, ErrorType, ErrorWriter, FileError,
-                            JSONLocation)
+                            JSONLocation, empty_file_error, identifier_error,
+                            missing_header_error)
 
 
 class TestFileError:
@@ -23,6 +24,22 @@ class TestFileError:
         assert isinstance(result, dict)
         assert result['error_location'] == '{"key_path":"k1.k2.k3"}'
         assert result['error_type'] == '{"type":"error","detail":"the-error"}'
+
+    def test_identifier_serialization(self):
+        """Tests that error created by identifier_error can be serialized."""
+        error = identifier_error(line=11, value='dummy')
+        assert error.model_dump()
+
+    def test_empty_file_serialization(self):
+        """Test that error created by empty_file_error can be serialized."""
+        error = empty_file_error()
+        assert error.model_dump()
+
+    def test_missing_header_serialization(self):
+        """Test that error created by missing_header_error can be
+        serialized."""
+        error = missing_header_error()
+        assert error.model_dump()
 
 
 class TestErrorWriter:
