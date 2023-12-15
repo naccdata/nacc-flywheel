@@ -52,7 +52,7 @@ class TestErrorWriter:
         writer = ErrorWriter(stream=stream,
                              flywheel_path="the-path",
                              container_id='the-id')
-        writer.write(
+        writer.write_error(
             FileError(error_type=ErrorType(type='error', detail='the-error'),
                       error_location=CSVLocation(line=10, column_name='ptid'),
                       flywheel_path=None,
