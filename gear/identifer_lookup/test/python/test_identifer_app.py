@@ -5,6 +5,7 @@ from typing import Any, List
 import pytest
 from identifer_app.main import run
 from identifiers.model import Identifier
+from outputs.errors import ErrorWriter
 
 
 @pytest.fixture(scope="function")
@@ -110,7 +111,9 @@ class TestIdentifierLookup:
         errors = run(input_file=empty_data_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
-                     error_file=err_stream)
+                     error_writer=ErrorWriter(stream=err_stream,
+                                              flywheel_path='dummy',
+                                              container_id='dummy'))
         assert errors
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -123,7 +126,9 @@ class TestIdentifierLookup:
         errors = run(input_file=no_header_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
-                     error_file=err_stream)
+                     error_writer=ErrorWriter(stream=err_stream,
+                                              flywheel_path='dummy',
+                                              container_id='dummy'))
         assert errors
 
     def test_no_id_column_headers(self, no_ids_stream: StringIO,
@@ -134,7 +139,9 @@ class TestIdentifierLookup:
         errors = run(input_file=no_ids_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
-                     error_file=err_stream)
+                     error_writer=ErrorWriter(stream=err_stream,
+                                              flywheel_path='dummy',
+                                              container_id='dummy'))
         assert errors
 
     def test_data_with_matching_ids(self, data_stream: StringIO,
@@ -145,7 +152,9 @@ class TestIdentifierLookup:
         errors = run(input_file=data_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
-                     error_file=err_stream)
+                     error_writer=ErrorWriter(stream=err_stream,
+                                              flywheel_path='dummy',
+                                              container_id='dummy'))
         assert not errors
         assert empty(err_stream)
         assert not empty(out_stream)
@@ -167,7 +176,9 @@ class TestIdentifierLookup:
         errors = run(input_file=data_stream,
                      identifiers=mismatched_identifiers_map,
                      output_file=out_stream,
-                     error_file=err_stream)
+                     error_writer=ErrorWriter(stream=err_stream,
+                                              flywheel_path='dummy',
+                                              container_id='dummy'))
         assert errors
 
     # TODO: code assumes one adcid test that catch more than one
