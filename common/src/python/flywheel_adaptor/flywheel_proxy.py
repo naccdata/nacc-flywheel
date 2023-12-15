@@ -484,6 +484,14 @@ class GroupAdaptor:
         """Return the label of the group."""
         return self.__group.label
 
+    @property
+    def fw_group(self) -> flywheel.Group:
+        """Returns the flywheel group.
+
+        Need this to convert to CenterGroup. Sadly.
+        """
+        return self.__group
+
     def proxy(self) -> FlywheelProxy:
         """Return the proxy for the flywheel instance."""
         return self.__fw
