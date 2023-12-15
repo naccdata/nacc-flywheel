@@ -1,8 +1,7 @@
-"""Defines ADD DETAIL computation."""
+"""Defines the NACCID lookup computation."""
 
-import json
 import logging
-from csv import DictReader, DictWriter, Sniffer
+from csv import DictReader, Sniffer
 from typing import Dict, TextIO
 
 from identifiers.model import Identifier
@@ -15,13 +14,23 @@ log = logging.getLogger(__name__)
 
 def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
         output_file: TextIO, error_writer: ErrorWriter) -> bool:
-    """Runs ADD DETAIL process.
+    """Reads participant records from the input CSV file, finds the NACCID for
+    each row from the ADCID and PTID, and outputs a CSV file with the NACCID
+    inserted.
+
+    If the NACCID isn't found for a row, an error is written to the error file.
+
+    Note: this function assumes that the ADCID for each row is the same, and
+    that the ADCID corresponds to the ID for the group where the file is
+    located.
+    The identifiers map should at least include Identifiers objects with this
+    ADCID.
 
     Args:
-      proxy: the proxy for the Flywheel instance
       input_file: the data input stream
+      identifiers: the map from PTID to Identifier object
       output_file: the data output stream
-      error_file: the error output stream
+      error_writer: the error output writer
     Returns:
       True if there were IDs with no corresponding NACCID
     """
@@ -49,17 +58,17 @@ def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
     header_fields.append('naccid')
     writer = CSVWriter(stream=output_file, fieldnames=header_fields)
 
-    found_error = False
+    error_found = False
     for record in reader:
         assert record['ptid']
         identifier = identifiers.get(record['ptid'])
         if not identifier:
             error_writer.write(
                 identifier_error(line=reader.line_num, value=record['ptid']))
-            found_error = True
+            error_found = True
             continue
 
         record['naccid'] = identifier.naccid
         writer.write(record)
 
-    return found_error
+    return error_found
