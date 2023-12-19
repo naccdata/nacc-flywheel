@@ -27,7 +27,6 @@ class FileError(BaseModel):
     pipeline."""
     error_type: ErrorType
     error_location: Optional[CSVLocation | JSONLocation] = None
-    flywheel_path: Optional[str] = None
     container_id: Optional[str] = None
     value: Optional[str] = None
     expected: Optional[str] = None
@@ -100,10 +99,9 @@ def missing_header_error() -> FileError:
 class ErrorWriter:
     """Writes FileErrors to a stream as CSV."""
 
-    def __init__(self, stream: TextIO, flywheel_path: str,
+    def __init__(self, stream: TextIO,
                  container_id: str) -> None:
         self.__writer = CSVWriter(stream=stream, fieldnames=list(FileError.__annotations__.keys()))
-        self.__flywheel_path = flywheel_path
         self.__container_id = container_id
 
     def write(self, error: FileError) -> None:
@@ -113,6 +111,5 @@ class ErrorWriter:
         Args:
           error: the file error object
         """
-        error.flywheel_path = self.__flywheel_path
         error.container_id = self.__container_id
         self.__writer.write(error.model_dump())
