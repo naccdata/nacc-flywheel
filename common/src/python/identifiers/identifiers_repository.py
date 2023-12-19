@@ -6,43 +6,22 @@ https://github.com/cosmicpython/code/tree/chapter_02_repository_exercise
 
 from typing import List, Optional, overload
 
-from identifiers.identifiers_tables import metadata
 from identifiers.model import Identifier
-from inputs.parameter_store import RDSParameters
-from sqlalchemy import create_engine
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 
 class IdentifierRepository:
     """Repository for Identifier records.
 
     Assumes the Identifier class is mapped to the identifier table.
+
+    Create repository within a resource block for a session to ensure that
+    session lifecycle is correct.
     """
 
     def __init__(self, session: Session) -> None:
         self.__session = session
-
-    @classmethod
-    def create_from(cls, parameters: RDSParameters) -> 'IdentifierRepository':
-        """Creates an IdentifierRepository.
-
-        Args:
-          parameters: the credentials for the database connection
-        Returns:
-          the IdentifierRepository for the identifier database at the URL
-        """
-        port = 3306
-        database = 'identifier'
-        database_url = (f"mysql+mysqlconnector://{parameters['user']}:"
-                        f"{parameters['password']}@{parameters['host']}:"
-                        f"{port}/{database}")
-        engine = create_engine(url=database_url)
-        metadata.create_all(engine)
-        session = sessionmaker(bind=engine)()
-        return IdentifierRepository(session)
-
-    # def add(self, identifier: Identifier):
 
     @overload
     def get(self, nacc_id: int) -> Identifier:
@@ -116,4 +95,4 @@ class IdentifierRepository:
 
 
 class NoMatchingIdentifier(Exception):
-    """Exception for case when identifier is matched."""
+    """Exception for case when identifier is not matched."""
