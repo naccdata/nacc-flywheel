@@ -1,3 +1,4 @@
+"""Tests for the identifier_app.main.run."""
 import csv
 from io import StringIO
 from typing import Any, List
