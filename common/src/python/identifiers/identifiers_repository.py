@@ -95,4 +95,4 @@ class IdentifierRepository:
 
 
 class NoMatchingIdentifier(Exception):
-    """Exception for case when identifier is matched."""
+    """Exception for case when identifier is not matched."""
