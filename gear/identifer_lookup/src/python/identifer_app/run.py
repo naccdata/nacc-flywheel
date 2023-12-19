@@ -35,7 +35,7 @@ def get_identifiers(rds_parameters: RDSParameters,
     """
     identifiers = {}
     identifers_session = create_session(rds_parameters)
-    with identifers_session.begin() as session:
+    with identifers_session as session:
         identifiers_repo = IdentifierRepository(session)
         center_identifiers = identifiers_repo.list(adc_id=adcid)
         if not center_identifiers:
@@ -59,7 +59,7 @@ def get_adcid(proxy: FlywheelProxy, file_id: str) -> Optional[int]:
     """
     file = proxy.get_file(file_id)
     group = file.parents.group
-    center = CenterGroup(group=group.fw_group, proxy=proxy)
+    center = CenterGroup(group=group, proxy=proxy)
     return center.center_id()
 
 
