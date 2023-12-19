@@ -1,4 +1,4 @@
-"""ADD DETAIL HERE."""
+"""Entrypoint script for the identifer lookup app."""
 
 import logging
 import sys
@@ -70,23 +70,19 @@ def main():
         gear_context.init_logging()
 
         try:
-            rds_param_path = get_config(gear_context=gear_context,
-                                        key='rds_parameter_path')
+            parameter_store = ParameterStore.create_from_environment()
+            dry_run = gear_context.config.get("dry_run", False)
+            proxy = FlywheelProxy(client=Client(parameter_store.get_api_key()),
+                                  dry_run=dry_run)
+            rds_parameters = parameter_store.get_rds_parameters(
+                param_path=get_config(gear_context=gear_context,
+                                      key='rds_parameter_path'))
         except ConfigParseError as error:
             log.error('Incomplete configuration: %s', error.message)
             sys.exit(1)
-
-        try:
-            parameter_store = ParameterStore.create_from_environment()
-            api_key = parameter_store.get_api_key()
-            rds_parameters = parameter_store.get_rds_parameters(
-                param_path=rds_param_path)
         except ParameterError as error:
             log.error('Parameter error: %s', error)
             sys.exit(1)
-
-        dry_run = gear_context.config.get("dry_run", False)
-        proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
 
         file_input = gear_context.get_input('input_file')
         if not file_input:
