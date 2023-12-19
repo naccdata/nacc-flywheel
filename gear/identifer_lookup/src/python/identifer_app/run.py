@@ -74,16 +74,15 @@ def main():
                 with gear_context.open_output('error_file',
                                               mode='w',
                                               encoding='utf-8') as err_file:
-                    # TODO: need to reference Parker's code to get flywheel_path and container_id
+                    # TODO: check flywheel_path and container_id are correct
                     errors = run(input_file=csv_file,
                                  identifiers=identifiers,
                                  output_file=out_file,
                                  error_writer=ErrorWriter(
                                      stream=err_file,
                                      flywheel_path='dummy-flywheel-path',
-                                     container_id='dummy-container-id'))
+                                     container_id=file_input['file_id']))
 
-                    # TODO: check this applies to correct file object
                     gear_context.metadata.add_qc_result(
                         file_input, "valid_identifiers",
                         "FAIL" if errors else "PASS")
