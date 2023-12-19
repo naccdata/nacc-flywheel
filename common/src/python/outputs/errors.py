@@ -99,9 +99,10 @@ def missing_header_error() -> FileError:
 class ErrorWriter:
     """Writes FileErrors to a stream as CSV."""
 
-    def __init__(self, stream: TextIO,
-                 container_id: str) -> None:
-        self.__writer = CSVWriter(stream=stream, fieldnames=list(FileError.__annotations__.keys()))
+    def __init__(self, stream: TextIO, container_id: str) -> None:
+        self.__writer = CSVWriter(stream=stream,
+                                  fieldnames=list(
+                                      FileError.__annotations__.keys()))
         self.__container_id = container_id
 
     def write(self, error: FileError) -> None:

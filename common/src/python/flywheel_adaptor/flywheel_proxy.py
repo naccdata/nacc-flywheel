@@ -484,14 +484,6 @@ class GroupAdaptor:
         """Return the label of the group."""
         return self.__group.label
 
-    @property
-    def fw_group(self) -> flywheel.Group:
-        """Returns the flywheel group.
-
-        Need this to convert to CenterGroup. Sadly.
-        """
-        return self.__group
-
     def proxy(self) -> FlywheelProxy:
         """Return the proxy for the flywheel instance."""
         return self.__fw
@@ -606,7 +598,6 @@ class GroupAdaptor:
 
         self.__fw.add_group_role(group=self.__group, role=new_role)
 
-    # TODO: should return ProjectAdaptor
     def get_project(self, label: str) -> Optional[flywheel.Project]:
         """Returns a project in this group with the given label.
 

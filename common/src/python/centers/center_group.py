@@ -31,7 +31,6 @@ class CenterGroup(GroupAdaptor):
 
         pattern = re.compile(r'adcid-(\d+)')
         tag = list(filter(pattern.match, self.get_tags()))[0]
-        # TODO: if there is more than one it is a problem
         match = pattern.match(tag)
         if not match:
             return None

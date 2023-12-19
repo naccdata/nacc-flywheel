@@ -49,8 +49,7 @@ class TestErrorWriter:
         """Tests that the error writer writes CSV with the flywheel hierarchy
         information inserted."""
         stream = StringIO()
-        writer = ErrorWriter(stream=stream,
-                             container_id='the-id')
+        writer = ErrorWriter(stream=stream, container_id='the-id')
         writer.write(
             FileError(error_type=ErrorType(type='error', detail='the-error'),
                       error_location=CSVLocation(line=10, column_name='ptid'),

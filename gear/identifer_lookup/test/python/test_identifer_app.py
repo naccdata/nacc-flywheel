@@ -182,5 +182,3 @@ class TestIdentifierLookup:
         assert errors
         assert empty(out_stream)
         assert not empty(err_stream)
-
-    # TODO: code assumes one adcid test that catch more than one
