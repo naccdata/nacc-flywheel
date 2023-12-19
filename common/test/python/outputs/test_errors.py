@@ -50,12 +50,10 @@ class TestErrorWriter:
         information inserted."""
         stream = StringIO()
         writer = ErrorWriter(stream=stream,
-                             flywheel_path="the-path",
                              container_id='the-id')
         writer.write(
             FileError(error_type=ErrorType(type='error', detail='the-error'),
                       error_location=CSVLocation(line=10, column_name='ptid'),
-                      flywheel_path=None,
                       container_id=None,
                       value='the-value',
                       expected=None,
@@ -65,5 +63,4 @@ class TestErrorWriter:
         assert reader.fieldnames
         assert reader.fieldnames == list(FileError.__annotations__.keys())
         row = next(reader)
-        assert row['flywheel_path'] == 'the-path'
         assert row['container_id'] == 'the-id'
