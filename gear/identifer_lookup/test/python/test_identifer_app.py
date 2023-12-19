@@ -113,7 +113,6 @@ class TestIdentifierLookup:
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=ErrorWriter(stream=err_stream,
-                                              flywheel_path='dummy',
                                               container_id='dummy'))
         assert errors
         assert empty(out_stream)
@@ -128,7 +127,6 @@ class TestIdentifierLookup:
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=ErrorWriter(stream=err_stream,
-                                              flywheel_path='dummy',
                                               container_id='dummy'))
         assert errors
         assert empty(out_stream)
@@ -143,7 +141,6 @@ class TestIdentifierLookup:
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=ErrorWriter(stream=err_stream,
-                                              flywheel_path='dummy',
                                               container_id='dummy'))
         assert errors
         assert empty(out_stream)
@@ -158,7 +155,6 @@ class TestIdentifierLookup:
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=ErrorWriter(stream=err_stream,
-                                              flywheel_path='dummy',
                                               container_id='dummy'))
         assert not errors
         assert empty(err_stream)
@@ -182,7 +178,6 @@ class TestIdentifierLookup:
                      identifiers=mismatched_identifiers_map,
                      output_file=out_stream,
                      error_writer=ErrorWriter(stream=err_stream,
-                                              flywheel_path='dummy',
                                               container_id='dummy'))
         assert errors
         assert empty(out_stream)
