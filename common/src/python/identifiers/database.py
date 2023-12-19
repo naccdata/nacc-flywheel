@@ -5,13 +5,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 
-def create_from(parameters: RDSParameters) -> Session:
-    """Creates an IdentifierRepository.
+def create_session(parameters: RDSParameters) -> Session:
+    """Creates a Session for the identifiers database.
 
     Args:
         parameters: the credentials for the database connection
     Returns:
-        the IdentifierRepository for the identifier database at the URL
+        the Session for the identifier database at the URL
     """
     port = 3306
     database = 'identifier'
