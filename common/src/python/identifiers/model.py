@@ -17,5 +17,5 @@ class Identifier:
 
     @property
     def ptid(self) -> str:
-        """The center assigned participant ID"""
+        """The center assigned participant ID."""
         return self.patient_id
