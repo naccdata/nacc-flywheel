@@ -15,6 +15,9 @@ class IdentifierRepository:
     """Repository for Identifier records.
 
     Assumes the Identifier class is mapped to the identifier table.
+
+    Create repository within a resource block for a session to ensure that
+    session lifecycle is correct.
     """
 
     def __init__(self, session: Session) -> None:
