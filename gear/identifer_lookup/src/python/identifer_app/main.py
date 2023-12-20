@@ -11,6 +11,8 @@ from outputs.outputs import CSVWriter
 
 log = logging.getLogger(__name__)
 
+PTID = 'ptid'
+NACCID = 'naccid'
 
 def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
         output_file: TextIO, error_writer: ErrorWriter) -> bool:
@@ -51,24 +53,24 @@ def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
     assert reader.fieldnames, "File has header, reader should have fieldnames"
 
     header_fields = list(reader.fieldnames)
-    if 'ptid' not in header_fields:
+    if PTID not in header_fields:
         error_writer.write(missing_header_error())
         return True
 
-    header_fields.append('naccid')
+    header_fields.append(NACCID)
     writer = CSVWriter(stream=output_file, fieldnames=header_fields)
 
     error_found = False
     for record in reader:
-        assert record['ptid']
-        identifier = identifiers.get(record['ptid'])
+        assert record[PTID]
+        identifier = identifiers.get(record[PTID])
         if not identifier:
             error_writer.write(
-                identifier_error(line=reader.line_num, value=record['ptid']))
+                identifier_error(line=reader.line_num, value=record[PTID]))
             error_found = True
             continue
 
-        record['naccid'] = identifier.naccid
+        record[NACCID] = identifier.naccid
         writer.write(record)
 
     return error_found
