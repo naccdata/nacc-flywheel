@@ -18,20 +18,17 @@
             "image": "naccdata/identifer-lookup:0.0.1"
         },
         "flywheel": {
-            "suite": "NACC Admin Gears",
+            "suite": "NACC Data Gears",
             "show-job": true
         }
     },
     "inputs": {
-        "api-key": {
-            "base": "api-key"
-        },
         "input_file": {
             "description": "The CSV input file. Each row must have ADCID and PTID",
             "base": "file",
             "type": {
                 "enum": [
-                    "source code"
+                    "tabular data"
                 ]
             }
         }
