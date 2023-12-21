@@ -15,7 +15,7 @@ class TestFileError:
     def test_serialization(self):
         """Tests that serialization produces a dict with the location a
         string."""
-        error = FileError(error_type=ErrorType(type='error',
+        error = FileError(error_type=ErrorType(error_type='error',
                                                detail='the-error'),
                           error_location=JSONLocation(key_path='k1.k2.k3'),
                           value='the-value',
@@ -49,10 +49,10 @@ class TestErrorWriter:
         """Tests that the error writer writes CSV with the flywheel hierarchy
         information inserted."""
         stream = StringIO()
-        writer = ErrorWriter(stream=stream,
-                             container_id='the-id')
+        writer = ErrorWriter(stream=stream, container_id='the-id')
         writer.write(
-            FileError(error_type=ErrorType(type='error', detail='the-error'),
+            FileError(error_type=ErrorType(error_type='error',
+                                           detail='the-error'),
                       error_location=CSVLocation(line=10, column_name='ptid'),
                       container_id=None,
                       value='the-value',
