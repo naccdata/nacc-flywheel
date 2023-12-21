@@ -18,13 +18,16 @@
 //     "moto[s3,ssm]>=4.2.5",
 //     "pandas-stubs>=2.0.3",
 //     "pandas>=2.1.1",
+//     "pydantic>=2.5.2",
 //     "pytest>=7.2.0",
 //     "pyyaml==6.0",
 //     "requests>=2.18.4",
 //     "setuptools>=68.2.2",
+//     "sqlalchemy>=2.0.23",
 //     "ssm-parameter-store>=19.11.0",
 //     "types-PyYAML>=6.0.12",
-//     "types-requests"
+//     "types-requests",
+//     "typing-extensions>=4.8.0"
 //   ],
 //   "manylinux": "manylinux2014",
 //   "requirement_constraints": [],
@@ -106,43 +109,43 @@
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "b8c818125489fc0371ef28d806d36d8f1dcb71734fcb0d96b3201563e3e86f22",
-              "url": "https://files.pythonhosted.org/packages/e4/76/d98acdf42e6acb2c17cd496005bbc2285153819befe8528673b312bd46de/boto3-1.33.8-py3-none-any.whl"
+              "hash": "baa6ea61527bcc82365a4ef365aa8f34126483ff8533d01274f3cdb340c22d73",
+              "url": "https://files.pythonhosted.org/packages/b2/78/9894551b1340ffa202ae6ec368e4d26e0a5172b9dec8275873d89afceb16/boto3-1.33.9-py3-none-any.whl"
             },
             {
               "algorithm": "sha256",
-              "hash": "d02a084b25aa8d46ef917b128e90877efab1ba45f9d1ba3a11f336930378e350",
-              "url": "https://files.pythonhosted.org/packages/12/1f/1d4c5bbe89542b62ec6a6ba624ef0142e1d0c3267711b4f01f6258399a0a/boto3-1.33.8.tar.gz"
+              "hash": "9486f66f9a89f66d64d25cb4baa55aad323a1734ef9815b7a2c4c0787a3fc1fb",
+              "url": "https://files.pythonhosted.org/packages/90/d6/a8a7e77043103c1f2975af03aeae8391c9dd7096a5dca8a550f220da1b41/boto3-1.33.9.tar.gz"
             }
           ],
           "project_name": "boto3",
           "requires_dists": [
-            "botocore<1.34.0,>=1.33.8",
+            "botocore<1.34.0,>=1.33.9",
             "botocore[crt]<2.0a0,>=1.21.0; extra == \"crt\"",
             "jmespath<2.0.0,>=0.7.1",
             "s3transfer<0.9.0,>=0.8.2"
           ],
           "requires_python": ">=3.7",
-          "version": "1.33.8"
+          "version": "1.33.9"
         },
         {
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "4ca63a7d1d84db1046bf36f895ee596367d67ae313de0ce05a4b2fa7ffea94d5",
-              "url": "https://files.pythonhosted.org/packages/2a/e4/2d6d08ae6d9fd09172a2b53e854e574edfbc4bf58d0e1b34330dce485840/boto3_stubs-1.33.8-py3-none-any.whl"
+              "hash": "2652bf7ac8413b7d34971cdef2ca012422a33dd4dd717a168fe1233477f50a76",
+              "url": "https://files.pythonhosted.org/packages/ba/86/4eb2f4240db70ceab64385b84a3ac1d58ed9d0bedc780837369204bc1d57/boto3_stubs-1.33.9-py3-none-any.whl"
             },
             {
               "algorithm": "sha256",
-              "hash": "e6706e75223b3230d3d7a739032a4eab595ffef1f8b5d905d0f5dfc5346823f6",
-              "url": "https://files.pythonhosted.org/packages/69/02/44c9a81d699bf1efe2710f46e5df7daa13ac531c05d3b515b937772cbccd/boto3-stubs-1.33.8.tar.gz"
+              "hash": "d22dcc7aba3f314644eeda426bca9aa6dea15de1594c35c743f980e8814f0c6a",
+              "url": "https://files.pythonhosted.org/packages/05/23/753c95f3f9aa821e877b5960734ee9cc8a737e5b2f2dbadb6c61483a9f46/boto3-stubs-1.33.9.tar.gz"
             }
           ],
           "project_name": "boto3-stubs",
           "requires_dists": [
-            "boto3==1.33.8; extra == \"boto3\"",
+            "boto3==1.33.9; extra == \"boto3\"",
             "botocore-stubs",
-            "botocore==1.33.8; extra == \"boto3\"",
+            "botocore==1.33.9; extra == \"boto3\"",
             "mypy-boto3-accessanalyzer<1.34.0,>=1.33.0; extra == \"accessanalyzer\"",
             "mypy-boto3-accessanalyzer<1.34.0,>=1.33.0; extra == \"all\"",
             "mypy-boto3-account<1.34.0,>=1.33.0; extra == \"account\"",
@@ -902,19 +905,19 @@
             "typing-extensions>=4.1.0; python_version < \"3.12\""
           ],
           "requires_python": ">=3.7",
-          "version": "1.33.8"
+          "version": "1.33.9"
         },
         {
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "90236e6e69d7e80875d7f9d39383630706edbc1298026698c6c70d9b6a65576e",
-              "url": "https://files.pythonhosted.org/packages/9c/ef/c8e456190ddc75c842a7c5e0edb7875b75759980b2a985b7fdff038b9059/botocore-1.33.8-py3-none-any.whl"
+              "hash": "07ff4eea62f546da540310887000c81fca802c788eb374fef06eda28009dcafd",
+              "url": "https://files.pythonhosted.org/packages/70/35/43e84991c5f62cf821b18d46c4385327f1dff84bb4e2238fec8a279d209c/botocore-1.33.9-py3-none-any.whl"
             },
             {
               "algorithm": "sha256",
-              "hash": "e6970bf89cbe2624399aeffce52c253917d8e5a1c671de4054557603ab56c922",
-              "url": "https://files.pythonhosted.org/packages/6b/76/50a205081387fe61194bfa4992d9ea2067309074ac89a5aeaac5481581ed/botocore-1.33.8.tar.gz"
+              "hash": "1b90be11dd9a9a25290c995a6b713e76b9e2bf7bf86ba9036e0d28f2ceb2edfc",
+              "url": "https://files.pythonhosted.org/packages/17/d3/53323326e24271c8e5767b1e4cd0ac6752ed5dfbc92a7f50b8c77be1f795/botocore-1.33.9.tar.gz"
             }
           ],
           "project_name": "botocore",
@@ -926,19 +929,19 @@
             "urllib3<2.1,>=1.25.4; python_version >= \"3.10\""
           ],
           "requires_python": ">=3.7",
-          "version": "1.33.8"
+          "version": "1.33.9"
         },
         {
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "774ed54c8a9c599f0614900aafe79b78689dc2460e6752b18c50c7d645de5799",
-              "url": "https://files.pythonhosted.org/packages/1e/61/87c7fe0570a5331d42402f2e0effa406e6c737361a95e2fe64577be148cb/botocore_stubs-1.33.8-py3-none-any.whl"
+              "hash": "9d1fef0e22953102239fb3108b18588d980823ea765aef21ab861b65eba37e31",
+              "url": "https://files.pythonhosted.org/packages/ea/48/6f23507c3ff13a2f196a4eb5cfa617c117a7ef5084f55188260703a8cff3/botocore_stubs-1.33.9-py3-none-any.whl"
             },
             {
               "algorithm": "sha256",
-              "hash": "0356ff0fc918d8def8bdfc78523791eb4ce55c255c1ebe49ba105e168c817dcd",
-              "url": "https://files.pythonhosted.org/packages/1c/e1/91fd06a7b42cb3609999feb6f9fa038dd1fe1b66be86f4b4cd477e6077fe/botocore_stubs-1.33.8.tar.gz"
+              "hash": "60e1ace3785ecdfec5ed4bfc7c03161a5a478cd45184a4042a0238ce6f56a18a",
+              "url": "https://files.pythonhosted.org/packages/85/1a/7a6774b36f6b8a5b259f4b548c3d10d647521cb328389653c3d30a9c6db2/botocore_stubs-1.33.9.tar.gz"
             }
           ],
           "project_name": "botocore-stubs",
@@ -948,7 +951,7 @@
             "typing-extensions>=4.1.0; python_version < \"3.9\""
           ],
           "requires_python": "<4.0,>=3.7",
-          "version": "1.33.8"
+          "version": "1.33.9"
         },
         {
           "artifacts": [
@@ -1351,6 +1354,63 @@
           ],
           "requires_python": "<4.0,>=3.8",
           "version": "4.3.6"
+        },
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
+              "hash": "5805e71e5b570d490938d55552f5a9e10f477c19400c38bf1d5190d760691846",
+              "url": "https://files.pythonhosted.org/packages/28/1c/ae9064db808a13be14c765214d502a87a840112d5b9761ad60f2299bfd2c/greenlet-3.0.1-cp310-cp310-musllinux_1_1_x86_64.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "b8ba29306c5de7717b5761b9ea74f9c72b9e2b834e24aa984da99cbfc70157fd",
+              "url": "https://files.pythonhosted.org/packages/13/7e/3d6c8ab4a868cbe13acdc7fa2589e6848a16e10a9d47a97aa9493fa0d9c3/greenlet-3.0.1-cp310-cp310-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "599daf06ea59bfedbec564b1692b0166a0045f32b6f0933b0dd4df59a854caf2",
+              "url": "https://files.pythonhosted.org/packages/1b/10/095ac4f9c3d74d672ea5059eaddf245108371498ff348d23dd91992184ce/greenlet-3.0.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "816bd9488a94cba78d93e1abb58000e8266fa9cc2aa9ccdd6eb0696acb24005b",
+              "url": "https://files.pythonhosted.org/packages/54/df/718c9b3e90edba70fa919bb3aaa5c3c8dabf3a8252ad1e93d33c348e5ca4/greenlet-3.0.1.tar.gz"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "d57e20ba591727da0c230ab2c3f200ac9d6d333860d85348816e1dca4cc4792e",
+              "url": "https://files.pythonhosted.org/packages/73/f2/f66764fda8e31e742fb7ee2bfaef83fd856681c6da504d8784d2e58f2dac/greenlet-3.0.1-cp310-cp310-musllinux_1_1_aarch64.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "19bbdf1cce0346ef7341705d71e2ecf6f41a35c311137f29b8a2dc2341374565",
+              "url": "https://files.pythonhosted.org/packages/af/64/7c601dc6e20dfb855bf81654a81daf71522a4c66af2a576a25373d10871f/greenlet-3.0.1-cp310-cp310-manylinux_2_17_s390x.manylinux2014_s390x.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "28e89e232c7593d33cac35425b58950789962011cc274aa43ef8865f2e11f46d",
+              "url": "https://files.pythonhosted.org/packages/b0/44/22b51624026a9cdf2160eb1ec2bb22dd6de00bc9afefbd63eb57808af79c/greenlet-3.0.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "f89e21afe925fcfa655965ca8ea10f24773a1791400989ff32f467badfe4a064",
+              "url": "https://files.pythonhosted.org/packages/d0/ea/011598ab312a1caf413cd8d12675342e2a7a74d3b8bfac3f2a051649aba4/greenlet-3.0.1-cp310-cp310-macosx_10_9_universal2.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "b641161c302efbb860ae6b081f406839a8b7d5573f20a455539823802c655f63",
+              "url": "https://files.pythonhosted.org/packages/da/ab/7cc6502628565d70dce2edb619d87554d65ac4e2f17c805a5a45bfaefa5c/greenlet-3.0.1-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl"
+            }
+          ],
+          "project_name": "greenlet",
+          "requires_dists": [
+            "Sphinx; extra == \"docs\"",
+            "objgraph; extra == \"test\"",
+            "psutil; extra == \"test\""
+          ],
+          "requires_python": ">=3.7",
+          "version": "3.0.1"
         },
         {
           "artifacts": [
@@ -2525,6 +2585,87 @@
           "artifacts": [
             {
               "algorithm": "sha256",
+              "hash": "31952bbc527d633b9479f5f81e8b9dfada00b91d6baba021a869095f1a97006d",
+              "url": "https://files.pythonhosted.org/packages/a9/a3/9afc2bf14c5892640c15d050bd9c9bfefead29cb041560734dff13bf0890/SQLAlchemy-2.0.23-py3-none-any.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "0666031df46b9badba9bed00092a1ffa3aa063a5e68fa244acd9f08070e936d3",
+              "url": "https://files.pythonhosted.org/packages/1d/40/9c7169cb4dc66c0a2d4cf5ff016faab417d30a1d2deea57780b329dd4fe5/SQLAlchemy-2.0.23-cp310-cp310-musllinux_1_1_aarch64.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "787af80107fb691934a01889ca8f82a44adedbf5ef3d6ad7d0f0b9ac557e0c34",
+              "url": "https://files.pythonhosted.org/packages/53/30/339fd68c0200a8f70d9198ca250c2ba0e4683ba11ba42423f300a041dfc9/SQLAlchemy-2.0.23-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "638c2c0b6b4661a4fd264f6fb804eccd392745c5887f9317feb64bb7cb03b3ea",
+              "url": "https://files.pythonhosted.org/packages/53/ce/d7262dcc228f66c4d805c8975f71deca581e8a56b46612eb35708ec5cb51/SQLAlchemy-2.0.23-cp310-cp310-macosx_10_9_x86_64.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "c14eba45983d2f48f7546bb32b47937ee2cafae353646295f0e99f35b14286ab",
+              "url": "https://files.pythonhosted.org/packages/aa/1c/0b66318368b1c9ef51c5c8560530b8ef842164e10eea08cacb06739388e0/SQLAlchemy-2.0.23-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "89a01238fcb9a8af118eaad3ffcc5dedaacbd429dc6fdc43fe430d3a941ff965",
+              "url": "https://files.pythonhosted.org/packages/ac/40/efe4320de1de9af3b6e538f89e2f1d56f83209fddbec77bafa06ee4f42c6/SQLAlchemy-2.0.23-cp310-cp310-musllinux_1_1_x86_64.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "e3b5036aa326dc2df50cba3c958e29b291a80f604b1afa4c8ce73e78e1c9f01d",
+              "url": "https://files.pythonhosted.org/packages/e7/25/cfcc50c21cb133ae44f9aba61b48285451b6ecb882af291fe9da6445f4da/SQLAlchemy-2.0.23-cp310-cp310-macosx_11_0_arm64.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "c1bda93cbbe4aa2aa0aa8655c5aeda505cd219ff3e8da91d1d329e143e4aff69",
+              "url": "https://files.pythonhosted.org/packages/ee/46/a3196db7ffd2609c7935798730e21bed8806d9bf4401921587dac4be0747/SQLAlchemy-2.0.23.tar.gz"
+            }
+          ],
+          "project_name": "sqlalchemy",
+          "requires_dists": [
+            "aiomysql>=0.2.0; extra == \"aiomysql\"",
+            "aioodbc; extra == \"aioodbc\"",
+            "aiosqlite; extra == \"aiosqlite\"",
+            "asyncmy!=0.2.4,!=0.2.6,>=0.2.3; extra == \"asyncmy\"",
+            "asyncpg; extra == \"postgresql_asyncpg\"",
+            "cx-oracle>=8; extra == \"oracle\"",
+            "greenlet!=0.4.17; extra == \"aiomysql\"",
+            "greenlet!=0.4.17; extra == \"aioodbc\"",
+            "greenlet!=0.4.17; extra == \"aiosqlite\"",
+            "greenlet!=0.4.17; extra == \"asyncio\"",
+            "greenlet!=0.4.17; extra == \"asyncmy\"",
+            "greenlet!=0.4.17; extra == \"postgresql_asyncpg\"",
+            "greenlet!=0.4.17; platform_machine == \"aarch64\" or (platform_machine == \"ppc64le\" or (platform_machine == \"x86_64\" or (platform_machine == \"amd64\" or (platform_machine == \"AMD64\" or (platform_machine == \"win32\" or platform_machine == \"WIN32\")))))",
+            "importlib-metadata; python_version < \"3.8\"",
+            "mariadb!=1.1.2,!=1.1.5,>=1.0.1; extra == \"mariadb_connector\"",
+            "mypy>=0.910; extra == \"mypy\"",
+            "mysql-connector-python; extra == \"mysql_connector\"",
+            "mysqlclient>=1.4.0; extra == \"mysql\"",
+            "oracledb>=1.0.1; extra == \"oracle_oracledb\"",
+            "pg8000>=1.29.1; extra == \"postgresql_pg8000\"",
+            "psycopg2-binary; extra == \"postgresql_psycopg2binary\"",
+            "psycopg2>=2.7; extra == \"postgresql\"",
+            "psycopg2cffi; extra == \"postgresql_psycopg2cffi\"",
+            "psycopg>=3.0.7; extra == \"postgresql_psycopg\"",
+            "psycopg[binary]>=3.0.7; extra == \"postgresql_psycopgbinary\"",
+            "pymssql; extra == \"mssql_pymssql\"",
+            "pymysql; extra == \"pymysql\"",
+            "pyodbc; extra == \"mssql\"",
+            "pyodbc; extra == \"mssql_pyodbc\"",
+            "sqlcipher3-binary; extra == \"sqlcipher\"",
+            "typing-extensions!=3.10.0.1; extra == \"aiosqlite\"",
+            "typing-extensions>=4.2.0"
+          ],
+          "requires_python": ">=3.7",
+          "version": "2.0.23"
+        },
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
               "hash": "a4ca3d31594ce8e9e7914d44b6f4607e45bebd79a44bb9c1ffe25d06db9ccb9f",
               "url": "https://files.pythonhosted.org/packages/96/ca/d91d9363cc6032d9c034657073eb5033e2d6fe586e43659cc7c0f6c492b5/ssm_parameter_store-19.11.0-py2.py3-none-any.whl"
             },
@@ -2798,13 +2939,16 @@
     "moto[s3,ssm]>=4.2.5",
     "pandas-stubs>=2.0.3",
     "pandas>=2.1.1",
+    "pydantic>=2.5.2",
     "pytest>=7.2.0",
     "pyyaml==6.0",
     "requests>=2.18.4",
     "setuptools>=68.2.2",
+    "sqlalchemy>=2.0.23",
     "ssm-parameter-store>=19.11.0",
     "types-PyYAML>=6.0.12",
-    "types-requests"
+    "types-requests",
+    "typing-extensions>=4.8.0"
   ],
   "requires_python": [
     "==3.10.*"
