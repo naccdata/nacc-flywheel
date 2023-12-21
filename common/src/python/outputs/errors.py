@@ -2,12 +2,12 @@
 from typing import Literal, Optional, TextIO
 
 from outputs.outputs import CSVWriter
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, Field, field_serializer
 
 
 class ErrorType(BaseModel):
     """Represents type of error."""
-    type: Literal['alert', 'error']
+    error_type: Literal['alert', 'error'] = Field(serialization_alias='type')
     detail: str
 
 
@@ -26,6 +26,7 @@ class FileError(BaseModel):
     """Represents an error that might be found in file during a step in a
     pipeline."""
     error_type: ErrorType
+    error_id: Optional[str] = None
     error_location: Optional[CSVLocation | JSONLocation] = None
     container_id: Optional[str] = None
     value: Optional[str] = None
@@ -62,7 +63,7 @@ class FileError(BaseModel):
         if not error_type:
             return None
 
-        return error_type.model_dump_json()
+        return error_type.model_dump_json(by_alias=True)
 
 
 def identifier_error(line: int, value: str) -> FileError:
@@ -76,7 +77,8 @@ def identifier_error(line: int, value: str) -> FileError:
     Returns:
       a FileError object initialized for an identifier error
     """
-    return FileError(error_type=ErrorType(type='error', detail='identifier'),
+    return FileError(error_type=ErrorType(error_type='error',
+                                          detail='identifier'),
                      error_location=CSVLocation(line=line, column_name='ptid'),
                      value=value,
                      message='Unrecognized participant ID')
@@ -84,13 +86,14 @@ def identifier_error(line: int, value: str) -> FileError:
 
 def empty_file_error() -> FileError:
     """Creates a FileError for an empty input file."""
-    return FileError(error_type=ErrorType(type='error', detail='empty-file'),
+    return FileError(error_type=ErrorType(error_type='error',
+                                          detail='empty-file'),
                      message='Empty input file')
 
 
 def missing_header_error() -> FileError:
     """Creates a FileError for a missing header."""
-    return FileError(error_type=ErrorType(type='error',
+    return FileError(error_type=ErrorType(error_type='error',
                                           detail='missing-header'),
                      message='No file header found')
 
