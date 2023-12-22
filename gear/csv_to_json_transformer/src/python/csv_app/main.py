@@ -10,7 +10,7 @@ from outputs.errors import ErrorWriter
 log = logging.getLogger(__name__)
 
 
-class JSONWriter(CSVVisitor):
+class JSONWriterVisitor(CSVVisitor):
     """Visitor to write the row as JSON."""
 
     def __init__(self) -> None:
@@ -37,4 +37,6 @@ def run(*, proxy: FlywheelProxy, csv_file: TextIO,
       file: flywheel file path
     """
 
-    return read_csv(input_file=csv_file, error_writer=error_writer)
+    return read_csv(input_file=csv_file,
+                    error_writer=error_writer,
+                    visitor=JSONWriterVisitor())
