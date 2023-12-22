@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 PTID = 'ptid'
 NACCID = 'naccid'
 
+
 def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
         output_file: TextIO, error_writer: ErrorWriter) -> bool:
     """Reads participant records from the input CSV file, finds the NACCID for
