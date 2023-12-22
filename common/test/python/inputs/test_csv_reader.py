@@ -1,8 +1,10 @@
 from io import StringIO
 from typing import Any, List
+
+import pytest
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import ErrorWriter
-import pytest
+
 
 @pytest.fixture(scope="function")
 def empty_data_stream():
@@ -55,6 +57,7 @@ def data_stream():
     stream.seek(0)
     yield stream
 
+
 def empty(stream) -> bool:
     """Checks that the stream is empty.
 
@@ -63,14 +66,21 @@ def empty(stream) -> bool:
     stream.seek(0)
     return not bool(stream.readline())
 
+
 class DummyVisitor(CSVVisitor):
+
     def __init__(self) -> None:
         super().__init__()
-    
+
+
 class TestCSVReader:
+
     def test_empty_input_stream(self):
         """Test empty input stream."""
         out_stream = StringIO()
         err_stream = StringIO()
-        errors = read_csv(input_file=empty_data_stream, error_writer=ErrorWriter(stream=err_stream, container_id='dummy'), visitor=DummyVisitor())
+        errors = read_csv(input_file=empty_data_stream,
+                          error_writer=ErrorWriter(stream=err_stream,
+                                                   container_id='dummy'),
+                          visitor=DummyVisitor())
         assert False

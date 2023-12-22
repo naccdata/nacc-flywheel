@@ -1,10 +1,11 @@
 """Methods to read and process a CSV file using a row visitor."""
 
+from abc import ABC, abstractmethod
 from csv import DictReader, Sniffer
 from typing import Any, Dict, List, TextIO
-from abc import ABC, abstractmethod
 
 from outputs.errors import ErrorWriter, empty_file_error, missing_header_error
+
 
 class CSVVisitor(ABC):
     """Abstract class for a visitor for row in a CSV file."""
@@ -12,7 +13,7 @@ class CSVVisitor(ABC):
     @abstractmethod
     def visit(self, row: Dict[str, Any], line_num: int) -> bool:
         """Visit the dictionary for a row (per DictReader).
-        
+
         Args:
           row: the dictionary for a row from a CSV file
         Returns:
@@ -22,8 +23,8 @@ class CSVVisitor(ABC):
 
     @abstractmethod
     def add_header(self, header: List[str]) -> bool:
-        """Add the header
-        
+        """Add the header.
+
         Args:
           header: list of header names
         Returns:
@@ -31,9 +32,11 @@ class CSVVisitor(ABC):
         """
         return False
 
-def read_csv(input_file: TextIO, error_writer: ErrorWriter, visitor: CSVVisitor) -> bool:
+
+def read_csv(input_file: TextIO, error_writer: ErrorWriter,
+             visitor: CSVVisitor) -> bool:
     """Reads CSV file and applies the visitor to each row.
-    
+
     Args:
       input_file: the input stream for the CSV file
       error_writer: the ErrorWriter for the input file
