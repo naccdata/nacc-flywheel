@@ -1,18 +1,86 @@
 """Defines the NACCID lookup computation."""
 
 import logging
-from csv import DictReader, Sniffer
-from typing import Dict, TextIO
+from typing import Any, Dict, List, TextIO
 
 from identifiers.model import Identifier
-from outputs.errors import (ErrorWriter, empty_file_error, identifier_error,
-                            missing_header_error)
+from inputs.csv_reader import CSVVisitor, read_csv
+from outputs.errors import ErrorWriter, identifier_error, missing_header_error
 from outputs.outputs import CSVWriter
 
 log = logging.getLogger(__name__)
 
 PTID = 'ptid'
 NACCID = 'naccid'
+
+
+class IdentifierWriter(CSVVisitor):
+    """Visitor that adds NACCID to input row."""
+
+    def __init__(self, stream: TextIO, identifiers: Dict[str, Identifier],
+                 error_writer: ErrorWriter) -> None:
+        self.__stream = stream
+        self.__identifiers = identifiers
+        self.__error_writer = error_writer
+        self.__writer = None
+        self.__header = []
+
+    def __get_writer(self):
+        """Returns the writer for the CSV output.
+
+        Manages whether writer has been initialized. Requires that
+        header has been set.
+        """
+        if not self.__writer:
+            assert self.__header, "Header must be set before visiting any rows"
+            self.__writer = CSVWriter(stream=self.__stream,
+                                      fieldnames=self.__header)
+
+        return self.__writer
+
+    def visit(self, record: Dict[str, Any], line_num: int) -> bool:
+        """Visits a record in CSV file and adds the NACCID corresponding to the
+        PTID.
+
+        Writes any errors to the error_writer of the visitor object.
+
+        Note: ADCID is implicit to context of use.
+
+        Args:
+          record: the dict for a row of CSV file
+          line_num: the row number for the record
+        Returns:
+          True if the NACCID is not found, False otherwise
+        """
+        writer = self.__get_writer()
+
+        identifier = self.__identifiers.get(record[PTID])
+        if not identifier:
+            self.__error_writer.write(
+                identifier_error(line=line_num, value=record[PTID]))
+            return True
+
+        record[NACCID] = identifier.naccid
+        writer.write(record)
+
+        return False
+
+    def add_header(self, header: List[str]) -> bool:
+        """Adds the header fields to the visitor object.
+
+        Args:
+          header: the list of header fields
+        Returns:
+          True if the header does not include the PTID, False otherwise.
+        """
+        if PTID not in header:
+            self.__error_writer.write(missing_header_error())
+            return True
+
+        self.__header = header
+        self.__header.append(NACCID)
+
+        return False
 
 
 def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
@@ -37,41 +105,8 @@ def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
     Returns:
       True if there were IDs with no corresponding NACCID
     """
-
-    sniffer = Sniffer()
-    csv_sample = input_file.read(1024)
-    if not csv_sample:
-        error_writer.write(empty_file_error())
-        return True
-
-    if not sniffer.has_header(csv_sample):
-        error_writer.write(missing_header_error())
-        return True
-
-    input_file.seek(0)
-    detected_dialect = sniffer.sniff(csv_sample, delimiters=',')
-    reader = DictReader(input_file, dialect=detected_dialect)
-    assert reader.fieldnames, "File has header, reader should have fieldnames"
-
-    header_fields = list(reader.fieldnames)
-    if PTID not in header_fields:
-        error_writer.write(missing_header_error())
-        return True
-
-    header_fields.append(NACCID)
-    writer = CSVWriter(stream=output_file, fieldnames=header_fields)
-
-    error_found = False
-    for record in reader:
-        assert record[PTID]
-        identifier = identifiers.get(record[PTID])
-        if not identifier:
-            error_writer.write(
-                identifier_error(line=reader.line_num, value=record[PTID]))
-            error_found = True
-            continue
-
-        record[NACCID] = identifier.naccid
-        writer.write(record)
-
-    return error_found
+    return read_csv(input_file=input_file,
+                    error_writer=error_writer,
+                    visitor=IdentifierWriter(stream=output_file,
+                                             identifiers=identifiers,
+                                             error_writer=error_writer))
