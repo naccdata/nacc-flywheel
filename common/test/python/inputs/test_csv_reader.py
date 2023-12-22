@@ -73,3 +73,4 @@ class TestCSVReader:
         out_stream = StringIO()
         err_stream = StringIO()
         errors = read_csv(input_file=empty_data_stream, error_writer=ErrorWriter(stream=err_stream, container_id='dummy'), visitor=DummyVisitor())
+        assert False
