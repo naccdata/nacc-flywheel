@@ -3,6 +3,9 @@ from typing import Any, Dict
 from flywheel.models.container_parents import ContainerParents
 
 
+from flywheel.models.container_parents import ContainerParents
+
+
 class FileEntry:
 
     @property
@@ -24,5 +27,9 @@ class FileEntry:
     def read(self) -> str:
         ...
 
+    @property
+    def parents(self) -> ContainerParents:
+        ...
+    
     def get(self, key: str) -> Dict[str, Any]:
         ...
