@@ -73,7 +73,6 @@ def read_file(*, context: GearToolkitContext, source: ProjectAdaptor,
       bytes read from the named file
     """
     filename: str = get_config(gear_context=context, key=key)
-    # TODO: what happens when try to read a file that is not in source project?
     return source.read_file(filename)
 
 
