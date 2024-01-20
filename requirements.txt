@@ -1,7 +1,7 @@
 boto3>=1.28.53
 boto3-stubs[boto3]
 flywheel-gear-toolkit>=0.2
-flywheel-sdk>=17.6.0
+flywheel-sdk==17.6.0
 fw-client>=0.7.0
 fw-utils>=3
 moto[s3,ssm]>=4.2.5
@@ -16,3 +16,4 @@ sqlalchemy>=2.0.23
 ssm-parameter-store>=19.11.0
 typing-extensions>=4.8.0 # only needed for python < 3.12
 types-PyYAML>=6.0.12
+validator@ git+https://github.com/naccdata/nacc-form-validator.git

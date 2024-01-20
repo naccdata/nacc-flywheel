@@ -7,5 +7,8 @@ python_requirements(name="reqs",
                     overrides={
                         "ssm-parameter-store": {
                             "dependencies": ["//:reqs#setuptools"]
+                        },
+                        "flywheel-sdk":{
+                            "dependencies": ["//:reqs#pandas"]
                         }
                     })

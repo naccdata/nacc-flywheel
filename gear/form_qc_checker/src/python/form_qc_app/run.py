@@ -1,4 +1,4 @@
-"""ADD DETAIL HERE."""
+"""The entry point for the form-qc-check gear."""
 
 import logging
 import sys
@@ -16,10 +16,11 @@ log = logging.getLogger(__name__)
 
 
 def main():
-    """Describe gear detail here."""
+    """Load necessary environment variables, create Flywheel, S3 connections, invoke QC app."""
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
+        gear_context.log_config()
 
         try:
             parameter_store = ParameterStore.create_from_environment()
@@ -37,16 +38,17 @@ def main():
             sys.exit(1)
 
         dry_run = gear_context.config.get("dry_run", False)
-        proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
+        fw_client = Client(api_key)
+        proxy = FlywheelProxy(client=fw_client, dry_run=dry_run)
 
         s3_client = S3BucketReader.create_from(s3_parameters)
-        # TODO: load rules here
+        if not s3_client:
+            log.error('Unable to connect to S3')
+            sys.exit(1)
 
-        form_file = gear_context.get_input_path('form_data_file')
-        # TODO: load form data here
+    run(fw_client=fw_client, proxy=proxy,
+        s3_client=s3_client, gear_context=gear_context)
 
-    # TODO: run should check loaded data against appropriate rules
-    run(proxy=proxy, s3_client=s3_client, form_file=form_file)
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
