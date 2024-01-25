@@ -65,7 +65,13 @@ def get_adcid(proxy: FlywheelProxy, file_id: str) -> Optional[int]:
 
 # pylint: disable=(too-many-locals)
 def main():
-    """Describe gear detail here."""
+    """The Identifiers Lookup gear reads a CSV file with rows for participants
+    at a single ADRC, and having a PTID for the participant. The gear looks up
+    the corresponding NACCID, and creates a new CSV file with the same
+    contents, but with a new column for NACCID.
+
+    Writes errors to a CSV file compatible with Flywheel error UI.
+    """
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
