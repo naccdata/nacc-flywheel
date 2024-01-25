@@ -32,8 +32,21 @@ class IdentifierVisitor(CSVVisitor):
         self.__identifiers = identifiers
         self.__output_file = output_file
         self.__error_writer = error_writer
-        self.__csv_writer = None
+        self.__writer = None
 
+    def __get_writer(self):
+        """Returns the writer for the CSV output.
+
+        Manages whether writer has been initialized. Requires that
+        header has been set.
+        """
+        if not self.__writer:
+            assert self.__header, "Header must be set before visiting any rows"
+            self.__writer = CSVWriter(stream=self.__output_file,
+                                      fieldnames=self.__header)
+
+        return self.__writer
+    
     def visit_header(self, header: List[str]) -> bool:
         """Prepares the visitor to write a CSV file with the given header.
 
@@ -48,10 +61,9 @@ class IdentifierVisitor(CSVVisitor):
             self.__error_writer.write(missing_header_error())
             return True
 
-        header.append(NACCID)
+        self.__header = header
+        self.__header.append(NACCID)
 
-        self.__csv_writer = CSVWriter(stream=self.__output_file,
-                                      fieldnames=header)
         return False
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
@@ -67,6 +79,8 @@ class IdentifierVisitor(CSVVisitor):
         Returns:
           True if there is no NACCID for the PTID, False otherwise
         """
+        writer = self.__get_writer()
+
         identifier = self.__identifiers.get(row[PTID])
         if not identifier:
             self.__error_writer.write(
@@ -74,7 +88,8 @@ class IdentifierVisitor(CSVVisitor):
             return True
 
         row[NACCID] = identifier.naccid
-        self.__csv_writer.write(row)
+        writer.write(row)
+
         return False
 
 
