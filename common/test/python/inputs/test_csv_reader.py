@@ -1,5 +1,7 @@
+"""Tests for CSV reader utilities."""
+import csv
 from io import StringIO
-from typing import Any, List
+from typing import Any, Dict, List
 
 import pytest
 from inputs.csv_reader import CSVVisitor, read_csv
@@ -72,10 +74,16 @@ class DummyVisitor(CSVVisitor):
     def __init__(self) -> None:
         super().__init__()
 
+    def visit_header(self, header: List[str]) -> bool:
+        return super().visit_header(header)
+
+    def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
+        return super().visit_row(row, line_num)
+
 
 class TestCSVReader:
 
-    def test_empty_input_stream(self):
+    def test_empty_input_stream(self, empty_data_stream):
         """Test empty input stream."""
         out_stream = StringIO()
         err_stream = StringIO()
@@ -83,4 +91,10 @@ class TestCSVReader:
                           error_writer=ErrorWriter(stream=err_stream,
                                                    container_id='dummy'),
                           visitor=DummyVisitor())
-        assert False
+        assert errors
+        assert not empty(err_stream)
+        err_stream.seek(0)
+        reader = csv.DictReader(err_stream, dialect='unix')
+        assert reader.fieldnames
+        row = next(reader)
+        assert row['message'] == 'Empty input file'
