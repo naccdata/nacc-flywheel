@@ -11,7 +11,7 @@ class CSVVisitor(ABC):
     """Abstract class for a visitor for row in a CSV file."""
 
     @abstractmethod
-    def visit(self, row: Dict[str, Any], line_num: int) -> bool:
+    def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Visit the dictionary for a row (per DictReader).
 
         Args:
@@ -22,7 +22,7 @@ class CSVVisitor(ABC):
         return False
 
     @abstractmethod
-    def add_header(self, header: List[str]) -> bool:
+    def visit_header(self, header: List[str]) -> bool:
         """Add the header.
 
         Args:
@@ -59,12 +59,12 @@ def read_csv(input_file: TextIO, error_writer: ErrorWriter,
     reader = DictReader(input_file, dialect=detected_dialect)
     assert reader.fieldnames, "File has header, reader should have fieldnames"
 
-    error_found = visitor.add_header(list(reader.fieldnames))
+    error_found = visitor.visit_header(list(reader.fieldnames))
     if error_found:
         return True
 
     error_found = False
     for record in reader:
-        error_found = visitor.visit(record, line_num=reader.line_num)
+        error_found = visitor.visit_row(record, line_num=reader.line_num)
 
     return error_found
