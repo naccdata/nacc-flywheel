@@ -1,17 +1,21 @@
+"""Tests for CSV reader utilities."""
+import csv
 from io import StringIO
-from typing import Any, List
+from typing import Any, Dict, List
 
 import pytest
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import ErrorWriter
 
 
+# pylint: disable=(redefined-outer-name)
 @pytest.fixture(scope="function")
 def empty_data_stream():
     """Create empty data stream."""
     yield StringIO()
 
 
+# pylint: disable=(duplicate-code)
 def write_to_stream(data: List[List[Any]], stream: StringIO) -> None:
     """Writes data to the StringIO object for use in a test.
 
@@ -30,6 +34,7 @@ def write_to_stream(data: List[List[Any]], stream: StringIO) -> None:
     stream.seek(0)
 
 
+# pylint: disable=(redefined-outer-name)
 @pytest.fixture(scope="function")
 def no_header_stream():
     """Create data stream without header row."""
@@ -39,6 +44,7 @@ def no_header_stream():
     yield stream
 
 
+# pylint: disable=(redefined-outer-name)
 @pytest.fixture(scope="function")
 def no_ids_stream():
     """Create data stream without expected column headers."""
@@ -48,6 +54,7 @@ def no_ids_stream():
     yield stream
 
 
+# pylint: disable=(redefined-outer-name)
 @pytest.fixture(scope="function")
 def data_stream():
     """Create data stream without header row."""
@@ -68,19 +75,48 @@ def empty(stream) -> bool:
 
 
 class DummyVisitor(CSVVisitor):
+    """Dummy CSV Visitor class for testing."""
 
     def __init__(self) -> None:
-        super().__init__()
+        pass
+
+    def visit_header(self, header: List[str]) -> bool:
+        return header is not None
+
+    def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
+        return row is not None
 
 
+# pylint: disable=(no-self-use,too-few-public-methods)
 class TestCSVReader:
+    """Test class for csv reader."""
 
-    def test_empty_input_stream(self):
+    def test_empty_input_stream(self, empty_data_stream):
         """Test empty input stream."""
-        out_stream = StringIO()
         err_stream = StringIO()
         errors = read_csv(input_file=empty_data_stream,
                           error_writer=ErrorWriter(stream=err_stream,
                                                    container_id='dummy'),
                           visitor=DummyVisitor())
-        assert False
+        assert errors
+        assert not empty(err_stream)
+        err_stream.seek(0)
+        reader = csv.DictReader(err_stream, dialect='unix')
+        assert reader.fieldnames
+        row = next(reader)
+        assert row['message'] == 'Empty input file'
+
+    def test_no_header_stream(self, no_header_stream):
+        """Test stream without header row."""
+        err_stream = StringIO()
+        errors = read_csv(input_file=no_header_stream,
+                          error_writer=ErrorWriter(stream=err_stream,
+                                                   container_id='dummy'),
+                          visitor=DummyVisitor())
+        assert errors
+        assert not empty(err_stream)
+        err_stream.seek(0)
+        reader = csv.DictReader(err_stream, dialect='unix')
+        assert reader.fieldnames
+        row = next(reader)
+        assert row['message'] == 'No file header found'

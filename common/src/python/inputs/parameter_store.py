@@ -66,6 +66,7 @@ class ParameterStore:
                 f"Incorrect parameters at {parameter_path}: {error}"
             ) from error
 
+    # pylint disable=(line-to-long)
     def get_api_key(self) -> str:
         """Returns the GearBot API key."""
         parameter_name = 'apikey'
@@ -73,6 +74,7 @@ class ParameterStore:
         try:
             parameter = self.__store.get_parameter(parameter_path,
                                                    decrypt=True)
+
         except self.__store.client.exceptions.ParameterNotFound as error:  # type: ignore
             raise ParameterError("No API Key found") from error
 
