@@ -58,7 +58,8 @@ class IdentifierVisitor(CSVVisitor):
         """Finds the NACCID for the row from the PTID, and outputs a row to a
         CSV file with the NACCID inserted.
 
-        If the NACCID isn't found for a row, an error is written to the error file.
+        If the NACCID isn't found for a row, an error is written to the error
+        file.
 
         Args:
           row: the dictionary from the CSV row (DictReader)

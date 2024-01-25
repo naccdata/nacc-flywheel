@@ -63,6 +63,7 @@ def get_adcid(proxy: FlywheelProxy, file_id: str) -> Optional[int]:
     return center.center_id()
 
 
+# pylint: disable=(too-many-locals)
 def main():
     """Describe gear detail here."""
 
