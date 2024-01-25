@@ -5,8 +5,7 @@ from typing import Any, Dict, List, TextIO
 
 from identifiers.model import Identifier
 from inputs.csv_reader import CSVVisitor, read_csv
-from outputs.errors import (ErrorWriter, identifier_error,
-                            missing_header_error)
+from outputs.errors import ErrorWriter, identifier_error, missing_header_error
 from outputs.outputs import CSVWriter
 
 log = logging.getLogger(__name__)
@@ -17,13 +16,13 @@ NACCID = 'naccid'
 
 class IdentifierVisitor(CSVVisitor):
     """A CSV Visitor class for adding a NACCID to the rows of a CSV input.
-    
-    Requires the input CSV has a PTID column, and all rows represent data 
-    from same ADRC (have the same ADCID).
+
+    Requires the input CSV has a PTID column, and all rows represent
+    data from same ADRC (have the same ADCID).
     """
 
-    def __init__(self, identifiers: Dict[str, Identifier],
-                 output_file: TextIO, error_writer: ErrorWriter) -> None:
+    def __init__(self, identifiers: Dict[str, Identifier], output_file: TextIO,
+                 error_writer: ErrorWriter) -> None:
         """
         Args:
           identifiers: the map from PTID to Identifier object
@@ -37,9 +36,9 @@ class IdentifierVisitor(CSVVisitor):
 
     def visit_header(self, header: List[str]) -> bool:
         """Prepares the visitor to write a CSV file with the given header.
-        
+
         If the header doesn't have `ptid`, returns an error.
-        
+
         Args:
           header: the list of header names
         Returns:
@@ -56,8 +55,8 @@ class IdentifierVisitor(CSVVisitor):
         return False
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Finds the NACCID for the row from the PTID, and outputs a row
-        to a CSV file with the NACCID inserted.
+        """Finds the NACCID for the row from the PTID, and outputs a row to a
+        CSV file with the NACCID inserted.
 
         If the NACCID isn't found for a row, an error is written to the error file.
 
