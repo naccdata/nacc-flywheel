@@ -16,11 +16,11 @@ class JSONWriterVisitor(CSVVisitor):
     def __init__(self) -> None:
         super().__init__()
 
-    def add_header(self, header: List[str]) -> bool:
+    def visit_header(self, header: List[str]) -> bool:
         # TODO: check expected fields in header
         return False
 
-    def visit(self, row: Dict[str, Any], line_num: int) -> bool:
+    def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         # TODO: do any transformations on row
         # TODO: construct file name
         # TODO: write file (needs context?)
