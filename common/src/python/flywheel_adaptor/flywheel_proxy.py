@@ -5,10 +5,12 @@ from typing import List, Mapping, Optional
 
 import flywheel
 from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
-                      GearRuleInput, RolesRole, ViewIdOutput)
+                      GearRuleInput, ViewIdOutput)
 from flywheel.models.access_permission import AccessPermission
 from flywheel.models.file_entry import FileEntry
+from flywheel.models.group_role import GroupRole
 from flywheel.models.project_parents import ProjectParents
+from flywheel.models.role_output import RoleOutput
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
 from fw_client import FWClient
 from fw_utils import AttrDict
@@ -35,8 +37,8 @@ class FlywheelProxy:
         self.__fw = client
         self.__fw_client = fw_client
         self.__dry_run = dry_run
-        self.__project_roles: Optional[Mapping[str, RolesRole]] = None
-        self.__project_admin_role: Optional[RolesRole] = None
+        self.__project_roles: Optional[Mapping[str, RoleOutput]] = None
+        self.__project_admin_role: Optional[RoleOutput] = None
 
     @property
     def dry_run(self):
@@ -224,7 +226,7 @@ class FlywheelProxy:
 
         return project
 
-    def get_roles(self) -> Mapping[str, RolesRole]:
+    def get_roles(self) -> Mapping[str, RoleOutput]:
         """Gets all roles for the FW instance.
 
         Does not include GroupRoles.
@@ -234,7 +236,7 @@ class FlywheelProxy:
             self.__project_roles = {role.label: role for role in all_roles}
         return self.__project_roles
 
-    def get_role(self, label: str) -> Optional[RolesRole]:
+    def get_role(self, label: str) -> Optional[RoleOutput]:
         """Gets project role with label.
 
         Args:
@@ -245,14 +247,14 @@ class FlywheelProxy:
         role_map = self.get_roles()
         return role_map.get(label)
 
-    def get_admin_role(self) -> Optional[RolesRole]:
+    def get_admin_role(self) -> Optional[RoleOutput]:
         """Gets admin role."""
         if not self.__project_admin_role:
             self.__project_admin_role = self.get_role('admin')
         return self.__project_admin_role
 
     def add_group_role(self, *, group: flywheel.Group,
-                       role: RolesRole) -> None:
+                       role: GroupRole) -> None:
         """Add role to the group.
 
         Args:
@@ -585,7 +587,7 @@ class GroupAdaptor:
             new_permission.id,
             AccessPermission(id=None, access=new_permission.access))
 
-    def add_role(self, new_role: RolesRole) -> None:
+    def add_role(self, new_role: GroupRole) -> None:
         """Add the role to the the group for center.
 
         Args:
