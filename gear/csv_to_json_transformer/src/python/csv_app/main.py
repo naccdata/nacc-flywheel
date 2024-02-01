@@ -17,7 +17,22 @@ class JSONWriterVisitor(CSVVisitor):
         super().__init__()
 
     def visit_header(self, header: List[str]) -> bool:
+        """Prepares the visitor to process rows using the given
+        header columns.
+        
+        If the header doesn't have `naccid`, `module`, `visitnum` or `formver`
+        returns an error.
+        
+        Args:
+          header: the list of header names
+        Returns: 
+          True if there a column header is missing. False, otherwise
+        """
+    
+        #if all(column_name in header for column_name in ['naccid', 'module', 'visitnum', 'formver']):
         # TODO: check expected fields in header
+        # ['naccid', 'module', 'visitnum', 'formver']
+
         return False
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
