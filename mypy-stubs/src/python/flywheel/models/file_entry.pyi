@@ -22,3 +22,6 @@ class FileEntry:
     def parents(self) -> ContainerParents:
         ...
     
+    @property
+    def version(self) -> int:
+        ...

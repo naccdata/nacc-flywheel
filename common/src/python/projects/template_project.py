@@ -209,12 +209,14 @@ class TemplateProject:
             if not self.__same_file_exists(file_object, destination):
                 self.__copy_file(file_object, destination)
 
+            destination_file = destination.get_file(fixed_input.name)
+
             dest_inputs.append(
                 FixedInput(id=destination.id,
                            input=fixed_input.input,
                            name=fixed_input.name,
                            type=fixed_input.type,
-                           version=fixed_input.version))
+                           version=destination_file.version))
 
         return dest_inputs
 

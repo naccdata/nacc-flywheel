@@ -27,7 +27,8 @@ import logging
 from typing import Dict, List, Optional
 
 from centers.center_group import CenterGroup
-from flywheel import AccessPermission, RolesRole
+from flywheel import AccessPermission
+from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
 from projects.project import Center, Project
@@ -44,7 +45,7 @@ class ProjectMappingAdaptor:
                  project: Project,
                  flywheel_proxy: FlywheelProxy,
                  admin_access: Optional[List[AccessPermission]] = None,
-                 center_roles: List[RolesRole],
+                 center_roles: List[GroupRole],
                  new_only: bool) -> None:
         """Creates an adaptor mapping the given project to the corresponding
         objects in the flywheel instance linked by the proxy.
@@ -217,7 +218,7 @@ class CenterMappingAdaptor:
                  center: Center,
                  flywheel_proxy: FlywheelProxy,
                  admin_access: Optional[List[AccessPermission]] = None,
-                 center_roles: Optional[List[RolesRole]]) -> None:
+                 center_roles: Optional[List[GroupRole]]) -> None:
         """Initializes an adaptor for the given center using the Flywheel
         instance linked by the proxy.
 

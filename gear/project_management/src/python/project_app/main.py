@@ -3,7 +3,8 @@
 import logging
 from typing import List
 
-from flywheel import AccessPermission, RolesRole
+from flywheel import AccessPermission
+from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from projects.project import Project
 from projects.project_mapping import ProjectMappingAdaptor
@@ -12,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 def get_project_roles(flywheel_proxy,
-                      role_names: List[str]) -> List[RolesRole]:
+                      role_names: List[str]) -> List[GroupRole]:
     """Get the named roles.
 
     Returns all roles matching a name in the list.
@@ -27,7 +28,7 @@ def get_project_roles(flywheel_proxy,
     for name in role_names:
         role = flywheel_proxy.get_role(name)
         if role:
-            role_list.append(role)
+            role_list.append(GroupRole(id=role.id))
         else:
             log.warning('no such role %s', name)
     return role_list
