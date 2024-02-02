@@ -5,7 +5,7 @@ from typing import Any, Dict, List, TextIO
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from inputs.csv_reader import CSVVisitor, read_csv
-from outputs.errors import ErrorWriter
+from outputs.errors import ErrorWriter, missing_header_error
 
 log = logging.getLogger(__name__)
 
@@ -13,25 +13,34 @@ log = logging.getLogger(__name__)
 class JSONWriterVisitor(CSVVisitor):
     """Visitor to write the row as JSON."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, error_writer: ErrorWriter) -> None:
+        self.__error_writer = error_writer
 
     def visit_header(self, header: List[str]) -> bool:
-        """Prepares the visitor to process rows using the given
-        header columns.
-        
+        """Prepares the visitor to process rows using the given header columns.
+
         If the header doesn't have `naccid`, `module`, `visitnum` or `formver`
         returns an error.
-        
+
         Args:
           header: the list of header names
-        Returns: 
+        Returns:
           True if there a column header is missing. False, otherwise
         """
-    
-        #if all(column_name in header for column_name in ['naccid', 'module', 'visitnum', 'formver']):
-        # TODO: check expected fields in header
-        # ['naccid', 'module', 'visitnum', 'formver']
+        if 'module' not in header and 'formver' not in header:
+            self.__error_writer.write(missing_header_error())
+            return True
+
+        # TODO: get transformations for module+formver
+
+        # TODO: perhaps these should be determined by template file
+        if 'visitnum' not in header and 'visitdate' not in header:
+            self.__error_writer.write(missing_header_error())
+            return True
+
+        if 'naccid' not in header:
+            self.__error_writer.write(missing_header_error())
+            return True
 
         return False
 
@@ -43,15 +52,15 @@ class JSONWriterVisitor(CSVVisitor):
         return False
 
 
-def run(*, proxy: FlywheelProxy, csv_file: TextIO,
-        error_writer: ErrorWriter) -> bool:
-    """Runs ADD DETAIL process.
+def run(*, input_file: TextIO, error_writer: ErrorWriter) -> bool:
+    """Reads records from the input file and transforms each into a JSON
+    object.
 
     Args:
-      proxy: the proxy for the Flywheel instance
-      file: flywheel file path
+      input_file: the input file
+      error_writer: the writer for error output
     """
 
-    return read_csv(input_file=csv_file,
+    return read_csv(input_file=input_file,
                     error_writer=error_writer,
-                    visitor=JSONWriterVisitor())
+                    visitor=JSONWriterVisitor(error_writer=error_writer))
