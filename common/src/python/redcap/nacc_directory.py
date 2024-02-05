@@ -1,9 +1,12 @@
 """Classes for NACC directory user credentials."""
 
+import logging
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, Iterable, List, NewType, Optional, Set, TypedDict
+
+log = logging.getLogger(__name__)
 
 
 class Authorizations(TypedDict):
@@ -297,6 +300,7 @@ class UserDirectory:
         conflicts = []
         for user_id, email_list in self.__id_map.items():
             if len(email_list) > 1:
+                log.warning("Conflict for user id %s", user_id)
                 conflicts.append(
                     DirectoryConflict(
                         user_id=user_id,
@@ -307,6 +311,7 @@ class UserDirectory:
                         conflict_type=ConflictEnum.IDENTIFIER))
         for entry in self.__email_map.values():
             if entry.email in self.__conflict_set:
+                log.warning("Conflict for email %s", entry.email)
                 conflicts.append(
                     DirectoryConflict(user_id=entry.credentials['id'],
                                       entries=[entry.as_dict()],

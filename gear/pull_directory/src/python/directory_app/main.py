@@ -18,12 +18,15 @@ def upload_yaml(*, project: ProjectAdaptor, filename: str, data: Any):
       filename: name of file
       data: data object to write as contents
     """
+    contents = yaml.safe_dump(data=data,
+                              allow_unicode=True,
+                              default_flow_style=False)
+    if not contents:
+        log.error("Error: failed to create YAML for file %s", filename)
+        return
+
     project.upload_file(
-        FileSpec(filename,
-                 contents=yaml.safe_dump(data=data,
-                                         allow_unicode=True,
-                                         default_flow_style=False),
-                 content_type='text/yaml'))
+        FileSpec(filename, contents=contents, content_type='text/yaml'))
 
 
 def run(*, user_report: List[Dict[str, str]], user_filename: str,
