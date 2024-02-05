@@ -1,6 +1,8 @@
 """Tests for UserDirectory class."""
 
+from csv import DictReader
 from datetime import datetime
+import io
 from typing import List, Literal, Optional
 
 import yaml
@@ -123,58 +125,17 @@ class TestNACCDirectory:
 
     def test_conflict_from_create_from(self):
         """Test dumping conflicts."""
-        # record_id,contact_company_name,adresearchctr,firstname,lastname,email,flywheel_access_activities,fw_credential_type,fw_credential_id,fw_cred_sub_time,flywheel_access_information_complete,fw_access_survey_link
-        # 353,"Yale University ADRC",40,Heather,Allore,heather.allore@yale.edu,"a,b,c,d,e",eppn,kc28@yale.edu,"2023-08-16 07:33",2,"<a href=""https://nacc.redcap.rit.uw.edu/redcap_v13.10.6/DataEntry/index.php?pid=78&page=flywheel_access_information&id=353&event_id=195&instance=1"" target=""_blank"">Flywheel Access Information</a>"
-        # 643,"Yale University ADRC",40,Kei-Hoi,Cheung,kei.cheung@yale.edu,"a,b,c,d,e",eppn,kc28@yale.edu,"2023-08-16 07:45",2,"<a href=""https://nacc.redcap.rit.uw.edu/redcap_v13.10.6/DataEntry/index.php?pid=78&page=flywheel_access_information&id=643&event_id=195&instance=1"" target=""_blank"">Flywheel Access Information</a>"
+        input_csv =("record_id,contact_company_name,adresearchctr,firstname,lastname,email,flywheel_access_activities,fw_credential_type,fw_credential_id,fw_cred_sub_time,flywheel_access_information_complete,fw_access_survey_link\n"
+        "222,\"Beta University ADRC\",999,Alpha,Tau,alpha@beta.edu,\"a,b,c,d,e\",eppn,conflict@beta.edu,\"2023-08-16 07:33\",2,\"<a href=\"https://dummy.dummy.dummy\">Flywheel Access Information</a>\n"
+        "333,\"Beta University ADRC\",999,Gamma,Zeta,gamma@beta.edu,\"a,b,c,d,e\",eppn,conflict@beta.edu,\"2023-08-16 07:45\",2,\"<a href=\"https://dummy.dummy.dummy\">Flywheel Access Information</a>")
+        reader = DictReader(io.StringIO(input_csv))
         directory = UserDirectory()
-        entry = UserDirectoryEntry.create_from_record({
-            "flywheel_access_information_complete":
-            "2",
-            "flywheel_access_activities":
-            "a,b,c,d,e",
-            "fw_credential_type":
-            "eppn",
-            "fw_credential_id":
-            "conflict@beta.edu",
-            "firstname":
-            "Alpha",
-            "lastname":
-            "Gamma",
-            "contact_company_name":
-            "Beta U",
-            "adresearchctr":
-            "100",
-            "email":
-            "alpha@beta.edu",
-            "fw_cred_sub_time":
-            "2023-08-16 07:33"
-        })
-        assert entry
-        directory.add(entry)
-        entry = UserDirectoryEntry.create_from_record({
-            "flywheel_access_information_complete":
-            "2",
-            "flywheel_access_activities":
-            "a,b,c,d,e",
-            "fw_credential_type":
-            "eppn",
-            "fw_credential_id":
-            "conflict@beta.edu",
-            "firstname":
-            "Delta",
-            "lastname":
-            "Tau",
-            "contact_company_name":
-            "Beta U",
-            "adresearchctr":
-            "100",
-            "email":
-            "delta@beta.edu",
-            "fw_cred_sub_time":
-            "2023-08-16 07:33"
-        })
-        assert entry
-        directory.add(entry)
+        for row in reader:
+            print(row)
+            entry = UserDirectoryEntry.create_from_record(row)
+            assert entry
+            directory.add(entry)
+
         conflicts = directory.get_conflicts()
         assert conflicts
         conflict_yaml = yaml.safe_dump(data=conflicts,
