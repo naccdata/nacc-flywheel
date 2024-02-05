@@ -32,7 +32,7 @@ def upload_yaml(*, project: ProjectAdaptor, filename: str, data: Any):
         FileSpec(filename, contents=contents, content_type='text/yaml'))
 
 
-def run(*, user_report: List[Dict[str, str]], user_filename: str,
+def run(*, user_report: List[Dict[str, Any]], user_filename: str,
         project: ProjectAdaptor, dry_run: bool):
     """Converts user report records to UserDirectoryEntry and saves as list of
     dictionary objects to the project.

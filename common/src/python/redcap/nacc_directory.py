@@ -131,7 +131,7 @@ class UserDirectoryEntry:
 
     @classmethod
     def create_from_record(
-            cls, record: Dict[str, str]) -> Optional['UserDirectoryEntry']:
+            cls, record: Dict[str, Any]) -> Optional['UserDirectoryEntry']:
         """Creates a DirectoryEntry from a Flywheel Access report record from
         the NACC Directory in REDCap.
 
