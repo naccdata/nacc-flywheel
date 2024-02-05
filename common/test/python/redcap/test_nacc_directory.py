@@ -1,8 +1,8 @@
 """Tests for UserDirectory class."""
 
+import io
 from csv import DictReader
 from datetime import datetime
-import io
 from typing import List, Literal, Optional
 
 import yaml
@@ -125,9 +125,11 @@ class TestNACCDirectory:
 
     def test_conflict_from_create_from(self):
         """Test dumping conflicts."""
-        input_csv =("record_id,contact_company_name,adresearchctr,firstname,lastname,email,flywheel_access_activities,fw_credential_type,fw_credential_id,fw_cred_sub_time,flywheel_access_information_complete,fw_access_survey_link\n"
-        "222,\"Beta University ADRC\",999,Alpha,Tau,alpha@beta.edu,\"a,b,c,d,e\",eppn,conflict@beta.edu,\"2023-08-16 07:33\",2,\"<a href=\"https://dummy.dummy.dummy\">Flywheel Access Information</a>\n"
-        "333,\"Beta University ADRC\",999,Gamma,Zeta,gamma@beta.edu,\"a,b,c,d,e\",eppn,conflict@beta.edu,\"2023-08-16 07:45\",2,\"<a href=\"https://dummy.dummy.dummy\">Flywheel Access Information</a>")
+        input_csv = (
+            "record_id,contact_company_name,adresearchctr,firstname,lastname,email,flywheel_access_activities,fw_credential_type,fw_credential_id,fw_cred_sub_time,flywheel_access_information_complete,fw_access_survey_link\n"
+            "222,\"Beta University ADRC\",999,Alpha,Tau,alpha@beta.edu,\"a,b,c,d,e\",eppn,conflict@beta.edu,\"2023-08-16 07:33\",2,\"<a href=\"https://dummy.dummy.dummy\">Flywheel Access Information</a>\n"
+            "333,\"Beta University ADRC\",999,Gamma,Zeta,gamma@beta.edu,\"a,b,c,d,e\",eppn,conflict@beta.edu,\"2023-08-16 07:45\",2,\"<a href=\"https://dummy.dummy.dummy\">Flywheel Access Information</a>"
+        )
         reader = DictReader(io.StringIO(input_csv))
         directory = UserDirectory()
         for row in reader:
