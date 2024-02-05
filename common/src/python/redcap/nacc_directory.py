@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 class Authorizations(TypedDict):
     """Type class for authorizations."""
-    submit: List[str]
+    submit: List[Literal['form', 'image']]
     audit_data: bool
     approve_data: bool
     view_reports: bool
@@ -145,7 +145,7 @@ class UserDirectoryEntry:
         if int(record["flywheel_access_information_complete"]) != 2:
             return None
 
-        modalities = []
+        modalities: List[Literal['form', 'image']] = []
         activities = record["flywheel_access_activities"]
         if 'a' in activities:
             modalities.append('form')
