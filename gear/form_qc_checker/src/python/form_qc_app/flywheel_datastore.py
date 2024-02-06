@@ -1,8 +1,8 @@
 """Handles the connection with a Flywheel project."""
 
 import json
-from json.decoder import JSONDecodeError
 import logging
+from json.decoder import JSONDecodeError
 
 from flywheel.client import Client
 from flywheel.rest import ApiException
@@ -14,7 +14,8 @@ log = logging.getLogger(__name__)
 
 
 class FlywheelDatastore(Datastore):
-    """This class defines functions to retrieve previous visits from Flywheel."""
+    """This class defines functions to retrieve previous visits from
+    Flywheel."""
 
     def __init__(self, client: Client, group: str, project: str):
         """
@@ -39,8 +40,8 @@ class FlywheelDatastore(Datastore):
     def get_previous_instance(
             self, orderby: str, pk_field: str,
             current_ins: dict[str, str]) -> dict[str, str] | None:
-        """ Overriding the abstract method,
-        get the previous visit record for the specified subject
+        """Overriding the abstract method, get the previous visit record for
+        the specified subject.
 
         Args:
             orderby (str): Variable name that visits are sorted by
@@ -56,17 +57,20 @@ class FlywheelDatastore(Datastore):
 
         if pk_field not in current_ins:
             log.error(
-                'Variable %s not set in current visit data, cannot retrieve the previous visits', pk_field)
+                'Variable %s not set in current visit data, cannot retrieve the previous visits',
+                pk_field)
             return None
 
         if orderby not in current_ins:
             log.error(
-                'Variable %s not set in current visit data, cannot retrieve the previous visits', orderby)
+                'Variable %s not set in current visit data, cannot retrieve the previous visits',
+                orderby)
             return None
 
         if FormVars.MODULE not in current_ins:
             log.error(
-                'Variable %s not set in current visit data, cannot retrieve the previous visits', FormVars.MODULE)
+                'Variable %s not set in current visit data, cannot retrieve the previous visits',
+                FormVars.MODULE)
             return None
 
         subject_lbl = current_ins[pk_field]
@@ -75,25 +79,28 @@ class FlywheelDatastore(Datastore):
 
         # Dataview to retrieve the previous visits
         orderby_col = f'file.info.forms.json.{orderby}'
-        columns = ['file.name', 'file.file_id',
-                   "file.parents.acquisition", "file.parents.session", orderby_col]
+        columns = [
+            'file.name', 'file.file_id', "file.parents.acquisition",
+            "file.parents.session", orderby_col
+        ]
         builder = ViewBuilder(
-            label=f'Previous visits for - {group_lbl}/{project_lbl}/{subject_lbl}',
+            label=
+            f'Previous visits for - {group_lbl}/{project_lbl}/{subject_lbl}',
             columns=columns,
             container='acquisition',
             filename='*.json',
             match='all',
             process_files=False,
-            filter=f'subject.label={subject_lbl},acquisition.label={module},{orderby_col}<{curr_ob_col_val}',
+            filter=
+            f'subject.label={subject_lbl},acquisition.label={module},{orderby_col}<{curr_ob_col_val}',
             include_ids=False,
-            include_labels=False
-        )
+            include_labels=False)
         view = builder.build()
 
         df = self.__client.read_view_dataframe(view, self.__pid)
         if df.empty:
-            log.error('No previous visits found for %s - %s',
-                      subject_lbl, module)
+            log.error('No previous visits found for %s - %s', subject_lbl,
+                      module)
             return None
         df = df.sort_values(orderby_col, ascending=False)
         latest_rec = df.head(1)
@@ -102,8 +109,9 @@ class FlywheelDatastore(Datastore):
         return self.get_visit_data(latest_rec_info['file.name'],
                                    latest_rec_info['file.parents.acquisition'])
 
-    def get_visit_data(self, file_name: str, acq_id: str) -> dict[str, str] | None:
-        """Read the previous visit file and convert to python dictionary
+    def get_visit_data(self, file_name: str,
+                       acq_id: str) -> dict[str, str] | None:
+        """Read the previous visit file and convert to python dictionary.
 
         Args:
             file_name (str): Previous visit file name
@@ -121,7 +129,7 @@ class FlywheelDatastore(Datastore):
             visit_data = json.loads(file_content)
             log.info('Found previous visit file: %s', file_name)
         except (JSONDecodeError, TypeError, ValueError) as error:
-            log.error(
-                'Failed to read the previous visit file - %s : %s', file_name, error)
+            log.error('Failed to read the previous visit file - %s : %s',
+                      file_name, error)
 
         return visit_data

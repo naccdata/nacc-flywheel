@@ -1,16 +1,17 @@
-"""Defines functions to carry out the data quality checks for the input form data file."""
+"""Defines functions to carry out the data quality checks for the input form
+data file."""
 
 import json
-from json.decoder import JSONDecodeError
 import logging
 import sys
+from json.decoder import JSONDecodeError
 
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from form_qc_app.error_report import ErrorReport
 from form_qc_app.flywheel_datastore import FlywheelDatastore
-from form_qc_app.parser import Parser, FormVars
+from form_qc_app.parser import FormVars, Parser
 from s3.s3_client import S3BucketReader
 from validator.quality_check import QualityCheck, QualityCheckException
 
@@ -18,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 def validate_parents(parents: dict[str, str], input_file: str) -> bool:
-    """Validate Flywheel parent containers for input file
+    """Validate Flywheel parent containers for input file.
 
     Args:
         parents (dict[str, str]): parent container info [name, id]
@@ -29,23 +30,21 @@ def validate_parents(parents: dict[str, str], input_file: str) -> bool:
     """
 
     if not parents:
-        log.error(
-            'Parent containers not set for input file: %s', input_file)
+        log.error('Parent containers not set for input file: %s', input_file)
         return False
     if 'group' not in parents:
-        log.error(
-            'Missing group id for input file: %s', input_file)
+        log.error('Missing group id for input file: %s', input_file)
         return False
     if 'project' not in parents:
-        log.error(
-            'Missing project id for input file: %s', input_file)
+        log.error('Missing project id for input file: %s', input_file)
         return False
 
     return True
 
 
-def update_file_metadata(gear_context: GearToolkitContext, file_name: str, status: str):
-    """Add gear tag to input file
+def update_file_metadata(gear_context: GearToolkitContext, file_name: str,
+                         status: str):
+    """Add gear tag to input file.
 
     Args:
         gear_context (GearToolkitContext): Flywheel gear context
@@ -71,9 +70,10 @@ def update_file_metadata(gear_context: GearToolkitContext, file_name: str, statu
     gear_context.metadata.update_file(file_name, tags=current_tags)
 
 
-def run(*, fw_client: Client, s3_client: S3BucketReader, gear_context: GearToolkitContext, proxy: FlywheelProxy):
-    """Starts QC process for form data input file.
-    Load rule definitions from S3, read input data file, runs data validation, generate error report.
+def run(*, fw_client: Client, s3_client: S3BucketReader,
+        gear_context: GearToolkitContext, proxy: FlywheelProxy):
+    """Starts QC process for form data input file. Load rule definitions from
+    S3, read input data file, runs data validation, generate error report.
 
     Args:
         fw_client: the Flywheel SDK client
@@ -83,15 +83,17 @@ def run(*, fw_client: Client, s3_client: S3BucketReader, gear_context: GearToolk
     """
 
     form_file_path = gear_context.get_input_path('form_data_file')
-    parents = gear_context.get_input_file_object_value(
-        'form_data_file', 'parents')
+    parents = gear_context.get_input_file_object_value('form_data_file',
+                                                       'parents')
     if not validate_parents(parents, form_file_path):
         sys.exit(1)
 
     try:
-        with gear_context.open_input('form_data_file', 'r', encoding='utf-8') as form_file:
+        with gear_context.open_input('form_data_file', 'r',
+                                     encoding='utf-8') as form_file:
             form_data = json.load(form_file)
-    except (FileNotFoundError, JSONDecodeError, TypeError, ValueError) as error:
+    except (FileNotFoundError, JSONDecodeError, TypeError,
+            ValueError) as error:
         log.error('Failed to read the input file: %s', error)
         sys.exit(1)
 
@@ -106,12 +108,12 @@ def run(*, fw_client: Client, s3_client: S3BucketReader, gear_context: GearToolk
     pk_field = gear_context.config.get('primary_key', FormVars.NACCID)
     pk_field = pk_field.lower()
     if pk_field not in form_data:
-        log.error(
-            'Missing required primary key field %s in form data file', pk_field)
+        log.error('Missing required primary key field %s in form data file',
+                  pk_field)
         sys.exit(1)
 
-    datastore = FlywheelDatastore(
-        fw_client, parents['group'], parents['project'])
+    datastore = FlywheelDatastore(fw_client, parents['group'],
+                                  parents['project'])
 
     strict = gear_context.config.get("strict_mode", True)
     try:

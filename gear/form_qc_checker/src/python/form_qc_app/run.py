@@ -16,7 +16,8 @@ log = logging.getLogger(__name__)
 
 
 def main():
-    """Load necessary environment variables, create Flywheel, S3 connections, invoke QC app."""
+    """Load necessary environment variables, create Flywheel, S3 connections,
+    invoke QC app."""
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
@@ -46,8 +47,10 @@ def main():
             log.error('Unable to connect to S3')
             sys.exit(1)
 
-    run(fw_client=fw_client, proxy=proxy,
-        s3_client=s3_client, gear_context=gear_context)
+    run(fw_client=fw_client,
+        proxy=proxy,
+        s3_client=s3_client,
+        gear_context=gear_context)
 
 
 if __name__ == "__main__":

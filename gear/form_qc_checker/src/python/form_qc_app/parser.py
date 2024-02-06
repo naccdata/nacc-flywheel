@@ -1,22 +1,21 @@
-""" Module for downloading and parsing rule definition schemas """
+"""Module for downloading and parsing rule definition schemas."""
 
-from io import StringIO
 import json
-from json.decoder import JSONDecodeError
 import logging
 import sys
+from io import StringIO
+from json.decoder import JSONDecodeError
 from typing import Mapping
+
 import yaml
-from yaml.loader import SafeLoader
-
 from s3.s3_client import S3BucketReader
-
+from yaml.loader import SafeLoader
 
 log = logging.getLogger(__name__)
 
 
 class FormVars:
-    """ Class to store frquently accessed form data variable names """
+    """Class to store frquently accessed form data variable names."""
 
     NACCID = 'naccid'
     MODULE = 'module'
@@ -25,7 +24,7 @@ class FormVars:
 
 
 class Parser:
-    """ Class to load the validation rules definitions as python objects """
+    """Class to load the validation rules definitions as python objects."""
 
     def __init__(self, s3_bucket: S3BucketReader):
         """
@@ -36,8 +35,10 @@ class Parser:
 
         self.__s3_bucket = s3_bucket
 
-    def download_rule_definitions(self, prefix: str) -> dict[str, Mapping[str, object]]:
-        """ Download rule definition files from a source S3 bucket and generate validation schema
+    def download_rule_definitions(
+            self, prefix: str) -> dict[str, Mapping[str, object]]:
+        """Download rule definition files from a source S3 bucket and generate
+        validation schema.
 
         Args:
             prefix (str): S3 path prefix
@@ -54,8 +55,9 @@ class Parser:
 
         rule_defs = self.__s3_bucket.read_directory(prefix)
         if not rule_defs:
-            log.error('Failed to load rule definitions from the S3 bucket: %s/%s',
-                      self.__s3_bucket.bucket_name, prefix)
+            log.error(
+                'Failed to load rule definitions from the S3 bucket: %s/%s',
+                self.__s3_bucket.bucket_name, prefix)
             sys.exit(1)
 
         for key, file_object in rule_defs.items():
@@ -74,8 +76,8 @@ class Parser:
                 elif 'yaml' in rules_type:
                     form_def = yaml.load(file_data, Loader=SafeLoader)
                 else:
-                    log.error(
-                        'Unhandled rule definition file type: %s - %s', key, rules_type)
+                    log.error('Unhandled rule definition file type: %s - %s',
+                              key, rules_type)
                     sys.exit(1)
 
                 # If there are any duplicate keys(i.e. variable names) across forms,
@@ -88,8 +90,8 @@ class Parser:
                     log.error('Empty rule definition file: %s', key)
                     sys.exit(1)
             except (JSONDecodeError, yaml.YAMLError, TypeError) as error:
-                log.error(
-                    'Failed to parse the rule definition file: %s - %s', key, error)
+                log.error('Failed to parse the rule definition file: %s - %s',
+                          key, error)
                 sys.exit(1)
 
         return full_schema
