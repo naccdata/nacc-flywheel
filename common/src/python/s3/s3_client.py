@@ -47,7 +47,8 @@ class S3BucketReader:
         return StringIO(file_obj['Body'].read().decode('utf-8'))
 
     def read_directory(self, prefix: str) -> dict[str, dict]:
-        """Retrieve all file objects from the directory specified by the prefix within the S3 bucket
+        """Retrieve all file objects from the directory specified by the prefix
+        within the S3 bucket.
 
         Args:
             prefix: directory prefix within the bucket
@@ -65,8 +66,8 @@ class S3BucketReader:
             for s3_obj_info in page['Contents']:
                 # Skip paths ending in /
                 if not s3_obj_info['Key'].endswith('/'):
-                    s3_obj = self.__client.get_object(
-                        Bucket=self.bucket_name, Key=s3_obj_info['Key'])
+                    s3_obj = self.__client.get_object(Bucket=self.bucket_name,
+                                                      Key=s3_obj_info['Key'])
                     if s3_obj:
                         file_objects[s3_obj_info['Key']] = s3_obj
 
