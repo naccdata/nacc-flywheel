@@ -3,10 +3,10 @@ import logging
 from typing import Any, Dict, List
 
 import yaml
-from yaml.representer import RepresenterError
 from flywheel import FileSpec
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from redcap.nacc_directory import UserDirectory, UserDirectoryEntry
+from yaml.representer import RepresenterError
 
 log = logging.getLogger(__name__)
 
@@ -22,8 +22,8 @@ def upload_yaml(*, project: ProjectAdaptor, filename: str, data: Any):
 
     try:
         contents = yaml.safe_dump(data=data,
-                                allow_unicode=True,
-                                default_flow_style=False)
+                                  allow_unicode=True,
+                                  default_flow_style=False)
     except RepresenterError as error:
         log.error("Error: can't create YAML for file %s: %s", filename, error)
         return
