@@ -49,28 +49,25 @@ class FlywheelDatastore(Datastore):
             current_ins (dict[str, str]): Visit currently being validated
 
         Returns:
-            dict[str, str]: Previous visit record or None if no previous visit found
+            dict[str, str]: Previous visit record. None if no previous visit
         """
 
         group_lbl = self.__group.label
         project_lbl = self.__project.label
 
         if pk_field not in current_ins:
-            log.error(
-                'Variable %s not set in current visit data, cannot retrieve the previous visits',
-                pk_field)
+            log.error(('Variable %s not set in current visit data, '
+                       'cannot retrieve the previous visits'), pk_field)
             return None
 
         if orderby not in current_ins:
-            log.error(
-                'Variable %s not set in current visit data, cannot retrieve the previous visits',
-                orderby)
+            log.error(('Variable %s not set in current visit data, '
+                       'cannot retrieve the previous visits'), orderby)
             return None
 
         if FormVars.MODULE not in current_ins:
-            log.error(
-                'Variable %s not set in current visit data, cannot retrieve the previous visits',
-                FormVars.MODULE)
+            log.error(('Variable %s not set in current visit data, '
+                       'cannot retrieve the previous visits'), FormVars.MODULE)
             return None
 
         subject_lbl = current_ins[pk_field]
@@ -91,8 +88,9 @@ class FlywheelDatastore(Datastore):
             filename='*.json',
             match='all',
             process_files=False,
-            filter=
-            f'subject.label={subject_lbl},acquisition.label={module},{orderby_col}<{curr_ob_col_val}',
+            filter=(
+                f'subject.label={subject_lbl},'
+                f'acquisition.label={module},{orderby_col}<{curr_ob_col_val}'),
             include_ids=False,
             include_labels=False)
         view = builder.build()
