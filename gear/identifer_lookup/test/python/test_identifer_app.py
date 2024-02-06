@@ -53,7 +53,7 @@ def no_ids_stream():
 
 @pytest.fixture(scope="function")
 def data_stream():
-    """Create data stream without header row."""
+    """Create valid data stream with header row."""
     data = [['adcid', 'ptid', 'var1'], [1, '1', 8], [1, '2', 99]]
     stream = StringIO()
     write_to_stream(data, stream)
