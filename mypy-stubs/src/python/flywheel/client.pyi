@@ -1,4 +1,6 @@
 from typing import Any, Dict, List, Optional
+
+import pandas
 from flywheel.models.file_entry import FileEntry
 
 from flywheel.models.viewer_app import ViewerApp
@@ -107,4 +109,7 @@ class Client:
 
     # return type is ConfigOut which seems to be JSON response
     def get_config(self, **kwargs) -> Dict[str, Any]:
+        ...
+
+    def read_view_dataframe(self, view: DataView, container_id: str) -> pandas.DataFrame:
         ...
