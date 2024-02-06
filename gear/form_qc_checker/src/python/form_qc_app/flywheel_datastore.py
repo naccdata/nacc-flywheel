@@ -81,8 +81,8 @@ class FlywheelDatastore(Datastore):
             "file.parents.session", orderby_col
         ]
         builder = ViewBuilder(
-            label=
-            f'Previous visits for - {group_lbl}/{project_lbl}/{subject_lbl}',
+            label=('Previous visits for - '
+                   f'{group_lbl}/{project_lbl}/{subject_lbl}'),
             columns=columns,
             container='acquisition',
             filename='*.json',
