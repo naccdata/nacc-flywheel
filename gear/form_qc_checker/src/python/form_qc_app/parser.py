@@ -44,7 +44,7 @@ class Parser:
             prefix (str): S3 path prefix
 
         Returns:
-            dict[str, Mapping[str, object]: Schema object created from rule definitions
+            dict[str, Mapping[str, object]: Schema object from rule definitions
         """
 
         full_schema: dict[str, Mapping[str, object]] = {}
@@ -80,8 +80,8 @@ class Parser:
                               key, rules_type)
                     sys.exit(1)
 
-                # If there are any duplicate keys(i.e. variable names) across forms,
-                # they will be replaced with the latest definitions.
+                # If there are any duplicate keys(i.e. variable names) across
+                # forms, they will be replaced with the latest definitions.
                 # It is assumed all variable names are unique within a project
                 if form_def:
                     full_schema.update(form_def)
