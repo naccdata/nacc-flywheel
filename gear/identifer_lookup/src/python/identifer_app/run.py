@@ -38,7 +38,7 @@ def get_identifiers(rds_parameters: RDSParameters,
     with identifers_session as session:
         identifiers_repo = IdentifierRepository(session)
         center_identifiers = identifiers_repo.list(adc_id=adcid)
-        if not center_identifiers:
+        if center_identifiers:
             # pylint: disable=(not-an-iterable)
             identifiers = {
                 identifier.ptid: identifier
@@ -98,7 +98,7 @@ def main():
 
         file_id = file_input['object']['file_id']
         adcid = get_adcid(proxy=proxy, file_id=file_id)
-        if not adcid:
+        if adcid is None:
             log.error('Unable to determine center ID')
             sys.exit(1)
 
