@@ -35,7 +35,6 @@ from .models.project_sharing_settings_project_settings_output import \
 from .models.roles_backwards_compatible_role_assignment import \
     RolesBackwardsCompatibleRoleAssignment as \
     RolesBackwardsCompatibleRoleAssignment
-from .models.roles_role import RolesRole as RolesRole
 from .models.roles_role_assignment import \
     RolesRoleAssignment as RolesRoleAssignment
 from .models.session import Session as Session

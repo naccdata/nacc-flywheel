@@ -1,13 +1,13 @@
-class RolesRole:
+class RoleOutput:
 
     @property
     def id(self) -> str:
         ...
 
     @property
-    def name(self) -> str:
+    def label(self) -> str:
         ...
 
     @property
-    def label(self) -> str:
+    def in_use(self) -> bool:
         ...

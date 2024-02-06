@@ -20,7 +20,7 @@ from .models.project_sharing_settings_project_settings_input import \
     ProjectSharingSettingsProjectSettingsInput
 from .models.project_sharing_settings_project_settings_output import \
     ProjectSharingSettingsProjectSettingsOutput
-from .models.roles_role import RolesRole
+from .models.role_output import RoleOutput
 from .models.user import User
 from .models.view_id_output import ViewIdOutput
 from .typing.role_type import RoleType
@@ -55,7 +55,7 @@ class Client:
     def get_group(self, id: str) -> Group:
         ...
 
-    def get_all_roles(self) -> List[RolesRole]:
+    def get_all_roles(self) -> List[RoleOutput]:
         ...
 
     # body in SDK is GroupRole, but use RoleType to allow passing RolesRole

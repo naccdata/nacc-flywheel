@@ -10,4 +10,5 @@ Home for documentation of Flywheel extensions for the Nationl Alzheimer's Coordi
     2. [User Management](user_management/)
 - Data
     1. [Pull metadata](pull_metadata/)
+    2. [Participant identifier lookup](identifier-lookup/)
 - [Development Guide](development/)

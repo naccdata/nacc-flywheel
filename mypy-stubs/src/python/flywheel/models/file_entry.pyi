@@ -31,5 +31,6 @@ class FileEntry:
     def parents(self) -> ContainerParents:
         ...
     
-    def get(self, key: str) -> Dict[str, Any]:
+    @property
+    def version(self) -> int:
         ...
