@@ -26,6 +26,7 @@
 //     "sqlalchemy>=2.0.23",
 //     "ssm-parameter-store>=19.11.0",
 //     "types-PyYAML>=6.0.12",
+//     "types-jinja2>=2.11.9",
 //     "types-requests",
 //     "typing-extensions>=4.8.0",
 //     "validator@ git+https://github.com/naccdata/nacc-form-validator.git"
@@ -2811,6 +2812,44 @@
           "artifacts": [
             {
               "algorithm": "sha256",
+              "hash": "60a1e21e8296979db32f9374d8a239af4cb541ff66447bb915d8ad398f9c63b2",
+              "url": "https://files.pythonhosted.org/packages/b7/b0/e79d84748f1d34304f13191424348a719c3febaa3493835370fe9528e1e6/types_Jinja2-2.11.9-py3-none-any.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "dbdc74a40aba7aed520b7e4d89e8f0fe4286518494208b35123bcf084d4b8c81",
+              "url": "https://files.pythonhosted.org/packages/46/c4/b82309bfed8195de7997672deac301bd6f5bd5cbb6a3e392b7fe780d7852/types-Jinja2-2.11.9.tar.gz"
+            }
+          ],
+          "project_name": "types-jinja2",
+          "requires_dists": [
+            "types-MarkupSafe"
+          ],
+          "requires_python": null,
+          "version": "2.11.9"
+        },
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
+              "hash": "ca2bee0f4faafc45250602567ef38d533e877d2ddca13003b319c551ff5b3cc5",
+              "url": "https://files.pythonhosted.org/packages/bc/d6/b8effb1c48539260a5eb4196afc55efac4ea1684a4991977555eb266b2ef/types_MarkupSafe-1.1.10-py3-none-any.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "85b3a872683d02aea3a5ac2a8ef590193c344092032f58457287fbf8e06711b1",
+              "url": "https://files.pythonhosted.org/packages/39/31/b5f059142d058aec41e913d8e0eff0a967e7bc46f9a2ba2f31bc11cff059/types-MarkupSafe-1.1.10.tar.gz"
+            }
+          ],
+          "project_name": "types-markupsafe",
+          "requires_dists": [],
+          "requires_python": null,
+          "version": "1.1.10"
+        },
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
               "hash": "9679eef0365db3af91ef7722c199dbb75ee5c1b67e3c4dd7bfbeb1b8a71c21a3",
               "url": "https://files.pythonhosted.org/packages/fc/6c/42a83a27bef09295b8d26866d690fd50d53b7fa27a961779daf0bb8f3b0c/types_pytz-2024.1.0.20240203-py3-none-any.whl"
             },
@@ -3052,6 +3091,7 @@
     "sqlalchemy>=2.0.23",
     "ssm-parameter-store>=19.11.0",
     "types-PyYAML>=6.0.12",
+    "types-jinja2>=2.11.9",
     "types-requests",
     "typing-extensions>=4.8.0",
     "validator"
