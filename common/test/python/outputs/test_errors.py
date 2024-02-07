@@ -5,8 +5,9 @@ from csv import DictReader
 from io import StringIO
 
 from outputs.errors import (CSVLocation, ErrorType, FileError, JSONLocation,
-                            StreamErrorWriter, empty_file_error,
-                            identifier_error, missing_header_error)
+                            ListErrorWriter, StreamErrorWriter,
+                            empty_file_error, identifier_error,
+                            missing_header_error)
 
 
 class TestFileError:
@@ -45,9 +46,9 @@ class TestFileError:
 class TestErrorWriter:
     """Tests the error writer class."""
 
-    def test_write(self):
-        """Tests that the error writer writes CSV with the flywheel hierarchy
-        information inserted."""
+    def test_stream_write(self):
+        """Tests that the stream error writer writes CSV with the flywheel
+        hierarchy information inserted."""
         stream = StringIO()
         writer = StreamErrorWriter(stream=stream, container_id='the-id')
         writer.write(
@@ -64,3 +65,18 @@ class TestErrorWriter:
         assert reader.fieldnames == list(FileError.__annotations__.keys())
         row = next(reader)
         assert row['container_id'] == 'the-id'
+
+    def test_capture_write(self):
+        """Tests that the capture error writer inserts the flywheel hierarchy
+        information inserted."""
+        writer = ListErrorWriter(container_id='the-id')
+        writer.write(
+            FileError(error_type=ErrorType(error_type='error',
+                                           detail='the-error'),
+                      error_location=CSVLocation(line=10, column_name='ptid'),
+                      container_id=None,
+                      value='the-value',
+                      expected=None,
+                      message='the-message'))
+        errors = writer.errors()
+        assert errors[0]['container_id'] == 'the-id'

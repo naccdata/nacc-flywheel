@@ -1,6 +1,6 @@
 """Utilities for writing errors to a CSV error file."""
 from abc import ABC, abstractmethod
-from typing import List, Literal, Optional, TextIO
+from typing import Any, Dict, List, Literal, Optional, TextIO
 
 from outputs.outputs import CSVWriter
 from pydantic import BaseModel, Field, field_serializer
@@ -100,7 +100,7 @@ def missing_header_error() -> FileError:
 
 
 class ErrorWriter(ABC):
-    """Abstract base class for error writer"""
+    """Abstract base class for error writer."""
 
     def __init__(self, container_id: str) -> None:
         self.__container_id = container_id
@@ -134,18 +134,26 @@ class StreamErrorWriter(ErrorWriter):
         self.__writer.write(error.model_dump())
 
 
-class MetadataErrorWriter(ErrorWriter):
+class ListErrorWriter(ErrorWriter):
     """Collects FileErrors to file metadata."""
 
     def __init__(self, container_id: str) -> None:
         super().__init__(container_id)
-        self.__errors: List[FileError] = []
+        self.__errors: List[Dict[str, Any]] = []
 
     def write(self, error: FileError) -> None:
         """Captures error for writing to metadata.
-        
+
         Args:
           error: the file error object
         """
         self.set_container(error)
-        self.__errors.append(error)
+        self.__errors.append(error.model_dump())
+
+    def errors(self) -> List[Dict[str, Any]]:
+        """Returns serialized list of accumulated file errors.
+
+        Returns:
+          List of serialized FileError objects
+        """
+        return self.__errors
