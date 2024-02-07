@@ -4,9 +4,9 @@
 from csv import DictReader
 from io import StringIO
 
-from outputs.errors import (CSVLocation, ErrorType, ErrorWriter, FileError,
-                            JSONLocation, empty_file_error, identifier_error,
-                            missing_header_error)
+from outputs.errors import (CSVLocation, ErrorType, FileError, JSONLocation,
+                            StreamErrorWriter, empty_file_error,
+                            identifier_error, missing_header_error)
 
 
 class TestFileError:
@@ -49,7 +49,7 @@ class TestErrorWriter:
         """Tests that the error writer writes CSV with the flywheel hierarchy
         information inserted."""
         stream = StringIO()
-        writer = ErrorWriter(stream=stream, container_id='the-id')
+        writer = StreamErrorWriter(stream=stream, container_id='the-id')
         writer.write(
             FileError(error_type=ErrorType(error_type='error',
                                            detail='the-error'),

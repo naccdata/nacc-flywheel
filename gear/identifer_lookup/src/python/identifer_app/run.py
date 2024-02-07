@@ -16,7 +16,7 @@ from identifiers.model import Identifier
 from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import (ParameterError, ParameterStore,
                                     RDSParameters)
-from outputs.errors import ErrorWriter
+from outputs.errors import StreamErrorWriter
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -120,7 +120,7 @@ def main():
                     errors = run(input_file=csv_file,
                                  identifiers=identifiers,
                                  output_file=out_file,
-                                 error_writer=ErrorWriter(
+                                 error_writer=StreamErrorWriter(
                                      stream=err_file, container_id=file_id))
 
                     gear_context.metadata.add_qc_result(

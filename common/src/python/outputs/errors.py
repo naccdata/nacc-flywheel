@@ -1,5 +1,6 @@
 """Utilities for writing errors to a CSV error file."""
-from typing import Literal, Optional, TextIO
+from abc import ABC, abstractmethod
+from typing import List, Literal, Optional, TextIO
 
 from outputs.outputs import CSVWriter
 from pydantic import BaseModel, Field, field_serializer
@@ -98,15 +99,29 @@ def missing_header_error() -> FileError:
                      message='No file header found')
 
 
+class ErrorWriter(ABC):
+    """Abstract base class for error writer"""
+
+    def __init__(self, container_id: str) -> None:
+        self.__container_id = container_id
+
+    @abstractmethod
+    def write(self, error: FileError) -> None:
+        """Writes the error to the output target of implementing class."""
+
+    def set_container(self, error: FileError) -> None:
+        error.container_id = self.__container_id
+
+
 # pylint: disable=(too-few-public-methods)
-class ErrorWriter:
+class StreamErrorWriter(ErrorWriter):
     """Writes FileErrors to a stream as CSV."""
 
     def __init__(self, stream: TextIO, container_id: str) -> None:
         self.__writer = CSVWriter(stream=stream,
                                   fieldnames=list(
                                       FileError.__annotations__.keys()))
-        self.__container_id = container_id
+        super().__init__(container_id)
 
     def write(self, error: FileError) -> None:
         """Writes the error to the output stream with flywheel hierarchy
@@ -115,5 +130,22 @@ class ErrorWriter:
         Args:
           error: the file error object
         """
-        error.container_id = self.__container_id
+        self.set_container(error)
         self.__writer.write(error.model_dump())
+
+
+class MetadataErrorWriter(ErrorWriter):
+    """Collects FileErrors to file metadata."""
+
+    def __init__(self, container_id: str) -> None:
+        super().__init__(container_id)
+        self.__errors: List[FileError] = []
+
+    def write(self, error: FileError) -> None:
+        """Captures error for writing to metadata.
+        
+        Args:
+          error: the file error object
+        """
+        self.set_container(error)
+        self.__errors.append(error)
