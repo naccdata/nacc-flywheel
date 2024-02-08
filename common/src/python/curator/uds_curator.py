@@ -105,8 +105,8 @@ def set_subject_cdr_info(subject: Subject, form: UDSV3Form):
     subject: the subject object
     form: the file entry for the file
     """
-    cdrinfo = form.get_cdr_info()
-    current_date = dotty_get(cdrinfo, "cognitive.cdr-latest.date")
+    cdr_info = form.get_cdr_info()
+    current_date = dotty_get(cdr_info, "cognitive.cdr-latest.date")
     assert current_date
     last_date = dotty_get(subject.info, "cognitive.cdr-latest.date")
     assert last_date
@@ -117,10 +117,10 @@ def set_subject_cdr_info(subject: Subject, form: UDSV3Form):
 
     if current_date > last_date:
         log.debug("Updating subject CDR info with new values")
-        subject.update(info=cdrinfo)
+        subject.update(info=cdr_info)
     else:
         log.debug("Setting subject CDR info")
-        subject.update(info=cdrinfo)
+        subject.update(info=cdr_info)
 
 
 def dotty_get(full_dict: Dict[str, Any], dotty_key: str) -> Optional[Any]:
