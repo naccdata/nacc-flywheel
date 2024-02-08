@@ -43,9 +43,9 @@ class FormCurator(FileCurator):
         Returns:
           the file entry for the file described
         """
-        file_heirarchy = file_object.get("heirarchy")
-        assert file_heirarchy
-        acquisition = self.context.get_container_from_ref(file_heirarchy)
+        file_hierarchy = file_object.get("hierarchy")
+        assert file_hierarchy
+        acquisition = self.context.get_container_from_ref(file_hierarchy)
         assert isinstance(acquisition, Acquisition)
 
         filename = self.context.get_input_filename("file-input")
