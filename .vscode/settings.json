@@ -19,6 +19,18 @@
     },
     "editor.detectIndentation": false,
     "cSpell.words": [
-        "UDSV3"
+        "adcid",
+        "birthmo",
+        "birthyr",
+        "cdrglob",
+        "cdrsum",
+        "formdate",
+        "mlst",
+        "primlang",
+        "ptid",
+        "racesec",
+        "raceter",
+        "UDSV3",
+        "vstdate"
     ]
 }
