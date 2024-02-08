@@ -8,7 +8,7 @@ from flywheel.models.file_entry import FileEntry
 
 
 class NPv11Form(Form):
-    """NPv11 form class usef for attribute curation."""
+    """NPv11 form class used for attribute curation."""
 
     # pylint: disable=useless-super-delegation
     def __init__(self, file_object: FileEntry) -> None:

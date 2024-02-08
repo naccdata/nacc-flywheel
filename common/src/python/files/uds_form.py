@@ -172,7 +172,7 @@ class UDSV3Form(Form):
     }
 
     def get_demographics(self) -> Dict[str, Dict[str, Any]]:
-        """Gathers demographic inforation from the file.
+        """Gathers demographic information from the file.
 
         Returns:
           dictionary containing demographic information
@@ -218,7 +218,7 @@ class UDSV3Form(Form):
         return info
 
     def get_weight_at_session(self) -> Optional[float]:
-        """Gets the weight in kilograms for the weigth given in the UDSv3 data
+        """Gets the weight in kilograms for the weight given in the UDSv3 data
         file.
 
         Args:
