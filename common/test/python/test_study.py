@@ -2,10 +2,10 @@
 from typing import Optional
 
 import pytest
-from projects.project import Center, Project, ProjectVisitor
+from projects.study import Center, Study, StudyVisitor
 
 
-class DummyVisitor(ProjectVisitor):
+class DummyVisitor(StudyVisitor):
     """Visitor for testing apply methods."""
 
     def __init__(self) -> None:
@@ -19,7 +19,7 @@ class DummyVisitor(ProjectVisitor):
     def visit_datatype(self, datatype: str):
         self.datatype_name = datatype
 
-    def visit_project(self, project: Project) -> None:
+    def visit_study(self, project: Study) -> None:
         self.project_name = project.name
 
 
@@ -68,18 +68,18 @@ class TestProject:
 
     def test_object(self):
         """Tests for object creation."""
-        project = Project(name="Project Alpha",
-                          project_id='project-alpha',
-                          centers=[
-                              Center(tags=['adcid-1'],
-                                     name='A Center',
-                                     center_id='ac',
-                                     active=True)
-                          ],
-                          datatypes=['dicom'],
-                          published=True,
-                          primary=True)
-        assert project.project_id == "project-alpha"
+        project = Study(name="Project Alpha",
+                        study_id='project-alpha',
+                        centers=[
+                            Center(tags=['adcid-1'],
+                                   name='A Center',
+                                   center_id='ac',
+                                   active=True)
+                        ],
+                        datatypes=['dicom'],
+                        published=True,
+                        primary=True)
+        assert project.study_id == "project-alpha"
         assert project.centers == [
             Center(tags=['adcid-1'],
                    name='A Center',
@@ -90,7 +90,7 @@ class TestProject:
         assert project.is_published()
         assert project.is_primary()
 
-        project2 = Project.create({
+        project2 = Study.create({
             'project':
             'Project Alpha',
             'project-id':
@@ -110,15 +110,15 @@ class TestProject:
         assert project == project2
 
         with pytest.raises(KeyError):
-            Project.create({})
+            Study.create({})
 
     def test_apply(self):
         """Test project apply method."""
         visitor = DummyVisitor()
-        project = Project(name='Project Beta',
-                          project_id='beta',
-                          centers=[],
-                          datatypes=[],
-                          published=True)
+        project = Study(name='Project Beta',
+                        study_id='beta',
+                        centers=[],
+                        datatypes=[],
+                        published=True)
         project.apply(visitor)
         assert visitor.project_name == 'Project Beta'

@@ -1,27 +1,27 @@
-"""Mappings from NACC projects and centers to Flywheel groups and projects.
+"""Mappings from NACC studies and centers to Flywheel groups and projects.
 
-A coordinating center project is a multi-center study that collects data of one
+A coordinating center study is a multi-center study that collects data of one
 or more datatypes.
 For each center, there is a pipeline consisting of ingest and accepted stages.
-A center has one ingest stage for each datatype collected by the project that
+A center has one ingest stage for each datatype collected by the study that
 holds data that has not passed QC and been accepted by center curators.
 The accepted stage holds all curated data that has been approved for general
 use by the center curators.
 This stage consolidates data accepted from ingest for all datatypes.
 
 A Flywheel group is used to represent a center that contains Flywheel projects
-for each stage of a project in which the center participates.
-The mapping defined in this module is from a project P and center C to
+for each stage of a study in which the center participates.
+The mapping defined in this module is from a study P and center C to
 1. one FW group for center C
 2. one ingest and one sandbox FW project in this group for each datatype in
-   project P
+   study P
 3. one accepted FW project in this group
-The name of project P is used in the names of FW projects unless project P is
-the primary project of the coordinating center.
+The name of study P is used in the names of FW projects unless study P is
+the primary study of the coordinating center.
 
-For projects for which data shared externally by the coordinating center, there
+For studies for which data shared externally by the coordinating center, there
 is an additional release stage where data across centers is consolidated.
-To represent this a project release group is created with a single "master"
+To represent this a study release group is created with a single "master"
 project for managing the consolidated data.
 """
 import logging
@@ -32,117 +32,103 @@ from flywheel import AccessPermission
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
-from projects.project import Center, Project
+from projects.study import Center, Study
 
 log = logging.getLogger(__name__)
 
 
-class ProjectMappingAdaptor:
-    """Defines an adaptor for the coordinating center Project class that
-    supports mapping to a data pipeline using Flywheel groups and projects."""
+class StudyMappingAdaptor:
+    """Defines an adaptor for the coordinating center Study class that supports
+    mapping to a data pipeline using Flywheel groups and projects."""
 
     def __init__(self,
                  *,
-                 project: Project,
+                 study: Study,
                  flywheel_proxy: FlywheelProxy,
                  admin_access: Optional[List[AccessPermission]] = None,
                  center_roles: List[GroupRole],
                  new_only: bool) -> None:
-        """Creates an adaptor mapping the given project to the corresponding
+        """Creates an adaptor mapping the given study to the corresponding
         objects in the flywheel instance linked by the proxy.
 
         Args:
-            project: the domain project
+            study: the study
             flywheel_proxy: the proxy for the flywheel instance
             admin_access: the access permissions for administrative users
             center_roles: the roles for center users
             new_only: whether to only process new centers
         """
         self.__fw = flywheel_proxy
-        self.__project = project
+        self.__study = study
         self.__release_group: Optional[GroupAdaptor] = None
         self.__admin_access = admin_access
         self.__center_roles = center_roles
         self.__new_centers_only = new_only
 
     def has_datatype(self, datatype: str) -> bool:
-        """Indicates whether this project has the datatype.
+        """Indicates whether this study has the datatype.
 
         Args:
             datatype: name of the datatype
         Returns:
-            True if datatype is in this project, False otherwise
+            True if datatype is in this study, False otherwise
         """
-        return datatype in self.__project.datatypes
+        return datatype in self.__study.datatypes
 
     @property
     def datatypes(self) -> List[str]:
-        """Exposes datatypes of this project."""
-        return self.__project.datatypes
+        """Exposes datatypes of this study."""
+        return self.__study.datatypes
 
     @property
     def name(self) -> str:
-        """Exposes project name."""
-        return self.__project.name
+        """Exposes study name."""
+        return self.__study.name
 
     def build_project_label(self, prefix: str) -> str:
-        """Builds a FW project ID string from the given prefix.
+        """Builds a FW project label string from the given prefix.
 
-        Concatenates the name of the project, if is not the primary
-        project of the coordinating center.
+        Concatenates the name of the study, if is not the primary
+        study of the coordinating center.
 
         Args:
-            prefix: the prefix for the project ID
+            prefix: the prefix for the project label
         Returns:
-          the project id built using prefix
+          the project label built using prefix
         """
-        assert self.__project
-        if self.__project.is_primary():
+        assert self.__study
+        if self.__study.is_primary():
             return prefix
-        return prefix + "-" + self.__project.project_id
+        return prefix + "-" + self.__study.study_id
 
     @property
     def accepted_label(self) -> str:
-        """Builds a project ID for the accepted stage of this project."""
+        """Builds a project label for the accepted stage of this study."""
         return self.build_project_label('accepted')
-
-    def get_ingest_label(self, datatype: str) -> Optional[str]:
-        """Builds a project ID for the ingest for the data type of this
-        project.
-
-        Args:
-            datatype: the name of the datatype
-        Returns:
-            the ingest project ID, or None if datatype is not in this project
-        """
-        if datatype not in self.__project.datatypes:
-            return None
-
-        return self.build_project_label('ingest-' + datatype.lower())
 
     @property
     def release_label(self) -> Optional[str]:
         """Builds the FW project ID string for the release stage for this
-        project."""
-        if not self.__project.is_published():
+        study."""
+        if not self.__study.is_published():
             return None
 
-        return "release-" + self.__project.project_id
+        return "release-" + self.__study.study_id
 
     def get_release_group(self) -> Optional[GroupAdaptor]:
-        """Returns the release group for this project if it is published.
+        """Returns the release group for this study if it is published.
         Otherwise, returns None.
 
         Returns:
-            the release group if project is published, otherwise None
+            the release group if study is published, otherwise None
         """
-        if not self.__project.is_published():
+        if not self.__study.is_published():
             return None
 
         release_id = self.release_label
         assert release_id
         if not self.__release_group:
-            group = self.__fw.get_group(group_label=self.__project.name +
+            group = self.__fw.get_group(group_label=self.__study.name +
                                         " Release",
                                         group_id=release_id)
             assert group
@@ -156,7 +142,7 @@ class ProjectMappingAdaptor:
         Returns:
             the consolidation project if published, otherwise None
         """
-        if not self.__project.is_published():
+        if not self.__study.is_published():
             return None
 
         release_group = self.get_release_group()
@@ -169,13 +155,13 @@ class ProjectMappingAdaptor:
 
     def create_center_pipelines(self) -> None:
         """Creates data pipelines for centers in this project."""
-        if not self.__project.centers:
+        if not self.__study.centers:
             log.warning(
                 "Not creating center groups for project %s: no centers given",
-                self.__project.name)
+                self.__study.name)
             return
 
-        for center in self.__project.centers:
+        for center in self.__study.centers:
             if self.__new_centers_only and 'new-center' not in center.tags:
                 continue
 
@@ -187,16 +173,16 @@ class ProjectMappingAdaptor:
             center_adaptor.create_center_pipeline(self)
 
     def create_release_pipeline(self) -> None:
-        """Creates the release pipeline for this project if the project is
+        """Creates the release pipeline for this study if the study is
         published."""
-        if not self.__project.is_published():
-            log.info("Project %s has no release project", self.__project.name)
+        if not self.__study.is_published():
+            log.info("Study %s has no release project", self.__study.name)
             return
 
         release_group = self.get_release_group()
         master_project = self.get_master_project()
 
-        if self.__project.is_published() and self.__admin_access:
+        if self.__study.is_published() and self.__admin_access:
             assert release_group
             for permission in self.__admin_access:
                 release_group.add_user_access(permission)
@@ -204,15 +190,15 @@ class ProjectMappingAdaptor:
             assert master_project
             master_project.add_admin_users(self.__admin_access)
 
-    def create_project_pipelines(self) -> None:
-        """Creates the pipelines for this project."""
+    def create_study_pipelines(self) -> None:
+        """Creates the pipelines for this study."""
         self.create_center_pipelines()
         self.create_release_pipeline()
 
 
 class CenterMappingAdaptor:
     """Defines an adaptor mapping a center to Flywheel groups and projects to
-    implement data pipelines for projects."""
+    implement data pipelines for studies."""
 
     def __init__(self,
                  *,
@@ -227,7 +213,7 @@ class CenterMappingAdaptor:
           center: the center object
           flywheel_proxy: the flywheel instance proxy
           admin_access: the administrative users from admin group
-          template_map: template projects for project resources
+          template_map: template projects for study resources
           center_roles: the list of custom roles for user in center
         """
         self.__center = center
@@ -267,7 +253,7 @@ class CenterMappingAdaptor:
 
         return ProjectAdaptor(project=project, proxy=self.__fw)
 
-    def create_ingest_projects(self, project: ProjectMappingAdaptor,
+    def create_ingest_projects(self, project: StudyMappingAdaptor,
                                label_prefix: str) -> Dict[str, ProjectAdaptor]:
         """Creates projects for ingesting a particular datatype.
 
@@ -302,7 +288,7 @@ class CenterMappingAdaptor:
         for tag in self.__center.tags:
             project.add_tag(tag)
 
-    def create_center_pipeline(self, project: ProjectMappingAdaptor) -> None:
+    def create_center_pipeline(self, project: StudyMappingAdaptor) -> None:
         """Creates FW groups and projects for data pipeline of the given
         project in this center.
 
