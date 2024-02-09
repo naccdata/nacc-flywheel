@@ -17,5 +17,8 @@
         "**/.hg/store/**": true,
         "**/dist/**": true
     },
-    "editor.detectIndentation": false
+    "editor.detectIndentation": false,
+    "cSpell.words": [
+        "NACC"
+    ]
 }
