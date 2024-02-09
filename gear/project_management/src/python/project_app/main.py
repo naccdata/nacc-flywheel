@@ -6,8 +6,8 @@ from typing import List
 from flywheel import AccessPermission
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from projects.project import Project
-from projects.project_mapping import ProjectMappingAdaptor
+from projects.study import Study
+from projects.study_mapping import StudyMappingAdaptor
 
 log = logging.getLogger(__name__)
 
@@ -52,11 +52,11 @@ def run(*,
 
     center_roles = get_project_roles(proxy, role_names)
 
-    for project_doc in project_list:
-        project = Project.create(project_doc)
-        project_mapper = ProjectMappingAdaptor(project=project,
-                                               flywheel_proxy=proxy,
-                                               admin_access=admin_access,
-                                               center_roles=center_roles,
-                                               new_only=new_only)
-        project_mapper.create_project_pipelines()
+    for study_doc in project_list:
+        study = Study.create(study_doc)
+        mapper = StudyMappingAdaptor(study=study,
+                                     flywheel_proxy=proxy,
+                                     admin_access=admin_access,
+                                     center_roles=center_roles,
+                                     new_only=new_only)
+        mapper.create_study_pipelines()
