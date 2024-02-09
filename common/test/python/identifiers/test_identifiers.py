@@ -122,4 +122,4 @@ class TestIdentifierRepository:
         assert repo.list(adc_id=0) == expected
         assert repo.list(adc_id=1) == [Identifier(nacc_id=2, nacc_adc=5397, adc_id=1,
                        patient_id="168721")]
-        assert repo.list(adc_id=99) == []
+        assert not repo.list(adc_id=99)
