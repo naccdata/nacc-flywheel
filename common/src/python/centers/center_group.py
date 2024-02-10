@@ -10,6 +10,7 @@ from typing import Dict, List, Optional
 import flywheel
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
+from projects.study import Center
 from projects.template_project import TemplateProject
 
 log = logging.getLogger(__name__)
@@ -23,6 +24,24 @@ class CenterGroup(GroupAdaptor):
         self.__datatypes: List[str] = []
         self.__ingest_stages = ['ingest', 'retrospective']
         self.__center_id = None
+
+    @classmethod
+    def create(cls, center: Center, proxy: FlywheelProxy) -> 'CenterGroup':
+        """Creates a flywheel.Group for the center and returns as a
+        CenterGroup.
+
+        Args:
+          center: the study center
+          proxy: the flywheel proxy object
+        Returns:
+          the CenterGroup for created group
+        """
+        group = proxy.get_group(group_label=center.name,
+                                group_id=center.center_id)
+        center_group = CenterGroup(group=group, proxy=proxy)
+        for tag in center.tags:
+            center_group.add_tag(tag)
+        return center_group
 
     def center_id(self) -> Optional[int]:
         """Returns the center ID for this group."""

@@ -32,7 +32,7 @@ from flywheel import AccessPermission
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
-from projects.study import Center, Study
+from projects.study import Study
 
 log = logging.getLogger(__name__)
 
@@ -165,12 +165,68 @@ class StudyMappingAdaptor:
             if self.__new_centers_only and 'new-center' not in center.tags:
                 continue
 
-            center_adaptor = CenterMappingAdaptor(
-                center=center,
-                flywheel_proxy=self.__fw,
-                admin_access=self.__admin_access,
-                center_roles=self.__center_roles)
-            center_adaptor.create_center_pipeline(self)
+            center_group = CenterGroup.create(center, proxy=self.__fw)
+            center_group.add_roles(self.__center_roles)
+            if self.__admin_access:
+                center_group.add_permissions(self.__admin_access)
+
+            if center.is_active():
+                self.create_ingest_projects(center_group,
+                                            label_prefix='ingest')
+                self.create_ingest_projects(center_group,
+                                            label_prefix='sandbox')
+
+            self.create_ingest_projects(center_group,
+                                        label_prefix='retrospective')
+
+            self.get_project(center_group=center_group,
+                             label=self.accepted_label)
+            self.get_project(center_group=center_group, label='metadata')
+
+    def get_project(self, center_group: CenterGroup,
+                    label: str) -> Optional[ProjectAdaptor]:
+        """**I don't remember why GroupAdaptor doesn't just do this**
+
+        Creates the project with the given label in the group and
+        returns the ProjectAdaptor.
+
+        If the project already exists, returns that project.
+
+        Args:
+          center_group: the CenterGroup
+          label: the project label
+        Returns:
+          ProjectAdaptor for the project. None if no project created.
+        """
+        project = center_group.get_project(label=label)
+        if not project:
+            return None
+
+        return ProjectAdaptor(project=project, proxy=self.__fw)
+
+    def create_ingest_projects(self, center_group: CenterGroup,
+                               label_prefix: str) -> Dict[str, ProjectAdaptor]:
+        """Creates projects for ingesting a particular datatype.
+
+        Args:
+        center_adaptor: the mapping for the center
+        label_prefix: the prefix for project names
+        Returns:
+        Map from datatype to project
+        """
+        project_map = {}
+        for datatype in self.datatypes:
+            project_label = self.build_project_label(label_prefix + '-' +
+                                                     datatype.lower())
+            assert project_label
+
+            ingest_project = self.get_project(center_group=center_group,
+                                              label=project_label)
+            if ingest_project:
+                project_map[datatype] = ingest_project
+                ingest_project.add_tags(center_group.get_tags())
+
+        return project_map
 
     def create_release_pipeline(self) -> None:
         """Creates the release pipeline for this study if the study is
@@ -194,123 +250,3 @@ class StudyMappingAdaptor:
         """Creates the pipelines for this study."""
         self.create_center_pipelines()
         self.create_release_pipeline()
-
-
-class CenterMappingAdaptor:
-    """Defines an adaptor mapping a center to Flywheel groups and projects to
-    implement data pipelines for studies."""
-
-    def __init__(self,
-                 *,
-                 center: Center,
-                 flywheel_proxy: FlywheelProxy,
-                 admin_access: Optional[List[AccessPermission]] = None,
-                 center_roles: Optional[List[GroupRole]]) -> None:
-        """Initializes an adaptor for the given center using the Flywheel
-        instance linked by the proxy.
-
-        Args:
-          center: the center object
-          flywheel_proxy: the flywheel instance proxy
-          admin_access: the administrative users from admin group
-          template_map: template projects for study resources
-          center_roles: the list of custom roles for user in center
-        """
-        self.__center = center
-        self.__fw = flywheel_proxy
-        self.__group: Optional[CenterGroup] = None
-        self.__admin_access = admin_access
-        self.__center_roles = center_roles
-
-    def get_group(self) -> CenterGroup:
-        """Gets the FW group for this center.
-
-        Uses memoization - gets the group once.
-
-        Returns:
-            the Flywheel group for this center
-        """
-        if not self.__group:
-            group = self.__fw.get_group(group_label=self.__center.name,
-                                        group_id=self.__center.center_id)
-            self.__group = CenterGroup(group=group, proxy=self.__fw)
-        return self.__group
-
-    def get_project(self, label: str) -> Optional[ProjectAdaptor]:
-        """Creates a project with the given label in the group.
-
-        If the project already exists, returns that project.
-
-        Args:
-          label: the project label
-        Returns:
-          ProjectAdaptor for the project.
-        """
-        center_group = self.get_group()
-        project = center_group.get_project(label=label)
-        if not project:
-            return None
-
-        return ProjectAdaptor(project=project, proxy=self.__fw)
-
-    def create_ingest_projects(self, project: StudyMappingAdaptor,
-                               label_prefix: str) -> Dict[str, ProjectAdaptor]:
-        """Creates projects for ingesting a particular datatype.
-
-        Args:
-          project: the mapping for the study
-          label_prefix: the prefix for project names
-        Returns:
-          Map from datatype to project
-        """
-        project_map = {}
-        for datatype in project.datatypes:
-            project_label = project.build_project_label(label_prefix + '-' +
-                                                        datatype.lower())
-            assert project_label
-
-            ingest_project = self.get_project(label=project_label)
-
-            if ingest_project:
-                project_map[datatype] = ingest_project
-                self.add_tags(ingest_project)
-
-        return project_map
-
-    def add_tags(self, project: ProjectAdaptor) -> None:
-        """Adds tags from this center to the project.
-
-        Note: requires that tag is enabled in the group for the center.
-
-        Args:
-          project: the project to add tags to
-        """
-        for tag in self.__center.tags:
-            project.add_tag(tag)
-
-    def create_center_pipeline(self, project: StudyMappingAdaptor) -> None:
-        """Creates FW groups and projects for data pipeline of the given
-        project in this center.
-
-        Args:
-            project: the project mapping adaptor
-        """
-        center_group = self.get_group()
-        for tag in self.__center.tags:
-            if tag not in center_group.get_tags():
-                center_group.add_tag(tag)
-        if self.__center_roles:
-            for role in self.__center_roles:
-                center_group.add_role(role)
-        if self.__admin_access:
-            for permission in self.__admin_access:
-                center_group.add_user_access(permission)
-
-        if self.__center.is_active():
-            self.create_ingest_projects(project, label_prefix='ingest')
-            self.create_ingest_projects(project, label_prefix='sandbox')
-
-        self.create_ingest_projects(project, label_prefix='retrospective')
-
-        self.get_project(label=project.accepted_label)
-        self.get_project(label='metadata')

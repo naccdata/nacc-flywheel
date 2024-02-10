@@ -1,7 +1,7 @@
 """Defines project creation functions for calls to Flywheel."""
 import json
 import logging
-from typing import List, Mapping, Optional
+from typing import Iterable, List, Mapping, Optional
 
 import flywheel
 from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
@@ -587,6 +587,15 @@ class GroupAdaptor:
             new_permission.id,
             AccessPermission(id=None, access=new_permission.access))
 
+    def add_permissions(self, permissions: List[AccessPermission]) -> None:
+        """Adds the user access permissions to the group.
+
+        Args:
+          permissions: the list of access permissions
+        """
+        for permission in permissions:
+            self.add_user_access(permission)
+
     def add_role(self, new_role: GroupRole) -> None:
         """Add the role to the the group for center.
 
@@ -599,6 +608,15 @@ class GroupAdaptor:
             return
 
         self.__fw.add_group_role(group=self.__group, role=new_role)
+
+    def add_roles(self, roles: List[GroupRole]) -> None:
+        """Adds the roles in the list to the group.
+
+        Args:
+          roles: the list of roles
+        """
+        for role in roles:
+            self.add_role(role)
 
     def get_project(self, label: str) -> Optional[flywheel.Project]:
         """Returns a project in this group with the given label.
@@ -669,6 +687,15 @@ class ProjectAdaptor:
         """
         if tag not in self.__project.tags:
             self.__project.add_tag(tag)
+
+    def add_tags(self, tags: Iterable[str]) -> None:
+        """Adds given tags to the enclosed project.
+
+        Args:
+          tags: iterable collection of tags
+        """
+        for tag in tags:
+            self.add_tag(tag)
 
     def set_copyable(self, state: bool) -> None:
         """Sets the copyable state of the project to the value.
