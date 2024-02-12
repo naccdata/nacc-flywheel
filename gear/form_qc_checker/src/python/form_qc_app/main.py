@@ -7,7 +7,6 @@ import sys
 from json.decoder import JSONDecodeError
 
 from flywheel import Client
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from form_qc_app.error_report import ErrorReport
 from form_qc_app.flywheel_datastore import FlywheelDatastore
@@ -71,7 +70,7 @@ def update_file_metadata(gear_context: GearToolkitContext, file_name: str,
 
 
 def run(*, fw_client: Client, s3_client: S3BucketReader,
-        gear_context: GearToolkitContext, proxy: FlywheelProxy):
+        gear_context: GearToolkitContext):
     """Starts QC process for form data input file. Load rule definitions from
     S3, read input data file, runs data validation, generate error report.
 
@@ -79,7 +78,6 @@ def run(*, fw_client: Client, s3_client: S3BucketReader,
         fw_client: the Flywheel SDK client
         s3_client: boto3 client for rules S3 bucket
         gear_context: Flywheel gear context
-        proxy: the proxy for the Flywheel instance
     """
 
     form_file_path = gear_context.get_input_path('form_data_file')

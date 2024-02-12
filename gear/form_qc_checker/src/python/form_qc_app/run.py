@@ -4,7 +4,6 @@ import logging
 import sys
 
 from flywheel import Client
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from form_qc_app.main import run
 from inputs.context_parser import ConfigParseError, get_config
@@ -38,19 +37,17 @@ def main():
             log.error('Incomplete configuration: %s', error.message)
             sys.exit(1)
 
-        dry_run = gear_context.config.get("dry_run", False)
         fw_client = Client(api_key)
-        proxy = FlywheelProxy(client=fw_client, dry_run=dry_run)
 
         s3_client = S3BucketReader.create_from(s3_parameters)
         if not s3_client:
             log.error('Unable to connect to S3')
             sys.exit(1)
 
-    run(fw_client=fw_client,
-        proxy=proxy,
-        s3_client=s3_client,
-        gear_context=gear_context)
+        # TODO
+        # dry_run = gear_context.config.get("dry_run", False)
+
+    run(fw_client=fw_client, s3_client=s3_client, gear_context=gear_context)
 
 
 if __name__ == "__main__":

@@ -32,8 +32,8 @@ class FlywheelDatastore(Datastore):
 
         # Retrieve Group, Project containers from Flywheel
         try:
-            self.__group = self.__client.get(self.__gid)
-            self.__project = self.__client.get(self.__pid)
+            self.__group = self.__client.get_group(self.__gid)
+            self.__project = self.__client.get_project(self.__pid)
         except ApiException as error:
             log.error('Failed to retrieve Flywheel container: %s', error)
 
@@ -95,15 +95,15 @@ class FlywheelDatastore(Datastore):
             include_labels=False)
         view = builder.build()
 
-        df = self.__client.read_view_dataframe(view, self.__pid)
-        if df.empty:
+        dframe = self.__client.read_view_dataframe(view, self.__pid)
+        if dframe.empty:
             log.error('No previous visits found for %s - %s', subject_lbl,
                       module)
             return None
-        df = df.sort_values(orderby_col, ascending=False)
-        latest_rec = df.head(1)
+        dframe = dframe.sort_values(orderby_col, ascending=False)
+        # latest_rec = dframe.head(1)
 
-        latest_rec_info = latest_rec.to_dict('records')[0]
+        latest_rec_info = dframe.head(1).to_dict('records')[0]
         return self.get_visit_data(latest_rec_info['file.name'],
                                    latest_rec_info['file.parents.acquisition'])
 
@@ -120,7 +120,7 @@ class FlywheelDatastore(Datastore):
         """
         visit_data = None
 
-        acquisition = self.__client.get(acq_id)
+        acquisition = self.__client.get_acquisition(acq_id)
         file_content = acquisition.read_file(file_name)
 
         try:
