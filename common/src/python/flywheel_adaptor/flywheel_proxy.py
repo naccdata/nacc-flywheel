@@ -508,6 +508,9 @@ class GroupAdaptor:
         Args:
           tag: the tag to add
         """
+        if tag in self.__group.tags:
+            return
+        
         self.__group.add_tag(tag)
 
     def get_group_users(self,
