@@ -88,7 +88,7 @@ class Center:
         return self.__active
 
     @property
-    def center_id(self):
+    def center_id(self) -> str:
         """Center text ID property."""
         return self.__center_id
 
@@ -104,10 +104,15 @@ class Center:
     @classmethod
     def create(cls, center: dict) -> "Center":
         """Creates a Center from the given dictionary."""
+
+        tags: List[str] = []
+        if 'tags' in center:
+            tags = center['tags']
+
         return Center(name=center['name'],
                       center_id=center['center-id'],
                       active=center['is-active'],
-                      tags=center['tags'])
+                      tags=tags)
 
 
 class Study:
