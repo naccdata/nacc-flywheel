@@ -56,26 +56,29 @@ class Center:
     def __init__(self,
                  *,
                  name: str,
-                 center_id: str,
+                 center_label: str,
+                 adcid: str,
                  active: bool = True,
                  tags: Optional[List[str]] = None) -> None:
         self.__name = name
         self.__active = active
-        self.__center_id = center_id
+        self.__center_label = center_label
+        self.__adcid = adcid
         if tags is None:
             tags = []
         self.__tags = tags
 
     def __repr__(self) -> str:
-        return (f"Center(center_id={self.center_id}, "
+        return (f"Center(center_label={self.center_label}, "
                 f"name={self.name}, "
+                f"adcid={self.adcid}, "
                 f"active={self.is_active()}, "
                 f"tags={self.tags}")
 
     def __eq__(self, __o: object) -> bool:
         if not isinstance(__o, Center):
             return False
-        return (self.__center_id == __o.center_id
+        return (self.__center_label == __o.center_label
                 and self.__active == __o.is_active() and self.name == __o.name)
 
     @property
@@ -88,9 +91,14 @@ class Center:
         return self.__active
 
     @property
-    def center_id(self) -> str:
+    def center_label(self) -> str:
         """Center text ID property."""
-        return self.__center_id
+        return self.__center_label
+    
+    @property
+    def adcid(self) -> str:
+        """ADC ID property"""
+        return self.__adcid
 
     @property
     def tags(self) -> Iterable[str]:
@@ -110,7 +118,7 @@ class Center:
             tags = center['tags']
 
         return Center(name=center['name'],
-                      center_id=center['center-id'],
+                      center_label=center['center-label'],
                       active=center['is-active'],
                       tags=tags)
 
@@ -121,7 +129,7 @@ class Study:
     def __init__(self,
                  *,
                  name: str,
-                 study_id: str,
+                 study_label: str,
                  centers: List[Center],
                  datatypes: List[str],
                  published: bool = False,
@@ -131,7 +139,7 @@ class Study:
         self.__datatypes = datatypes
         self.__published = published
         self.__primary = primary
-        self.__study_id = study_id
+        self.__study_label = study_label
 
     def __eq__(self, __o: object) -> bool:
         if not isinstance(__o, Study):
@@ -144,7 +152,7 @@ class Study:
     def __repr__(self) -> str:
         return ("Study("
                 f"name={self.__name},"
-                f"study_id={self.__study_id},"
+                f"study_label={self.__study_label},"
                 f"centers={self.__centers},"
                 f"datatypes={self.__datatypes},"
                 f"published={self.__published},"
@@ -152,9 +160,9 @@ class Study:
                 ")")
 
     @property
-    def study_id(self) -> str:
+    def study_label(self) -> str:
         """Study ID property."""
-        return self.__study_id
+        return self.__study_label
 
     @property
     def name(self) -> str:
@@ -193,7 +201,7 @@ class Study:
 
         return Study(
             name=study['project'],
-            study_id=study['project-id'],
+            study_label=study['project-label'],
             centers=[Center.create(center) for center in study['centers']],
             datatypes=study['datatypes'],
             published=study['published'],
