@@ -23,7 +23,7 @@ class TestFileError:
                           message='the-message')
         result = error.model_dump()
         assert isinstance(result, dict)
-        assert result['error_location'] == {"key_path":"k1.k2.k3"}
+        assert result['error_location'] == {"key_path": "k1.k2.k3"}
         assert result['error_type'] == 'error'
 
     def test_identifier_serialization(self):
