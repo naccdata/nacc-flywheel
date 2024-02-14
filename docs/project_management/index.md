@@ -25,7 +25,8 @@ A center is described using the following fields
 
 ```yaml
 name: <center name>
-center-id: <string identifier>
+center-label: <string identifier>
+adcid: <int>
 is-active: <whether the center is active>
 tags: <list of strings for tagging project>
 ```
@@ -39,11 +40,14 @@ Notes:
 2. The `tags` are strings that will be permissible as tags within the group for the center. 
    Each tag will also be added to ingest projects within the center's pipeline(s).
 
-3. Choose `center-id` values to be mnemonic for the coordinating center staff.
+3. Choose `center-label` values to be mnemonic for the coordinating center staff.
    The choice will be visible to centers, but they will not need to type the value in regular interactions. 
    Staff, on the other hand, will need to use the strings in filters.
 
-3. Datatypes are strings used for creating ingest containers, and matching to sets of gear rules needed for handling ingest.
+4. The `adcid` is an assigned code used to identify the center within submited data.
+   Each center has a unique ADC ID.
+
+5. Datatypes are strings used for creating ingest containers, and matching to sets of gear rules needed for handling ingest.
 
 
 ## Example
@@ -54,12 +58,14 @@ project: "Project Tau"
 project-id: tau
 centers:
   - name: "Alpha Center"
-    center-id: alpha
+    center-label: alpha
+    adcid: 1
     is-active: True
     tags:
       - 'center-code-1006'
   - name: "Beta Center"
-    center-id: beta-inactive
+    center-label: beta-inactive
+    adcid: 2
     is-active: False
     tags:
       - 'center-code-2006'
@@ -72,12 +78,14 @@ project: "Project Zeta"
 project-id: zeta
 centers:
   - name: "Alpha Center"
-    center-id: alpha
+    center-label: alpha
+    adcid: 1
     is-active: True
     tags:
       - 'center-code-1006'
   - name: "Gamma ADRC"
-    center-id: gamma-adrc
+    center-label: gamma-adrc
+    adcid: 3
     is-active: True
     tags:
       - 'center-code-5006'
