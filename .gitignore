@@ -133,3 +133,6 @@ dmypy.json
 /.pants.*
 /dist/
 /.pids
+
+# System
+.DS_Store
