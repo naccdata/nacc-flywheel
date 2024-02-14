@@ -58,8 +58,9 @@ def get_adcid(proxy: FlywheelProxy, file_id: str) -> Optional[int]:
       the ADCID for the center
     """
     file = proxy.get_file(file_id)
-    group = file.parents.group
-    center = CenterGroup(group=group, proxy=proxy)
+    group_id = file.parents.group
+    groups = proxy.find_groups(group_id)
+    center = CenterGroup(group=groups[0], proxy=proxy)
     return center.center_id()
 
 
