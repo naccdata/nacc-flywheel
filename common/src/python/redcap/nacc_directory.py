@@ -38,11 +38,11 @@ EntryDictType = NewType(
 class UserDirectoryEntry:
     """A user entry from Flywheel access report of the NACC directory."""
 
-    def __init__(self, *, org_name: str, center_id: int, name: PersonName,
+    def __init__(self, *, org_name: str, adcid: int, name: PersonName,
                  email: str, authorizations: Authorizations,
                  credentials: Credentials, submit_time: datetime) -> None:
         self.__org_name = org_name
-        self.__center_id = center_id
+        self.__adcid = adcid
         self.__name = name
         self.__email = email
         self.__authorizations = authorizations
@@ -54,7 +54,7 @@ class UserDirectoryEntry:
             return False
 
         return (self.__org_name == __value.org_name
-                and self.__center_id == __value.center_id
+                and self.__adcid == __value.adcid
                 and self.__name == __value.name
                 and self.__email == __value.email
                 and self.__authorizations == __value.authorizations
@@ -66,9 +66,9 @@ class UserDirectoryEntry:
         return self.__org_name
 
     @property
-    def center_id(self) -> int:
+    def adcid(self) -> int:
         """The ID for the user's center."""
-        return self.__center_id
+        return self.__adcid
 
     @property
     def name(self) -> PersonName:
@@ -103,7 +103,7 @@ class UserDirectoryEntry:
         """
         result: EntryDictType = {}  # type: ignore
         result['org_name'] = self.__org_name
-        result['center_id'] = self.__center_id
+        result['center_id'] = self.__adcid
         result['name'] = self.__name
         result['email'] = self.__email
         result['authorizations'] = self.__authorizations
@@ -122,7 +122,7 @@ class UserDirectoryEntry:
           The dictionary object
         """
         return UserDirectoryEntry(org_name=entry['org_name'],
-                                  center_id=entry['center_id'],
+                                  adcid=entry['center_id'],
                                   name=entry['name'],
                                   email=entry['email'],
                                   authorizations=entry['authorizations'],
@@ -177,7 +177,7 @@ class UserDirectoryEntry:
                 center_id = '0'
 
         return UserDirectoryEntry(org_name=org_name,
-                                  center_id=int(center_id),
+                                  adcid=int(center_id),
                                   name=name,
                                   email=record['email'].lower(),
                                   credentials=credentials,
