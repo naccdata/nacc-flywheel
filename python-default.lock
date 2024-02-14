@@ -27,10 +27,7 @@
 //     "ssm-parameter-store>=19.11.0",
 //     "types-PyYAML>=6.0.12",
 //     "types-jinja2>=2.11.9",
-//     "types-jinja2>=2.11.9",
 //     "types-requests",
-//     "typing-extensions>=4.8.0",
-//     "validator@ git+https://github.com/naccdata/nacc-form-validator.git"
 //     "typing-extensions>=4.8.0",
 //     "validator@ git+https://github.com/naccdata/nacc-form-validator.git"
 //   ],
