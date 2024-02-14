@@ -1,14 +1,17 @@
 """Classes for NACC directory user credentials."""
 
+import logging
 from collections import defaultdict
 from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, Iterable, List, NewType, Optional, Set, TypedDict
+from typing import (Any, Dict, Iterable, List, Literal, NewType, Optional, Set,
+                    TypedDict)
+
+log = logging.getLogger(__name__)
 
 
 class Authorizations(TypedDict):
     """Type class for authorizations."""
-    submit: List[str]
+    submit: List[Literal['form', 'image']]
     audit_data: bool
     approve_data: bool
     view_reports: bool
@@ -128,7 +131,7 @@ class UserDirectoryEntry:
 
     @classmethod
     def create_from_record(
-            cls, record: Dict[str, str]) -> Optional['UserDirectoryEntry']:
+            cls, record: Dict[str, Any]) -> Optional['UserDirectoryEntry']:
         """Creates a DirectoryEntry from a Flywheel Access report record from
         the NACC Directory in REDCap.
 
@@ -142,7 +145,7 @@ class UserDirectoryEntry:
         if int(record["flywheel_access_information_complete"]) != 2:
             return None
 
-        modalities = []
+        modalities: List[Literal['form', 'image']] = []
         activities = record["flywheel_access_activities"]
         if 'a' in activities:
             modalities.append('form')
@@ -184,16 +187,10 @@ class UserDirectoryEntry:
                                   authorizations=authorizations)
 
 
-class ConflictEnum(Enum):
-    """Enumerated type for directory conflicts."""
-    EMAIL = 1
-    IDENTIFIER = 2
-
-
 class DirectoryConflict(TypedDict):
     """Entries with conflicting user_id and/or emails."""
     user_id: str
-    conflict_type: ConflictEnum
+    conflict_type: Literal['email', 'identifier']
     entries: List[EntryDictType]
 
 
@@ -297,6 +294,7 @@ class UserDirectory:
         conflicts = []
         for user_id, email_list in self.__id_map.items():
             if len(email_list) > 1:
+                log.warning("Conflict for user id %s", user_id)
                 conflicts.append(
                     DirectoryConflict(
                         user_id=user_id,
@@ -304,13 +302,14 @@ class UserDirectory:
                             entry.as_dict()
                             for entry in self.__get_entry_list(email_list)
                         ],
-                        conflict_type=ConflictEnum.IDENTIFIER))
+                        conflict_type='identifier'))
         for entry in self.__email_map.values():
             if entry.email in self.__conflict_set:
+                log.warning("Conflict for email %s", entry.email)
                 conflicts.append(
                     DirectoryConflict(user_id=entry.credentials['id'],
                                       entries=[entry.as_dict()],
-                                      conflict_type=ConflictEnum.EMAIL))
+                                      conflict_type='email'))
 
         return conflicts
 

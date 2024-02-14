@@ -6,5 +6,5 @@ docker_image(
     dependencies=[
         ":manifest", "gear/pull_directory/src/python/directory_app:bin"
     ],
-    image_tags=["0.0.10", "latest"],
+    image_tags=["0.0.14", "latest"],
 )

@@ -1,6 +1,3 @@
-from flywheel.models.group import Group
-from flywheel.models.project import Project
-
 class ContainerParents:
 
     @property

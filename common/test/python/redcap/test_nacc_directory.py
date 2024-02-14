@@ -1,21 +1,29 @@
 """Tests for UserDirectory class."""
 
+import io
+from csv import DictReader
 from datetime import datetime
-from typing import Optional
+from typing import List, Literal, Optional
 
+import yaml
 from redcap.nacc_directory import (Authorizations, Credentials, PersonName,
                                    UserDirectory, UserDirectoryEntry)
 
 
 def user_entry(email: str,
                name: Optional[PersonName] = None,
-               user_id: Optional[str] = None):
+               user_id: Optional[str] = None,
+               submit: Optional[List[Literal['form', 'image']]] = None,
+               audit_data=False,
+               approve_data=False,
+               view_reports=False):
     """Creates a dummy UserDirectoryEntry object.
 
     Args:
       email: email address to use in entry
       name: name to use in entry
       user_id: user ID to use
+      submit: list of submission authorizations
     Returns:
       Dummy user entry object with specific parameters set
     """
@@ -23,10 +31,11 @@ def user_entry(email: str,
         user_id = email
     if not name:
         name = PersonName(first_name='dummy', last_name='name')
-    authorizations = Authorizations(submit=[],
-                                    audit_data=False,
-                                    approve_data=False,
-                                    view_reports=False)
+
+    authorizations = Authorizations(submit=submit if submit else [],
+                                    audit_data=audit_data,
+                                    approve_data=approve_data,
+                                    view_reports=view_reports)
     dummytime = datetime(2023, 1, 1)
     return UserDirectoryEntry(org_name='dummy',
                               center_id=0,
@@ -103,6 +112,9 @@ class TestNACCDirectory:
         conflicts = directory.get_conflicts()
         assert conflicts[0]['entries'][0]['email'] == 'aah@two.org'
         assert conflicts[0]['entries'][1]['email'] == 'bah@two.org'
+        assert yaml.safe_dump(data=conflicts,
+                              allow_unicode=True,
+                              default_flow_style=False)
 
     def test_missing_id(self):
         """Test record with missing ID is not added."""
@@ -110,3 +122,26 @@ class TestNACCDirectory:
         no_id_entry = user_entry(email='bah@two.org', user_id='')
         directory.add(no_id_entry)
         assert not directory.get_entries()
+
+    def test_conflict_from_create_from(self):
+        """Test dumping conflicts."""
+        input_csv = (
+            "record_id,contact_company_name,adresearchctr,firstname,lastname,email,flywheel_access_activities,fw_credential_type,fw_credential_id,fw_cred_sub_time,flywheel_access_information_complete,fw_access_survey_link\n"
+            "222,\"Beta University ADRC\",999,Alpha,Tau,alpha@beta.edu,\"a,b,c,d,e\",eppn,conflict@beta.edu,\"2023-08-16 07:33\",2,\"<a href=\"https://dummy.dummy.dummy\">Flywheel Access Information</a>\n"
+            "333,\"Beta University ADRC\",999,Gamma,Zeta,gamma@beta.edu,\"a,b,c,d,e\",eppn,conflict@beta.edu,\"2023-08-16 07:45\",2,\"<a href=\"https://dummy.dummy.dummy\">Flywheel Access Information</a>"
+        )
+        reader = DictReader(io.StringIO(input_csv))
+        directory = UserDirectory()
+        for row in reader:
+            print(row)
+            entry = UserDirectoryEntry.create_from_record(row)
+            assert entry
+            directory.add(entry)
+
+        conflicts = directory.get_conflicts()
+        assert conflicts
+        conflict_yaml = yaml.safe_dump(data=conflicts,
+                                       allow_unicode=True,
+                                       default_flow_style=False)
+        assert 'id: conflict@beta.edu' in conflict_yaml, (
+            "expecting conflicing ID in output")
