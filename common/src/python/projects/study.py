@@ -57,7 +57,7 @@ class Center:
                  *,
                  name: str,
                  center_label: str,
-                 adcid: str,
+                 adcid: int,
                  active: bool = True,
                  tags: Optional[List[str]] = None) -> None:
         self.__name = name
@@ -79,6 +79,7 @@ class Center:
         if not isinstance(__o, Center):
             return False
         return (self.__center_label == __o.center_label
+                and self.__adcid == __o.adcid
                 and self.__active == __o.is_active() and self.name == __o.name)
 
     @property
@@ -94,10 +95,10 @@ class Center:
     def center_label(self) -> str:
         """Center text ID property."""
         return self.__center_label
-    
+
     @property
-    def adcid(self) -> str:
-        """ADC ID property"""
+    def adcid(self) -> int:
+        """ADC ID property."""
         return self.__adcid
 
     @property
@@ -119,6 +120,7 @@ class Center:
 
         return Center(name=center['name'],
                       center_label=center['center-label'],
+                      adcid=int(center['adcid']),
                       active=center['is-active'],
                       tags=tags)
 
