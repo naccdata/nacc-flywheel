@@ -8,6 +8,7 @@ import re
 from typing import Dict, List, Optional
 
 import flywheel
+from flywheel.models.group import Group
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
 from projects.study import Center
@@ -19,42 +20,56 @@ log = logging.getLogger(__name__)
 class CenterGroup(GroupAdaptor):
     """Defines an adaptor for a group representing a center."""
 
-    def __init__(self, *, group: flywheel.Group, proxy: FlywheelProxy) -> None:
+    def __init__(self, *, adcid: int, group: flywheel.Group,
+                 proxy: FlywheelProxy) -> None:
         super().__init__(group=group, proxy=proxy)
         self.__datatypes: List[str] = []
         self.__ingest_stages = ['ingest', 'retrospective']
-        self.__center_id = None
+        self.__adcid = adcid
 
     @classmethod
-    def create(cls, center: Center, proxy: FlywheelProxy) -> 'CenterGroup':
-        """Creates a flywheel.Group for the center and returns as a
-        CenterGroup.
+    def create(cls,
+               proxy: FlywheelProxy,
+               center: Optional[Center] = None,
+               group: Optional[Group] = None) -> 'CenterGroup':
+        """Creates a CenterGroup from either a center or an existing group.
 
         Args:
           center: the study center
+          group: an existing group
           proxy: the flywheel proxy object
         Returns:
           the CenterGroup for created group
         """
-        group = proxy.get_group(group_label=center.name,
-                                group_id=center.center_id)
-        center_group = CenterGroup(group=group, proxy=proxy)
-        for tag in center.tags:
-            center_group.add_tag(tag)
+        if center:
+            group = proxy.get_group(group_label=center.name,
+                                    group_id=center.center_label)
+            metadata_project = ProjectAdaptor(project=proxy.get_project(
+                group_id=group.id, project_label='metadata'),
+                                              proxy=proxy)
+            metadata_project.update_info({'adcid': adcid})
+            tags = center.tags
+            adcid_tag = f"adcid-{adcid}"
+            if adcid_tag not in tags:
+                tags.append(adcid_tag)
+
+        elif group:
+            metadata_project = ProjectAdaptor(project=proxy.find_projects(
+                group_id=group.id, project_label='metadata')[0],
+                                              proxy=proxy)
+            metadata_info = metadata_project.get_info()
+            adcid = metadata_info['adcid']
+            tags = []
+
+        center_group = CenterGroup(adcid=center.adcid,
+                                   group=group,
+                                   proxy=proxy)
+        center_group.add_tags(tags)
         return center_group
 
-    def center_id(self) -> Optional[int]:
-        """Returns the center ID for this group."""
-        if self.__center_id:
-            return self.__center_id
-
-        pattern = re.compile(r'adcid-(\d+)')
-        tag = list(filter(pattern.match, self.get_tags()))[0]
-        match = pattern.match(tag)
-        if not match:
-            return None
-
-        return int(match.group(1))
+    @property
+    def adcid(self) -> int:
+        return self.__adcid
 
     def __get_matching_projects(self, prefix: str) -> List[ProjectAdaptor]:
         """Returns the projects for the center with labels that match the
