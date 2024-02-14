@@ -4,6 +4,7 @@ flywheel-gear-toolkit>=0.2
 flywheel-sdk>=17.7.0
 fw-client>=0.7.0
 fw-utils>=3
+types-jinja2>=2.11.9
 moto[s3,ssm]==4.2.14
 pandas>=2.1.1
 pandas-stubs>=2.0.3
@@ -16,3 +17,4 @@ sqlalchemy>=2.0.23
 ssm-parameter-store>=19.11.0
 typing-extensions>=4.8.0 # only needed for python < 3.12
 types-PyYAML>=6.0.12
+validator@ git+https://github.com/naccdata/nacc-form-validator.git
