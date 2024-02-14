@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 import pytest
 from inputs.csv_reader import CSVVisitor, read_csv
-from outputs.errors import ErrorWriter
+from outputs.errors import StreamErrorWriter
 
 
 # pylint: disable=(redefined-outer-name)
@@ -95,8 +95,8 @@ class TestCSVReader:
         """Test empty input stream."""
         err_stream = StringIO()
         errors = read_csv(input_file=empty_data_stream,
-                          error_writer=ErrorWriter(stream=err_stream,
-                                                   container_id='dummy'),
+                          error_writer=StreamErrorWriter(stream=err_stream,
+                                                         container_id='dummy'),
                           visitor=DummyVisitor())
         assert errors
         assert not empty(err_stream)
@@ -110,8 +110,8 @@ class TestCSVReader:
         """Test stream without header row."""
         err_stream = StringIO()
         errors = read_csv(input_file=no_header_stream,
-                          error_writer=ErrorWriter(stream=err_stream,
-                                                   container_id='dummy'),
+                          error_writer=StreamErrorWriter(stream=err_stream,
+                                                         container_id='dummy'),
                           visitor=DummyVisitor())
         assert errors
         assert not empty(err_stream)
