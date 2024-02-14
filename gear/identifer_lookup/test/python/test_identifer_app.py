@@ -6,7 +6,7 @@ from typing import Any, List
 import pytest
 from identifer_app.main import run
 from identifiers.model import Identifier
-from outputs.errors import ErrorWriter
+from outputs.errors import StreamErrorWriter
 
 
 @pytest.fixture(scope="function")
@@ -112,8 +112,8 @@ class TestIdentifierLookup:
         errors = run(input_file=empty_data_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
-                     error_writer=ErrorWriter(stream=err_stream,
-                                              container_id='dummy'))
+                     error_writer=StreamErrorWriter(stream=err_stream,
+                                                    container_id='dummy'))
         assert errors
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -126,8 +126,8 @@ class TestIdentifierLookup:
         errors = run(input_file=no_header_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
-                     error_writer=ErrorWriter(stream=err_stream,
-                                              container_id='dummy'))
+                     error_writer=StreamErrorWriter(stream=err_stream,
+                                                    container_id='dummy'))
         assert errors
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -140,8 +140,8 @@ class TestIdentifierLookup:
         errors = run(input_file=no_ids_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
-                     error_writer=ErrorWriter(stream=err_stream,
-                                              container_id='dummy'))
+                     error_writer=StreamErrorWriter(stream=err_stream,
+                                                    container_id='dummy'))
         assert errors
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -154,8 +154,8 @@ class TestIdentifierLookup:
         errors = run(input_file=data_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
-                     error_writer=ErrorWriter(stream=err_stream,
-                                              container_id='dummy'))
+                     error_writer=StreamErrorWriter(stream=err_stream,
+                                                    container_id='dummy'))
         assert not errors
         assert empty(err_stream)
         assert not empty(out_stream)
@@ -177,8 +177,8 @@ class TestIdentifierLookup:
         errors = run(input_file=data_stream,
                      identifiers=mismatched_identifiers_map,
                      output_file=out_stream,
-                     error_writer=ErrorWriter(stream=err_stream,
-                                              container_id='dummy'))
+                     error_writer=StreamErrorWriter(stream=err_stream,
+                                                    container_id='dummy'))
         assert errors
         assert empty(out_stream)
         assert not empty(err_stream)
