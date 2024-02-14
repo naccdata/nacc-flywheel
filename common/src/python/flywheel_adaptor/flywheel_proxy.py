@@ -1,7 +1,7 @@
 """Defines project creation functions for calls to Flywheel."""
 import json
 import logging
-from typing import Iterable, List, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 import flywheel
 from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
@@ -510,7 +510,7 @@ class GroupAdaptor:
         """
         if tag in self.__group.tags:
             return
-        
+
         self.__group.add_tag(tag)
 
     def get_group_users(self,
@@ -932,3 +932,12 @@ class ProjectAdaptor:
         view_id = self.__fw.add_dataview(project=self.__project,
                                          viewinput=view_template)
         return view_id.id
+
+    def get_info(self) -> Dict[str, Any]:
+        """Returns the info object for this project.
+
+        Returns:
+          the dictionary object with info for project
+        """
+        self.__project = self.__project.reload()
+        return self.__project.info
