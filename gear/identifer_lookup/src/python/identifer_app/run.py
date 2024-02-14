@@ -16,7 +16,7 @@ from identifiers.model import Identifier
 from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import (ParameterError, ParameterStore,
                                     RDSParameters)
-from outputs.errors import ErrorWriter
+from outputs.errors import ListErrorWriter
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -58,8 +58,9 @@ def get_adcid(proxy: FlywheelProxy, file_id: str) -> Optional[int]:
       the ADCID for the center
     """
     file = proxy.get_file(file_id)
-    group = file.parents.group
-    center = CenterGroup(group=group, proxy=proxy)
+    group_id = file.parents.group
+    groups = proxy.find_groups(group_id)
+    center = CenterGroup(group=groups[0], proxy=proxy)
     return center.center_id()
 
 
@@ -114,18 +115,16 @@ def main():
             with gear_context.open_output(f'{filename}.csv',
                                           mode='w',
                                           encoding='utf-8') as out_file:
-                with gear_context.open_output(f'{filename}-error.csv',
-                                              mode='w',
-                                              encoding='utf-8') as err_file:
-                    errors = run(input_file=csv_file,
-                                 identifiers=identifiers,
-                                 output_file=out_file,
-                                 error_writer=ErrorWriter(
-                                     stream=err_file, container_id=file_id))
-
-                    gear_context.metadata.add_qc_result(
-                        file_input, "valid_identifiers",
-                        "FAIL" if errors else "PASS")
+                error_writer = ListErrorWriter(container_id=file_id)
+                errors = run(input_file=csv_file,
+                             identifiers=identifiers,
+                             output_file=out_file,
+                             error_writer=error_writer)
+                gear_context.metadata.add_qc_result(
+                    file_input,
+                    name="validation",
+                    state="FAIL" if errors else "PASS",
+                    data={'data': error_writer.errors()})
 
     if __name__ == "__main__":
         main()

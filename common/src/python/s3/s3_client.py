@@ -46,6 +46,33 @@ class S3BucketReader:
 
         return StringIO(file_obj['Body'].read().decode('utf-8'))
 
+    def read_directory(self, prefix: str) -> dict[str, dict]:
+        """Retrieve all file objects from the directory specified by the prefix
+        within the S3 bucket.
+
+        Args:
+            prefix: directory prefix within the bucket
+        Returns:
+            Dict[str, Dict]: Set of file objects
+        """
+
+        file_objects = {}
+        paginator = self.__client.get_paginator('list_objects_v2')
+        pages = paginator.paginate(Bucket=self.bucket_name, Prefix=prefix)
+        for page in pages:
+            if 'Contents' not in page:
+                continue
+
+            for s3_obj_info in page['Contents']:
+                # Skip paths ending in /
+                if not s3_obj_info['Key'].endswith('/'):
+                    s3_obj = self.__client.get_object(Bucket=self.bucket_name,
+                                                      Key=s3_obj_info['Key'])
+                    if s3_obj:
+                        file_objects[s3_obj_info['Key']] = s3_obj
+
+        return file_objects
+
     @classmethod
     def create_from(cls,
                     parameters: S3Parameters) -> Optional['S3BucketReader']:

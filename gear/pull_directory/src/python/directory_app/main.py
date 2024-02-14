@@ -6,6 +6,7 @@ import yaml
 from flywheel import FileSpec
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from redcap.nacc_directory import UserDirectory, UserDirectoryEntry
+from yaml.representer import RepresenterError
 
 log = logging.getLogger(__name__)
 
@@ -18,15 +19,20 @@ def upload_yaml(*, project: ProjectAdaptor, filename: str, data: Any):
       filename: name of file
       data: data object to write as contents
     """
+
+    try:
+        contents = yaml.safe_dump(data=data,
+                                  allow_unicode=True,
+                                  default_flow_style=False)
+    except RepresenterError as error:
+        log.error("Error: can't create YAML for file %s: %s", filename, error)
+        return
+
     project.upload_file(
-        FileSpec(filename,
-                 contents=yaml.safe_dump(data=data,
-                                         allow_unicode=True,
-                                         default_flow_style=False),
-                 content_type='text/yaml'))
+        FileSpec(filename, contents=contents, content_type='text/yaml'))
 
 
-def run(*, user_report: List[Dict[str, str]], user_filename: str,
+def run(*, user_report: List[Dict[str, Any]], user_filename: str,
         project: ProjectAdaptor, dry_run: bool):
     """Converts user report records to UserDirectoryEntry and saves as list of
     dictionary objects to the project.
@@ -54,8 +60,11 @@ def run(*, user_report: List[Dict[str, str]], user_filename: str,
     if entries:
         upload_yaml(project=project, filename=user_filename, data=entries)
 
-    conflicts = directory.get_conflicts()
-    if conflicts:
-        upload_yaml(project=project,
-                    filename=f"conflicts-{user_filename}",
-                    data=conflicts)
+    # TODO: figure out why conflicts are causing file errors
+    # this will flag conflicts
+    directory.get_conflicts()
+    #conflicts = directory.get_conflicts()
+    # if conflicts:
+    #     upload_yaml(project=project,
+    #                 filename=f"conflicts-{user_filename}",
+    #                 data=conflicts)
