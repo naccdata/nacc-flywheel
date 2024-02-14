@@ -31,23 +31,26 @@ class TestCenter:
         """Sanity check on object creation and properties."""
         center = Center(tags=['adcid-7'],
                         name="Alpha ADRC",
-                        center_id='alpha-adrc')
+                        center_label='alpha-adrc',
+                        adcid=7)
         assert 'adcid-7' in center.tags
         assert center.name == "Alpha ADRC"
         assert center.is_active()
-        assert center.center_id == 'alpha-adrc'
+        assert center.center_label == 'alpha-adrc'
 
     def test_create(self):
         """Check that create method creates object correctly."""
         center = Center.create({
             'tags': ['adcid-7'],
             'name': 'Alpha ADRC',
-            'center-id': 'alpha-adrc',
+            'center-label': 'alpha-adrc',
+            'adcid': 7,
             'is-active': True
         })
         center2 = Center(tags=['adcid-7'],
                          name="Alpha ADRC",
-                         center_id='alpha-adrc')
+                         center_label='alpha-adrc',
+                         adcid=7)
         assert center == center2
 
         with pytest.raises(KeyError):
@@ -58,7 +61,8 @@ class TestCenter:
         visitor = DummyVisitor()
         center = Center(tags=['adcid-1'],
                         name="Dummy Center",
-                        center_id="dummy")
+                        center_label="dummy",
+                        adcid=1)
         center.apply(visitor)
         assert visitor.center_name == "Dummy Center"
 
@@ -69,21 +73,23 @@ class TestProject:
     def test_object(self):
         """Tests for object creation."""
         project = Study(name="Project Alpha",
-                        study_id='project-alpha',
+                        study_label='project-alpha',
                         centers=[
                             Center(tags=['adcid-1'],
                                    name='A Center',
-                                   center_id='ac',
+                                   center_label='ac',
+                                   adcid=1,
                                    active=True)
                         ],
                         datatypes=['dicom'],
                         published=True,
                         primary=True)
-        assert project.study_id == "project-alpha"
+        assert project.study_label == "project-alpha"
         assert project.centers == [
             Center(tags=['adcid-1'],
                    name='A Center',
-                   center_id='ac',
+                   center_label='ac',
+                   adcid=1,
                    active=True)
         ]
         assert project.datatypes == ['dicom']
@@ -93,12 +99,13 @@ class TestProject:
         project2 = Study.create({
             'project':
             'Project Alpha',
-            'project-id':
+            'project-label':
             'project-alpha',
             'centers': [{
                 'tags': ['adcid-1'],
                 'name': 'A Center',
-                'center-id': 'ac',
+                'center-label': 'ac',
+                'adcid': 1,
                 'is-active': True
             }],
             'datatypes': ['dicom'],
@@ -116,7 +123,7 @@ class TestProject:
         """Test project apply method."""
         visitor = DummyVisitor()
         project = Study(name='Project Beta',
-                        study_id='beta',
+                        study_label='beta',
                         centers=[],
                         datatypes=[],
                         published=True)

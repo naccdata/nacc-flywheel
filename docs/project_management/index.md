@@ -14,7 +14,7 @@ The file format is
 ```yaml
 ---
 project: <project-name>
-project-id: <string-identifier>
+project-label: <string-identifier>
 primary: <whether is primary project>
 centers: <list of center information>
 datatypes: <list of datatype identifiers>
@@ -55,7 +55,7 @@ Notes:
 ```yaml
 ---
 project: "Project Tau"
-project-id: tau
+project-label: tau
 centers:
   - name: "Alpha Center"
     center-label: alpha

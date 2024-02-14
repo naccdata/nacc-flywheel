@@ -2,7 +2,7 @@
 
 project - name of project
 centers - array of centers
-    center-id - "ADC" ID of center (protected info)
+    center-label - "ADC" ID of center (protected info)
     name - name of center
     is-active - whether center is active, has users if True
 datatypes - array of datatype names (form, dicom)

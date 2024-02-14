@@ -1,15 +1,15 @@
 ---
 project: "Project Tau"
-project-id: tau
+project-label: tau
 centers:
   - name: "Alpha Center"
-    center-id: alpha
+    center-label: alpha
     adcid: 1
     is-active: True
     tags:
       - 'center-code-1006'
   - name: "Beta Center"
-    center-id: beta-inactive
+    center-label: beta-inactive
     adcid: 2
     is-active: False
     tags:
@@ -20,16 +20,16 @@ datatypes:
 published: True
 ---
 project: "Project Zeta"
-project-id: zeta
+project-label: zeta
 centers:
   - name: "Alpha Center"
-    center-id: alpha
+    center-label: alpha
     adcid: 1
     is-active: True
     tags:
       - 'center-code-1006'
   - name: "Gamma ADRC"
-    center-id: gamma-adrc
+    center-label: gamma-adrc
     adcid: 3
     is-active: True
     tags:
