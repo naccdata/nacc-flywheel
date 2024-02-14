@@ -46,7 +46,7 @@ class IdentifierVisitor(CSVVisitor):
                                       fieldnames=self.__header)
 
         return self.__writer
-    
+
     def visit_header(self, header: List[str]) -> bool:
         """Prepares the visitor to write a CSV file with the given header.
 
