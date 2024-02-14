@@ -4,8 +4,9 @@
 from csv import DictReader
 from io import StringIO
 
-from outputs.errors import (CSVLocation, ErrorType, ErrorWriter, FileError,
-                            JSONLocation, empty_file_error, identifier_error,
+from outputs.errors import (CSVLocation, FileError, JSONLocation,
+                            ListErrorWriter, StreamErrorWriter,
+                            empty_file_error, identifier_error,
                             missing_header_error)
 
 
@@ -15,15 +16,15 @@ class TestFileError:
     def test_serialization(self):
         """Tests that serialization produces a dict with the location a
         string."""
-        error = FileError(error_type=ErrorType(error_type='error',
-                                               detail='the-error'),
+        error = FileError(error_type='error',
+                          error_code='the-error',
                           error_location=JSONLocation(key_path='k1.k2.k3'),
                           value='the-value',
                           message='the-message')
         result = error.model_dump()
         assert isinstance(result, dict)
-        assert result['error_location'] == '{"key_path":"k1.k2.k3"}'
-        assert result['error_type'] == '{"type":"error","detail":"the-error"}'
+        assert result['error_location'] == {"key_path":"k1.k2.k3"}
+        assert result['error_type'] == 'error'
 
     def test_identifier_serialization(self):
         """Tests that error created by identifier_error can be serialized."""
@@ -45,14 +46,14 @@ class TestFileError:
 class TestErrorWriter:
     """Tests the error writer class."""
 
-    def test_write(self):
-        """Tests that the error writer writes CSV with the flywheel hierarchy
-        information inserted."""
+    def test_stream_write(self):
+        """Tests that the stream error writer writes CSV with the flywheel
+        hierarchy information inserted."""
         stream = StringIO()
-        writer = ErrorWriter(stream=stream, container_id='the-id')
+        writer = StreamErrorWriter(stream=stream, container_id='the-id')
         writer.write(
-            FileError(error_type=ErrorType(error_type='error',
-                                           detail='the-error'),
+            FileError(error_type='error',
+                      error_code='the-error',
                       error_location=CSVLocation(line=10, column_name='ptid'),
                       container_id=None,
                       value='the-value',
@@ -64,3 +65,18 @@ class TestErrorWriter:
         assert reader.fieldnames == list(FileError.__annotations__.keys())
         row = next(reader)
         assert row['container_id'] == 'the-id'
+
+    def test_capture_write(self):
+        """Tests that the capture error writer inserts the flywheel hierarchy
+        information inserted."""
+        writer = ListErrorWriter(container_id='the-id')
+        writer.write(
+            FileError(error_type='error',
+                      error_code='the-error',
+                      error_location=CSVLocation(line=10, column_name='ptid'),
+                      container_id=None,
+                      value='the-value',
+                      expected=None,
+                      message='the-message'))
+        errors = writer.errors()
+        assert errors[0]['container_id'] == 'the-id'
