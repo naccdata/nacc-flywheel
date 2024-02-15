@@ -165,7 +165,7 @@ class StudyMappingAdaptor:
             if self.__new_centers_only and 'new-center' not in center.tags:
                 continue
 
-            center_group = CenterGroup.create(center, proxy=self.__fw)
+            center_group = CenterGroup.create(center=center, proxy=self.__fw)
             center_group.add_roles(self.__center_roles)
             if self.__admin_access:
                 center_group.add_permissions(self.__admin_access)
