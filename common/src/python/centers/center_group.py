@@ -29,6 +29,7 @@ class CenterGroup(GroupAdaptor):
 
     @classmethod
     def create(cls,
+               *,
                proxy: FlywheelProxy,
                center: Optional[Center] = None,
                group: Optional[Group] = None) -> 'CenterGroup':
@@ -41,19 +42,21 @@ class CenterGroup(GroupAdaptor):
         Returns:
           the CenterGroup for created group
         """
+
         if center:
             group = proxy.get_group(group_label=center.name,
                                     group_id=center.center_label)
-            metadata_project = ProjectAdaptor(project=proxy.get_project(
-                group_id=group.id, project_label='metadata'),
-                                              proxy=proxy)
-            metadata_project.update_info({'adcid': adcid})
-            tags = center.tags
-            adcid_tag = f"adcid-{adcid}"
+            project = proxy.get_project(group=group, project_label='metadata')
+            assert project, "did not find metadata project"
+            metadata_project = ProjectAdaptor(project=project, proxy=proxy)
+            metadata_project.update_info({'adcid': center.adcid})
+            tags = list(center.tags)
+            adcid_tag = f"adcid-{center.adcid}"
             if adcid_tag not in tags:
                 tags.append(adcid_tag)
+            adcid = center.adcid
 
-        elif group:
+        if group:
             metadata_project = ProjectAdaptor(project=proxy.find_projects(
                 group_id=group.id, project_label='metadata')[0],
                                               proxy=proxy)
@@ -61,9 +64,8 @@ class CenterGroup(GroupAdaptor):
             adcid = metadata_info['adcid']
             tags = []
 
-        center_group = CenterGroup(adcid=center.adcid,
-                                   group=group,
-                                   proxy=proxy)
+        assert group, "No group for center"
+        center_group = CenterGroup(adcid=adcid, group=group, proxy=proxy)
         center_group.add_tags(tags)
         return center_group
 
