@@ -60,8 +60,8 @@ def get_adcid(proxy: FlywheelProxy, file_id: str) -> Optional[int]:
     file = proxy.get_file(file_id)
     group_id = file.parents.group
     groups = proxy.find_groups(group_id)
-    center = CenterGroup(group=groups[0], proxy=proxy)
-    return center.center_id()
+    center = CenterGroup.create(group=groups[0], proxy=proxy)
+    return center.adcid
 
 
 # pylint: disable=(too-many-locals)
