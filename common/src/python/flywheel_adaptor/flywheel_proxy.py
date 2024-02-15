@@ -513,6 +513,15 @@ class GroupAdaptor:
 
         self.__group.add_tag(tag)
 
+    def add_tags(self, tags: Iterable[str]) -> None:
+        """Adds the tags to the group.
+
+        Args:
+          tags: iterable collection of tags
+        """
+        for tag in tags:
+            self.add_tag(tag)
+
     def get_group_users(self,
                         *,
                         access: Optional[str] = None) -> List[flywheel.User]:
@@ -941,3 +950,11 @@ class ProjectAdaptor:
         """
         self.__project = self.__project.reload()
         return self.__project.info
+
+    def update_info(self, info: Dict[str, Any]) -> None:
+        """Updates the info object for this project.
+
+        Args:
+          info: the info object
+        """
+        self.__project.update_info(info)
