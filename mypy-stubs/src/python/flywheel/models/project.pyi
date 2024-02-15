@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from ..file_spec import FileSpec
 from ..typing.role_assignment import RoleAssignment
@@ -40,6 +40,10 @@ class Project:
     def copyable(self) -> bool:
         ...
 
+    @property
+    def info(self) -> Dict[str, Any]:
+        ...
+
     # TODO: determine return type
     def add_permission(self, permission: RoleAssignment) -> None:
         ...
@@ -66,4 +70,10 @@ class Project:
 
     # TODO: determine return type
     def upload_file(self, file: FileSpec) -> FileEntry:
+        ...
+
+    def update_info(self, *args: Dict[str, Any]) -> None:
+        ...
+
+    def reload(self) -> Project:
         ...

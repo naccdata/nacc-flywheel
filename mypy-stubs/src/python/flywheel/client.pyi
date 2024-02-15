@@ -112,7 +112,8 @@ class Client:
     def get_config(self, **kwargs) -> Dict[str, Any]:
         ...
 
-    def read_view_dataframe(self, view: DataView, container_id: str) -> pandas.DataFrame:
+    def read_view_dataframe(self, view: DataView,
+                            container_id: str) -> pandas.DataFrame:
         ...
 
     def get_project(self, id: str) -> Project:

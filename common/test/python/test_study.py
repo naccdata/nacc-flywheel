@@ -19,8 +19,8 @@ class DummyVisitor(StudyVisitor):
     def visit_datatype(self, datatype: str):
         self.datatype_name = datatype
 
-    def visit_study(self, project: Study) -> None:
-        self.project_name = project.name
+    def visit_study(self, study: Study) -> None:
+        self.project_name = study.name
 
 
 # pylint: disable=(no-self-use)
