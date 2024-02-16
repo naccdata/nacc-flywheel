@@ -2,6 +2,7 @@
 
 import logging
 from typing import List
+from centers.nacc_group import NACCGroup
 
 from flywheel import AccessPermission
 from flywheel.models.group_role import GroupRole
@@ -50,12 +51,14 @@ def run(*,
       new_only: whether to only create centers with new tag
     """
 
+    nacc = NACCGroup.create(proxy=proxy, group_label='nacc')
     center_roles = get_project_roles(proxy, role_names)
 
     for study_doc in project_list:
         study = Study.create(study_doc)
         mapper = StudyMappingAdaptor(study=study,
                                      flywheel_proxy=proxy,
+                                     nacc_group=nacc,
                                      admin_access=admin_access,
                                      center_roles=center_roles,
                                      new_only=new_only)
