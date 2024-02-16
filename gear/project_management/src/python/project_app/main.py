@@ -2,8 +2,8 @@
 
 import logging
 from typing import List
-from centers.nacc_group import NACCGroup
 
+from centers.nacc_group import NACCGroup
 from flywheel import AccessPermission
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy

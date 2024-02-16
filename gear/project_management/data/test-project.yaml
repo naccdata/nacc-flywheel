@@ -3,13 +3,13 @@ project: "Project Tau"
 project-label: tau
 centers:
   - name: "Alpha Center"
-    center-label: alpha
+    center-id: alpha
     adcid: 1
     is-active: True
     tags:
       - 'center-code-1006'
   - name: "Beta Center"
-    center-label: beta-inactive
+    center-id: beta-inactive
     adcid: 2
     is-active: False
     tags:
@@ -23,13 +23,13 @@ project: "Project Zeta"
 project-label: zeta
 centers:
   - name: "Alpha Center"
-    center-label: alpha
+    center-id: alpha
     adcid: 1
     is-active: True
     tags:
       - 'center-code-1006'
   - name: "Gamma ADRC"
-    center-label: gamma-adrc
+    center-id: gamma-adrc
     adcid: 3
     is-active: True
     tags:

@@ -56,20 +56,20 @@ class Center:
     def __init__(self,
                  *,
                  name: str,
-                 center_label: str,
+                 center_id: str,
                  adcid: int,
                  active: bool = True,
                  tags: Optional[List[str]] = None) -> None:
         self.__name = name
         self.__active = active
-        self.__center_label = center_label
+        self.__center_id = center_id
         self.__adcid = adcid
         if tags is None:
             tags = []
         self.__tags = tags
 
     def __repr__(self) -> str:
-        return (f"Center(center_label={self.center_label}, "
+        return (f"Center(center_id={self.center_id}, "
                 f"name={self.name}, "
                 f"adcid={self.adcid}, "
                 f"active={self.is_active()}, "
@@ -78,8 +78,7 @@ class Center:
     def __eq__(self, __o: object) -> bool:
         if not isinstance(__o, Center):
             return False
-        return (self.__center_label == __o.center_label
-                and self.__adcid == __o.adcid
+        return (self.__center_id == __o.center_id and self.__adcid == __o.adcid
                 and self.__active == __o.is_active() and self.name == __o.name)
 
     @property
@@ -92,9 +91,9 @@ class Center:
         return self.__active
 
     @property
-    def center_label(self) -> str:
+    def center_id(self) -> str:
         """Center text ID property."""
-        return self.__center_label
+        return self.__center_id
 
     @property
     def adcid(self) -> int:
@@ -119,7 +118,7 @@ class Center:
             tags = center['tags']
 
         return Center(name=center['name'],
-                      center_label=center['center-label'],
+                      center_id=center['center-id'],
                       adcid=int(center['adcid']),
                       active=center['is-active'],
                       tags=tags)

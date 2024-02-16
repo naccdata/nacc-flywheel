@@ -31,25 +31,25 @@ class TestCenter:
         """Sanity check on object creation and properties."""
         center = Center(tags=['adcid-7'],
                         name="Alpha ADRC",
-                        center_label='alpha-adrc',
+                        center_id='alpha-adrc',
                         adcid=7)
         assert 'adcid-7' in center.tags
         assert center.name == "Alpha ADRC"
         assert center.is_active()
-        assert center.center_label == 'alpha-adrc'
+        assert center.center_id == 'alpha-adrc'
 
     def test_create(self):
         """Check that create method creates object correctly."""
         center = Center.create({
             'tags': ['adcid-7'],
             'name': 'Alpha ADRC',
-            'center-label': 'alpha-adrc',
+            'center-id': 'alpha-adrc',
             'adcid': 7,
             'is-active': True
         })
         center2 = Center(tags=['adcid-7'],
                          name="Alpha ADRC",
-                         center_label='alpha-adrc',
+                         center_id='alpha-adrc',
                          adcid=7)
         assert center == center2
 
@@ -61,7 +61,7 @@ class TestCenter:
         visitor = DummyVisitor()
         center = Center(tags=['adcid-1'],
                         name="Dummy Center",
-                        center_label="dummy",
+                        center_id="dummy",
                         adcid=1)
         center.apply(visitor)
         assert visitor.center_name == "Dummy Center"
@@ -77,7 +77,7 @@ class TestProject:
                         centers=[
                             Center(tags=['adcid-1'],
                                    name='A Center',
-                                   center_label='ac',
+                                   center_id='ac',
                                    adcid=1,
                                    active=True)
                         ],
@@ -88,7 +88,7 @@ class TestProject:
         assert project.centers == [
             Center(tags=['adcid-1'],
                    name='A Center',
-                   center_label='ac',
+                   center_id='ac',
                    adcid=1,
                    active=True)
         ]
@@ -104,7 +104,7 @@ class TestProject:
             'centers': [{
                 'tags': ['adcid-1'],
                 'name': 'A Center',
-                'center-label': 'ac',
+                'center-id': 'ac',
                 'adcid': 1,
                 'is-active': True
             }],

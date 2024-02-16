@@ -46,7 +46,7 @@ class CenterGroup(GroupAdaptor):
 
         if center:
             group = proxy.get_group(group_label=center.name,
-                                    group_id=center.center_label)
+                                    group_id=center.center_id)
             project = proxy.get_project(group=group, project_label='metadata')
             assert project, "did not find metadata project"
             metadata_project = ProjectAdaptor(project=project, proxy=proxy)

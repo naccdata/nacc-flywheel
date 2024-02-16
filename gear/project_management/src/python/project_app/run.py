@@ -2,7 +2,8 @@
 
 project - name of project
 centers - array of centers
-    center-label - "ADC" ID of center (protected info)
+    center-id - the group ID of center
+    adcid - the ADC ID used to code data
     name - name of center
     is-active - whether center is active, has users if True
 datatypes - array of datatype names (form, dicom)
