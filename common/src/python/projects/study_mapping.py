@@ -28,6 +28,7 @@ import logging
 from typing import Dict, List, Optional
 
 from centers.center_group import CenterGroup
+from centers.nacc_group import NACCGroup
 from flywheel import AccessPermission
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
@@ -44,6 +45,7 @@ class StudyMappingAdaptor:
     def __init__(self,
                  *,
                  study: Study,
+                 nacc_group: NACCGroup,
                  flywheel_proxy: FlywheelProxy,
                  admin_access: Optional[List[AccessPermission]] = None,
                  center_roles: List[GroupRole],
@@ -60,6 +62,7 @@ class StudyMappingAdaptor:
         """
         self.__fw = flywheel_proxy
         self.__study = study
+        self.__nacc_group = nacc_group
         self.__release_group: Optional[GroupAdaptor] = None
         self.__admin_access = admin_access
         self.__center_roles = center_roles
@@ -167,14 +170,16 @@ class StudyMappingAdaptor:
 
             center_group = CenterGroup.create(center=center, proxy=self.__fw)
             center_group.add_roles(self.__center_roles)
+            self.__nacc_group.add_center(center_group)
+
             if self.__admin_access:
                 center_group.add_permissions(self.__admin_access)
 
             if center.is_active():
-                self.create_ingest_projects(center_group,
-                                            label_prefix='ingest')
-                self.create_ingest_projects(center_group,
-                                            label_prefix='sandbox')
+                ingest_projects = self.create_ingest_projects(
+                    center_group, label_prefix='ingest')
+                sandbox_projects = self.create_ingest_projects(
+                    center_group, label_prefix='sandbox')
 
             self.create_ingest_projects(center_group,
                                         label_prefix='retrospective')
@@ -182,6 +187,9 @@ class StudyMappingAdaptor:
             self.get_project(center_group=center_group,
                              label=self.accepted_label)
             self.get_project(center_group=center_group, label='metadata')
+            self.get_project(center_group=center_group, label='center-portal')
+            center_group.publish_projects(
+                projects=[ingest_projects, sandbox_projects])
 
     def get_project(self, center_group: CenterGroup,
                     label: str) -> Optional[ProjectAdaptor]:
