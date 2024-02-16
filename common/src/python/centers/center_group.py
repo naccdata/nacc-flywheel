@@ -317,7 +317,8 @@ class CenterGroup(GroupAdaptor):
             pipelines = ['ingest', 'sandbox']
 
             labels = [
-                f"{pipeline}-{suffix}" for pipeline in pipelines for suffix in [
+                f"{pipeline}-{suffix}" for pipeline in pipelines
+                for suffix in [
                     f"{datatype.lower()}{label_suffix}"
                     for datatype in study.datatypes
                 ]
@@ -327,7 +328,9 @@ class CenterGroup(GroupAdaptor):
             self.__publish_projects(key='ingest-projects',
                                     projects=ingest_projects)
 
-        labels = [ f"retrospective-{datatype.lower()}" for datatype in study.datatypes]
+        labels = [
+            f"retrospective-{datatype.lower()}" for datatype in study.datatypes
+        ]
         self.__add_projects(labels)
 
         accepted = self.__add_projects([f"accepted{label_suffix}"])
@@ -343,5 +346,5 @@ class CenterGroup(GroupAdaptor):
 
             ingest_project.add_tags(self.get_tags())
             projects.append(ingest_project)
-        
+
         return projects
