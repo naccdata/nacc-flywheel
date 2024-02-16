@@ -481,6 +481,7 @@ class GroupAdaptor:
         self.__group = group
         self.__fw = proxy
 
+    # pylint: disable=invalid-name
     @property
     def id(self) -> str:
         """Return the ID for the group."""
@@ -635,7 +636,7 @@ class GroupAdaptor:
         for role in roles:
             self.add_role(role)
 
-    def get_project(self, label: str) -> Optional[flywheel.Project]:
+    def get_project(self, label: str) -> Optional['ProjectAdaptor']:
         """Returns a project in this group with the given label.
 
         Creates a new project if none exists.
@@ -645,7 +646,12 @@ class GroupAdaptor:
         Returns:
           the project in this group with the label
         """
-        return self.__fw.get_project(group=self.__group, project_label=label)
+        project = self.__fw.get_project(group=self.__group,
+                                        project_label=label)
+        if not project:
+            return None
+
+        return ProjectAdaptor(project=project, proxy=self.__fw)
 
     def find_project(self, label: str) -> Optional['ProjectAdaptor']:
         """Returns the project adaptor in the group with the label.

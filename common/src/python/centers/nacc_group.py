@@ -9,6 +9,7 @@ from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
 
 
 class NACCGroup(GroupAdaptor):
+    """Manages group for NACC."""
 
     def __init__(self, *, group: Group, proxy: FlywheelProxy) -> None:
         self.__metadata: Optional[ProjectAdaptor] = None
@@ -37,10 +38,8 @@ class NACCGroup(GroupAdaptor):
           The metadata object
         """
         if not self.__metadata:
-            project = self.get_project('metadata')
-            assert project, "expecting metadata project"
-            self.__metadata = ProjectAdaptor(project=project,
-                                             proxy=self.proxy())
+            self.__metadata = self.get_project('metadata')
+            assert self.__metadata, "expecting metadata project"
 
         return self.__metadata
 
