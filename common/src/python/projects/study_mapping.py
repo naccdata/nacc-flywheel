@@ -25,7 +25,7 @@ To represent this a study release group is created with a single "master"
 project for managing the consolidated data.
 """
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from centers.center_group import CenterGroup
 from centers.nacc_group import NACCGroup
@@ -88,36 +88,6 @@ class StudyMappingAdaptor:
         """Exposes study name."""
         return self.__study.name
 
-    def build_project_label(self, prefix: str) -> str:
-        """Builds a FW project label string from the given prefix.
-
-        Concatenates the name of the study, if is not the primary
-        study of the coordinating center.
-
-        Args:
-            prefix: the prefix for the project label
-        Returns:
-          the project label built using prefix
-        """
-        assert self.__study
-        if self.__study.is_primary():
-            return prefix
-        return prefix + "-" + self.__study.study_id
-
-    @property
-    def accepted_label(self) -> str:
-        """Builds a project label for the accepted stage of this study."""
-        return self.build_project_label('accepted')
-
-    @property
-    def release_label(self) -> Optional[str]:
-        """Builds the FW project ID string for the release stage for this
-        study."""
-        if not self.__study.is_published():
-            return None
-
-        return "release-" + self.__study.study_id
-
     def get_release_group(self) -> Optional[GroupAdaptor]:
         """Returns the release group for this study if it is published.
         Otherwise, returns None.
@@ -128,7 +98,7 @@ class StudyMappingAdaptor:
         if not self.__study.is_published():
             return None
 
-        release_id = self.release_label
+        release_id = f"release-{self.__study.study_id}"
         assert release_id
         if not self.__release_group:
             group = self.__fw.get_group(group_label=self.__study.name +
