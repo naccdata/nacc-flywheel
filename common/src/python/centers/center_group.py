@@ -11,7 +11,7 @@ import flywheel
 from flywheel.models.group import Group
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
-from projects.study import Center
+from projects.study import Center, Study
 from projects.template_project import TemplateProject
 
 log = logging.getLogger(__name__)
@@ -29,11 +29,8 @@ class CenterGroup(GroupAdaptor):
         self.__center_portal: Optional[ProjectAdaptor] = None
 
     @classmethod
-    def create(cls,
-               *,
-               proxy: FlywheelProxy,
-               center: Optional[Center] = None,
-               group: Optional[Group] = None) -> 'CenterGroup':
+    def create_from_group(cls, *, proxy: FlywheelProxy,
+                          group: Group) -> 'CenterGroup':
         """Creates a CenterGroup from either a center or an existing group.
 
         Args:
@@ -43,35 +40,49 @@ class CenterGroup(GroupAdaptor):
         Returns:
           the CenterGroup for created group
         """
+        metadata_project = ProjectAdaptor(project=proxy.find_projects(
+            group_id=group.id, project_label='metadata')[0],
+                                          proxy=proxy)
+        metadata_info = metadata_project.get_info()
+        adcid = metadata_info['adcid']
 
-        if center:
-            group = proxy.get_group(group_label=center.name,
-                                    group_id=center.center_id)
-            project = proxy.get_project(group=group, project_label='metadata')
-            assert project, "did not find metadata project"
-            metadata_project = ProjectAdaptor(project=project, proxy=proxy)
-            metadata_project.update_info({'adcid': center.adcid})
-            tags = list(center.tags)
-            adcid_tag = f"adcid-{center.adcid}"
-            if adcid_tag not in tags:
-                tags.append(adcid_tag)
-            adcid = center.adcid
-
-        if group:
-            metadata_project = ProjectAdaptor(project=proxy.find_projects(
-                group_id=group.id, project_label='metadata')[0],
-                                              proxy=proxy)
-            metadata_info = metadata_project.get_info()
-            adcid = metadata_info['adcid']
-            tags = []
-
-        assert group, "No group for center"
         center_group = CenterGroup(adcid=adcid, group=group, proxy=proxy)
+
+        return center_group
+
+    @classmethod
+    def create_from_center(cls, *, proxy: FlywheelProxy,
+                           center: Center) -> 'CenterGroup':
+        """Creates a CenterGroup from a center object.
+
+        Args:
+          center: the study center
+          proxy: the flywheel proxy object
+        Returns:
+          the CenterGroup for the center
+        """
+        group = proxy.get_group(group_label=center.name,
+                                group_id=center.center_id)
+        assert group, "No group for center"
+        center_group = CenterGroup(adcid=center.adcid,
+                                   group=group,
+                                   proxy=proxy)
+
+        tags = list(center.tags)
+        adcid_tag = f"adcid-{center.adcid}"
+        if adcid_tag not in tags:
+            tags.append(adcid_tag)
         center_group.add_tags(tags)
+
+        metadata_project = center_group.get_metadata_project()
+        assert metadata_project, "expecting metadata project"
+        metadata_project.update_info({'adcid': center.adcid})
+
         return center_group
 
     @property
     def adcid(self) -> int:
+        """The ADCID of this center."""
         return self.__adcid
 
     def __get_matching_projects(self, prefix: str) -> List[ProjectAdaptor]:
@@ -257,10 +268,8 @@ class CenterGroup(GroupAdaptor):
           The center-portal project
         """
         if not self.__center_portal:
-            project = self.get_project('center-portal')
-            assert project, "expecting center-portal project"
-            self.__center_portal = ProjectAdaptor(project=project,
-                                                  proxy=self.proxy())
+            self.__center_portal = self.get_project('center-portal')
+            assert self.__center_portal, "expecting center-portal project"
 
         return self.__center_portal
 
@@ -285,3 +294,4 @@ class CenterGroup(GroupAdaptor):
                 pipeline_map[project.label] = url_map
 
         portal_project.update_info({'ingest-projects': pipeline_map})
+

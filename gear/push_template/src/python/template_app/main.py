@@ -26,7 +26,7 @@ def run(*, proxy: FlywheelProxy, center_tag_pattern: str, new_only: bool,
         return
 
     for group in group_list:
-        center = CenterGroup.create(group=group, proxy=proxy)
+        center = CenterGroup.create_from_group(group=group, proxy=proxy)
         if new_only and 'new-center' not in center.get_tags():
             continue
 

@@ -29,7 +29,7 @@ def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
       dictionary mapping from adcid to group
     """
     group_list = [
-        CenterGroup.create(group=group, proxy=proxy)
+        CenterGroup.create_from_group(group=group, proxy=proxy)
         for group in proxy.find_groups_by_tag(center_tag_pattern)
     ]
     if not group_list:

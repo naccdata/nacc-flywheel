@@ -150,11 +150,7 @@ class StudyMappingAdaptor:
 
         release_group = self.get_release_group()
         assert release_group
-        project = release_group.get_project(label='master-project')
-        if not project:
-            return None
-
-        return ProjectAdaptor(project=project, proxy=self.__fw)
+        return release_group.get_project(label='master-project')
 
     def create_center_pipelines(self) -> None:
         """Creates data pipelines for centers in this project."""
@@ -168,7 +164,8 @@ class StudyMappingAdaptor:
             if self.__new_centers_only and 'new-center' not in center.tags:
                 continue
 
-            center_group = CenterGroup.create(center=center, proxy=self.__fw)
+            center_group = CenterGroup.create_from_center(center=center,
+                                                          proxy=self.__fw)
             center_group.add_roles(self.__center_roles)
             self.__nacc_group.add_center(center_group)
 
@@ -184,33 +181,12 @@ class StudyMappingAdaptor:
             self.create_ingest_projects(center_group,
                                         label_prefix='retrospective')
 
-            self.get_project(center_group=center_group,
-                             label=self.accepted_label)
-            self.get_project(center_group=center_group, label='metadata')
-            self.get_project(center_group=center_group, label='center-portal')
+            center_group.get_project(label=self.accepted_label)
+            center_group.get_project(label='metadata')
+            center_group.get_project(label='center-portal')
+
             center_group.publish_projects(
                 projects=[ingest_projects, sandbox_projects])
-
-    def get_project(self, center_group: CenterGroup,
-                    label: str) -> Optional[ProjectAdaptor]:
-        """**I don't remember why GroupAdaptor doesn't just do this**
-
-        Creates the project with the given label in the group and
-        returns the ProjectAdaptor.
-
-        If the project already exists, returns that project.
-
-        Args:
-          center_group: the CenterGroup
-          label: the project label
-        Returns:
-          ProjectAdaptor for the project. None if no project created.
-        """
-        project = center_group.get_project(label=label)
-        if not project:
-            return None
-
-        return ProjectAdaptor(project=project, proxy=self.__fw)
 
     def create_ingest_projects(self, center_group: CenterGroup,
                                label_prefix: str) -> Dict[str, ProjectAdaptor]:
@@ -228,8 +204,7 @@ class StudyMappingAdaptor:
                                                      datatype.lower())
             assert project_label
 
-            ingest_project = self.get_project(center_group=center_group,
-                                              label=project_label)
+            ingest_project = center_group.get_project(label=project_label)
             if ingest_project:
                 project_map[datatype] = ingest_project
                 ingest_project.add_tags(center_group.get_tags())
