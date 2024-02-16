@@ -202,7 +202,7 @@ class Study:
 
         return Study(
             name=study['project'],
-            study_label=study['project-label'],
+            study_label=study['project-id'],
             centers=[Center.create(center) for center in study['centers']],
             datatypes=study['datatypes'],
             published=study['published'],

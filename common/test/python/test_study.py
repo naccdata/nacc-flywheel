@@ -99,7 +99,7 @@ class TestProject:
         project2 = Study.create({
             'project':
             'Project Alpha',
-            'project-label':
+            'project-id':
             'project-alpha',
             'centers': [{
                 'tags': ['adcid-1'],

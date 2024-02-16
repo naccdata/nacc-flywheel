@@ -1,6 +1,6 @@
 ---
 project: "Project Tau"
-project-label: tau
+project-id: tau
 centers:
   - name: "Alpha Center"
     center-id: alpha
@@ -20,7 +20,7 @@ datatypes:
 published: True
 ---
 project: "Project Zeta"
-project-label: zeta
+project-id: zeta
 centers:
   - name: "Alpha Center"
     center-id: alpha
