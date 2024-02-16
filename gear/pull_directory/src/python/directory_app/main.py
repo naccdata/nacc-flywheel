@@ -63,7 +63,7 @@ def run(*, user_report: List[Dict[str, Any]], user_filename: str,
     # TODO: figure out why conflicts are causing file errors
     # this will flag conflicts
     directory.get_conflicts()
-    #conflicts = directory.get_conflicts()
+    # conflicts = directory.get_conflicts()
     # if conflicts:
     #     upload_yaml(project=project,
     #                 filename=f"conflicts-{user_filename}",
