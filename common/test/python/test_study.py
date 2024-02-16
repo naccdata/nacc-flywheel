@@ -73,7 +73,7 @@ class TestProject:
     def test_object(self):
         """Tests for object creation."""
         project = Study(name="Project Alpha",
-                        study_label='project-alpha',
+                        study_id='project-alpha',
                         centers=[
                             Center(tags=['adcid-1'],
                                    name='A Center',
@@ -84,7 +84,7 @@ class TestProject:
                         datatypes=['dicom'],
                         published=True,
                         primary=True)
-        assert project.study_label == "project-alpha"
+        assert project.study_id == "project-alpha"
         assert project.centers == [
             Center(tags=['adcid-1'],
                    name='A Center',
@@ -123,7 +123,7 @@ class TestProject:
         """Test project apply method."""
         visitor = DummyVisitor()
         project = Study(name='Project Beta',
-                        study_label='beta',
+                        study_id='beta',
                         centers=[],
                         datatypes=[],
                         published=True)

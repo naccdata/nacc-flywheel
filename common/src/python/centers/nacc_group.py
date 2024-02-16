@@ -18,16 +18,16 @@ class NACCGroup(GroupAdaptor):
     def create(cls,
                *,
                proxy: FlywheelProxy,
-               group_label: str = 'nacc') -> 'NACCGroup':
+               group_id: str = 'nacc') -> 'NACCGroup':
         """Creates a NACCGroup object for the group on the flywheel instance.
 
         Args:
           proxy: the flywheel instance proxy object
-          group_label: the label for NACC group (optional)
+          group_id: the label for NACC group (optional)
         Returns:
           the NACCGroup object
         """
-        group = proxy.get_group(group_label="NACC", group_id=group_label)
+        group = proxy.get_group(group_label="NACC", group_id=group_id)
         return NACCGroup(group=group, proxy=proxy)
 
     def get_metadata(self) -> ProjectAdaptor:

@@ -102,7 +102,7 @@ class StudyMappingAdaptor:
         assert self.__study
         if self.__study.is_primary():
             return prefix
-        return prefix + "-" + self.__study.study_label
+        return prefix + "-" + self.__study.study_id
 
     @property
     def accepted_label(self) -> str:
@@ -116,7 +116,7 @@ class StudyMappingAdaptor:
         if not self.__study.is_published():
             return None
 
-        return "release-" + self.__study.study_label
+        return "release-" + self.__study.study_id
 
     def get_release_group(self) -> Optional[GroupAdaptor]:
         """Returns the release group for this study if it is published.

@@ -130,7 +130,7 @@ class Study:
     def __init__(self,
                  *,
                  name: str,
-                 study_label: str,
+                 study_id: str,
                  centers: List[Center],
                  datatypes: List[str],
                  published: bool = False,
@@ -140,7 +140,7 @@ class Study:
         self.__datatypes = datatypes
         self.__published = published
         self.__primary = primary
-        self.__study_label = study_label
+        self.__study_id = study_id
 
     def __eq__(self, __o: object) -> bool:
         if not isinstance(__o, Study):
@@ -153,7 +153,7 @@ class Study:
     def __repr__(self) -> str:
         return ("Study("
                 f"name={self.__name},"
-                f"study_label={self.__study_label},"
+                f"study_id={self.__study_id},"
                 f"centers={self.__centers},"
                 f"datatypes={self.__datatypes},"
                 f"published={self.__published},"
@@ -161,9 +161,9 @@ class Study:
                 ")")
 
     @property
-    def study_label(self) -> str:
+    def study_id(self) -> str:
         """Study ID property."""
-        return self.__study_label
+        return self.__study_id
 
     @property
     def name(self) -> str:
@@ -202,7 +202,7 @@ class Study:
 
         return Study(
             name=study['project'],
-            study_label=study['project-id'],
+            study_id=study['project-id'],
             centers=[Center.create(center) for center in study['centers']],
             datatypes=study['datatypes'],
             published=study['published'],

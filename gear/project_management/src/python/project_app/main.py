@@ -51,7 +51,7 @@ def run(*,
       new_only: whether to only create centers with new tag
     """
 
-    nacc = NACCGroup.create(proxy=proxy, group_label='nacc')
+    nacc = NACCGroup.create(proxy=proxy, group_id='nacc')
     center_roles = get_project_roles(proxy, role_names)
 
     for study_doc in project_list:
