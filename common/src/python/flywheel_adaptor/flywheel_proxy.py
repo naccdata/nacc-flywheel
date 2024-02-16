@@ -482,6 +482,11 @@ class GroupAdaptor:
         self.__fw = proxy
 
     @property
+    def id(self) -> str:
+        """Return the ID for the group."""
+        return self.__group.id
+
+    @property
     def label(self) -> str:
         """Return the label of the group."""
         return self.__group.label
