@@ -26,6 +26,7 @@ class CenterGroup(GroupAdaptor):
         self.__datatypes: List[str] = []
         self.__ingest_stages = ['ingest', 'retrospective']
         self.__adcid = adcid
+        self.__center_portal: Optional[ProjectAdaptor] = None
 
     @classmethod
     def create(cls,
@@ -248,3 +249,39 @@ class CenterGroup(GroupAdaptor):
             self.apply_to_ingest(stage=stage, template_map=template_map)
 
         self.apply_to_accepted(template_map)
+
+    def get_portal(self) -> ProjectAdaptor:
+        """Returns the center-portal project.
+
+        Returns:
+          The center-portal project
+        """
+        if not self.__center_portal:
+            project = self.get_project('center-portal')
+            assert project, "expecting center-portal project"
+            self.__center_portal = ProjectAdaptor(project=project,
+                                                  proxy=self.proxy())
+
+        return self.__center_portal
+
+    def publish_projects(self, projects: List[Dict[str,
+                                                   ProjectAdaptor]]) -> None:
+        """Adds project entry points to center portal project.
+
+        Args:
+          projects: the projects to publish
+        """
+        portal_project = self.get_portal()
+        info = portal_project.get_info()
+
+        pipeline_map = info.get('ingest-projects', {})
+        site = self.proxy().get_site()
+        for project_map in projects:
+            for project in project_map.values():
+                url_map = pipeline_map.get(project.label, {})
+                url = f"{site}/#/projects/{project.id}/information"
+                url_map['project-url'] = url
+
+                pipeline_map[project.label] = url_map
+
+        portal_project.update_info({'ingest-projects': pipeline_map})
