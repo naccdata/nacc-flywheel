@@ -28,6 +28,7 @@ class CenterGroup(GroupAdaptor):
         self.__adcid = adcid
         self.__is_active = active
         self.__center_portal: Optional[ProjectAdaptor] = None
+        self.__metadata: Optional[ProjectAdaptor] = None
 
     @classmethod
     def create_from_group(cls, *, proxy: FlywheelProxy,
@@ -80,7 +81,7 @@ class CenterGroup(GroupAdaptor):
             tags.append(adcid_tag)
         center_group.add_tags(tags)
 
-        metadata_project = center_group.get_metadata_project()
+        metadata_project = center_group.get_metadata()
         assert metadata_project, "expecting metadata project"
         metadata_project.update_info({
             'adcid': center.adcid,
@@ -131,17 +132,17 @@ class CenterGroup(GroupAdaptor):
 
         return projects[0]
 
-    def get_metadata_project(self) -> Optional[ProjectAdaptor]:
+    def get_metadata(self) -> Optional[ProjectAdaptor]:
         """Returns the metadata project for this center.
 
         Returns:
           the project labeled 'metadata', None if there is none
         """
-        projects = self.__get_matching_projects('metadata')
-        if not projects:
-            return None
+        if not self.__metadata:
+            self.__metadata = self.get_project('metadata')
+            assert self.__metadata, "expecting metadata project"
 
-        return projects[0]
+        return self.__metadata
 
     @classmethod
     def get_datatype(cls, *, stage: str, label: str) -> Optional[str]:
