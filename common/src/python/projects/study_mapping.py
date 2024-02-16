@@ -172,44 +172,7 @@ class StudyMappingAdaptor:
             if self.__admin_access:
                 center_group.add_permissions(self.__admin_access)
 
-            if center.is_active():
-                ingest_projects = self.create_ingest_projects(
-                    center_group, label_prefix='ingest')
-                sandbox_projects = self.create_ingest_projects(
-                    center_group, label_prefix='sandbox')
-
-            self.create_ingest_projects(center_group,
-                                        label_prefix='retrospective')
-
-            center_group.get_project(label=self.accepted_label)
-            center_group.get_project(label='metadata')
-            center_group.get_project(label='center-portal')
-
-            center_group.publish_projects(
-                projects=[ingest_projects, sandbox_projects])
-
-    def create_ingest_projects(self, center_group: CenterGroup,
-                               label_prefix: str) -> Dict[str, ProjectAdaptor]:
-        """Creates projects for ingesting a particular datatype.
-
-        Args:
-        center_adaptor: the mapping for the center
-        label_prefix: the prefix for project names
-        Returns:
-        Map from datatype to project
-        """
-        project_map = {}
-        for datatype in self.datatypes:
-            project_label = self.build_project_label(label_prefix + '-' +
-                                                     datatype.lower())
-            assert project_label
-
-            ingest_project = center_group.get_project(label=project_label)
-            if ingest_project:
-                project_map[datatype] = ingest_project
-                ingest_project.add_tags(center_group.get_tags())
-
-        return project_map
+            center_group.add_study(self.__study)
 
     def create_release_pipeline(self) -> None:
         """Creates the release pipeline for this study if the study is

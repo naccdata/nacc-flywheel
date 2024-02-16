@@ -20,12 +20,13 @@ log = logging.getLogger(__name__)
 class CenterGroup(GroupAdaptor):
     """Defines an adaptor for a group representing a center."""
 
-    def __init__(self, *, adcid: int, group: flywheel.Group,
+    def __init__(self, *, adcid: int, active: bool, group: flywheel.Group,
                  proxy: FlywheelProxy) -> None:
         super().__init__(group=group, proxy=proxy)
         self.__datatypes: List[str] = []
         self.__ingest_stages = ['ingest', 'retrospective']
         self.__adcid = adcid
+        self.__is_active = active
         self.__center_portal: Optional[ProjectAdaptor] = None
 
     @classmethod
@@ -45,8 +46,12 @@ class CenterGroup(GroupAdaptor):
                                           proxy=proxy)
         metadata_info = metadata_project.get_info()
         adcid = metadata_info['adcid']
+        active = metadata_info.get('active', False)
 
-        center_group = CenterGroup(adcid=adcid, group=group, proxy=proxy)
+        center_group = CenterGroup(adcid=adcid,
+                                   active=active,
+                                   group=group,
+                                   proxy=proxy)
 
         return center_group
 
@@ -65,6 +70,7 @@ class CenterGroup(GroupAdaptor):
                                 group_id=center.center_id)
         assert group, "No group for center"
         center_group = CenterGroup(adcid=center.adcid,
+                                   active=center.is_active(),
                                    group=group,
                                    proxy=proxy)
 
@@ -76,7 +82,10 @@ class CenterGroup(GroupAdaptor):
 
         metadata_project = center_group.get_metadata_project()
         assert metadata_project, "expecting metadata project"
-        metadata_project.update_info({'adcid': center.adcid})
+        metadata_project.update_info({
+            'adcid': center.adcid,
+            'active': center.is_active()
+        })
 
         return center_group
 
@@ -273,8 +282,8 @@ class CenterGroup(GroupAdaptor):
 
         return self.__center_portal
 
-    def publish_projects(self, projects: List[Dict[str,
-                                                   ProjectAdaptor]]) -> None:
+    def __publish_projects(self, *, key: str,
+                           projects: List[ProjectAdaptor]) -> None:
         """Adds project entry points to center portal project.
 
         Args:
@@ -283,15 +292,56 @@ class CenterGroup(GroupAdaptor):
         portal_project = self.get_portal()
         info = portal_project.get_info()
 
-        pipeline_map = info.get('ingest-projects', {})
+        pipeline_map = info.get(key, {})
         site = self.proxy().get_site()
-        for project_map in projects:
-            for project in project_map.values():
-                url_map = pipeline_map.get(project.label, {})
-                url = f"{site}/#/projects/{project.id}/information"
-                url_map['project-url'] = url
+        for project in projects:
+            url_map = pipeline_map.get(project.label, {})
+            url = f"{site}/#/projects/{project.id}/information"
+            url_map['project-url'] = url
 
-                pipeline_map[project.label] = url_map
+            pipeline_map[project.label] = url_map
 
-        portal_project.update_info({'ingest-projects': pipeline_map})
+        portal_project.update_info({key: pipeline_map})
 
+    def add_study(self, study: Study) -> None:
+        """Adds pipeline details for study.
+
+        Args:
+          study: the study
+        """
+        label_suffix = f"-{study.study_id}"
+        if study.is_primary():
+            label_suffix = ""
+
+        if self.__is_active:
+            pipelines = ['ingest', 'sandbox']
+
+            labels = [
+                f"{pipeline}-{suffix}" for pipeline in pipelines for suffix in [
+                    f"{datatype.lower()}{label_suffix}"
+                    for datatype in study.datatypes
+                ]
+            ]
+
+            ingest_projects = self.__add_projects(labels)
+            self.__publish_projects(key='ingest-projects',
+                                    projects=ingest_projects)
+
+        labels = [ f"retrospective-{datatype.lower()}" for datatype in study.datatypes]
+        self.__add_projects(labels)
+
+        accepted = self.__add_projects([f"accepted{label_suffix}"])
+        assert accepted, "expecting accepted project to be built"
+        self.__publish_projects(key='accepted-project', projects=accepted)
+
+    def __add_projects(self, labels: List[str]) -> List[ProjectAdaptor]:
+        projects = []
+        for project_label in labels:
+            ingest_project = self.get_project(project_label)
+            if not ingest_project:
+                continue
+
+            ingest_project.add_tags(self.get_tags())
+            projects.append(ingest_project)
+        
+        return projects
