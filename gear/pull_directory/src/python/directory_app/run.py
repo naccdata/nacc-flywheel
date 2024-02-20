@@ -12,6 +12,7 @@ from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import ParameterError, ParameterStore
 from redcap.redcap_connection import (REDCapConnectionError,
                                       REDCapReportConnection)
+from yaml.representer import RepresenterError
 
 log = logging.getLogger(__name__)
 
@@ -68,10 +69,20 @@ def main() -> None:
             log.error('Unable to save directory file: %s', error)
             sys.exit(1)
 
-        run(user_report=user_report,
-            user_filename=user_filename,
-            project=destination,
-            dry_run=dry_run)
+        try:
+            yaml_text = run(user_report=user_report,
+                            user_filename=user_filename,
+                            project=destination,
+                            dry_run=dry_run)
+        except RepresenterError as error:
+            log.error("Error: can't create YAML for file %s: %s",
+                      user_filename, error)
+            sys.exit(1)
+
+        with gear_context.open_output(user_filename,
+                                      mode='w',
+                                      encoding='utf-8') as out_file:
+            out_file.write(yaml_text)
 
 
 if __name__ == "__main__":
