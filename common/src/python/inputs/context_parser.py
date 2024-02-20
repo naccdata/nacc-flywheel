@@ -47,24 +47,12 @@ def get_config(*,
 class ConfigParseError(Exception):
     """Indicates that the gear context config doesn't have an expected key."""
 
-    def __init__(self,
-                 *,
-                 error: Optional[Exception] = None,
-                 message: str) -> None:
+    def __init__(self, message: str) -> None:
         super().__init__()
-        self._error = error
         self._message = message
 
     def __str__(self) -> str:
-        if self.error:
-            return f"{self.message}\n{self.error}"
-
         return self.message
-
-    @property
-    def error(self):
-        """The exception causing this error."""
-        return self._error
 
     @property
     def message(self):

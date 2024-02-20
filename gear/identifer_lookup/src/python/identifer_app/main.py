@@ -1,7 +1,7 @@
 """Defines the NACCID lookup computation."""
 
 import logging
-from typing import Any, Dict, List, TextIO
+from typing import Any, Dict, List, Optional, TextIO
 
 from identifiers.model import Identifier
 from inputs.csv_reader import CSVVisitor, read_csv
@@ -32,6 +32,7 @@ class IdentifierVisitor(CSVVisitor):
         self.__identifiers = identifiers
         self.__output_file = output_file
         self.__error_writer = error_writer
+        self.__header: Optional[List[str]] = None
         self.__writer = None
 
     def __get_writer(self):

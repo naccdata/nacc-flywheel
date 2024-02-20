@@ -45,7 +45,7 @@ def main() -> None:
             log.error('Incomplete configuration: %s', error.message)
             sys.exit(1)
         except REDCapConnectionError as error:
-            log.error('Failed to pull users from directory: %s', error.error)
+            log.error('Failed to pull users from directory: %s', error.message)
             sys.exit(1)
 
         dry_run = gear_context.config.get("dry_run", False)

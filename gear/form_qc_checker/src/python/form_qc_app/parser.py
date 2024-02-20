@@ -14,6 +14,7 @@ from yaml.loader import SafeLoader
 log = logging.getLogger(__name__)
 
 
+# pylint: disable=(too-few-public-methods)
 class FormVars:
     """Class to store frquently accessed form data variable names."""
 
@@ -23,6 +24,7 @@ class FormVars:
     PTID = 'ptid'
 
 
+# pylint: disable=(too-few-public-methods)
 class Parser:
     """Class to load the validation rules definitions as python objects."""
 
