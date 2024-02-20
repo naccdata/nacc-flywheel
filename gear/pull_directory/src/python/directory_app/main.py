@@ -11,29 +11,8 @@ from yaml.representer import RepresenterError
 log = logging.getLogger(__name__)
 
 
-def upload_yaml(*, project: ProjectAdaptor, filename: str, data: Any):
-    """Uploads data as YAML to file on project.
-
-    Args:
-      project: destination project
-      filename: name of file
-      data: data object to write as contents
-    """
-
-    try:
-        contents = yaml.safe_dump(data=data,
-                                  allow_unicode=True,
-                                  default_flow_style=False)
-    except RepresenterError as error:
-        log.error("Error: can't create YAML for file %s: %s", filename, error)
-        return
-
-    project.upload_file(
-        FileSpec(filename, contents=contents, content_type='text/yaml'))
-
-
 def run(*, user_report: List[Dict[str, Any]], user_filename: str,
-        project: ProjectAdaptor, dry_run: bool):
+        project: ProjectAdaptor, dry_run: bool) -> str:
     """Converts user report records to UserDirectoryEntry and saves as list of
     dictionary objects to the project.
 
@@ -46,7 +25,7 @@ def run(*, user_report: List[Dict[str, Any]], user_filename: str,
     if dry_run:
         log.info('Would write user entries to file %s on project %s',
                  user_filename, project.label)
-        return
+        return ""
 
     directory = UserDirectory()
     for user_record in user_report:
@@ -57,14 +36,11 @@ def run(*, user_report: List[Dict[str, Any]], user_filename: str,
         directory.add(entry)
 
     entries = [entry.as_dict() for entry in directory.get_entries()]
-    if entries:
-        upload_yaml(project=project, filename=user_filename, data=entries)
 
-    # TODO: figure out why conflicts are causing file errors
-    # this will flag conflicts
+    # this call logs any conflicts
     directory.get_conflicts()
-    # conflicts = directory.get_conflicts()
-    # if conflicts:
-    #     upload_yaml(project=project,
-    #                 filename=f"conflicts-{user_filename}",
-    #                 data=conflicts)
+    # TODO: want to write to metadata for userfile instead
+
+    return yaml.safe_dump(data=entries,
+                          allow_unicode=True,
+                          default_flow_style=False)
