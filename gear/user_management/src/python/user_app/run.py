@@ -5,11 +5,11 @@ import sys
 from io import StringIO
 from typing import Any, List, Optional
 
+from centers.nacc_group import NACCGroup
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.configuration import (ConfigurationError, get_group, get_project,
-                                  read_file)
+from inputs.configuration import ConfigurationError, get_project, read_file
 from inputs.context_parser import ConfigParseError
 from inputs.parameter_store import ParameterError, ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists_from_stream
@@ -49,12 +49,11 @@ def main() -> None:
             sys.exit(1)
 
         dry_run = gear_context.config.get("dry_run", False)
+        admin_group_id = gear_context.config.get("admin_group", "nacc")
         flywheel_proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
+        admin_group = NACCGroup.create(proxy=flywheel_proxy,
+                                       group_id=admin_group_id)
         try:
-            admin_group = get_group(context=gear_context,
-                                    proxy=flywheel_proxy,
-                                    key='admin_group',
-                                    default='nacc')
             source = get_project(context=gear_context,
                                  group=admin_group,
                                  project_key='source')
@@ -63,7 +62,7 @@ def main() -> None:
                                    key='user_file')
             user_list = read_yaml_file(file_bytes)
         except ConfigurationError as error:
-            log.error('Admin group not found: %s', error)
+            log.error('Source project not found: %s', error)
             sys.exit(1)
         except ConfigParseError as error:
             log.error('Cannot read directory file: %s', error.message)

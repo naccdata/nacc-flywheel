@@ -2,10 +2,10 @@
 import logging
 import sys
 
+from centers.nacc_group import NACCGroup
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from fw_client import FWClient
-from inputs.configuration import ConfigurationError, get_group
 from inputs.context_parser import get_api_key
 from inputs.templates import get_template_projects
 from template_app.main import run
@@ -48,14 +48,9 @@ def main():
                                        fw_client=fw_client,
                                        dry_run=dry_run)
 
-        try:
-            admin_group = get_group(context=gear_context,
-                                    proxy=flywheel_proxy,
-                                    key='admin_group',
-                                    default='nacc')
-        except ConfigurationError as error:
-            log.error("Unable to read template projects: %s", error)
-            sys.exit(1)
+        admin_group_id = gear_context.config.get("admin_group", "nacc")
+        admin_group = NACCGroup.create(proxy=flywheel_proxy,
+                                       group_id=admin_group_id)
 
         new_only = gear_context.config.get("new_only", False)
         template_map = get_template_projects(group=admin_group)

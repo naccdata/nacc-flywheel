@@ -3,11 +3,12 @@ user management gear."""
 import logging
 import sys
 
+from centers.nacc_group import NACCGroup
 from directory_app.main import run
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.configuration import ConfigurationError, get_group, get_project
+from inputs.configuration import ConfigurationError, get_project
 from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import ParameterError, ParameterStore
 from redcap.redcap_connection import (REDCapConnectionError,
@@ -49,13 +50,11 @@ def main() -> None:
             sys.exit(1)
 
         dry_run = gear_context.config.get("dry_run", False)
+        admin_group_id = gear_context.config.get("admin_group", "nacc")
         flywheel_proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
-
+        admin_group = NACCGroup.create(proxy=flywheel_proxy,
+                                       group_id=admin_group_id)
         try:
-            admin_group = get_group(context=gear_context,
-                                    proxy=flywheel_proxy,
-                                    key='admin_group',
-                                    default='nacc')
             destination = get_project(context=gear_context,
                                       group=admin_group,
                                       project_key='destination')
