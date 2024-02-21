@@ -1,7 +1,7 @@
 """Defines project creation functions for calls to Flywheel."""
 import json
 import logging
-from typing import List, Mapping, Optional
+from typing import Any, List, Mapping, Optional
 
 import flywheel
 from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
@@ -902,3 +902,21 @@ class ProjectAdaptor:
         view_id = self.__fw.add_dataview(project=self.__project,
                                          viewinput=view_template)
         return view_id.id
+
+    def get_custom_project_info(self, key_path: str) -> Any:
+        """Retrieve custom project info metadata by key.
+
+        Args:
+            key_path (str): _description_
+
+        Returns:
+            Any: metadata value if exists
+        """
+        keys = key_path.split(':')
+        index = 0
+        info = self.__project.info
+        while index < len(keys) and info:
+            info = info.get(keys[index])
+            index += 1
+
+        return info

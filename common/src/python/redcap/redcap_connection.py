@@ -1,4 +1,5 @@
 """Classes and methods for connecting to REDCap."""
+import json
 from json import JSONDecodeError
 from typing import Any, Dict, List, Optional
 
@@ -92,6 +93,39 @@ class REDCapConnection:
 
         return response.text
 
+    def import_records(self, records: str, data_format: str = 'json') -> int:
+        """Import records to the REDCap project.
+
+        Args:
+            records (str): List of records to be imported as a csv/json string
+            data_format (str, optional): Import formart, defaults to 'json'.
+
+        Raises:
+          REDCapConnectionError if the response has an error.
+        """
+
+        message = "importing records"
+        data = {
+            'content': 'record',
+            'action': 'import',
+            'forceAutoNumber': 'false',
+            'data': records,
+            'returnContent': 'count',
+        }
+
+        response = self.post_request(data=data, result_format=data_format)
+        if not response.ok:
+            raise REDCapConnectionError(
+                message=error_message(message=message, response=response))
+
+        try:
+            num_records = json.loads(response.text)['count']
+        except (JSONDecodeError, ValueError) as error:
+            raise REDCapConnectionError(message=message,
+                                        error=error) from error
+
+        return num_records
+
 
 class REDCapReportConnection(REDCapConnection):
     """Defines a REDCap connection meant for reading a particular report."""
@@ -121,16 +155,16 @@ class REDCapReportConnection(REDCapConnection):
         Returns:
           list of records from the report
         """
-        return self.request_json_value(
-            data={
-                'content': 'report',
-                'report_id': str(self.report_id),
-                'csvDelimiter': '',
-                'rawOrLabel': 'raw',
-                'rawOrLabelHeaders': 'raw',
-                'exportCheckboxLabel': 'false'
-            },
-            message="pulling user report from NACC Directory")
+        message = f"pulling report id {self.report_id}"
+        data = {
+            'content': 'report',
+            'report_id': str(self.report_id),
+            'csvDelimiter': '',
+            'rawOrLabel': 'raw',
+            'rawOrLabelHeaders': 'raw',
+            'exportCheckboxLabel': 'false'
+        }
+        return self.request_json_value(data=data, message=message)
 
 
 def error_message(*, message: str, response: Response) -> str:

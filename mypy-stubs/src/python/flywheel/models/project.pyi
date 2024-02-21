@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from ..file_spec import FileSpec
 from ..typing.role_assignment import RoleAssignment
@@ -38,6 +38,10 @@ class Project:
 
     @property
     def copyable(self) -> bool:
+        ...
+
+    @property
+    def info(self) -> Dict:
         ...
 
     # TODO: determine return type
