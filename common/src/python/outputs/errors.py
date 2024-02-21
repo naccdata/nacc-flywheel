@@ -74,6 +74,7 @@ class ErrorWriter(ABC):
         """Writes the error to the output target of implementing class."""
 
     def set_container(self, error: FileError) -> None:
+        """Assigns the container ID for the error."""
         error.container_id = self.__container_id
 
 

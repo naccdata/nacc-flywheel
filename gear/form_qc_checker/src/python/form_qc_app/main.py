@@ -17,30 +17,6 @@ from validator.quality_check import QualityCheck, QualityCheckException
 log = logging.getLogger(__name__)
 
 
-def validate_parents(parents: dict[str, str], input_file: str) -> bool:
-    """Validate Flywheel parent containers for input file.
-
-    Args:
-        parents (dict[str, str]): parent container info [name, id]
-        input_file (str): form data input file
-
-    Returns:
-        bool: returns False if parent container info missing
-    """
-
-    if not parents:
-        log.error('Parent containers not set for input file: %s', input_file)
-        return False
-    if 'group' not in parents:
-        log.error('Missing group id for input file: %s', input_file)
-        return False
-    if 'project' not in parents:
-        log.error('Missing project id for input file: %s', input_file)
-        return False
-
-    return True
-
-
 def update_file_metadata(gear_context: GearToolkitContext, file_name: str,
                          status: str):
     """Add gear tag to input file.
@@ -69,6 +45,7 @@ def update_file_metadata(gear_context: GearToolkitContext, file_name: str,
     gear_context.metadata.update_file(file_name, tags=current_tags)
 
 
+# pylint: disable=(too-many-locals)
 def run(*, fw_client: Client, s3_client: S3BucketReader,
         gear_context: GearToolkitContext):
     """Starts QC process for form data input file. Load rule definitions from
@@ -80,11 +57,9 @@ def run(*, fw_client: Client, s3_client: S3BucketReader,
         gear_context: Flywheel gear context
     """
 
-    form_file_path = gear_context.get_input_path('form_data_file')
-    parents = gear_context.get_input_file_object_value('form_data_file',
-                                                       'parents')
-    if not validate_parents(parents, form_file_path):
-        sys.exit(1)
+    form_file_name = gear_context.get_input_filename('form_data_file')
+    file_obj = gear_context.get_input_file_object('form_data_file')
+    file = fw_client.get_file(file_obj.get('file_id'))
 
     try:
         with gear_context.open_input('form_data_file', 'r',
@@ -103,15 +78,15 @@ def run(*, fw_client: Client, s3_client: S3BucketReader,
         log.error('Empty validation schema, failed to load rule definitions.')
         sys.exit(1)
 
-    pk_field = gear_context.config.get('primary_key', FormVars.NACCID)
-    pk_field = pk_field.lower()
+    pk_field = (gear_context.config.get('primary_key',
+                                        FormVars.NACCID)).lower()
     if pk_field not in form_data:
         log.error('Missing required primary key field %s in form data file',
                   pk_field)
         sys.exit(1)
 
-    datastore = FlywheelDatastore(fw_client, parents['group'],
-                                  parents['project'])
+    datastore = FlywheelDatastore(fw_client, file.parents.group,
+                                  file.parents.project)
 
     strict = gear_context.config.get("strict_mode", True)
     try:
@@ -121,7 +96,6 @@ def run(*, fw_client: Client, s3_client: S3BucketReader,
         sys.exit(1)
 
     valid, dict_erros = qual_check.validate_record(form_data)
-    form_file_name = gear_context.get_input_filename('form_data_file')
     if not valid:
         error_report = ErrorReport(form_file_name)
         error_report.compose_error_report_for_visit(form_data, dict_erros)
@@ -130,4 +104,4 @@ def run(*, fw_client: Client, s3_client: S3BucketReader,
     status = "PASS" if valid else "FAIL"
     update_file_metadata(gear_context, form_file_name, status)
 
-    log.info('QC check status for file %s : %s', form_file_path, status)
+    log.info('QC check status for file %s : %s', form_file_name, status)

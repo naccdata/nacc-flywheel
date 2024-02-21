@@ -46,8 +46,7 @@ class REDCapConnection:
             response = requests.post(self.__url, data=data)
         except requests.exceptions.SSLError as error:
             raise REDCapConnectionError(
-                message=f"SSL error connecting to {self.__url}",
-                error=error) from error
+                message=f"SSL error connecting to {self.__url}") from error
 
         return response
 
@@ -68,8 +67,7 @@ class REDCapConnection:
         try:
             return response.json()
         except JSONDecodeError as error:
-            raise REDCapConnectionError(message=message,
-                                        error=error) from error
+            raise REDCapConnectionError(message=message) from error
 
     def request_text_value(self,
                            *,
@@ -180,24 +178,12 @@ def error_message(*, message: str, response: Response) -> str:
 class REDCapConnectionError(Exception):
     """Exception class representing error connecting to a REDCap project."""
 
-    def __init__(self,
-                 *,
-                 error: Optional[Exception] = None,
-                 message: str) -> None:
+    def __init__(self, message: str) -> None:
         super().__init__()
-        self._error = error
         self._message = message
 
     def __str__(self) -> str:
-        if self.error:
-            return f"{self.message}\n{self.error}"
-
         return self.message
-
-    @property
-    def error(self):
-        """The exception causing this error."""
-        return self._error
 
     @property
     def message(self):
