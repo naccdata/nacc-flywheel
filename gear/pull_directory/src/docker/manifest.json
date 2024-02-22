@@ -30,20 +30,10 @@
             "type": "boolean",
             "default": false
         },
-        "admin_group": {
-            "description": "Name of the admin group",
-            "type": "string",
-            "default": "nacc"
-        },
         "user_file": {
-            "description": "The name for the directory users",
+            "description": "The name for the directory user file",
             "type": "string",
             "default": "nacc-directory-users.yaml"
-        },
-        "destination": {
-            "description": "Label of the destination project",
-            "type": "string",
-            "default": "project-admin"
         },
         "parameter_path": {
             "description": "Parameter path for NACC directory",
