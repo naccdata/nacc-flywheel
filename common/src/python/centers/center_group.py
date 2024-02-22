@@ -36,16 +36,22 @@ class CenterGroup(GroupAdaptor):
         """Creates a CenterGroup from either a center or an existing group.
 
         Args:
-          center: the study center
           group: an existing group
           proxy: the flywheel proxy object
         Returns:
           the CenterGroup for created group
         """
-        metadata_project = ProjectAdaptor(project=proxy.find_projects(
-            group_id=group.id, project_label='metadata')[0],
-                                          proxy=proxy)
+        project = proxy.get_project(group=group, project_label='metadata')
+        if not project:
+            raise CenterError(
+                f"Unable to create center from group {group.label}")
+
+        metadata_project = ProjectAdaptor(project=project, proxy=proxy)
         metadata_info = metadata_project.get_info()
+        if 'adcid' not in metadata_info:
+            raise CenterError(
+                f"Expected group {group.label}/metadata.info to have ADCID")
+
         adcid = metadata_info['adcid']
         active = metadata_info.get('active', False)
 
@@ -285,9 +291,12 @@ class CenterGroup(GroupAdaptor):
 
     def __publish_projects(self, *, key: str,
                            projects: List[ProjectAdaptor]) -> None:
-        """Adds project entry points to center portal project.
+        """Adds project entry points to center portal project metadata.
+
+        Uses key to identify pipeline.
 
         Args:
+          key: metadata key for projects
           projects: the projects to publish
         """
         portal_project = self.get_portal()
@@ -349,3 +358,24 @@ class CenterGroup(GroupAdaptor):
             projects.append(ingest_project)
 
         return projects
+
+
+class CenterError(Exception):
+    """Exception classes for errors related to using group to capture center
+    details."""
+
+    def __init__(self, message: str) -> None:
+        self.__message = message
+        super().__init__(message)
+
+    def __str__(self) -> str:
+        return self.__message
+
+    @property
+    def message(self) -> str:
+        """Returns the message for this error.
+
+        Returns:
+          the message
+        """
+        return self.__message
