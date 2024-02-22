@@ -1,7 +1,7 @@
 """Defines project creation functions for calls to Flywheel."""
 import json
 import logging
-from typing import List, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 import flywheel
 from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
@@ -481,6 +481,12 @@ class GroupAdaptor:
         self.__group = group
         self.__fw = proxy
 
+    # pylint: disable=invalid-name
+    @property
+    def id(self) -> str:
+        """Return the ID for the group."""
+        return self.__group.id
+
     @property
     def label(self) -> str:
         """Return the label of the group."""
@@ -508,7 +514,19 @@ class GroupAdaptor:
         Args:
           tag: the tag to add
         """
+        if tag in self.__group.tags:
+            return
+
         self.__group.add_tag(tag)
+
+    def add_tags(self, tags: Iterable[str]) -> None:
+        """Adds the tags to the group.
+
+        Args:
+          tags: iterable collection of tags
+        """
+        for tag in tags:
+            self.add_tag(tag)
 
     def get_group_users(self,
                         *,
@@ -587,6 +605,15 @@ class GroupAdaptor:
             new_permission.id,
             AccessPermission(id=None, access=new_permission.access))
 
+    def add_permissions(self, permissions: List[AccessPermission]) -> None:
+        """Adds the user access permissions to the group.
+
+        Args:
+          permissions: the list of access permissions
+        """
+        for permission in permissions:
+            self.add_user_access(permission)
+
     def add_role(self, new_role: GroupRole) -> None:
         """Add the role to the the group for center.
 
@@ -600,7 +627,16 @@ class GroupAdaptor:
 
         self.__fw.add_group_role(group=self.__group, role=new_role)
 
-    def get_project(self, label: str) -> Optional[flywheel.Project]:
+    def add_roles(self, roles: List[GroupRole]) -> None:
+        """Adds the roles in the list to the group.
+
+        Args:
+          roles: the list of roles
+        """
+        for role in roles:
+            self.add_role(role)
+
+    def get_project(self, label: str) -> Optional['ProjectAdaptor']:
         """Returns a project in this group with the given label.
 
         Creates a new project if none exists.
@@ -610,7 +646,12 @@ class GroupAdaptor:
         Returns:
           the project in this group with the label
         """
-        return self.__fw.get_project(group=self.__group, project_label=label)
+        project = self.__fw.get_project(group=self.__group,
+                                        project_label=label)
+        if not project:
+            return None
+
+        return ProjectAdaptor(project=project, proxy=self.__fw)
 
     def find_project(self, label: str) -> Optional['ProjectAdaptor']:
         """Returns the project adaptor in the group with the label.
@@ -669,6 +710,15 @@ class ProjectAdaptor:
         """
         if tag not in self.__project.tags:
             self.__project.add_tag(tag)
+
+    def add_tags(self, tags: Iterable[str]) -> None:
+        """Adds given tags to the enclosed project.
+
+        Args:
+          tags: iterable collection of tags
+        """
+        for tag in tags:
+            self.add_tag(tag)
 
     def set_copyable(self, state: bool) -> None:
         """Sets the copyable state of the project to the value.
@@ -902,3 +952,20 @@ class ProjectAdaptor:
         view_id = self.__fw.add_dataview(project=self.__project,
                                          viewinput=view_template)
         return view_id.id
+
+    def get_info(self) -> Dict[str, Any]:
+        """Returns the info object for this project.
+
+        Returns:
+          the dictionary object with info for project
+        """
+        self.__project = self.__project.reload()
+        return self.__project.info
+
+    def update_info(self, info: Dict[str, Any]) -> None:
+        """Updates the info object for this project.
+
+        Args:
+          info: the info object
+        """
+        self.__project.update_info(info)

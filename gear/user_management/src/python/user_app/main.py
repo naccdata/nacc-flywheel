@@ -54,7 +54,7 @@ def create_user_map(
             log.info('Skipping user: %s', user_entry.credentials['id'])
             continue
 
-        center_map[f"{center_prefix}{user_entry.center_id}"].append(user_entry)
+        center_map[f"{center_prefix}{user_entry.adcid}"].append(user_entry)
 
     return center_map
 

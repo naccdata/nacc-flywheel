@@ -39,7 +39,7 @@ def user_entry(email: str,
                                     view_reports=view_reports)
     dummytime = datetime(2023, 1, 1)
     return UserDirectoryEntry(org_name='dummy',
-                              center_id=0,
+                              adcid=0,
                               name=name,
                               email=email,
                               authorizations=authorizations,

@@ -2,10 +2,10 @@
 from typing import Optional
 
 import pytest
-from projects.project import Center, Project, ProjectVisitor
+from projects.study import Center, Study, StudyVisitor
 
 
-class DummyVisitor(ProjectVisitor):
+class DummyVisitor(StudyVisitor):
     """Visitor for testing apply methods."""
 
     def __init__(self) -> None:
@@ -19,8 +19,8 @@ class DummyVisitor(ProjectVisitor):
     def visit_datatype(self, datatype: str):
         self.datatype_name = datatype
 
-    def visit_project(self, project: Project) -> None:
-        self.project_name = project.name
+    def visit_study(self, study: Study) -> None:
+        self.project_name = study.name
 
 
 # pylint: disable=(no-self-use)
@@ -31,7 +31,8 @@ class TestCenter:
         """Sanity check on object creation and properties."""
         center = Center(tags=['adcid-7'],
                         name="Alpha ADRC",
-                        center_id='alpha-adrc')
+                        center_id='alpha-adrc',
+                        adcid=7)
         assert 'adcid-7' in center.tags
         assert center.name == "Alpha ADRC"
         assert center.is_active()
@@ -43,11 +44,13 @@ class TestCenter:
             'tags': ['adcid-7'],
             'name': 'Alpha ADRC',
             'center-id': 'alpha-adrc',
+            'adcid': 7,
             'is-active': True
         })
         center2 = Center(tags=['adcid-7'],
                          name="Alpha ADRC",
-                         center_id='alpha-adrc')
+                         center_id='alpha-adrc',
+                         adcid=7)
         assert center == center2
 
         with pytest.raises(KeyError):
@@ -58,47 +61,51 @@ class TestCenter:
         visitor = DummyVisitor()
         center = Center(tags=['adcid-1'],
                         name="Dummy Center",
-                        center_id="dummy")
+                        center_id="dummy",
+                        adcid=1)
         center.apply(visitor)
         assert visitor.center_name == "Dummy Center"
 
 
-class TestProject:
+class TestStudy:
     """Tests for Project class."""
 
     def test_object(self):
         """Tests for object creation."""
-        project = Project(name="Project Alpha",
-                          project_id='project-alpha',
-                          centers=[
-                              Center(tags=['adcid-1'],
-                                     name='A Center',
-                                     center_id='ac',
-                                     active=True)
-                          ],
-                          datatypes=['dicom'],
-                          published=True,
-                          primary=True)
-        assert project.project_id == "project-alpha"
+        project = Study(name="Project Alpha",
+                        study_id='project-alpha',
+                        centers=[
+                            Center(tags=['adcid-1'],
+                                   name='A Center',
+                                   center_id='ac',
+                                   adcid=1,
+                                   active=True)
+                        ],
+                        datatypes=['dicom'],
+                        published=True,
+                        primary=True)
+        assert project.study_id == "project-alpha"
         assert project.centers == [
             Center(tags=['adcid-1'],
                    name='A Center',
                    center_id='ac',
+                   adcid=1,
                    active=True)
         ]
         assert project.datatypes == ['dicom']
         assert project.is_published()
         assert project.is_primary()
 
-        project2 = Project.create({
-            'project':
+        project2 = Study.create({
+            'study':
             'Project Alpha',
-            'project-id':
+            'study-id':
             'project-alpha',
             'centers': [{
                 'tags': ['adcid-1'],
                 'name': 'A Center',
                 'center-id': 'ac',
+                'adcid': 1,
                 'is-active': True
             }],
             'datatypes': ['dicom'],
@@ -110,15 +117,15 @@ class TestProject:
         assert project == project2
 
         with pytest.raises(KeyError):
-            Project.create({})
+            Study.create({})
 
     def test_apply(self):
         """Test project apply method."""
         visitor = DummyVisitor()
-        project = Project(name='Project Beta',
-                          project_id='beta',
-                          centers=[],
-                          datatypes=[],
-                          published=True)
+        project = Study(name='Project Beta',
+                        study_id='beta',
+                        centers=[],
+                        datatypes=[],
+                        published=True)
         project.apply(visitor)
         assert visitor.project_name == 'Project Beta'

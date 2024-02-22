@@ -14,7 +14,7 @@ class TestDirectory:
         """Tests around creating objects."""
         entry = UserDirectoryEntry(
             org_name='the center',
-            center_id=0,
+            adcid=0,
             name=PersonName(first_name='chip', last_name='puppy'),
             email='chip@theorg.org',
             authorizations=Authorizations(submit=['form'],
