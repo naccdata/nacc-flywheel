@@ -67,7 +67,7 @@ class TestCenter:
         assert visitor.center_name == "Dummy Center"
 
 
-class TestProject:
+class TestStudy:
     """Tests for Project class."""
 
     def test_object(self):
@@ -97,9 +97,9 @@ class TestProject:
         assert project.is_primary()
 
         project2 = Study.create({
-            'project':
+            'study':
             'Project Alpha',
-            'project-id':
+            'study-id':
             'project-alpha',
             'centers': [{
                 'tags': ['adcid-1'],

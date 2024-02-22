@@ -1,21 +1,21 @@
-# Project management
+# Study management
 
-The project management app builds containers within Flywheel for a coordinating center supported project.
+The project management app builds containers within Flywheel for a coordinating center supported study.
 
-A *coordinating center supported project* is a research activity for which data is being collected at the coordinating center.
+A *coordinating center supported study* is a research activity for which data is being collected at the coordinating center.
 For NACC is this primarily the ADRC program for which data is captured at Alzheimer's Disease Research Centers (ADRCs), and then transferred to NACC for harmonization and release.
 
 ## Input 
 
-This app takes a YAML file describing the project and creates containers within Flywheel to support the ingest and curation of the collected data.
+This app takes a YAML file describing the study and creates containers within Flywheel to support the ingest and curation of the collected data.
 
 The file format is
 
 ```yaml
 ---
-project: <project-name>
-project-label: <string-identifier>
-primary: <whether is primary project>
+study: <study-name>
+study-id: <string-identifier>
+primary: <whether is primary study>
 centers: <list of center information>
 datatypes: <list of datatype identifiers>
 published: <whether the data is published>
@@ -25,22 +25,22 @@ A center is described using the following fields
 
 ```yaml
 name: <center name>
-center-label: <string identifier>
+center-id: <string identifier>
 adcid: <int>
 is-active: <whether the center is active>
-tags: <list of strings for tagging project>
+tags: <list of strings for tagging study>
 ```
 
 Notes:
-1. Only one project should have `primary` set to `True`.
+1. Only one study should have `primary` set to `True`.
 
-2. Like with any YAML file, you can include several project definitions separated by a line with `---`.
-   However, it is more pragmatic to have one file per project for large projects.
+2. Like with any YAML file, you can include several study definitions separated by a line with `---`.
+   However, it is more pragmatic to have one file per study for large studys.
 
 2. The `tags` are strings that will be permissible as tags within the group for the center. 
-   Each tag will also be added to ingest projects within the center's pipeline(s).
+   Each tag will also be added to ingest studys within the center's pipeline(s).
 
-3. Choose `center-label` values to be mnemonic for the coordinating center staff.
+3. Choose `center-id` values to be mnemonic for the coordinating center staff.
    The choice will be visible to centers, but they will not need to type the value in regular interactions. 
    Staff, on the other hand, will need to use the strings in filters.
 
@@ -54,17 +54,17 @@ Notes:
 
 ```yaml
 ---
-project: "Project Tau"
-project-label: tau
+study: "Project Tau"
+study-id: tau
 centers:
   - name: "Alpha Center"
-    center-label: alpha
+    center-id: alpha
     adcid: 1
     is-active: True
     tags:
       - 'center-code-1006'
   - name: "Beta Center"
-    center-label: beta-inactive
+    center-id: beta-inactive
     adcid: 2
     is-active: False
     tags:
@@ -74,17 +74,17 @@ datatypes:
   - dicom
 published: True
 ---
-project: "Project Zeta"
-project-id: zeta
+study: "Project Zeta"
+study-id: zeta
 centers:
   - name: "Alpha Center"
-    center-label: alpha
+    center-id: alpha
     adcid: 1
     is-active: True
     tags:
       - 'center-code-1006'
   - name: "Gamma ADRC"
-    center-label: gamma-adrc
+    center-id: gamma-adrc
     adcid: 3
     is-active: True
     tags:

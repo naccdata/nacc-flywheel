@@ -60,6 +60,15 @@ class Center:
                  adcid: int,
                  active: bool = True,
                  tags: Optional[List[str]] = None) -> None:
+        """Initializes a center object.
+
+        Args:
+          name: the name of the center
+          center_id: symbolic ID for center
+          adcid: the numeric ADC ID for center used in data
+          active: whether the center is active
+          tags: list of tags for the center
+        """
         self.__name = name
         self.__active = active
         self.__center_id = center_id
@@ -135,6 +144,15 @@ class Study:
                  datatypes: List[str],
                  published: bool = False,
                  primary: bool = False) -> None:
+        """Initializes a study object.
+
+        Args:
+          name: the name of the study
+          study_id: the symbolic ID of study
+          centers: the list of centers in the study
+          published: whether the data for the study is to be released
+          primary: whether this is the primary study of the coordinating center
+        """
         self.__name = name
         self.__centers = centers
         self.__datatypes = datatypes
@@ -201,8 +219,8 @@ class Study:
             primary_study = study['primary']
 
         return Study(
-            name=study['project'],
-            study_id=study['project-id'],
+            name=study['study'],
+            study_id=study['study-id'],
             centers=[Center.create(center) for center in study['centers']],
             datatypes=study['datatypes'],
             published=study['published'],

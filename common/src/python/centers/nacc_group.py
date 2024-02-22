@@ -59,6 +59,7 @@ class NACCGroup(GroupAdaptor):
         Args:
           adcid: the ADC ID
           group_label: the label for the center group
+          group_id: the ID for the center group
         """
         center_map = self.get_center_map()
         metadata = self.get_metadata()

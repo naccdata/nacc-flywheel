@@ -1,6 +1,6 @@
 ---
-project: "Project Tau"
-project-id: tau
+study: "Project Tau"
+study-id: tau
 centers:
   - name: "Alpha Center"
     center-id: alpha
@@ -19,8 +19,8 @@ datatypes:
   - dicom
 published: True
 ---
-project: "Project Zeta"
-project-id: zeta
+study: "Project Zeta"
+study-id: zeta
 centers:
   - name: "Alpha Center"
     center-id: alpha

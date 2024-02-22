@@ -58,6 +58,7 @@ class StudyMappingAdaptor:
             flywheel_proxy: the proxy for the flywheel instance
             admin_access: the access permissions for administrative users
             center_roles: the roles for center users
+            nacc_group: the admin group for managing centers
             new_only: whether to only process new centers
         """
         self.__fw = flywheel_proxy
