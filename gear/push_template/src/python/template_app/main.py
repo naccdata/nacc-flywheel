@@ -3,7 +3,7 @@ of the the Flywheel instance."""
 import logging
 from typing import Dict
 
-from centers.center_group import CenterGroup
+from centers.center_group import CenterError, CenterGroup
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from projects.template_project import TemplateProject
 
@@ -26,7 +26,13 @@ def run(*, proxy: FlywheelProxy, center_tag_pattern: str, new_only: bool,
         return
 
     for group in group_list:
-        center = CenterGroup.create_from_group(group=group, proxy=proxy)
+        try:
+            center = CenterGroup.create_from_group(group=group, proxy=proxy)
+        except CenterError as error:
+            log.warning('failed to create center for group %s: %s',
+                        group.label, error.message)
+            continue
+
         if new_only and 'new-center' not in center.get_tags():
             continue
 
