@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from typing import Dict, Optional
 
-from centers.center_group import CenterGroup
+from centers.center_group import CenterError, CenterGroup
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
@@ -60,8 +60,8 @@ def get_adcid(proxy: FlywheelProxy, file_id: str) -> Optional[int]:
     file = proxy.get_file(file_id)
     group_id = file.parents.group
     groups = proxy.find_groups(group_id)
-    center = CenterGroup(group=groups[0], proxy=proxy)
-    return center.center_id()
+    center = CenterGroup.create_from_group(group=groups[0], proxy=proxy)
+    return center.adcid
 
 
 # pylint: disable=(too-many-locals)
@@ -97,11 +97,15 @@ def main():
             log.error('Missing input file')
             sys.exit(1)
 
-        file_id = file_input['object']['file_id']
-        adcid = get_adcid(proxy=proxy, file_id=file_id)
-        if adcid is None:
-            log.error('Unable to determine center ID')
+        try:
+            file_id = file_input['object']['file_id']
+            adcid = get_adcid(proxy=proxy, file_id=file_id)
+        except CenterError as error:
+            log.error(
+                'Unable to determine center ID for parent group of file: %s',
+                error.message)
             sys.exit(1)
+        assert adcid, "expect adcid unless exception thrown"
 
         identifiers = get_identifiers(rds_parameters=rds_parameters,
                                       adcid=adcid)

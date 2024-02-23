@@ -119,8 +119,7 @@ class REDCapConnection:
         try:
             num_records = json.loads(response.text)['count']
         except (JSONDecodeError, ValueError) as error:
-            raise REDCapConnectionError(message=message,
-                                        error=error) from error
+            raise REDCapConnectionError(message=message) from error
 
         return num_records
 

@@ -4,7 +4,7 @@ import re
 import sys
 from typing import Dict
 
-from centers.center_group import CenterGroup
+from centers.center_group import CenterError, CenterGroup
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
@@ -28,10 +28,15 @@ def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
     Returns:
       dictionary mapping from adcid to group
     """
-    group_list = [
-        CenterGroup(group=group, proxy=proxy)
-        for group in proxy.find_groups_by_tag(center_tag_pattern)
-    ]
+    try:
+        group_list = [
+            CenterGroup.create_from_group(group=group, proxy=proxy)
+            for group in proxy.find_groups_by_tag(center_tag_pattern)
+        ]
+    except CenterError as error:
+        log.error('failed to create center from group: %s', error.message)
+        return {}
+
     if not group_list:
         log.warning('no centers found matching tag pattern %s',
                     center_tag_pattern)

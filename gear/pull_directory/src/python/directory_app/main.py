@@ -3,29 +3,18 @@ import logging
 from typing import Any, Dict, List
 
 import yaml
-from flywheel import FileSpec
-from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from redcap.nacc_directory import UserDirectory, UserDirectoryEntry
-from yaml.representer import RepresenterError
 
 log = logging.getLogger(__name__)
 
 
-def run(*, user_report: List[Dict[str, Any]], user_filename: str,
-        project: ProjectAdaptor, dry_run: bool) -> str:
+def run(*, user_report: List[Dict[str, Any]]) -> str:
     """Converts user report records to UserDirectoryEntry and saves as list of
     dictionary objects to the project.
 
     Args:
       user_report: user report records
-      user_filename: name of file to create
-      project: project to which file is uploaded
     """
-
-    if dry_run:
-        log.info('Would write user entries to file %s on project %s',
-                 user_filename, project.label)
-        return ""
 
     directory = UserDirectory()
     for user_record in user_report:

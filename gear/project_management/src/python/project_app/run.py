@@ -2,7 +2,8 @@
 
 project - name of project
 centers - array of centers
-    center-id - "ADC" ID of center (protected info)
+    center-id - the group ID of center
+    adcid - the ADC ID used to code data
     name - name of center
     is-active - whether center is active, has users if True
 datatypes - array of datatype names (form, dicom)
@@ -11,9 +12,9 @@ published - boolean indicating whether data is to be published
 import logging
 import sys
 
+from centers.nacc_group import NACCGroup
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.configuration import ConfigurationError, get_group
 from inputs.yaml import YAMLReadError, get_object_lists
 from project_app.main import run
 
@@ -58,15 +59,10 @@ def main():
             log.error('Unable to read YAML file %s: %s', project_file, error)
             sys.exit(1)
 
-        admin_access = []
-        try:
-            admin_group = get_group(context=gear_context,
-                                    proxy=flywheel_proxy,
-                                    key='admin_group',
-                                    default='nacc')
-            admin_access = admin_group.get_user_access()
-        except ConfigurationError as error:
-            log.warning("Unable to load admin users: %s", error)
+        admin_group_id = gear_context.config.get("admin_group", "nacc")
+        admin_group = NACCGroup.create(proxy=flywheel_proxy,
+                                       group_id=admin_group_id)
+        admin_access = admin_group.get_user_access()
 
         new_only = gear_context.config.get("new_only", False)
         run(proxy=flywheel_proxy,

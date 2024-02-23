@@ -8,8 +8,10 @@ import re
 from typing import Dict, List, Optional
 
 import flywheel
+from flywheel.models.group import Group
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
+from projects.study import Center, Study
 from projects.template_project import TemplateProject
 
 log = logging.getLogger(__name__)
@@ -18,24 +20,86 @@ log = logging.getLogger(__name__)
 class CenterGroup(GroupAdaptor):
     """Defines an adaptor for a group representing a center."""
 
-    def __init__(self, *, group: flywheel.Group, proxy: FlywheelProxy) -> None:
+    def __init__(self, *, adcid: int, active: bool, group: flywheel.Group,
+                 proxy: FlywheelProxy) -> None:
         super().__init__(group=group, proxy=proxy)
         self.__datatypes: List[str] = []
         self.__ingest_stages = ['ingest', 'retrospective']
-        self.__center_id = None
+        self.__adcid = adcid
+        self.__is_active = active
+        self.__center_portal: Optional[ProjectAdaptor] = None
+        self.__metadata: Optional[ProjectAdaptor] = None
 
-    def center_id(self) -> Optional[int]:
-        """Returns the center ID for this group."""
-        if self.__center_id:
-            return self.__center_id
+    @classmethod
+    def create_from_group(cls, *, proxy: FlywheelProxy,
+                          group: Group) -> 'CenterGroup':
+        """Creates a CenterGroup from either a center or an existing group.
 
-        pattern = re.compile(r'adcid-(\d+)')
-        tag = list(filter(pattern.match, self.get_tags()))[0]
-        match = pattern.match(tag)
-        if not match:
-            return None
+        Args:
+          group: an existing group
+          proxy: the flywheel proxy object
+        Returns:
+          the CenterGroup for created group
+        """
+        project = proxy.get_project(group=group, project_label='metadata')
+        if not project:
+            raise CenterError(
+                f"Unable to create center from group {group.label}")
 
-        return int(match.group(1))
+        metadata_project = ProjectAdaptor(project=project, proxy=proxy)
+        metadata_info = metadata_project.get_info()
+        if 'adcid' not in metadata_info:
+            raise CenterError(
+                f"Expected group {group.label}/metadata.info to have ADCID")
+
+        adcid = metadata_info['adcid']
+        active = metadata_info.get('active', False)
+
+        center_group = CenterGroup(adcid=adcid,
+                                   active=active,
+                                   group=group,
+                                   proxy=proxy)
+
+        return center_group
+
+    @classmethod
+    def create_from_center(cls, *, proxy: FlywheelProxy,
+                           center: Center) -> 'CenterGroup':
+        """Creates a CenterGroup from a center object.
+
+        Args:
+          center: the study center
+          proxy: the flywheel proxy object
+        Returns:
+          the CenterGroup for the center
+        """
+        group = proxy.get_group(group_label=center.name,
+                                group_id=center.center_id)
+        assert group, "No group for center"
+        center_group = CenterGroup(adcid=center.adcid,
+                                   active=center.is_active(),
+                                   group=group,
+                                   proxy=proxy)
+
+        tags = list(center.tags)
+        adcid_tag = f"adcid-{center.adcid}"
+        if adcid_tag not in tags:
+            tags.append(adcid_tag)
+        center_group.add_tags(tags)
+
+        metadata_project = center_group.get_metadata()
+        assert metadata_project, "expecting metadata project"
+        metadata_project.update_info({
+            'adcid': center.adcid,
+            'active': center.is_active()
+        })
+
+        return center_group
+
+    @property
+    def adcid(self) -> int:
+        """The ADCID of this center."""
+        return self.__adcid
 
     def __get_matching_projects(self, prefix: str) -> List[ProjectAdaptor]:
         """Returns the projects for the center with labels that match the
@@ -74,17 +138,17 @@ class CenterGroup(GroupAdaptor):
 
         return projects[0]
 
-    def get_metadata_project(self) -> Optional[ProjectAdaptor]:
+    def get_metadata(self) -> Optional[ProjectAdaptor]:
         """Returns the metadata project for this center.
 
         Returns:
           the project labeled 'metadata', None if there is none
         """
-        projects = self.__get_matching_projects('metadata')
-        if not projects:
-            return None
+        if not self.__metadata:
+            self.__metadata = self.get_project('metadata')
+            assert self.__metadata, "expecting metadata project"
 
-        return projects[0]
+        return self.__metadata
 
     @classmethod
     def get_datatype(cls, *, stage: str, label: str) -> Optional[str]:
@@ -212,3 +276,106 @@ class CenterGroup(GroupAdaptor):
             self.apply_to_ingest(stage=stage, template_map=template_map)
 
         self.apply_to_accepted(template_map)
+
+    def get_portal(self) -> ProjectAdaptor:
+        """Returns the center-portal project.
+
+        Returns:
+          The center-portal project
+        """
+        if not self.__center_portal:
+            self.__center_portal = self.get_project('center-portal')
+            assert self.__center_portal, "expecting center-portal project"
+
+        return self.__center_portal
+
+    def __publish_projects(self, *, key: str,
+                           projects: List[ProjectAdaptor]) -> None:
+        """Adds project entry points to center portal project metadata.
+
+        Uses key to identify pipeline.
+
+        Args:
+          key: metadata key for projects
+          projects: the projects to publish
+        """
+        portal_project = self.get_portal()
+        info = portal_project.get_info()
+
+        pipeline_map = info.get(key, {})
+        site = self.proxy().get_site()
+        for project in projects:
+            url_map = pipeline_map.get(project.label, {})
+            url = f"{site}/#/projects/{project.id}/information"
+            url_map['project-url'] = url
+
+            pipeline_map[project.label] = url_map
+
+        portal_project.update_info({key: pipeline_map})
+
+    def add_study(self, study: Study) -> None:
+        """Adds pipeline details for study.
+
+        Args:
+          study: the study
+        """
+        label_suffix = f"-{study.study_id}"
+        if study.is_primary():
+            label_suffix = ""
+
+        if self.__is_active:
+            pipelines = ['ingest', 'sandbox']
+
+            labels = [
+                f"{pipeline}-{suffix}" for pipeline in pipelines
+                for suffix in [
+                    f"{datatype.lower()}{label_suffix}"
+                    for datatype in study.datatypes
+                ]
+            ]
+
+            ingest_projects = self.__add_projects(labels)
+            self.__publish_projects(key='ingest-projects',
+                                    projects=ingest_projects)
+
+        labels = [
+            f"retrospective-{datatype.lower()}" for datatype in study.datatypes
+        ]
+        self.__add_projects(labels)
+
+        accepted = self.__add_projects([f"accepted{label_suffix}"])
+        assert accepted, "expecting accepted project to be built"
+        self.__publish_projects(key='accepted-project', projects=accepted)
+
+    def __add_projects(self, labels: List[str]) -> List[ProjectAdaptor]:
+        projects = []
+        for project_label in labels:
+            ingest_project = self.get_project(project_label)
+            if not ingest_project:
+                continue
+
+            ingest_project.add_tags(self.get_tags())
+            projects.append(ingest_project)
+
+        return projects
+
+
+class CenterError(Exception):
+    """Exception classes for errors related to using group to capture center
+    details."""
+
+    def __init__(self, message: str) -> None:
+        self.__message = message
+        super().__init__(message)
+
+    def __str__(self) -> str:
+        return self.__message
+
+    @property
+    def message(self) -> str:
+        """Returns the message for this error.
+
+        Returns:
+          the message
+        """
+        return self.__message
