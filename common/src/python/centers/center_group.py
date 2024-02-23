@@ -348,14 +348,22 @@ class CenterGroup(GroupAdaptor):
         self.__publish_projects(key='accepted-project', projects=accepted)
 
     def __add_projects(self, labels: List[str]) -> List[ProjectAdaptor]:
+        """Adds projects with the labels to this group and returns the
+        corresponding ProjectAdaptors.
+
+        Args:
+          labels: the labels for the centers
+        Returns:
+          the list of ProjectAdaptors with the labels
+        """
         projects = []
         for project_label in labels:
-            ingest_project = self.get_project(project_label)
-            if not ingest_project:
+            project = self.get_project(project_label)
+            if not project:
                 continue
 
-            ingest_project.add_tags(self.get_tags())
-            projects.append(ingest_project)
+            project.add_tags(self.get_tags())
+            projects.append(project)
 
         return projects
 
