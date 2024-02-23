@@ -27,8 +27,7 @@ def get_destination_project_id(destination: dict, fw_client: Client) -> str:
     """
 
     if not destination or 'type' not in destination or 'id' not in destination:
-        log.error(
-            'Gear destination not set, please specify destination project')
+        log.error('Gear destination not set, specify the destination project')
         sys.exit(1)
 
     dest_type = destination.get('type')
@@ -43,7 +42,7 @@ def get_destination_project_id(destination: dict, fw_client: Client) -> str:
         log.error('Invalid gear destination %s', destination)
         sys.exit(1)
 
-    return project_id
+    return str(project_id)
 
 
 # pylint: disable=(too-many-locals)
@@ -59,8 +58,8 @@ def main():
 
             api_key = parameter_store.get_api_key()
 
-            param_path: str = get_config(gear_context=gear_context,
-                                         key='parameter_path')
+            param_path = str(
+                get_config(gear_context=gear_context, key='parameter_path'))
         except ParameterError as error:
             log.error('Parameter error: %s', error)
             sys.exit(1)
@@ -100,7 +99,8 @@ def main():
         redcap_connection = REDCapReportConnection.create_from(
             report_parameters)
 
-        run(fw_prj_adaptor=prj_adaptor,
+        run(gear_context=gear_context,
+            fw_prj_adaptor=prj_adaptor,
             redcap_con=redcap_connection,
             redcap_pid=redcap_prj_id)
 

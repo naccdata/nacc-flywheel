@@ -1,41 +1,35 @@
 """Defines REDCap to Flywheel Transfer."""
-import csv
-import io
 import json
 import logging
 import sys
 from datetime import datetime
-from typing import Dict, List
+from typing import Any, Dict, List, TextIO
 
-from flywheel import FileSpec
+import pandas as pd
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
+from flywheel_gear_toolkit import GearToolkitContext
 from redcap.redcap_connection import (REDCapConnectionError,
                                       REDCapReportConnection)
 
 log = logging.getLogger(__name__)
 
 
-def upload_to_flywheel(fw_prj_adaptor: ProjectAdaptor,
-                       visits: List[Dict[str, str]], timestamp: datetime):
+def upload_to_flywheel(visits: List[Dict[str, Any]], output_file: TextIO):
     """Convert the visits details to CSV format and upload to Flywheel.
 
     Args:
-        fw_prj_adaptor (ProjectAdaptor): Flywheel project to transfer data
         visits (List[Dict[str, str]]): List of new/updated visits
-        timestamp (datetime): Upload timestamp
+        output_file (TextIO): output file created in Flywheel ingest project
     """
-    contents = io.StringIO()
-    fields = visits[0].keys()
-    writer = csv.DictWriter(contents, fieldnames=fields)
-    writer.writeheader()
-    writer.writerows(visits)
 
-    file_name = 'udsv4_' + timestamp.strftime('%Y-%m-%d-%H%M%S') + '.csv'
-    file_spec = FileSpec(name=file_name,
-                         contents=contents.getvalue(),
-                         content_type='text/csv')
-
-    fw_prj_adaptor.upload_file(file_spec)  # TODO - catch upload errors
+    input_df = pd.DataFrame(visits)
+    # drop REDCap specific columns
+    output_df = input_df.drop([
+        'redcap_event_name', 'redcap_repeat_instrument',
+        'redcap_repeat_instance', 'upld_ready___1'
+    ],
+                              axis=1)
+    output_df.to_csv(path_or_buf=output_file, index=False, doublequote=False)
 
 
 def reset_upload_checkbox(redcap_con: REDCapReportConnection,
@@ -65,8 +59,8 @@ def reset_upload_checkbox(redcap_con: REDCapReportConnection,
         sys.exit(1)
 
 
-def run(*, fw_prj_adaptor: ProjectAdaptor, redcap_con: REDCapReportConnection,
-        redcap_pid: str):
+def run(*, gear_context: GearToolkitContext, fw_prj_adaptor: ProjectAdaptor,
+        redcap_con: REDCapReportConnection, redcap_pid: str):
     """Download new/updated records from REDCap and upload to Flywheel as a CSV
     file.
 
@@ -90,5 +84,8 @@ def run(*, fw_prj_adaptor: ProjectAdaptor, redcap_con: REDCapReportConnection,
         sys.exit(0)
 
     timestamp = datetime.now()
-    upload_to_flywheel(fw_prj_adaptor, records_list, timestamp)
+    file_name = 'udsv4_' + timestamp.strftime('%Y-%m-%d-%H%M%S') + '.csv'
+    with gear_context.open_output(file_name, mode='w',
+                                  encoding='utf-8') as output_file:
+        upload_to_flywheel(records_list, output_file)
     reset_upload_checkbox(redcap_con, records_list, timestamp)
