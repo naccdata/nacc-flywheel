@@ -27,7 +27,7 @@ project for managing the consolidated data.
 import logging
 from typing import List, Optional
 
-from centers.center_group import CenterGroup
+from centers.center_group import CenterError, CenterGroup
 from centers.nacc_group import NACCGroup
 from flywheel import AccessPermission
 from flywheel.models.group_role import GroupRole
@@ -143,7 +143,11 @@ class StudyMappingAdaptor:
             if self.__admin_access:
                 center_group.add_permissions(self.__admin_access)
 
-            center_group.add_study(self.__study)
+            try:
+                center_group.add_study(self.__study)
+            except CenterError as error:
+                log.error("Error adding study %s to center %s: %s",
+                          self.__study.name, center.name, error)
 
     def create_release_pipeline(self) -> None:
         """Creates the release pipeline for this study if the study is
