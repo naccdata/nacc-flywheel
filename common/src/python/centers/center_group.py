@@ -13,6 +13,7 @@ from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
 from projects.study import Center, Study
 from projects.template_project import TemplateProject
+from pydantic import AliasGenerator, BaseModel, ConfigDict, ValidationError
 
 log = logging.getLogger(__name__)
 
@@ -289,83 +290,97 @@ class CenterGroup(GroupAdaptor):
 
         return self.__center_portal
 
-    def __publish_projects(self, *, key: str,
-                           projects: List[ProjectAdaptor]) -> None:
-        """Adds project entry points to center portal project metadata.
-
-        Uses key to identify pipeline.
-
-        Args:
-          key: metadata key for projects
-          projects: the projects to publish
-        """
-        portal_project = self.get_portal()
-        info = portal_project.get_info()
-
-        pipeline_map = info.get(key, {})
-        site = self.proxy().get_site()
-        for project in projects:
-            url_map = pipeline_map.get(project.label, {})
-            url = f"{site}/#/projects/{project.id}/information"
-            url_map['project-url'] = url
-
-            pipeline_map[project.label] = url_map
-
-        portal_project.update_info({key: pipeline_map})
-
     def add_study(self, study: Study) -> None:
         """Adds pipeline details for study.
 
         Args:
           study: the study
         """
-        label_suffix = f"-{study.study_id}"
+        portal_info = self.get_portal_info()
+        if not portal_info:
+            portal_info = CenterPortalMetadata(studies={})
+
+        study_info = portal_info.get(study)
+
+        suffix = f"-{study.study_id}"
         if study.is_primary():
-            label_suffix = ""
+            suffix = ""
+
+        site = self.proxy().get_site()
+
+        accepted_label = f"accepted{suffix}"
+        accepted_project = self.__add_project(accepted_label)
+        study_info.add_accepted(
+            ProjectMetadata.create(site=site,
+                                   study_id=study.study_id,
+                                   project_id=accepted_project.id,
+                                   project_label=accepted_label))
 
         if self.__is_active:
-            pipelines = ['ingest', 'sandbox']
+            for pipeline in ['ingest', 'sandbox']:
+                for datatype in study.datatypes:
+                    project_label = f"{pipeline}-{datatype.lower()}{suffix}"
+                    project = self.__add_project(project_label)
+                    study_info.add_ingest(
+                        IngestProjectMetadata.create(
+                            site=site,
+                            study_id=study.study_id,
+                            project_id=project.id,
+                            project_label=project_label,
+                            datatype=datatype))
 
-            labels = [
-                f"{pipeline}-{suffix}" for pipeline in pipelines
-                for suffix in [
-                    f"{datatype.lower()}{label_suffix}"
-                    for datatype in study.datatypes
-                ]
-            ]
-
-            ingest_projects = self.__add_projects(labels)
-            self.__publish_projects(key='ingest-projects',
-                                    projects=ingest_projects)
+        self.update_portal_info(portal_info)
 
         labels = [
             f"retrospective-{datatype.lower()}" for datatype in study.datatypes
         ]
-        self.__add_projects(labels)
+        for label in labels:
+            self.__add_project(label)
 
-        accepted = self.__add_projects([f"accepted{label_suffix}"])
-        assert accepted, "expecting accepted project to be built"
-        self.__publish_projects(key='accepted-project', projects=accepted)
+    def get_portal_info(self) -> 'CenterPortalMetadata':
+        """Gets the portal info for this center.
 
-    def __add_projects(self, labels: List[str]) -> List[ProjectAdaptor]:
-        """Adds projects with the labels to this group and returns the
-        corresponding ProjectAdaptors.
+        Returns:
+          the center portal metadata object for the info of the portal project
+        Raises:
+            CenterError: if info in portal project is not in expected format
+        """
+        portal_project = self.get_portal()
+        info = portal_project.get_info()
+        if not info:
+            return CenterPortalMetadata(studies={})
+
+        try:
+            return CenterPortalMetadata.model_validate(info)
+        except ValidationError as error:
+            raise CenterError(f"Info in {self.label}/{portal_project.label}"
+                              " does not match expected format") from error
+
+    def update_portal_info(self, portal_info: 'CenterPortalMetadata') -> None:
+        """Updates the portal info for this center.
 
         Args:
-          labels: the labels for the centers
-        Returns:
-          the list of ProjectAdaptors with the labels
+          portal_info: the center portal metadata object
         """
-        projects = []
-        for project_label in labels:
-            project = self.get_project(project_label)
-            if not project:
-                continue
+        portal_project = self.get_portal()
+        portal_project.update_info(
+            portal_info.model_dump(by_alias=True, exclude_none=True))
 
-            project.add_tags(self.get_tags())
-            projects.append(project)
+    def __add_project(self, label: str) -> ProjectAdaptor:
+        """Adds a project with the label to this group and returns the
+        corresponding ProjectAdaptor.
 
-        return projects
+        Args:
+          label: the label for the project
+        Returns:
+          the ProjectAdaptor for the project
+        """
+        project = self.get_project(label)
+        if not project:
+            raise CenterError(f"failed to create project {self.label}/{label}")
+
+        project.add_tags(self.get_tags())
+        return project
 
 
 class CenterError(Exception):
@@ -387,3 +402,188 @@ class CenterError(Exception):
           the message
         """
         return self.__message
+
+
+def kebab_case(name: str) -> str:
+    """Converts the name to kebab case.
+
+    Args:
+      name: the name to convert
+    Returns:
+      the name in kebab case
+    """
+    return name.lower().replace('_', '-')
+
+
+class ProjectMetadata(BaseModel):
+    """Metadata for a center project. Set datatype for ingest projects.
+
+    Dump with by_alias and exclude_none set to True.
+    """
+    model_config = ConfigDict(populate_by_name=True,
+                              alias_generator=AliasGenerator(alias=kebab_case),
+                              extra='forbid')
+
+    study_id: str
+    project_id: str
+    project_label: str
+    project_url: str
+
+    @staticmethod
+    def create(*, site: str, study_id: str, project_id: str,
+               project_label: str) -> 'ProjectMetadata':
+        """Creates a ProjectMetadata object.
+
+        Args:
+          site: the site url
+          study_id: the study
+          project_id: the project id
+          project_label: the project label
+        Returns:
+          the constructed ProjectMetadata object
+        """
+        return ProjectMetadata(
+            study_id=study_id,
+            project_id=project_id,
+            project_label=project_label,
+            project_url=f"{site}/#/projects/{project_id}/information")
+
+
+class IngestProjectMetadata(ProjectMetadata):
+    """Metadata for an ingest project of a center."""
+    datatype: str
+
+    # pylint: disable=(arguments-differ)
+    @staticmethod
+    def create(
+            *,
+            site: str,
+            study_id: str,
+            project_id: str,  # type: ignore
+            project_label: str,
+            datatype: str) -> 'IngestProjectMetadata':
+        """Creates an IngestProjectMetadata object.
+
+        Args:
+            site: the site url
+            study_id: the study
+            project_id: the project id
+            project_label: the project label
+            datatype: the datatype
+        Returns:
+            the constructed IngestProjectMetadata object
+        """
+        return IngestProjectMetadata(
+            study_id=study_id,
+            project_id=project_id,
+            project_label=project_label,
+            project_url=f"{site}/#/projects/{project_id}/information",
+            datatype=datatype)
+
+
+class FormIngestProjectMetadata(IngestProjectMetadata):
+    """Metadata for a form ingest project.
+
+    This class represents the metadata for a form ingest project within
+    a center. It inherits from the FormIngestProjectMetadata class and
+    adds additional attributes specific to form ingest projects.
+    """
+    redcap_project_id: int
+    redcap_url: str
+
+    # pylint: disable=(arguments-differ)
+    @staticmethod
+    def create(
+            *,
+            site: str,
+            study_id: str,
+            project_id: str,  # type: ignore
+            project_label: str,
+            datatype: str,
+            redcap_site: str,
+            redcap_project_id: int) -> 'FormIngestProjectMetadata':
+        """Creates a FormIngestProjectMetadata object.
+
+        Args:
+            site: the site url
+            study_id: the study
+            project_id: the project id
+            project_label: the project label
+            datatype: the datatype
+            redcap_site: the REDCap site url
+            redcap_project_id: the REDCap project id
+
+        Returns:
+            the constructed FormIngestProjectMetadata object
+        """
+        return FormIngestProjectMetadata(
+            study_id=study_id,
+            project_id=project_id,
+            project_label=project_label,
+            project_url=f"{site}/#/projects/{project_id}/information",
+            datatype=datatype,
+            redcap_project_id=redcap_project_id,
+            redcap_url=f"{redcap_site}/index.php?pid={redcap_project_id}")
+
+
+class StudyMetadata(BaseModel):
+    """Metadata for study details within a participating center."""
+    model_config = ConfigDict(populate_by_name=True,
+                              alias_generator=AliasGenerator(alias=kebab_case))
+
+    study_id: str
+    study_name: str
+    ingest_projects: Dict[str, (IngestProjectMetadata
+                                | FormIngestProjectMetadata)] = {}
+    accepted_project: Optional[ProjectMetadata] = None
+
+    def add_accepted(self, project: ProjectMetadata) -> None:
+        """Adds the accepted project to the study metadata.
+
+        Args:
+            project: the accepted project metadata
+        """
+        self.accepted_project = project
+
+    def add_ingest(self, project: IngestProjectMetadata) -> None:
+        """Adds the ingest project to the study metadata.
+
+        Args:
+            project: the ingest project metadata
+        """
+        self.ingest_projects[project.project_label] = project
+
+
+class CenterPortalMetadata(BaseModel):
+    """Metadata to be stored in center portal project."""
+    studies: Dict[str, StudyMetadata]
+
+    def add(self, study: StudyMetadata) -> None:
+        """Adds study metadata to the studies.
+
+        Args:
+            study: The StudyMetadata object to be added.
+
+        Returns:
+            None
+        """
+        self.studies[study.study_id] = study
+
+    def get(self, study: Study) -> StudyMetadata:
+        """Gets the study metadata for the study id.
+
+        Creates a new StudyMetadata object if it does not exist.
+
+        Args:
+            study_id: the study id
+        Returns:
+            the study metadata for the study id
+        """
+        study_info = self.studies.get(study.study_id, None)
+        if study_info:
+            return study_info
+
+        study_info = StudyMetadata(study_id=study.study_id,
+                                   study_name=study.name)
+        self.add(study_info)
+        return study_info
