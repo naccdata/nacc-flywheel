@@ -297,8 +297,6 @@ class CenterGroup(GroupAdaptor):
           study: the study
         """
         portal_info = self.get_portal_info()
-        if not portal_info:
-            portal_info = CenterPortalMetadata(studies={})
 
         study_info = portal_info.get(study)
 
