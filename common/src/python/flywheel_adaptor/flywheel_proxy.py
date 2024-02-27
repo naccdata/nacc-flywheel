@@ -974,7 +974,7 @@ class ProjectAdaptor:
         """Retrieve custom project info metadata value by key path.
 
         Args:
-            key_path: path to the desired field (level1_key:level2_key:....:key)
+            key_path: path to desired field (level1_key:level2_key:....:key)
 
         Returns:
             Any: metadata value if exists
