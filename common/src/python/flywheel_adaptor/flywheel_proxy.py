@@ -969,3 +969,23 @@ class ProjectAdaptor:
           info: the info object
         """
         self.__project.update_info(info)
+
+    def get_custom_project_info(self, key_path: str) -> Optional[Any]:
+        """Retrieve custom project info metadata value by key path.
+
+        Args:
+            key_path: path to the desired field (level1_key:level2_key:....:key)
+
+        Returns:
+            Any: metadata value if exists
+        """
+
+        keys = key_path.split(':')
+        index = 0
+        self.__project = self.__project.reload()
+        info = self.__project.info
+        while index < len(keys) and info:
+            info = info.get(keys[index])
+            index += 1
+
+        return info
