@@ -3,6 +3,7 @@ import logging
 from collections import defaultdict
 from typing import Dict, List, Set
 
+from centers.nacc_group import NACCGroup
 from flywheel import RolesRoleAssignment, User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor
 from redcap.nacc_directory import UserDirectoryEntry
@@ -44,9 +45,8 @@ def create_user_map(
       user_list: the list of user objects from directory yaml file
       skip_list: the list of user IDs to skip
     Returns:
-      map from center tags to lists of nacc directory entries
+      map from adcid to lists of nacc directory entries
     """
-    center_prefix = 'adcid-'
     center_map = defaultdict(list)
     for user_doc in user_list:
         user_entry = UserDirectoryEntry.create(user_doc)
@@ -54,7 +54,7 @@ def create_user_map(
             log.info('Skipping user: %s', user_entry.credentials['id'])
             continue
 
-        center_map[f"{center_prefix}{user_entry.adcid}"].append(user_entry)
+        center_map[user_entry.adcid].append(user_entry)
 
     return center_map
 
@@ -81,11 +81,12 @@ def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
 
 
 # pylint: disable=(too-many-locals)
-def run(*, proxy: FlywheelProxy, user_list, skip_list: Set[str]):
+def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
+        skip_list: Set[str]):
     """Manages users based on user list."""
 
     # gather users by center
-    center_map = create_user_map(user_list=user_list, skip_list=skip_list)
+    user_map = create_user_map(user_list=user_list, skip_list=skip_list)
 
     roles_map = proxy.get_roles()
     read_only_role = roles_map.get('read-only')
@@ -93,13 +94,11 @@ def run(*, proxy: FlywheelProxy, user_list, skip_list: Set[str]):
         log.error('Could not find read-only role, cannot add permissions')
         return
 
-    for center_tag, center_users in center_map.items():
-        group_list = proxy.find_groups_by_tag(f"^{center_tag}$")
-        if len(group_list) > 1:
-            log.error('Error: expecting only one center for tag %s',
-                      center_tag)
+    for center_id, center_users in user_map.items():
+        center_group = admin_group.get_center(center_id)
+        if not center_group:
+            log.warning('Center %s not found in metadata', center_id)
             continue
-        center_group = GroupAdaptor(group=group_list[0], proxy=proxy)
 
         # for now, just giving all users read-only access to 'ingest-scan'
         project_label = 'ingest-scan'
