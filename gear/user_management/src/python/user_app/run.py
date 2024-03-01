@@ -74,7 +74,10 @@ def main() -> None:
         admin_users = admin_group.get_group_users(access='admin')
         admin_set = {user.id for user in admin_users if user.id}
 
-        run(proxy=flywheel_proxy, user_list=user_list, skip_list=admin_set)
+        run(proxy=flywheel_proxy,
+            user_list=user_list,
+            admin_group=admin_group,
+            skip_list=admin_set)
 
 
 if __name__ == "__main__":
