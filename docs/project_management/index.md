@@ -1,11 +1,30 @@
 # Study management
 
-The project management app builds containers within Flywheel for a coordinating center supported study.
+The project-management app builds containers within Flywheel for a coordinating center supported study.
 
 A *coordinating center supported study* is a research activity for which data is being collected at the coordinating center.
 For NACC is this primarily the ADRC program for which data is captured at Alzheimer's Disease Research Centers (ADRCs), and then transferred to NACC for harmonization and release.
 
-## Input 
+## A note on the app name
+The name "project-management" is historical and comes from a conversation with the NACC PI, Bud Kukull. 
+He had legitimate reasons not to use "study", so we started with "project".
+However, "project" is used in both Flywheel and REDCap to mean particular things, and having three things called projects started to make communication difficult.
+And, naively, "study" makes sense.
+
+So, we are using "study" now, but keeping the gear name for continuity.
+
+## Usage
+
+The gear can be run either via the Flywheel user interface or using a script.
+
+You will need an input file uploaded to Flywheel.
+The format is described below.
+
+For NACC, access to the gear is restricted to the `fw://nacc/project-admin` project.
+There is a file `adrc-program.yaml` attached to that project, and a gear rule that will run the gear when the file is updated.
+For other scenarios, attach a file to the project, and run the gear as usual.
+
+### Input Format
 
 This app takes a YAML file describing the study and creates containers within Flywheel to support the ingest and curation of the collected data.
 
@@ -31,6 +50,16 @@ is-active: <whether the center is active>
 tags: <list of strings for tagging study>
 ```
 
+Running on the file will create a group for each center that does not already exist, and add new projects:
+
+1. pipeline projects for each datatype.
+   A project will have a name of the form `<pipeline>-<datatype>-<study-id>` where `<pipeline>` is `ingest`, `sandbox` or `retrospective`.
+   For instance, `ingest-form-leads`.
+   For the primary study, the study-id is dropped like `ingest-form`.
+2. An `accepted` pipeline project, where data that has passed QC is accessible.
+2. a `metadata` project where center-specific metadata can be stored using the project info object.
+3. a `center-portal` project where center-level UI extensions for the ADRC portal can be attached.
+
 Notes:
 1. Only one study should have `primary` set to `True`.
 
@@ -50,7 +79,7 @@ Notes:
 5. Datatypes are strings used for creating ingest containers, and matching to sets of gear rules needed for handling ingest.
 
 
-## Example
+### Example
 
 ```yaml
 ---
@@ -96,18 +125,4 @@ published: False
 
 ## Running the App
 
-To run from the command-line, first set the API key by running
-
-```bash
-export FW_API_KEY=XXXXXX
-``` 
-using your FW key instead of the `XXXXXX`. This key is available on your FW profile page.
-
-```bash
-pants run project_management/src/python/project_app:bin --  --no-gear project_management/data/project-definition.yaml
-```
-
-you can also specify the name of your admin group using `--admin_group` (default is `nacc`).
-And, do a dry run using `--dry_run`
-
-See the developers guide for information on deploying the app as a Docker container or Gear.
+For testing, see the gear wrangling directions in the development documentation.
