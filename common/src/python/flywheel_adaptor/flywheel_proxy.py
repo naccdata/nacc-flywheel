@@ -781,6 +781,16 @@ class ProjectAdaptor:
 
         return assignments[0].role_ids
 
+    def add_user_role(self, user_id: str, role_id: str) -> bool:
+        """Adds the role to the user in the project.
+
+        Args:
+          user_id: the user id
+          role_id: the role id
+        """
+        return self.add_user_roles(
+            RolesRoleAssignment(id=user_id, role_ids=[role_id]))
+
     def add_user_roles(self, role_assignment: RolesRoleAssignment) -> bool:
         """Adds role assignment to the project.
 
