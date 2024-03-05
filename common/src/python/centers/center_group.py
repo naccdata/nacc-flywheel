@@ -350,7 +350,7 @@ class CenterGroup(GroupAdaptor):
 
         if not 'studies' in info:
             return CenterPortalMetadata(studies={})
-        
+
         try:
             return CenterPortalMetadata.model_validate(info)
         except ValidationError as error:

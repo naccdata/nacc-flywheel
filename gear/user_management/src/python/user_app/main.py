@@ -5,7 +5,7 @@ from typing import Dict, List, Set
 
 from flywheel import RolesRoleAssignment, User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor
-from redcap.nacc_directory import UserDirectoryEntry
+from users.nacc_directory import UserDirectoryEntry
 
 log = logging.getLogger(__name__)
 

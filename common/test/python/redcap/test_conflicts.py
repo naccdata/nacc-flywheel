@@ -1,6 +1,6 @@
 """Tests for Directory Conflicts."""
 import yaml
-from redcap.nacc_directory import DirectoryConflict
+from users.nacc_directory import DirectoryConflict
 
 
 # pylint: disable=too-few-public-methods
