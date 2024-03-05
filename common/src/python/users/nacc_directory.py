@@ -67,6 +67,21 @@ class UserDirectoryEntry(BaseModel):
     credentials: Credentials
     submit_time: datetime
 
+    @property
+    def user_id(self) -> str:
+        """The user ID for this directory entry."""
+        return self.credentials.id
+    
+    @property
+    def first_name(self) -> str:
+        """The first name for this directory entry."""
+        return self.name.first_name
+    
+    @property
+    def last_name(self) -> str:
+        """The last name for this directory entry."""
+        return self.name.last_name
+
     def as_dict(self) -> EntryDictType:
         """Builds a dictionary for this directory entry.
 
@@ -157,7 +172,7 @@ class UserDirectory:
           entry: the directory entry
         """
         # check that entry has an ID
-        if not entry.credentials.id:
+        if not entry.user_id:
             return
 
         # check that doesn't have duplicate email
@@ -174,16 +189,16 @@ class UserDirectory:
                 self.__conflict_set.add(other_email)
             return
 
-        if entry.email == entry.credentials.id:
+        if entry.email == entry.user_id:
             return
 
         # check that ID is not someone else's email
-        if self.has_entry_email(entry.credentials.id):
+        if self.has_entry_email(entry.user_id):
             # new entry is in conflict
             self.__conflict_set.add(entry.email)
             return
 
-        self.__id_map[entry.credentials.id].append(entry.email)
+        self.__id_map[entry.user_id].append(entry.email)
 
     def get_entries(self) -> List[UserDirectoryEntry]:
         """Returns the list of entries with no conflicts between email address
