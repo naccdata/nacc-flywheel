@@ -23,7 +23,7 @@ class TestDirectory:
                                           view_reports=True),
             credentials=Credentials(type='eppn', id='chip@theorg.org'),
             submit_time=datetime.strptime('2023-01-02 1:30', "%Y-%m-%d %H:%M"))
-        assert entry.authorizations['audit_data']
+        assert entry.authorizations.audit_data
 
         entry2 = UserDirectoryEntry.create_from_record({
             "record_id":
@@ -51,21 +51,9 @@ class TestDirectory:
         })
         assert entry == entry2
 
-        entry_object = yaml.safe_load("authorizations:\n"
-                                      "  approve_data: true\n"
-                                      "  audit_data: true\n"
-                                      "  submit:\n"
-                                      "  - form\n"
-                                      "  view_reports: true\n"
-                                      "center_id: 0\n"
-                                      "credentials:\n"
-                                      "  id: chip@theorg.org\n"
-                                      "  type: eppn\n"
-                                      "email: chip@theorg.org\n"
-                                      "name:\n"
-                                      "  first_name: chip\n"
-                                      "  last_name: puppy\n"
-                                      "org_name: the center\n"
-                                      "submit_time: 2023-01-02 01:30:00")
+        entry_yaml = yaml.safe_dump(entry.as_dict())
+
+        
+        entry_object = yaml.safe_load(entry_yaml)
         entry3 = UserDirectoryEntry.create(entry_object)
         assert entry == entry3

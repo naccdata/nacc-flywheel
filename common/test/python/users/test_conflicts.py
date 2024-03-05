@@ -14,7 +14,7 @@ class TestDirectoryConflict:
                                      conflict_type='identifier',
                                      entries=[])
 
-        output = yaml.safe_dump(data=[conflict],
+        output = yaml.safe_dump(data=[conflict.model_dump()],
                                 allow_unicode=True,
                                 default_flow_style=False)
         assert output == ('- conflict_type: identifier\n'
