@@ -53,7 +53,6 @@ class TestDirectory:
 
         entry_yaml = yaml.safe_dump(entry.as_dict())
 
-        
         entry_object = yaml.safe_load(entry_yaml)
         entry3 = UserDirectoryEntry.create(entry_object)
         assert entry == entry3
