@@ -54,7 +54,7 @@ def create_user_map(
             log.info('Skipping user: %s', user_entry.credentials['id'])
             continue
 
-        center_map[user_entry.adcid].append(user_entry)
+        center_map[int(user_entry.adcid)].append(user_entry)
 
     return center_map
 
@@ -88,24 +88,10 @@ def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
     # gather users by center
     user_map = create_user_map(user_list=user_list, skip_list=skip_list)
 
-    roles_map = proxy.get_roles()
-    read_only_role = roles_map.get('read-only')
-    if not read_only_role:
-        log.error('Could not find read-only role, cannot add permissions')
-        return
-
     for center_id, center_users in user_map.items():
-        center_group = admin_group.get_center(center_id)
+        center_group = admin_group.get_center(int(center_id))
         if not center_group:
             log.warning('Center %s not found in metadata', center_id)
-            continue
-
-        # for now, just giving all users read-only access to 'ingest-scan'
-        project_label = 'ingest-scan'
-        project = center_group.find_project(project_label)
-        if not project:
-            log.warning('center %s does not have project %s',
-                        center_group.label, project_label)
             continue
 
         for user_entry in center_users:
@@ -115,9 +101,5 @@ def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
                 log.info('Added user %s', user.id)
             update_email(proxy=proxy, user=user, email=user_entry.email)
 
-            added = project.add_user_roles(
-                RolesRoleAssignment(id=user.id, role_ids=[read_only_role.id]))
-            if added:
-                log.info('Granted %s permission to user %s in project %s/%s',
-                         read_only_role.label, user.id, center_group.label,
-                         project.label)
+            # admin_group.add_center_user(user=user)
+            # center_group.add_user(user=user)
