@@ -6,8 +6,8 @@ from datetime import datetime
 from typing import List, Literal, Optional
 
 import yaml
-from redcap.nacc_directory import (Authorizations, Credentials, PersonName,
-                                   UserDirectory, UserDirectoryEntry)
+from users.nacc_directory import (Authorizations, Credentials, PersonName,
+                                  UserDirectory, UserDirectoryEntry)
 
 
 # pylint: disable=too-many-arguments
