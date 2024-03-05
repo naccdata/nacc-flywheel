@@ -3,27 +3,49 @@
 import logging
 from collections import defaultdict
 from datetime import datetime
-from typing import (Any, Dict, Iterable, List, Literal, NewType, Optional, Set,
-                    TypedDict)
+from typing import (Any, Dict, Iterable, List, Literal, NewType, Optional,
+                    Sequence, Set)
+
+from pydantic import BaseModel
 
 log = logging.getLogger(__name__)
 
 
-class Authorizations(TypedDict):
+class Authorizations(BaseModel):
     """Type class for authorizations."""
     submit: List[Literal['form', 'image']]
     audit_data: bool
     approve_data: bool
     view_reports: bool
 
+    @classmethod
+    def create_from_record(cls, activities: Sequence[str]) -> "Authorizations":
+        """Creates an Authorizations object directory access activities.
 
-class Credentials(TypedDict):
+        Args:
+          activities: a string containing activities
+        Returns:
+          The Authorizations object
+        """
+        modalities: List[Literal['form', 'image']] = []
+        if 'a' in activities:
+            modalities.append('form')
+        if 'b' in activities:
+            modalities.append('image')
+
+        return Authorizations(submit=modalities,
+                              audit_data=bool('c' in activities),
+                              approve_data=('d' in activities),
+                              view_reports=('e' in activities))
+
+
+class Credentials(BaseModel):
     """Type class for credentials."""
     type: str
     id: str
 
 
-class PersonName(TypedDict):
+class PersonName(BaseModel):
     """Type class for a person's name."""
     first_name: str
     last_name: str
@@ -35,65 +57,15 @@ EntryDictType = NewType(
          str | int | PersonName | Authorizations | Credentials | datetime])
 
 
-class UserDirectoryEntry:
+class UserDirectoryEntry(BaseModel):
     """A user entry from Flywheel access report of the NACC directory."""
-
-    def __init__(self, *, org_name: str, adcid: int, name: PersonName,
-                 email: str, authorizations: Authorizations,
-                 credentials: Credentials, submit_time: datetime) -> None:
-        self.__org_name = org_name
-        self.__adcid = adcid
-        self.__name = name
-        self.__email = email
-        self.__authorizations = authorizations
-        self.__credentials = credentials
-        self.__submit_time = submit_time
-
-    def __eq__(self, __value: object) -> bool:
-        if not isinstance(__value, UserDirectoryEntry):
-            return False
-
-        return (self.__org_name == __value.org_name
-                and self.__adcid == __value.adcid
-                and self.__name == __value.name
-                and self.__email == __value.email
-                and self.__authorizations == __value.authorizations
-                and self.__credentials == __value.credentials)
-
-    @property
-    def org_name(self) -> str:
-        """The name of the user's organization."""
-        return self.__org_name
-
-    @property
-    def adcid(self) -> int:
-        """The ID for the user's center."""
-        return self.__adcid
-
-    @property
-    def name(self) -> PersonName:
-        """The user's name."""
-        return self.__name
-
-    @property
-    def email(self) -> str:
-        """The user's organizational email."""
-        return self.__email
-
-    @property
-    def authorizations(self) -> Authorizations:
-        """The users authorizations for data access."""
-        return self.__authorizations
-
-    @property
-    def credentials(self) -> Credentials:
-        """The users CILogon credentials."""
-        return self.__credentials
-
-    @property
-    def submit_time(self) -> datetime:
-        """The submission time for credentials."""
-        return self.__submit_time
+    org_name: str
+    adcid: int
+    name: PersonName
+    email: str
+    authorizations: Authorizations
+    credentials: Credentials
+    submit_time: datetime
 
     def as_dict(self) -> EntryDictType:
         """Builds a dictionary for this directory entry.
@@ -101,15 +73,7 @@ class UserDirectoryEntry:
         Returns:
           A dictionary with values of this entry
         """
-        result: EntryDictType = {}  # type: ignore
-        result['org_name'] = self.__org_name
-        result['center_id'] = self.__adcid
-        result['name'] = self.__name
-        result['email'] = self.__email
-        result['authorizations'] = self.__authorizations
-        result['credentials'] = self.__credentials
-        result['submit_time'] = self.__submit_time
-        return result
+        return self.model_dump()  # type: ignore
 
     @classmethod
     def create(cls, entry: Dict[str, Any]) -> "UserDirectoryEntry":
@@ -121,13 +85,7 @@ class UserDirectoryEntry:
         Returns:
           The dictionary object
         """
-        return UserDirectoryEntry(org_name=entry['org_name'],
-                                  adcid=entry['center_id'],
-                                  name=entry['name'],
-                                  email=entry['email'],
-                                  authorizations=entry['authorizations'],
-                                  credentials=entry['credentials'],
-                                  submit_time=entry['submit_time'])
+        return UserDirectoryEntry.model_validate(entry)
 
     @classmethod
     def create_from_record(
@@ -145,29 +103,12 @@ class UserDirectoryEntry:
         if int(record["flywheel_access_information_complete"]) != 2:
             return None
 
-        modalities: List[Literal['form', 'image']] = []
-        activities = record["flywheel_access_activities"]
-        if 'a' in activities:
-            modalities.append('form')
-        if 'b' in activities:
-            modalities.append('image')
-
-        authorizations: Authorizations = {
-            "submit": modalities,
-            "audit_data": bool('c' in activities),
-            "approve_data": bool('d' in activities),
-            "view_reports": bool('e' in activities)
-        }
-
-        credentials: Credentials = {
-            "type": record['fw_credential_type'],
-            "id": record['fw_credential_id']
-        }
-
-        name: PersonName = {
-            "first_name": record['firstname'],
-            "last_name": record['lastname']
-        }
+        authorizations = Authorizations.create_from_record(
+            record["flywheel_access_activities"])
+        credentials = Credentials(type=record['fw_credential_type'],
+                                  id=record['fw_credential_id'])
+        name = PersonName(first_name=record['firstname'],
+                          last_name=record['lastname'])
 
         org_name = record['contact_company_name']
         center_id = record['adresearchctr']
@@ -187,7 +128,7 @@ class UserDirectoryEntry:
                                   authorizations=authorizations)
 
 
-class DirectoryConflict(TypedDict):
+class DirectoryConflict(BaseModel):
     """Entries with conflicting user_id and/or emails."""
     user_id: str
     conflict_type: Literal['email', 'identifier']
@@ -216,7 +157,7 @@ class UserDirectory:
           entry: the directory entry
         """
         # check that entry has an ID
-        if not entry.credentials['id']:
+        if not entry.credentials.id:
             return
 
         # check that doesn't have duplicate email
@@ -233,16 +174,16 @@ class UserDirectory:
                 self.__conflict_set.add(other_email)
             return
 
-        if entry.email == entry.credentials['id']:
+        if entry.email == entry.credentials.id:
             return
 
         # check that ID is not someone else's email
-        if self.has_entry_email(entry.credentials['id']):
+        if self.has_entry_email(entry.credentials.id):
             # new entry is in conflict
             self.__conflict_set.add(entry.email)
             return
 
-        self.__id_map[entry.credentials['id']].append(entry.email)
+        self.__id_map[entry.credentials.id].append(entry.email)
 
     def get_entries(self) -> List[UserDirectoryEntry]:
         """Returns the list of entries with no conflicts between email address
@@ -281,7 +222,7 @@ class UserDirectory:
             if entry
         ]
 
-    def get_conflicts(self) -> List[DirectoryConflict]:
+    def get_conflicts(self) -> List[Dict[str, Any]]:
         """Returns the list of conflicting directory entries.
 
         Conflicts occur
@@ -302,14 +243,14 @@ class UserDirectory:
                             entry.as_dict()
                             for entry in self.__get_entry_list(email_list)
                         ],
-                        conflict_type='identifier'))
+                        conflict_type='identifier').model_dump())
         for entry in self.__email_map.values():
             if entry.email in self.__conflict_set:
                 log.warning("Conflict for email %s", entry.email)
                 conflicts.append(
-                    DirectoryConflict(user_id=entry.credentials['id'],
+                    DirectoryConflict(user_id=entry.credentials.id,
                                       entries=[entry.as_dict()],
-                                      conflict_type='email'))
+                                      conflict_type='email').model_dump())
 
         return conflicts
 
