@@ -348,7 +348,7 @@ class CenterGroup(GroupAdaptor):
         if not info:
             return CenterPortalMetadata(studies={})
 
-        if not 'studies' in info:
+        if 'studies' not in info:
             return CenterPortalMetadata(studies={})
 
         try:

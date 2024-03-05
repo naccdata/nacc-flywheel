@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, List
 
 import yaml
-from redcap.nacc_directory import UserDirectory, UserDirectoryEntry
+from users.nacc_directory import UserDirectory, UserDirectoryEntry
 
 log = logging.getLogger(__name__)
 
