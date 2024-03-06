@@ -4,6 +4,7 @@ from typing import Dict, Optional
 
 from centers.center_group import CenterGroup
 from flywheel.models.group import Group
+from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
 from pydantic import BaseModel, ValidationError
@@ -98,7 +99,7 @@ class NACCGroup(GroupAdaptor):
 
         if not info:
             return {}
-        
+
         try:
             center_map = CenterMapInfo.model_validate(info.get('centers', {}))
         except ValidationError:
@@ -106,12 +107,42 @@ class NACCGroup(GroupAdaptor):
 
         return center_map.centers
 
-    def get_center(self, adcid: int) -> CenterGroup:
+    def get_center(self, adcid: int) -> Optional[CenterGroup]:
+        """Returns the center group for the given ADCID.
+
+            Args:
+                adcid: The ADCID of the center group to retrieve.
+
+            Returns:
+                The CenterGroup for the center. None if no group is found.
+
+            Raises:
+                AssertionError: If no center is found for the given ADCID.
+            """
         center_map = self.get_center_map()
-        group_info = center_map.get(adcid, {})
+        group_info = center_map.get(adcid, None)
+        if not group_info:
+            return None
 
         group_id = group_info.group
-        assert group_id, "No center found for ADCID"
         group = self.__fw.find_group(group_id=str(group_id))
+        if not group:
+            return None
 
-        return CenterGroup.create_from_group(group=group, proxy=self.__fw)
+        return CenterGroup.create_from_group_adaptor(adaptor=group,
+                                                     proxy=self.__fw)
+
+    def add_center_user(self, user: User) -> None:
+        """Authorizes a user to access the metadata project of nacc group.
+
+        Args:
+          user: the user object
+        """
+        assert user.id, "User must have user ID"
+
+        metadata_project = self.get_metadata()
+        read_only_role = self.__fw.get_role('read-only')
+        assert read_only_role, "Expecting read-only role to exist"
+
+        metadata_project.add_user_role(user_id=user.id,
+                                       role_id=read_only_role.id)
