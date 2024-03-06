@@ -12,6 +12,7 @@ from flywheel.models.group_role import GroupRole
 from flywheel.models.project_parents import ProjectParents
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
+from flywheel.models.user import User
 from fw_client import FWClient
 from fw_utils import AttrDict
 
@@ -225,6 +226,16 @@ class FlywheelProxy:
         log.info('success')
 
         return project
+
+    def get_project_by_id(self, project_id: str) -> Optional[flywheel.Project]:
+        """Returns a project with the given ID.
+
+        Args:
+          project_id: the ID for the project
+        Returns:
+          the project with the ID if exists, None otherwise
+        """
+        return self.__fw.projects.find_first(f"_id={project_id}")
 
     def get_roles(self) -> Mapping[str, RoleOutput]:
         """Gets all roles for the FW instance.
@@ -653,6 +664,20 @@ class GroupAdaptor:
 
         return ProjectAdaptor(project=project, proxy=self.__fw)
 
+    def get_project_by_id(self, project_id: str) -> Optional['ProjectAdaptor']:
+        """Returns a project in this group with the given ID.
+
+        Args:
+          project_id: the ID for the project
+        Returns:
+          the project in this group with the ID
+        """
+        project = self.__fw.get_project_by_id(project_id)
+        if not project:
+            return None
+
+        return ProjectAdaptor(project=project, proxy=self.__fw)
+
     def find_project(self, label: str) -> Optional['ProjectAdaptor']:
         """Returns the project adaptor in the group with the label.
 
@@ -781,17 +806,28 @@ class ProjectAdaptor:
 
         return assignments[0].role_ids
 
-    def add_user_role(self, user_id: str, role_id: str) -> bool:
+    def add_user_role(self, user: User, role: RoleOutput) -> bool:
         """Adds the role to the user in the project.
 
         Args:
           user_id: the user id
           role_id: the role id
         """
-        return self.add_user_roles(
-            RolesRoleAssignment(id=user_id, role_ids=[role_id]))
+        return self.add_user_roles(user=user, roles=[role])
 
-    def add_user_roles(self, role_assignment: RolesRoleAssignment) -> bool:
+    def add_user_roles(self, user: User, roles: List[RoleOutput]) -> bool:
+        """Adds the roles to the user in the project.
+
+        Args:
+          user: the user
+          roles: the list of roles
+        """
+        role_ids = [role.id for role in roles]
+        return self.add_user_role_assignments(
+            RolesRoleAssignment(id=user.id, role_ids=role_ids))
+
+    def add_user_role_assignments(
+            self, role_assignment: RolesRoleAssignment) -> bool:
         """Adds role assignment to the project.
 
         Args:
@@ -844,7 +880,7 @@ class ProjectAdaptor:
         admin_role = self.__fw.get_admin_role()
         assert admin_role
         for permission in permissions:
-            self.add_user_roles(
+            self.add_user_role_assignments(
                 RolesRoleAssignment(id=permission.id,
                                     role_ids=[admin_role.id]))
 
