@@ -64,6 +64,20 @@ class CenterGroup(GroupAdaptor):
         return center_group
 
     @classmethod
+    def create_from_group_adaptor(cls, *, proxy: FlywheelProxy,
+                                  adaptor: GroupAdaptor) -> 'CenterGroup':
+        """Creates a CenterGroup from a GroupAdaptor.
+
+        Args:
+          adaptor: the group adaptor
+          proxy: the flywheel proxy object
+        Returns:
+          the CenterGroup for the group
+        """
+        return CenterGroup.create_from_group(proxy=proxy,
+                                             group=adaptor.__group)
+
+    @classmethod
     def create_from_center(cls, *, proxy: FlywheelProxy,
                            center: Center) -> 'CenterGroup':
         """Creates a CenterGroup from a center object.
