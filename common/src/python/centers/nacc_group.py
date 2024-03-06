@@ -144,5 +144,4 @@ class NACCGroup(GroupAdaptor):
         read_only_role = self.__fw.get_role('read-only')
         assert read_only_role, "Expecting read-only role to exist"
 
-        metadata_project.add_user_role(user=user,
-                                       role=read_only_role)
+        metadata_project.add_user_role(user=user, role=read_only_role)
