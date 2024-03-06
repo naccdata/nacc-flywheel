@@ -1016,7 +1016,8 @@ class ProjectAdaptor:
         """
         self.__project.update_info(info)
 
-    def get_custom_project_info(self, key_path: str) -> Optional[Any]:
+    def get_custom_project_info(
+            self, key_path: str) -> Optional[Any | Dict[str, Any]]:
         """Retrieve custom project info metadata value by key path.
 
         Args:
@@ -1029,7 +1030,7 @@ class ProjectAdaptor:
         keys = key_path.split(':')
         index = 0
         self.__project = self.__project.reload()
-        info = self.__project.info
+        info: Dict[str, Any] | Any = self.__project.info
         while index < len(keys) and info:
             info = info.get(keys[index])
             index += 1
