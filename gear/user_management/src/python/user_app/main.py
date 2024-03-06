@@ -50,7 +50,7 @@ def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
 
 
 def create_user_map(
-        user_list, skip_list: Set[str]) -> Dict[str, List[UserDirectoryEntry]]:
+        user_list, skip_list: Set[str]) -> Dict[int, List[UserDirectoryEntry]]:
     """Creates a map from center tags to lists of nacc directory entries.
 
     Args:
@@ -108,10 +108,19 @@ def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
         for user_entry in center_users:
             user = proxy.find_user(user_entry.user_id)
             if not user:
-                user = add_user(proxy=proxy, user_entry=user_entry)
-                log.info('Added user %s', user.id)
+                try:
+                    user = add_user(proxy=proxy, user_entry=user_entry)
+                    log.info('Added user %s', user.id)
+                except AssertionError as e:
+                    log.error('Failed to add user %s: %s', user_entry.user_id,
+                              e)
+                    continue
+
             update_email(proxy=proxy, user=user, email=user_entry.email)
 
+            # give users access to nacc metadata project
             admin_group.add_center_user(user=user)
 
-            # center_group.add_user(user=user, authorizations=user_entry.authorizations)
+            # give users access to center projects
+            center_group.add_user(user=user,
+                                  authorizations=user_entry.authorizations)
