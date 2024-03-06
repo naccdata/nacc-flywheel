@@ -11,7 +11,23 @@ from users.nacc_directory import UserDirectoryEntry
 log = logging.getLogger(__name__)
 
 
-def create_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
+def create_user(user_entry: UserDirectoryEntry) -> User:
+    """Creates a user object from the directory entry.
+
+    Flywheel constraint (true as of version 17): the user ID and email must be
+    the same even if ID is an ePPN in add_user
+
+    Args:
+      user_entry: the directory entry for the user
+    Returns:
+      the User object for flywheel User created from the directory entry
+    """
+    return User(id=user_entry.user_id,
+                firstname=user_entry.first_name,
+                lastname=user_entry.last_name,
+                email=user_entry.email)
+
+def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
     """Creates a user object from the directory entry.
 
     Flywheel constraint (true as of version 17): the user ID and email must be
@@ -26,13 +42,8 @@ def create_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
     Returns:
       the ID for flywheel User created from the directory entry
     """
-    user_id = user_entry.credentials['id']
-    new_id = proxy.add_user(
-        User(id=user_id,
-             firstname=user_entry.name['first_name'],
-             lastname=user_entry.name['last_name'],
-             email=user_id))
-    user = proxy.find_user(new_id)
+    new_id = proxy.add_user(create_user(user_entry=user_entry))
+    user = proxy.find_user(user_entry.user_id)
     assert user, f"Failed to find user {new_id} that was just created"
     return user
 
@@ -50,8 +61,8 @@ def create_user_map(
     center_map = defaultdict(list)
     for user_doc in user_list:
         user_entry = UserDirectoryEntry.create(user_doc)
-        if user_entry.credentials['id'] in skip_list:
-            log.info('Skipping user: %s', user_entry.credentials['id'])
+        if user_entry.user_id in skip_list:
+            log.info('Skipping user: %s', user_entry.user_id)
             continue
 
         center_map[int(user_entry.adcid)].append(user_entry)
@@ -95,9 +106,9 @@ def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
             continue
 
         for user_entry in center_users:
-            user = proxy.find_user(user_entry.credentials['id'])
+            user = proxy.find_user(user_entry.user_id)
             if not user:
-                user = create_user(proxy=proxy, user_entry=user_entry)
+                user = add_user(proxy=proxy, user_entry=user_entry)
                 log.info('Added user %s', user.id)
             update_email(proxy=proxy, user=user, email=user_entry.email)
 
