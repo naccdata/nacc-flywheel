@@ -33,7 +33,8 @@ def user_entry(email: str,
     if not name:
         name = PersonName(first_name='dummy', last_name='name')
 
-    authorizations = Authorizations(submit=submit if submit else [],
+    authorizations = Authorizations(study_id='dummy',
+                                    submit=submit if submit else [],
                                     audit_data=audit_data,
                                     approve_data=approve_data,
                                     view_reports=view_reports)

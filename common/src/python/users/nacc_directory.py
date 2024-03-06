@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 class Authorizations(BaseModel):
     """Type class for authorizations."""
+    study_id: str
     submit: List[Literal['form', 'image']]
     audit_data: bool
     approve_data: bool
@@ -33,7 +34,8 @@ class Authorizations(BaseModel):
         if 'b' in activities:
             modalities.append('image')
 
-        return Authorizations(submit=modalities,
+        return Authorizations(study_id='adrc',
+                              submit=modalities,
                               audit_data=bool('c' in activities),
                               approve_data=('d' in activities),
                               view_reports=('e' in activities))
