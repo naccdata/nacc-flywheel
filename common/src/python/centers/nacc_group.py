@@ -110,15 +110,15 @@ class NACCGroup(GroupAdaptor):
     def get_center(self, adcid: int) -> Optional[CenterGroup]:
         """Returns the center group for the given ADCID.
 
-            Args:
-                adcid: The ADCID of the center group to retrieve.
+        Args:
+            adcid: The ADCID of the center group to retrieve.
 
-            Returns:
-                The CenterGroup for the center. None if no group is found.
+        Returns:
+            The CenterGroup for the center. None if no group is found.
 
-            Raises:
-                AssertionError: If no center is found for the given ADCID.
-            """
+        Raises:
+            AssertionError: If no center is found for the given ADCID.
+        """
         center_map = self.get_center_map()
         group_info = center_map.get(adcid, None)
         if not group_info:
@@ -144,5 +144,5 @@ class NACCGroup(GroupAdaptor):
         read_only_role = self.__fw.get_role('read-only')
         assert read_only_role, "Expecting read-only role to exist"
 
-        metadata_project.add_user_role(user_id=user.id,
-                                       role_id=read_only_role.id)
+        metadata_project.add_user_role(user=user,
+                                       role=read_only_role)
