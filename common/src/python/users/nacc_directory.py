@@ -71,12 +71,12 @@ class UserDirectoryEntry(BaseModel):
     def user_id(self) -> str:
         """The user ID for this directory entry."""
         return self.credentials.id
-    
+
     @property
     def first_name(self) -> str:
         """The first name for this directory entry."""
         return self.name.first_name
-    
+
     @property
     def last_name(self) -> str:
         """The last name for this directory entry."""
