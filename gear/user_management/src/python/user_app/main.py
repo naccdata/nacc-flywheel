@@ -27,6 +27,7 @@ def create_user(user_entry: UserDirectoryEntry) -> User:
                 lastname=user_entry.last_name,
                 email=user_entry.email)
 
+
 def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
     """Creates a user object from the directory entry.
 
@@ -91,7 +92,6 @@ def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
     proxy.set_user_email(user=user, email=email)
 
 
-# pylint: disable=(too-many-locals)
 def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
         skip_list: Set[str]):
     """Manages users based on user list."""
@@ -102,7 +102,7 @@ def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
     for center_id, center_users in user_map.items():
         center_group = admin_group.get_center(int(center_id))
         if not center_group:
-            log.warning('Center %s not found in metadata', center_id)
+            log.warning('No center found with ID %s', center_id)
             continue
 
         for user_entry in center_users:
@@ -112,5 +112,6 @@ def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
                 log.info('Added user %s', user.id)
             update_email(proxy=proxy, user=user, email=user_entry.email)
 
-            # admin_group.add_center_user(user=user)
-            # center_group.add_user(user=user)
+            admin_group.add_center_user(user=user)
+
+            # center_group.add_user(user=user, authorizations=user_entry.authorizations)
