@@ -26,7 +26,7 @@ def auth_map_alpha():
                 'audit-data': 'read-only',
                 'view-reports': 'read-only',
                 'submit-form': 'read-only',
-                'submit-image': 'read-only'
+                'submit-dicom': 'read-only'
             },
             'ingest-form': {
                 'approve-data': 'read-only',
@@ -50,7 +50,7 @@ def auth_map_alpha_yaml():
            '  audit-data: read-only\n'
            '  view-reports: read-only\n'
            '  submit-form: read-only\n'
-           '  submit-image: read-only\n'
+           '  submit-dicom: read-only\n'
            'ingest-form:\n'
            '  approve-data: read-only\n'
            '  audit-data: read-only\n'
@@ -80,6 +80,101 @@ def beta_authorizations():
                          view_reports=False)
 
 
+class TestAuthorizations:
+    """Tests for Authorizations activities."""
+
+    # pylint: disable=(redefined-outer-name,no-self-use)
+    def test_activities(self):
+        """Test get_activities."""
+        authorizations = Authorizations(study_id='adrc',
+                                        submit=['form', 'dicom'],
+                                        audit_data=True,
+                                        approve_data=True,
+                                        view_reports=True)
+        assert set(authorizations.get_activities()) == {
+            'audit-data', 'approve-data', 'submit-form', 'submit-dicom',
+            'view-reports'
+        }
+
+        authorizations = Authorizations(study_id='adrc',
+                                        submit=['form'],
+                                        audit_data=True,
+                                        approve_data=True,
+                                        view_reports=False)
+        assert set(authorizations.get_activities()) == {
+            'audit-data', 'approve-data', 'submit-form'
+        }
+
+    # pylint: disable=(redefined-outer-name,no-self-use)
+    def test_create_from_record(self):
+        """Test create_from_record."""
+        authorizations = Authorizations.create_from_record(
+            activities=['a', 'b', 'c', 'd', 'e'])
+        assert authorizations == Authorizations(study_id='adrc',
+                                                submit=['form', 'dicom'],
+                                                audit_data=True,
+                                                approve_data=True,
+                                                view_reports=True)
+
+        authorizations = Authorizations.create_from_record(
+            activities=['a', 'b', 'c', 'd'])
+        assert authorizations == Authorizations(study_id='adrc',
+                                                submit=['form', 'dicom'],
+                                                audit_data=True,
+                                                approve_data=True,
+                                                view_reports=False)
+
+        authorizations = Authorizations.create_from_record(
+            activities=['a', 'b', 'c'])
+        assert authorizations == Authorizations(study_id='adrc',
+                                                submit=['form', 'dicom'],
+                                                audit_data=True,
+                                                approve_data=False,
+                                                view_reports=False)
+
+        authorizations = Authorizations.create_from_record(
+            activities=['a', 'b'])
+        assert authorizations == Authorizations(study_id='adrc',
+                                                submit=['form', 'dicom'],
+                                                audit_data=False,
+                                                approve_data=False,
+                                                view_reports=False)
+
+        authorizations = Authorizations.create_from_record(activities=['a'])
+        assert authorizations == Authorizations(study_id='adrc',
+                                                submit=['form'],
+                                                audit_data=False,
+                                                approve_data=False,
+                                                view_reports=False)
+
+        authorizations = Authorizations.create_from_record(activities=[])
+        assert authorizations == Authorizations(study_id='adrc',
+                                                submit=[],
+                                                audit_data=False,
+                                                approve_data=False,
+                                                view_reports=False)
+
+    # pylint: disable=(redefined-outer-name,no-self-use)
+    def test_create_from_record_invalid(self):
+        """Test create_from_record with invalid input."""
+        authorizations = Authorizations.create_from_record(activities=['a', 'b', 'x'])
+        assert authorizations == Authorizations(study_id='adrc',
+                                                submit=['form', 'dicom'],
+                                                audit_data=False,
+                                                approve_data=False,
+                                                view_reports=False)
+
+    # pylint: disable=(redefined-outer-name,no-self-use)
+    def test_create_from_record_empty(self):
+        """Test create_from_record with empty input."""
+        authorizations = Authorizations.create_from_record(activities=[])
+        assert authorizations == Authorizations(study_id='adrc',
+                                                submit=[],
+                                                audit_data=False,
+                                                approve_data=False,
+                                                view_reports=False)
+
+
 class TestAuthMap:
     """Tests for AuthMap."""
 
@@ -104,7 +199,7 @@ class TestAuthMap:
                                       'read-only', 'upload'
                                   }
         assert auth_map_alpha.get(
-            project_id='ingest-image',
+            project_id='ingest-dicom',
             authorizations=alpha_authorizations) == set()
         assert auth_map_alpha.get(project_id='sandbox-form',
                                   authorizations=alpha_authorizations) == {
@@ -119,7 +214,7 @@ class TestAuthMap:
                                   authorizations=beta_authorizations) == {
                                       'read-only'
                                   }
-        assert auth_map_alpha.get(project_id='ingest-image',
+        assert auth_map_alpha.get(project_id='ingest-dicom',
                                   authorizations=beta_authorizations) == set()
         assert auth_map_alpha.get(project_id='sandbox-form',
                                   authorizations=beta_authorizations) == set()
