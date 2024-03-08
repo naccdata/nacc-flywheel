@@ -4,8 +4,9 @@ from collections import defaultdict
 from typing import Dict, List, Set
 
 from centers.nacc_group import NACCGroup
-from flywheel import RolesRoleAssignment, User
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor
+from flywheel import User
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from users.authorizations import AuthMap
 from users.nacc_directory import UserDirectoryEntry
 
 log = logging.getLogger(__name__)
@@ -93,7 +94,7 @@ def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
 
 
 def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
-        skip_list: Set[str]):
+        skip_list: Set[str], authorization_map: AuthMap):
     """Manages users based on user list."""
 
     # gather users by center
@@ -111,9 +112,9 @@ def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
                 try:
                     user = add_user(proxy=proxy, user_entry=user_entry)
                     log.info('Added user %s', user.id)
-                except AssertionError as e:
+                except AssertionError as error:
                     log.error('Failed to add user %s: %s', user_entry.user_id,
-                              e)
+                              error)
                     continue
 
             update_email(proxy=proxy, user=user, email=user_entry.email)
@@ -122,5 +123,7 @@ def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
             admin_group.add_center_user(user=user)
 
             # give users access to center projects
-            center_group.add_user(user=user,
-                                  authorizations=user_entry.authorizations)
+            center_group.add_user_roles(
+                user=user,
+                authorizations=user_entry.authorizations,
+                auth_map=authorization_map)
