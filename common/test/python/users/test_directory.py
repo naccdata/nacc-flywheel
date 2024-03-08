@@ -2,8 +2,8 @@
 from datetime import datetime
 
 import yaml
-from users.nacc_directory import (Authorizations, Credentials, PersonName,
-                                  UserDirectoryEntry)
+from users.authorizations import Authorizations
+from users.nacc_directory import Credentials, PersonName, UserDirectoryEntry
 
 
 # pylint: disable=(no-self-use,too-few-public-methods)
@@ -17,7 +17,8 @@ class TestDirectory:
             adcid=0,
             name=PersonName(first_name='chip', last_name='puppy'),
             email='chip@theorg.org',
-            authorizations=Authorizations(submit=['form'],
+            authorizations=Authorizations(study_id='dummy',
+                                          submit=['form'],
                                           audit_data=True,
                                           approve_data=True,
                                           view_reports=True),
