@@ -44,6 +44,11 @@
             "description": "The user YAML filename",
             "type": "string",
             "default": "nacc-directory-users.yaml"
+        },
+        "auth_file"  : {
+            "description": "The role YAML filename",
+            "type": "string",
+            "default": "user-roles.yaml"
         }
     },
     "command": "/bin/run"

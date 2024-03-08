@@ -12,8 +12,11 @@ from flywheel_gear_toolkit import GearToolkitContext
 from inputs.configuration import ConfigurationError, get_project, read_file
 from inputs.context_parser import ConfigParseError
 from inputs.parameter_store import ParameterError, ParameterStore
-from inputs.yaml import YAMLReadError, get_object_lists_from_stream
+from inputs.yaml import (YAMLReadError, get_object_lists_from_stream,
+                         load_from_stream)
+from pydantic import ValidationError
 from user_app.main import run
+from users.authorizations import AuthMap
 
 log = logging.getLogger(__name__)
 
@@ -27,12 +30,12 @@ def read_yaml_file(file_bytes: bytes) -> Optional[List[Any]]:
     Returns:
       List of user objects
     """
-    user_docs = get_object_lists_from_stream(
+    entry_docs = get_object_lists_from_stream(
         StringIO(file_bytes.decode('utf-8')))
-    if not user_docs or not user_docs[0]:
+    if not entry_docs or not entry_docs[0]:
         return None
 
-    return user_docs[0]
+    return entry_docs[0]
 
 
 def main() -> None:
@@ -57,10 +60,11 @@ def main() -> None:
             source = get_project(context=gear_context,
                                  group=admin_group,
                                  project_key='source')
-            file_bytes = read_file(context=gear_context,
-                                   source=source,
-                                   key='user_file')
-            user_list = read_yaml_file(file_bytes)
+            user_file_bytes = read_file(context=gear_context,
+                                        source=source,
+                                        key='user_file')
+            user_list = read_yaml_file(user_file_bytes)
+
         except ConfigurationError as error:
             log.error('Source project not found: %s', error)
             sys.exit(1)
@@ -71,13 +75,30 @@ def main() -> None:
             log.error('No users read from user file: %s', error)
             sys.exit(1)
 
+        try:
+            auth_file_bytes = read_file(context=gear_context,
+                                        source=source,
+                                        key='auth_file')
+            auth_object = load_from_stream(auth_file_bytes)
+            auth_map = AuthMap(project_authorizations=auth_object)
+        except ConfigParseError as error:
+            log.error('Cannot read auth file: %s', error.message)
+            sys.exit(1)
+        except YAMLReadError as error:
+            log.error('No authorizations read from auth file: %s', error)
+            sys.exit(1)
+        except ValidationError as error:
+            log.error('Unexpected format in auth file: %s', error)
+            sys.exit(1)
+
         admin_users = admin_group.get_group_users(access='admin')
         admin_set = {user.id for user in admin_users if user.id}
 
         run(proxy=flywheel_proxy,
             user_list=user_list,
             admin_group=admin_group,
-            skip_list=admin_set)
+            skip_list=admin_set,
+            authorization_map=auth_map)
 
 
 if __name__ == "__main__":
