@@ -8,6 +8,7 @@ from users.authorizations import AuthMap, Authorizations
 
 @pytest.fixture
 def empty_auth():
+    """Empty authorizations."""
     yield Authorizations(study_id='dummy',
                          submit=[],
                          audit_data=False,
@@ -17,6 +18,7 @@ def empty_auth():
 
 @pytest.fixture
 def auth_map_alpha():
+    """AuthMap object."""
     auth_map = AuthMap(
         project_authorizations={
             'accepted': {
@@ -41,6 +43,7 @@ def auth_map_alpha():
 
 @pytest.fixture
 def auth_map_alpha_yaml():
+    """AuthMap object in YAML format."""
     yield ('---\n'
            'accepted:\n'
            '  approve-data: read-only\n'
@@ -59,6 +62,7 @@ def auth_map_alpha_yaml():
 
 @pytest.fixture
 def alpha_authorizations():
+    """Authorizations object."""
     yield Authorizations(study_id='dummy',
                          submit=['form'],
                          audit_data=True,
@@ -68,6 +72,7 @@ def alpha_authorizations():
 
 @pytest.fixture
 def beta_authorizations():
+    """Authorizations object."""
     yield Authorizations(study_id='dummy',
                          submit=['dicom'],
                          audit_data=False,
@@ -78,29 +83,55 @@ def beta_authorizations():
 class TestAuthMap:
     """Tests for AuthMap."""
 
-    def test_empty_map(self, empty_auth):
+    # pylint: disable=(redefined-outer-name,no-self-use)
+    def test_empty_map(self, empty_auth: Authorizations):
+        """Test empty map."""
         auth_map = AuthMap(project_authorizations={})
-        assert auth_map.get('dummy', empty_auth) == set()
+        assert auth_map.get(project_id='dummy',
+                            authorizations=empty_auth) == set()
 
-    def test_authmap(self, alpha_authorizations, beta_authorizations,
-                     auth_map_alpha):
-        assert auth_map_alpha.get('accepted',
-                                  alpha_authorizations) == {'read-only'}
+    # pylint: disable=(redefined-outer-name,no-self-use)
+    def test_authmap(self, alpha_authorizations: Authorizations,
+                     beta_authorizations: Authorizations,
+                     auth_map_alpha: AuthMap):
+        """Test authmap."""
+        assert auth_map_alpha.get(project_id='accepted',
+                                  authorizations=alpha_authorizations) == {
+                                      'read-only'
+                                  }
+        assert auth_map_alpha.get(project_id='ingest-form',
+                                  authorizations=alpha_authorizations) == {
+                                      'read-only', 'upload'
+                                  }
         assert auth_map_alpha.get(
-            'ingest-form', alpha_authorizations) == {'read-only', 'upload'}
-        assert auth_map_alpha.get('ingest-image',
-                                  alpha_authorizations) == set()
-        assert auth_map_alpha.get('sandbox-form',
-                                  alpha_authorizations) == {'upload'}
+            project_id='ingest-image',
+            authorizations=alpha_authorizations) == set()
+        assert auth_map_alpha.get(project_id='sandbox-form',
+                                  authorizations=alpha_authorizations) == {
+                                      'upload'
+                                  }
 
-        assert auth_map_alpha.get('accepted',
-                                  beta_authorizations) == {'read-only'}
-        assert auth_map_alpha.get('ingest-form',
-                                  beta_authorizations) == {'read-only'}
-        assert auth_map_alpha.get('ingest-image', beta_authorizations) == set()
-        assert auth_map_alpha.get('sandbox-form', beta_authorizations) == set()
+        assert auth_map_alpha.get(project_id='accepted',
+                                  authorizations=beta_authorizations) == {
+                                      'read-only'
+                                  }
+        assert auth_map_alpha.get(project_id='ingest-form',
+                                  authorizations=beta_authorizations) == {
+                                      'read-only'
+                                  }
+        assert auth_map_alpha.get(project_id='ingest-image',
+                                  authorizations=beta_authorizations) == set()
+        assert auth_map_alpha.get(project_id='sandbox-form',
+                                  authorizations=beta_authorizations) == set()
 
-    def test_yaml(self, auth_map_alpha, auth_map_alpha_yaml):
+    # pylint: disable=(redefined-outer-name,no-self-use)
+    def test_yaml(self, auth_map_alpha: AuthMap,
+                  auth_map_alpha_yaml: str):
+        """Test YAML conversion."""
         yaml_object = yaml.safe_load(auth_map_alpha_yaml)
         load_map = AuthMap(project_authorizations=yaml_object)
         assert load_map == auth_map_alpha
+
+        yaml_list = yaml.safe_load("---\n- blah\n- blah\n")
+        with pytest.raises(ValidationError):
+            AuthMap(project_authorizations=yaml_list)
