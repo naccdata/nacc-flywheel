@@ -3,42 +3,12 @@
 import logging
 from collections import defaultdict
 from datetime import datetime
-from typing import (Any, Dict, Iterable, List, Literal, NewType, Optional,
-                    Sequence, Set)
+from typing import Any, Dict, Iterable, List, Literal, NewType, Optional, Set
 
 from pydantic import BaseModel
+from users.authorizations import Authorizations
 
 log = logging.getLogger(__name__)
-
-
-class Authorizations(BaseModel):
-    """Type class for authorizations."""
-    study_id: str
-    submit: List[Literal['form', 'image']]
-    audit_data: bool
-    approve_data: bool
-    view_reports: bool
-
-    @classmethod
-    def create_from_record(cls, activities: Sequence[str]) -> "Authorizations":
-        """Creates an Authorizations object directory access activities.
-
-        Args:
-          activities: a string containing activities
-        Returns:
-          The Authorizations object
-        """
-        modalities: List[Literal['form', 'image']] = []
-        if 'a' in activities:
-            modalities.append('form')
-        if 'b' in activities:
-            modalities.append('image')
-
-        return Authorizations(study_id='adrc',
-                              submit=modalities,
-                              audit_data=bool('c' in activities),
-                              approve_data=('d' in activities),
-                              view_reports=('e' in activities))
 
 
 class Credentials(BaseModel):
