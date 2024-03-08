@@ -1,5 +1,5 @@
 """Defines components related to user authorizations."""
-from typing import Dict, List, Literal, Sequence, Set
+from typing import Dict, List, Literal, Optional, Sequence, Set
 
 from pydantic import BaseModel
 
@@ -11,6 +11,35 @@ class Authorizations(BaseModel):
     audit_data: bool
     approve_data: bool
     view_reports: bool
+    _activities: Optional[List[Literal['submit-form', 'submit-dicom',
+                                       'audit-data', 'approve-data',
+                                       'view-reports']]] = None
+
+    def get_activities(
+        self
+    ) -> List[Literal['submit-form', 'submit-dicom', 'audit-data',
+                      'approve-data', 'view-reports']]:
+        """Returns the list of names of authorized activities.
+
+        Returns:
+          The list of names of authorized activities
+        """
+        if self._activities:
+            return self._activities
+
+        activities = []
+        if self.submit:
+            for datatype in self.submit:
+                activities.append(f"submit-{datatype}")
+        if self.audit_data:
+            activities.append('audit-data')
+        if self.approve_data:
+            activities.append('approve-data')
+        if self.view_reports:
+            activities.append('view-reports')
+
+        self._activities = activities
+        return self._activities
 
     @classmethod
     def create_from_record(cls, activities: Sequence[str]) -> "Authorizations":
@@ -64,22 +93,9 @@ class AuthMap(BaseModel):
             return roles
 
         activity_map = self.project_authorizations[project_id]
-        if authorizations.approve_data:
-            value = activity_map.get('approve-data')
-            if value:
-                roles.add(value)
-        if authorizations.audit_data:
-            value = activity_map.get('audit-data')
-            if value:
-                roles.add(value)
-        if authorizations.view_reports:
-            value = activity_map.get('view-reports')
-            if value:
-                roles.add(value)
-        if authorizations.submit:
-            for datatype in authorizations.submit:
-                value = activity_map.get(f'submit-{datatype}')
-                if value:
-                    roles.add(value)
+        for activity in authorizations.get_activities():
+            rolename = activity_map.get(activity)
+            if rolename:
+                roles.add(rolename)
 
         return roles
