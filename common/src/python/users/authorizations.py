@@ -1,24 +1,23 @@
 """Defines components related to user authorizations."""
-from typing import Dict, List, Literal, Optional, Sequence, Set
+from typing import Dict, List, Literal, LiteralString, Optional, Sequence, Set
 
 from pydantic import BaseModel
+
+DatatypeNameType = Literal['form', 'dicom']
+AuthNameType = Literal['submit-form', 'submit-dicom', 'audit-data',
+                       'approve-data', 'view-reports']
 
 
 class Authorizations(BaseModel):
     """Type class for authorizations."""
     study_id: str
-    submit: List[Literal['form', 'dicom']]
+    submit: List[DatatypeNameType]
     audit_data: bool
     approve_data: bool
     view_reports: bool
-    _activities: Optional[List[Literal['submit-form', 'submit-dicom',
-                                       'audit-data', 'approve-data',
-                                       'view-reports']]] = None
+    _activities: Optional[List[AuthNameType]] = None
 
-    def get_activities(
-        self
-    ) -> List[Literal['submit-form', 'submit-dicom', 'audit-data',
-                      'approve-data', 'view-reports']]:
+    def get_activities(self) -> List[AuthNameType]:
         """Returns the list of names of authorized activities.
 
         Returns:
@@ -27,10 +26,10 @@ class Authorizations(BaseModel):
         if self._activities:
             return self._activities
 
-        activities = []
+        activities: List[AuthNameType] = []
         if self.submit:
             for datatype in self.submit:
-                activities.append(f"submit-{datatype}")
+                activities.append(f"submit-{datatype}") # type: ignore
         if self.audit_data:
             activities.append('audit-data')
         if self.approve_data:
@@ -60,7 +59,7 @@ class Authorizations(BaseModel):
         Returns:
           The Authorizations object
         """
-        modalities: List[Literal['form', 'dicom']] = []
+        modalities: List[DatatypeNameType] = []
         if 'a' in activities:
             modalities.append('form')
         if 'b' in activities:
