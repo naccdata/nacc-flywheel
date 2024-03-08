@@ -657,8 +657,7 @@ class GroupAdaptor:
         Returns:
           the project in this group with the label
         """
-        project = self.__fw.get_project(group=self._group,
-                                        project_label=label)
+        project = self.__fw.get_project(group=self._group, project_label=label)
         if not project:
             return None
 
@@ -692,6 +691,7 @@ class GroupAdaptor:
             return None
 
         return ProjectAdaptor(project=projects[0], proxy=self.__fw)
+
 
 class ProjectAdaptor:
     """Defines an adaptor for a flywheel project."""

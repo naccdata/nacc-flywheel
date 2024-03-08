@@ -125,8 +125,7 @@ class TestAuthMap:
                                   authorizations=beta_authorizations) == set()
 
     # pylint: disable=(redefined-outer-name,no-self-use)
-    def test_yaml(self, auth_map_alpha: AuthMap,
-                  auth_map_alpha_yaml: str):
+    def test_yaml(self, auth_map_alpha: AuthMap, auth_map_alpha_yaml: str):
         """Test YAML conversion."""
         yaml_object = yaml.safe_load(auth_map_alpha_yaml)
         load_map = AuthMap(project_authorizations=yaml_object)
