@@ -29,7 +29,7 @@ class Authorizations(BaseModel):
         activities: List[AuthNameType] = []
         if self.submit:
             for datatype in self.submit:
-                activities.append(f"submit-{datatype}") # type: ignore
+                activities.append(f"submit-{datatype}")  # type: ignore
         if self.audit_data:
             activities.append('audit-data')
         if self.approve_data:

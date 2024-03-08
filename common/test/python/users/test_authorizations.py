@@ -157,7 +157,8 @@ class TestAuthorizations:
     # pylint: disable=(redefined-outer-name,no-self-use)
     def test_create_from_record_invalid(self):
         """Test create_from_record with invalid input."""
-        authorizations = Authorizations.create_from_record(activities=['a', 'b', 'x'])
+        authorizations = Authorizations.create_from_record(
+            activities=['a', 'b', 'x'])
         assert authorizations == Authorizations(study_id='adrc',
                                                 submit=['form', 'dicom'],
                                                 audit_data=False,
