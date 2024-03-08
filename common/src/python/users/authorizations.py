@@ -58,7 +58,7 @@ class AuthMap(BaseModel):
         Returns:
             The list of roles
         """
-        roles = set()
+        roles: Set[str] = set()
 
         if project_id not in self.project_authorizations:
             return roles
