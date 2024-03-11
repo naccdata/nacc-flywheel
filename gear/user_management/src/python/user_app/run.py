@@ -38,6 +38,7 @@ def read_yaml_file(file_bytes: bytes) -> Optional[List[Any]]:
     return entry_docs[0]
 
 
+# pylint: disable=too-many-locals
 def main() -> None:
     """Main method to manage users."""
 
