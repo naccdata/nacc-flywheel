@@ -17,7 +17,7 @@ class TestDirectory:
             adcid=0,
             name=PersonName(first_name='chip', last_name='puppy'),
             email='chip@theorg.org',
-            authorizations=Authorizations(study_id='dummy',
+            authorizations=Authorizations(study_id='adrc',
                                           submit=['form'],
                                           audit_data=True,
                                           approve_data=True,
