@@ -35,7 +35,7 @@ root_patterns = [
 default_repository = "naccdata/{name}"
 
 [python]
-interpreter_constraints = ["==3.11.*"]
+interpreter_constraints = ["==3.10.*"]
 enable_resolves = true
 resolves = { python-default = "python-default.lock"}
 
