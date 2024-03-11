@@ -1,5 +1,5 @@
 """Defines components related to user authorizations."""
-from typing import Dict, List, Literal, LiteralString, Optional, Sequence, Set
+from typing import Dict, List, Literal, Optional, Sequence, Set
 
 from pydantic import BaseModel
 
