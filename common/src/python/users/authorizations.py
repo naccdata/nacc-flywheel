@@ -10,7 +10,7 @@ AuthNameType = Literal['submit-form', 'submit-dicom', 'audit-data',
 
 class Authorizations(BaseModel):
     """Type class for authorizations."""
-    study_id: str
+    study_id: str = 'adrc'
     submit: List[DatatypeNameType]
     audit_data: bool
     approve_data: bool
@@ -65,8 +65,7 @@ class Authorizations(BaseModel):
         if 'b' in activities:
             modalities.append('dicom')
 
-        return Authorizations(study_id='adrc',
-                              submit=modalities,
+        return Authorizations(submit=modalities,
                               audit_data=bool('c' in activities),
                               approve_data=('d' in activities),
                               view_reports=('e' in activities))
