@@ -23,6 +23,26 @@
         }
     },
     "inputs": {
+        "user_file": {
+            "base": "file",
+            "description": "The user YAML file",
+            "type": {
+                "enum": [
+                    "source code"
+                ]
+            },
+            "optional": false
+        },
+        "auth_file": {
+            "base": "file",
+            "description": "The role YAML file",
+            "type": {
+                "enum": [
+                    "source code"
+                ]
+            },
+            "optional": false
+        }
     },
     "config": {
         "dry_run": {
@@ -34,21 +54,6 @@
             "description": "Name of the admin group",
             "type": "string",
             "default": "nacc"
-        },
-        "source": {
-            "description": "Name of the source project",
-            "type": "string",
-            "default": "project-admin"
-        },
-        "user_file"  : {
-            "description": "The user YAML filename",
-            "type": "string",
-            "default": "nacc-directory-users.yaml"
-        },
-        "auth_file"  : {
-            "description": "The role YAML filename",
-            "type": "string",
-            "default": "user-roles.yaml"
         }
     },
     "command": "/bin/run"

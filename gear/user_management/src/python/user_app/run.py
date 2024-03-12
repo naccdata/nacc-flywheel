@@ -57,34 +57,28 @@ def main() -> None:
         flywheel_proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
         admin_group = NACCGroup.create(proxy=flywheel_proxy,
                                        group_id=admin_group_id)
-        try:
-            source = get_project(context=gear_context,
-                                 group=admin_group,
-                                 project_key='source')
-            user_file_bytes = read_file(context=gear_context,
-                                        source=source,
-                                        key='user_file')
-            user_list = read_yaml_file(user_file_bytes)
 
-        except ConfigurationError as error:
-            log.error('Source project not found: %s', error)
+        user_file_path = gear_context.get_input_path('user_file')
+        if not user_file_path:
+            log.error('User directory file missing')
             sys.exit(1)
-        except ConfigParseError as error:
-            log.error('Cannot read directory file: %s', error.message)
-            sys.exit(1)
+
+        try:
+            with open(user_file_path, 'r', encoding='utf-8') as user_file:
+                user_list = load_from_stream(user_file)
         except YAMLReadError as error:
             log.error('No users read from user file: %s', error)
             sys.exit(1)
 
-        try:
-            auth_file_bytes = read_file(context=gear_context,
-                                        source=source,
-                                        key='auth_file')
-            auth_object = load_from_stream(auth_file_bytes)
-            auth_map = AuthMap(project_authorizations=auth_object)
-        except ConfigParseError as error:
-            log.error('Cannot read auth file: %s', error.message)
+        auth_file_path = gear_context.get_input_path('auth_file')
+        if not auth_file_path:
+            log.error('User role file missing')
             sys.exit(1)
+
+        try:
+            with open(auth_file_path, 'r', encoding='utf-8') as auth_file:
+                auth_object = load_from_stream(auth_file)
+                auth_map = AuthMap(project_authorizations=auth_object)
         except YAMLReadError as error:
             log.error('No authorizations read from auth file: %s', error)
             sys.exit(1)
