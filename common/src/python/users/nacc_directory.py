@@ -5,7 +5,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Literal, NewType, Optional, Set
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from users.authorizations import Authorizations
 
 log = logging.getLogger(__name__)
@@ -72,7 +72,12 @@ class UserDirectoryEntry(BaseModel):
         Returns:
           The dictionary object
         """
-        return UserDirectoryEntry.model_validate(entry)
+        try:
+            return UserDirectoryEntry.model_validate(entry)
+        except ValidationError as error:
+            log.error("Error creating user entry from %s: %s", entry, error)
+            raise UserFormatError(
+                f"Error creating user entry: {error}") from error
 
     @classmethod
     def create_from_record(
@@ -113,6 +118,10 @@ class UserDirectoryEntry(BaseModel):
                                       record['fw_cred_sub_time'],
                                       "%Y-%m-%d %H:%M"),
                                   authorizations=authorizations)
+
+
+class UserFormatError(Exception):
+    """Exception class for user format errors."""
 
 
 class DirectoryConflict(BaseModel):

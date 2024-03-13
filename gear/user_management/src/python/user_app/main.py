@@ -7,7 +7,7 @@ from centers.nacc_group import NACCGroup
 from flywheel import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from users.authorizations import AuthMap
-from users.nacc_directory import UserDirectoryEntry
+from users.nacc_directory import UserDirectoryEntry, UserFormatError
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +62,11 @@ def create_user_map(
     """
     center_map = defaultdict(list)
     for user_doc in user_list:
-        user_entry = UserDirectoryEntry.create(user_doc)
+        try:
+            user_entry = UserDirectoryEntry.create(user_doc)
+        except UserFormatError as error:
+            log.error('Error creating user entry: %s', error)
+            continue
         if user_entry.user_id in skip_list:
             log.info('Skipping user: %s', user_entry.user_id)
             continue
