@@ -42,7 +42,7 @@ def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
       proxy: the proxy object for the FW instance
       user_entry: the directory entry for the user
     Returns:
-      the ID for flywheel User created from the directory entry
+      the flywheel User created from the directory entry
     """
     new_id = proxy.add_user(create_user(user_entry=user_entry))
     user = proxy.find_user(user_entry.user_id)
@@ -99,7 +99,15 @@ def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
 
 def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
         skip_list: Set[str], authorization_map: AuthMap):
-    """Manages users based on user list."""
+    """Manages users based on user list.
+
+    Args:
+      proxy: Flywheel proxy object
+      user_list: the list of user objects from directory yaml file
+      admin_group: the NACCGroup object representing the admin group
+      skip_list: the list of user IDs to skip
+      authorization_map: the AuthMap object representing the authorization map
+    """
 
     # gather users by center
     user_map = create_user_map(user_list=user_list, skip_list=skip_list)

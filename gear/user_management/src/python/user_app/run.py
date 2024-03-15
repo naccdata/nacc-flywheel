@@ -23,8 +23,7 @@ def read_yaml_file(file_bytes: bytes) -> Optional[List[Any]]:
     """Reads user objects from YAML user file in the source project.
 
     Args:
-      source: the project where user file is located
-      user_filename: the name of the user file
+      file_bytes: The file input stream
     Returns:
       List of user objects
     """

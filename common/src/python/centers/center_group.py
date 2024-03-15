@@ -411,7 +411,11 @@ class CenterGroup(GroupAdaptor):
         assert user.id, "requires user has ID"
 
         portal_info = self.get_portal_info()
-        study_info = portal_info.studies[authorizations.study_id]
+        study_info = portal_info.studies.get(authorizations.study_id, None)
+        if not study_info:
+            log.warning('no study info for user %s in center %s', user.id,
+                        self.label)
+            return
 
         accepted_project = study_info.accepted_project
         if accepted_project:
