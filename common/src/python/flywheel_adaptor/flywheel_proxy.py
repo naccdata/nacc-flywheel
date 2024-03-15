@@ -509,7 +509,7 @@ class GroupAdaptor:
 
     def projects(self) -> List[flywheel.Project]:
         """Return projects for the group."""
-        return self._group.projects()
+        return list(self._group.projects.iter())
 
     def get_tags(self) -> List[str]:
         """Return the list of tags for the group.
