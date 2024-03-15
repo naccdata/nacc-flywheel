@@ -44,6 +44,8 @@ def main() -> None:
 
         path_prefix = gear_context.config.get("apikey_path_prefix",
                                               "/prod/flywheel/gearbot")
+        log.info('Running gearbot with API key from %s/apikey', path_prefix)
+
         try:
             parameter_store = ParameterStore.create_from_environment()
             api_key = parameter_store.get_api_key(path_prefix=path_prefix)
