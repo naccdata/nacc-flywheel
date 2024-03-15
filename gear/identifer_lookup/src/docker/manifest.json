@@ -43,6 +43,12 @@
             "description": "SSM parameter path for identifiers RDS credentials",
             "type": "string",
             "default": "/prod/flywheel/gearbot/identifiers"
+        },
+        "apikey_path_prefix": {
+            "description": "The instance specific AWS parameter gearbot path prefix",
+            "type": "string",
+            "default": "/prod/flywheel/gearbot"
+
         }
     },
     "command": "/bin/run"

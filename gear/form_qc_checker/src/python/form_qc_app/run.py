@@ -22,9 +22,12 @@ def main():
         gear_context.init_logging()
         gear_context.log_config()
 
+        apikey_path_prefix = gear_context.config.get("apikey_path_prefix",
+                                                     "/prod/flywheel/gearbot")
         try:
             parameter_store = ParameterStore.create_from_environment()
-            api_key = parameter_store.get_api_key()
+            api_key = parameter_store.get_api_key(
+                path_prefix=apikey_path_prefix)
 
             s3_param_path = get_config(gear_context=gear_context,
                                        key='parameter_path')

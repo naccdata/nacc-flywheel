@@ -42,9 +42,11 @@ def main() -> None:
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
 
+        path_prefix = gear_context.config.get("apikey_path_prefix",
+                                              "/prod/flywheel/gearbot")
         try:
             parameter_store = ParameterStore.create_from_environment()
-            api_key = parameter_store.get_api_key()
+            api_key = parameter_store.get_api_key(path_prefix=path_prefix)
         except ParameterError as error:
             log.error('Parameter error: %s', error)
             sys.exit(1)

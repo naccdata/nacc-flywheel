@@ -67,10 +67,18 @@ class ParameterStore:
             ) from error
 
     # pylint disable=(line-to-long)
-    def get_api_key(self) -> str:
-        """Returns the GearBot API key."""
+    def get_api_key(self, path_prefix: str) -> str:
+        """Returns the GearBot API key.
+
+        Args:
+          path_prefix: the prefix for the parameter path
+        Returns:
+          the GearBot API key
+        Raises:
+          ParameterError: if the API key is not found
+        """
         parameter_name = 'apikey'
-        parameter_path = f'/prod/flywheel/gearbot/{parameter_name}'
+        parameter_path = f'{path_prefix}/{parameter_name}'
         try:
             parameter = self.__store.get_parameter(parameter_path,
                                                    decrypt=True)

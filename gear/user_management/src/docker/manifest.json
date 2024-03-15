@@ -54,6 +54,22 @@
             "description": "Name of the admin group",
             "type": "string",
             "default": "nacc"
+        },
+        "apikey_path_prefix": {
+            "description": "The instance specific AWS parameter gearbot path prefix",
+            "type": "string",
+            "default": "/prod/flywheel/gearbot"
+
+        },
+        "source": {
+            "description": "Name of the source project",
+            "type": "string",
+            "default": "project-admin"
+        },
+        "user_file"  : {
+            "description": "The user YAML filename",
+            "type": "string",
+            "default": "nacc-directory-users.yaml"
         }
     },
     "command": "/bin/run"

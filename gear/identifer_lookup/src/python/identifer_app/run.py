@@ -77,10 +77,13 @@ def main():
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
 
+        apikey_path_prefix = gear_context.config.get("apikey_path_prefix",
+                                                     "/prod/flywheel/gearbot")
         try:
             parameter_store = ParameterStore.create_from_environment()
             dry_run = gear_context.config.get("dry_run", False)
-            proxy = FlywheelProxy(client=Client(parameter_store.get_api_key()),
+            proxy = FlywheelProxy(client=Client(
+                parameter_store.get_api_key(path_prefix=apikey_path_prefix)),
                                   dry_run=dry_run)
             rds_parameters = parameter_store.get_rds_parameters(
                 param_path=get_config(gear_context=gear_context,

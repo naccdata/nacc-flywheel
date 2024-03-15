@@ -73,9 +73,12 @@ def main():
             log.error('Incomplete configuration: %s', error.message)
             sys.exit(1)
 
+        apikey_path_prefix = gear_context.config.get("apikey_path_prefix",
+                                                     "/prod/flywheel/gearbot")
         try:
             parameter_store = ParameterStore.create_from_environment()
-            api_key = parameter_store.get_api_key()
+            api_key = parameter_store.get_api_key(
+                path_prefix=apikey_path_prefix)
             s3_parameters = parameter_store.get_s3_parameters(
                 param_path=s3_param_path)
         except ParameterError as error:
