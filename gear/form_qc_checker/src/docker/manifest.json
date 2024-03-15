@@ -39,6 +39,12 @@
             "type": "boolean",
             "default": false
         },
+        "apikey_path_prefix": {
+            "description": "The instance specific AWS parameter gearbot path prefix",
+            "type": "string",
+            "default": "/prod/flywheel/gearbot"
+
+        },
         "parameter_path": {
             "description": "Parameter path for QC rules on S3",
             "type": "string"

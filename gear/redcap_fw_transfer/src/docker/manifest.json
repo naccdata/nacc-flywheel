@@ -37,6 +37,12 @@
             "description": "Parameter path for REDCap project credentials",
             "type": "string",
             "default": "/prod/flywheel/redcap/"
+        },
+        "apikey_path_prefix": {
+            "description": "The instance specific AWS parameter gearbot path prefix",
+            "type": "string",
+            "default": "/prod/flywheel/gearbot"
+
         }
     },
     "command": "/bin/run"
