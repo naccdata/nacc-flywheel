@@ -13,10 +13,9 @@ from flywheel.models.project_parents import ProjectParents
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
 from flywheel.models.user import User
+from flywheel.rest import ApiException
 from fw_client import FWClient
 from fw_utils import AttrDict
-
-from flywheel.rest import ApiException
 
 log = logging.getLogger(__name__)
 
