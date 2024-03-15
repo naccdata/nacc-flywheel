@@ -27,6 +27,25 @@ class CenterMapInfo(BaseModel):
     """Represents the center map in nacc/metadata project."""
     centers: Dict[int, CenterInfo]
 
+    def add(self, adcid: int, center_info: CenterInfo) -> None:
+        """Adds the center info to the map.
+
+        Args:
+            adcid: The ADC ID of the center.
+            center_info: The center info object.
+        """
+        self.centers[adcid] = center_info
+
+    def get(self, adcid: int) -> Optional[CenterInfo]:
+        """Gets the center info for the given ADCID.
+
+        Args:
+            adcid: The ADC ID of the center.
+        Returns:
+            The center info for the center. None if no info is found.
+        """
+        return self.centers.get(adcid, None)
+
 
 class NACCGroup(GroupAdaptor):
     """Manages group for NACC."""
@@ -81,14 +100,13 @@ class NACCGroup(GroupAdaptor):
           group_label: the label for the center group
           group_id: the ID for the center group
         """
-        center_map = self.get_center_map()
         metadata = self.get_metadata()
-        center_map[adcid] = CenterInfo(adcid=adcid,
-                                       name=group_label,
-                                       group=group_id)
-        metadata.update_info({'centers': center_map})
+        center_map = self.get_center_map()
+        center_map.add(
+            adcid, CenterInfo(adcid=adcid, name=group_label, group=group_id))
+        metadata.update_info(center_map.model_dump())
 
-    def get_center_map(self) -> Dict[int, CenterInfo]:
+    def get_center_map(self) -> CenterMapInfo:
         """Returns the adcid-group map.
 
         Returns:
@@ -98,14 +116,14 @@ class NACCGroup(GroupAdaptor):
         info = project.get_info()
 
         if not info:
-            return {}
+            return CenterMapInfo(centers={})
 
         try:
-            center_map = CenterMapInfo.model_validate(info.get('centers', {}))
+            center_map = CenterMapInfo.model_validate(info)
         except ValidationError:
             center_map = CenterMapInfo(centers={})
 
-        return center_map.centers
+        return center_map
 
     def get_center(self, adcid: int) -> Optional[CenterGroup]:
         """Returns the center group for the given ADCID.
@@ -120,11 +138,11 @@ class NACCGroup(GroupAdaptor):
             AssertionError: If no center is found for the given ADCID.
         """
         center_map = self.get_center_map()
-        group_info = center_map.get(adcid, None)
-        if not group_info:
+        center_info = center_map.get(adcid)
+        if not center_info:
             return None
 
-        group_id = group_info.group
+        group_id = center_info.group
         group = self.__fw.find_group(group_id=str(group_id))
         if not group:
             return None
