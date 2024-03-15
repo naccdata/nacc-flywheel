@@ -457,7 +457,7 @@ class CenterGroup(GroupAdaptor):
         if not project:
             return False
 
-        role_map = self.__fw.get_roles()
+        role_map = self._fw.get_roles()
         role_set = auth_map.get(project_id=project_id,
                                 authorizations=authorizations)
         roles = [role_map[role] for role in role_set]

@@ -490,7 +490,7 @@ class GroupAdaptor:
 
     def __init__(self, *, group: flywheel.Group, proxy: FlywheelProxy) -> None:
         self._group = group
-        self.__fw = proxy
+        self._fw = proxy
 
     # pylint: disable=invalid-name
     @property
@@ -505,7 +505,7 @@ class GroupAdaptor:
 
     def proxy(self) -> FlywheelProxy:
         """Return the proxy for the flywheel instance."""
-        return self.__fw
+        return self._fw
 
     def projects(self) -> List[flywheel.Project]:
         """Return projects for the group."""
@@ -569,7 +569,7 @@ class GroupAdaptor:
         ]
         users = []
         for user_id in user_ids:
-            user = self.__fw.find_user(user_id)
+            user = self._fw.find_user(user_id)
             if user:
                 users.append(user)
         return users
@@ -598,7 +598,7 @@ class GroupAdaptor:
                         new_permission.id)
             return
 
-        if self.__fw.dry_run:
+        if self._fw.dry_run:
             log.info('Dry Run: would add access %s for user %s to group %s',
                      new_permission.access, new_permission.id,
                      self._group.label)
@@ -631,12 +631,12 @@ class GroupAdaptor:
         Args:
           new_role: the role to add
         """
-        if not self.__fw:
+        if not self._fw:
             log.error('no Flywheel proxy given when adding users to group %s',
                       self._group.label)
             return
 
-        self.__fw.add_group_role(group=self._group, role=new_role)
+        self._fw.add_group_role(group=self._group, role=new_role)
 
     def add_roles(self, roles: List[GroupRole]) -> None:
         """Adds the roles in the list to the group.
@@ -657,11 +657,11 @@ class GroupAdaptor:
         Returns:
           the project in this group with the label
         """
-        project = self.__fw.get_project(group=self._group, project_label=label)
+        project = self._fw.get_project(group=self._group, project_label=label)
         if not project:
             return None
 
-        return ProjectAdaptor(project=project, proxy=self.__fw)
+        return ProjectAdaptor(project=project, proxy=self._fw)
 
     def get_project_by_id(self, project_id: str) -> Optional['ProjectAdaptor']:
         """Returns a project in this group with the given ID.
@@ -671,11 +671,11 @@ class GroupAdaptor:
         Returns:
           the project in this group with the ID
         """
-        project = self.__fw.get_project_by_id(project_id)
+        project = self._fw.get_project_by_id(project_id)
         if not project:
             return None
 
-        return ProjectAdaptor(project=project, proxy=self.__fw)
+        return ProjectAdaptor(project=project, proxy=self._fw)
 
     def find_project(self, label: str) -> Optional['ProjectAdaptor']:
         """Returns the project adaptor in the group with the label.
@@ -685,12 +685,12 @@ class GroupAdaptor:
         Returns:
           Project adaptor for project with label if exists, None otherwise.
         """
-        projects = self.__fw.find_projects(group_id=self._group.id,
+        projects = self._fw.find_projects(group_id=self._group.id,
                                            project_label=label)
         if not projects:
             return None
 
-        return ProjectAdaptor(project=projects[0], proxy=self.__fw)
+        return ProjectAdaptor(project=projects[0], proxy=self._fw)
 
 
 class ProjectAdaptor:

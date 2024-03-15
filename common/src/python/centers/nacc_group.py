@@ -143,12 +143,12 @@ class NACCGroup(GroupAdaptor):
             return None
 
         group_id = center_info.group
-        group = self.__fw.find_group(group_id=str(group_id))
+        group = self._fw.find_group(group_id=str(group_id))
         if not group:
             return None
 
         return CenterGroup.create_from_group_adaptor(adaptor=group,
-                                                     proxy=self.__fw)
+                                                     proxy=self._fw)
 
     def add_center_user(self, user: User) -> None:
         """Authorizes a user to access the metadata project of nacc group.
@@ -159,7 +159,7 @@ class NACCGroup(GroupAdaptor):
         assert user.id, "User must have user ID"
 
         metadata_project = self.get_metadata()
-        read_only_role = self.__fw.get_role('read-only')
+        read_only_role = self._fw.get_role('read-only')
         assert read_only_role, "Expecting read-only role to exist"
 
         metadata_project.add_user_role(user=user, role=read_only_role)
