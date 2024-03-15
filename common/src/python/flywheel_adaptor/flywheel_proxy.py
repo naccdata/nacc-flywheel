@@ -16,6 +16,8 @@ from flywheel.models.user import User
 from fw_client import FWClient
 from fw_utils import AttrDict
 
+from flywheel.rest import ApiException
+
 log = logging.getLogger(__name__)
 
 
@@ -200,20 +202,15 @@ class FlywheelProxy:
         Returns:
             project: the found or created project
         """
-        group_id = group.id
-        assert group_id
-        existing_projects = self.find_projects(group_id=group_id,
-                                               project_label=project_label)
-        if existing_projects and len(existing_projects) == 1:
-            project_ref = f"{group.id}/{project_label}"
-            log.info('Project %s exists', project_ref)
-            return existing_projects[0]
-
         if not group:
-            log.error(('No project named %s and no group id provided.'
-                       '  Please provide a group ID to create the project in'),
+            log.error('Attempted to create a project %s without a group',
                       project_label)
             return None
+
+        project = group.projects.find_first(f"label={project_label}")
+        if project:
+            log.info('Project %s/%s exists', group.id, project_label)
+            return project
 
         project_ref = f"{group.id}/{project_label}"
         if self.__dry_run:
@@ -222,7 +219,11 @@ class FlywheelProxy:
                                     parents=ProjectParents(group=group.id))
 
         log.info('creating project %s', project_ref)
-        project = group.add_project(label=project_label)
+        try:
+            project = group.add_project(label=project_label)
+        except ApiException as exc:
+            log.error('Failed to create project %s: %s', project_ref, exc)
+            return None
         log.info('success')
 
         return project
