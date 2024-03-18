@@ -686,7 +686,7 @@ class GroupAdaptor:
           Project adaptor for project with label if exists, None otherwise.
         """
         projects = self._fw.find_projects(group_id=self._group.id,
-                                           project_label=label)
+                                          project_label=label)
         if not projects:
             return None
 
