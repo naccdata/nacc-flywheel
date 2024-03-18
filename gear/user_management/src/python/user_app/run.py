@@ -41,8 +41,10 @@ def main() -> None:
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
+        gear_context.log_config()
 
-        if not gear_context.client:
+        default_client = gear_context.client
+        if not default_client:
             log.error('Flywheel client required to confirm gearbot access')
             sys.exit(1)
 

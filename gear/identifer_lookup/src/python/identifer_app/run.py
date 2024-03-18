@@ -76,6 +76,12 @@ def main():
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
+        gear_context.log_config()
+
+        default_client = gear_context.client
+        if not default_client:
+            log.error('Flywheel client required to confirm gearbot access')
+            sys.exit(1)
 
         apikey_path_prefix = gear_context.config.get("apikey_path_prefix",
                                                      "/prod/flywheel/gearbot")
@@ -83,10 +89,8 @@ def main():
                  apikey_path_prefix)
         try:
             parameter_store = ParameterStore.create_from_environment()
-            dry_run = gear_context.config.get("dry_run", False)
-            proxy = FlywheelProxy(client=Client(
-                parameter_store.get_api_key(path_prefix=apikey_path_prefix)),
-                                  dry_run=dry_run)
+            api_key = parameter_store.get_api_key(path_prefix=apikey_path_prefix)
+
             rds_parameters = parameter_store.get_rds_parameters(
                 param_path=get_config(gear_context=gear_context,
                                       key='rds_parameter_path'))
@@ -96,6 +100,15 @@ def main():
         except ParameterError as error:
             log.error('Parameter error: %s', error)
             sys.exit(1)
+
+        host = gear_context.client.api_client.configuration.host # type: ignore
+        if api_key.split(':')[0] not in host:
+            log.error('Gearbot API key does not match host')
+            sys.exit(1)
+
+        dry_run = gear_context.config.get("dry_run", False)
+        proxy = FlywheelProxy(client=Client(api_key),
+                                dry_run=dry_run)
 
         file_input = gear_context.get_input('input_file')
         if not file_input:

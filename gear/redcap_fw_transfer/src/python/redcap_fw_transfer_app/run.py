@@ -53,6 +53,11 @@ def main():
         gear_context.init_logging()
         gear_context.log_config()
 
+        default_client = gear_context.client
+        if not default_client:
+            log.error('Flywheel client required to confirm gearbot access')
+            sys.exit(1)
+
         path_prefix = gear_context.config.get("apikey_path_prefix",
                                               "/prod/flywheel/gearbot")
         log.info('Running gearbot with API key from %s/apikey', path_prefix)
@@ -68,6 +73,11 @@ def main():
             sys.exit(1)
         except ConfigParseError as error:
             log.error('Incomplete configuration: %s', error.message)
+            sys.exit(1)
+
+        host = gear_context.client.api_client.configuration.host # type: ignore
+        if api_key.split(':')[0] not in host:
+            log.error('Gearbot API key does not match host')
             sys.exit(1)
 
         fw_client = Client(api_key)
