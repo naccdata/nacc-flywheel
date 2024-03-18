@@ -460,7 +460,11 @@ class CenterGroup(GroupAdaptor):
         role_map = self._fw.get_roles()
         role_set = auth_map.get(project_id=project_id,
                                 authorizations=authorizations)
-        roles = [role_map[role] for role in role_set]
+        roles = []
+        for role_name in role_set:
+            role = role_map.get(role_name)
+            roles.append(role) if role else log.warning(
+                'no role %s found', role_name)
 
         return project.add_user_roles(user=user, roles=roles)
 
