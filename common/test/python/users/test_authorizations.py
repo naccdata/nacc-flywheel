@@ -183,7 +183,7 @@ class TestAuthMap:
     def test_empty_map(self, empty_auth: Authorizations):
         """Test empty map."""
         auth_map = AuthMap(project_authorizations={})
-        assert auth_map.get(project_id='dummy',
+        assert auth_map.get(project_label='dummy',
                             authorizations=empty_auth) == set()
 
     # pylint: disable=(redefined-outer-name,no-self-use)
@@ -191,33 +191,33 @@ class TestAuthMap:
                      beta_authorizations: Authorizations,
                      auth_map_alpha: AuthMap):
         """Test authmap."""
-        assert auth_map_alpha.get(project_id='accepted',
+        assert auth_map_alpha.get(project_label='accepted',
                                   authorizations=alpha_authorizations) == {
                                       'read-only'
                                   }
-        assert auth_map_alpha.get(project_id='ingest-form',
+        assert auth_map_alpha.get(project_label='ingest-form',
                                   authorizations=alpha_authorizations) == {
                                       'read-only', 'upload'
                                   }
         assert auth_map_alpha.get(
-            project_id='ingest-dicom',
+            project_label='ingest-dicom',
             authorizations=alpha_authorizations) == set()
-        assert auth_map_alpha.get(project_id='sandbox-form',
+        assert auth_map_alpha.get(project_label='sandbox-form',
                                   authorizations=alpha_authorizations) == {
                                       'upload'
                                   }
 
-        assert auth_map_alpha.get(project_id='accepted',
+        assert auth_map_alpha.get(project_label='accepted',
                                   authorizations=beta_authorizations) == {
                                       'read-only'
                                   }
-        assert auth_map_alpha.get(project_id='ingest-form',
+        assert auth_map_alpha.get(project_label='ingest-form',
                                   authorizations=beta_authorizations) == {
                                       'read-only'
                                   }
-        assert auth_map_alpha.get(project_id='ingest-dicom',
+        assert auth_map_alpha.get(project_label='ingest-dicom',
                                   authorizations=beta_authorizations) == set()
-        assert auth_map_alpha.get(project_id='sandbox-form',
+        assert auth_map_alpha.get(project_label='sandbox-form',
                                   authorizations=beta_authorizations) == set()
 
     # pylint: disable=(redefined-outer-name,no-self-use)

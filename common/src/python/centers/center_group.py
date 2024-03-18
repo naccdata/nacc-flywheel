@@ -413,8 +413,8 @@ class CenterGroup(GroupAdaptor):
         portal_info = self.get_portal_info()
         study_info = portal_info.studies.get(authorizations.study_id, None)
         if not study_info:
-            log.warning('no study info for user %s in center %s', user.id,
-                        self.label)
+            log.warning('no study info for study %s in center %s',
+                        authorizations.study_id, self.label)
             return
 
         accepted_project = study_info.accepted_project
@@ -458,13 +458,20 @@ class CenterGroup(GroupAdaptor):
             return False
 
         role_map = self._fw.get_roles()
-        role_set = auth_map.get(project_id=project_id,
+        role_set = auth_map.get(project_label=project.label,
                                 authorizations=authorizations)
+        if not role_set:
+            log.warning('no roles found for user %s in project %s/%s', user.id,
+                        self.label, project.label)
+            return False
+
         roles = []
         for role_name in role_set:
             role = role_map.get(role_name)
-            roles.append(role) if role else log.warning(
-                'no role %s found', role_name)
+            if role:
+                roles.append(role)
+            else:
+                log.warning('no role %s found', role_name)
 
         return project.add_user_roles(user=user, roles=roles)
 

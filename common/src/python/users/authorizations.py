@@ -72,10 +72,13 @@ class Authorizations(BaseModel):
 
 
 class AuthMap(BaseModel):
-    """Type class for mapping authorizations to roles."""
+    """Type class for mapping authorizations to roles.
+    
+    Represents table as project label -> activity -> role.
+    """
     project_authorizations: Dict[str, Dict[str, str]]
 
-    def get(self, *, project_id: str,
+    def get(self, *, project_label: str,
             authorizations: 'Authorizations') -> Set[str]:
         """Gets the roles for a project and authorizations.
 
@@ -87,10 +90,10 @@ class AuthMap(BaseModel):
         """
         roles: Set[str] = set()
 
-        if project_id not in self.project_authorizations:
+        if project_label not in self.project_authorizations:
             return roles
 
-        activity_map = self.project_authorizations[project_id]
+        activity_map = self.project_authorizations[project_label]
         for activity in authorizations.get_activities():
             rolename = activity_map.get(activity)
             if rolename:
