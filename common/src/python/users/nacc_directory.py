@@ -3,40 +3,12 @@
 import logging
 from collections import defaultdict
 from datetime import datetime
-from typing import (Any, Dict, Iterable, List, Literal, NewType, Optional,
-                    Sequence, Set)
+from typing import Any, Dict, Iterable, List, Literal, NewType, Optional, Set
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
+from users.authorizations import Authorizations
 
 log = logging.getLogger(__name__)
-
-
-class Authorizations(BaseModel):
-    """Type class for authorizations."""
-    submit: List[Literal['form', 'image']]
-    audit_data: bool
-    approve_data: bool
-    view_reports: bool
-
-    @classmethod
-    def create_from_record(cls, activities: Sequence[str]) -> "Authorizations":
-        """Creates an Authorizations object directory access activities.
-
-        Args:
-          activities: a string containing activities
-        Returns:
-          The Authorizations object
-        """
-        modalities: List[Literal['form', 'image']] = []
-        if 'a' in activities:
-            modalities.append('form')
-        if 'b' in activities:
-            modalities.append('image')
-
-        return Authorizations(submit=modalities,
-                              audit_data=bool('c' in activities),
-                              approve_data=('d' in activities),
-                              view_reports=('e' in activities))
 
 
 class Credentials(BaseModel):
@@ -67,6 +39,21 @@ class UserDirectoryEntry(BaseModel):
     credentials: Credentials
     submit_time: datetime
 
+    @property
+    def user_id(self) -> str:
+        """The user ID for this directory entry."""
+        return self.credentials.id
+
+    @property
+    def first_name(self) -> str:
+        """The first name for this directory entry."""
+        return self.name.first_name
+
+    @property
+    def last_name(self) -> str:
+        """The last name for this directory entry."""
+        return self.name.last_name
+
     def as_dict(self) -> EntryDictType:
         """Builds a dictionary for this directory entry.
 
@@ -85,7 +72,12 @@ class UserDirectoryEntry(BaseModel):
         Returns:
           The dictionary object
         """
-        return UserDirectoryEntry.model_validate(entry)
+        try:
+            return UserDirectoryEntry.model_validate(entry)
+        except ValidationError as error:
+            log.error("Error creating user entry from %s: %s", entry, error)
+            raise UserFormatError(
+                f"Error creating user entry: {error}") from error
 
     @classmethod
     def create_from_record(
@@ -128,6 +120,10 @@ class UserDirectoryEntry(BaseModel):
                                   authorizations=authorizations)
 
 
+class UserFormatError(Exception):
+    """Exception class for user format errors."""
+
+
 class DirectoryConflict(BaseModel):
     """Entries with conflicting user_id and/or emails."""
     user_id: str
@@ -157,7 +153,7 @@ class UserDirectory:
           entry: the directory entry
         """
         # check that entry has an ID
-        if not entry.credentials.id:
+        if not entry.user_id:
             return
 
         # check that doesn't have duplicate email
@@ -174,16 +170,16 @@ class UserDirectory:
                 self.__conflict_set.add(other_email)
             return
 
-        if entry.email == entry.credentials.id:
+        if entry.email == entry.user_id:
             return
 
         # check that ID is not someone else's email
-        if self.has_entry_email(entry.credentials.id):
+        if self.has_entry_email(entry.user_id):
             # new entry is in conflict
             self.__conflict_set.add(entry.email)
             return
 
-        self.__id_map[entry.credentials.id].append(entry.email)
+        self.__id_map[entry.user_id].append(entry.email)
 
     def get_entries(self) -> List[UserDirectoryEntry]:
         """Returns the list of entries with no conflicts between email address

@@ -2,8 +2,8 @@
 from datetime import datetime
 
 import yaml
-from users.nacc_directory import (Authorizations, Credentials, PersonName,
-                                  UserDirectoryEntry)
+from users.authorizations import Authorizations
+from users.nacc_directory import Credentials, PersonName, UserDirectoryEntry
 
 
 # pylint: disable=(no-self-use,too-few-public-methods)

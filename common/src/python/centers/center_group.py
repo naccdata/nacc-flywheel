@@ -9,11 +9,14 @@ from typing import Dict, List, Optional
 
 import flywheel
 from flywheel.models.group import Group
+from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
 from projects.study import Center, Study
 from projects.template_project import TemplateProject
 from pydantic import AliasGenerator, BaseModel, ConfigDict, ValidationError
+from users.authorizations import AuthMap
+from users.nacc_directory import Authorizations
 
 log = logging.getLogger(__name__)
 
@@ -62,6 +65,20 @@ class CenterGroup(GroupAdaptor):
                                    proxy=proxy)
 
         return center_group
+
+    @classmethod
+    def create_from_group_adaptor(cls, *, proxy: FlywheelProxy,
+                                  adaptor: GroupAdaptor) -> 'CenterGroup':
+        """Creates a CenterGroup from a GroupAdaptor.
+
+        Args:
+          adaptor: the group adaptor
+          proxy: the flywheel proxy object
+        Returns:
+          the CenterGroup for the group
+        """
+        # pylint: disable=protected-access
+        return CenterGroup.create_from_group(proxy=proxy, group=adaptor._group)
 
     @classmethod
     def create_from_center(cls, *, proxy: FlywheelProxy,
@@ -383,6 +400,81 @@ class CenterGroup(GroupAdaptor):
         project.add_tags(self.get_tags())
         return project
 
+    def add_user_roles(self, user: User, authorizations: Authorizations,
+                       auth_map: AuthMap) -> None:
+        """Adds user authorized projects in the center group.
+
+        Args:
+          user: the user to add
+          authorizations: the authorizations for the user
+        """
+        assert user.id, "requires user has ID"
+
+        portal_info = self.get_portal_info()
+        study_info = portal_info.studies.get(authorizations.study_id, None)
+        if not study_info:
+            log.warning('no study info for study %s in center %s',
+                        authorizations.study_id, self.label)
+            return
+
+        accepted_project = study_info.accepted_project
+        if accepted_project:
+            self.__add_user_roles_to_project(
+                user=user,
+                project_id=accepted_project.project_id,
+                auth_map=auth_map,
+                authorizations=authorizations)
+
+        ingest_projects = study_info.ingest_projects
+        for project in ingest_projects.values():
+            self.__add_user_roles_to_project(user=user,
+                                             project_id=project.project_id,
+                                             auth_map=auth_map,
+                                             authorizations=authorizations)
+
+        metadata_project = self.get_metadata()
+        if metadata_project:
+            self.__add_user_roles_to_project(user=user,
+                                             project_id=metadata_project.id,
+                                             auth_map=auth_map,
+                                             authorizations=authorizations)
+
+    def __add_user_roles_to_project(self, *, user: User, project_id: str,
+                                    authorizations: Authorizations,
+                                    auth_map: AuthMap) -> bool:
+        """Adds user to the project with the role.
+
+        Args:
+          user: the user to add
+          role: the role to add
+          project_id: the project ID
+        Returns:
+          True if user was added, False otherwise
+        """
+        assert user.id, "requires user has ID"
+
+        project = self.get_project_by_id(project_id)
+        if not project:
+            return False
+
+        role_map = self._fw.get_roles()
+        role_set = auth_map.get(project_label=project.label,
+                                authorizations=authorizations)
+        if not role_set:
+            log.warning('no roles found for user %s in project %s/%s', user.id,
+                        self.label, project.label)
+            return False
+
+        roles = []
+        for role_name in role_set:
+            role = role_map.get(role_name)
+            if role:
+                roles.append(role)
+            else:
+                log.warning('no role %s found', role_name)
+
+        return project.add_user_roles(user=user, roles=roles)
+
 
 class CenterError(Exception):
     """Exception classes for errors related to using group to capture center
@@ -456,12 +548,8 @@ class IngestProjectMetadata(ProjectMetadata):
 
     # pylint: disable=(arguments-differ)
     @staticmethod
-    def create(
-            *,
-            site: str,
-            study_id: str,
-            project_id: str,  # type: ignore
-            project_label: str,
+    def create(  # type: ignore
+            *, site: str, study_id: str, project_id: str, project_label: str,
             datatype: str) -> 'IngestProjectMetadata':
         """Creates an IngestProjectMetadata object.
 
@@ -494,14 +582,9 @@ class FormIngestProjectMetadata(IngestProjectMetadata):
 
     # pylint: disable=(arguments-differ)
     @staticmethod
-    def create(
-            *,
-            site: str,
-            study_id: str,
-            project_id: str,  # type: ignore
-            project_label: str,
-            datatype: str,
-            redcap_site: str,
+    def create(  # type: ignore
+            *, site: str, study_id: str, project_id: str, project_label: str,
+            datatype: str, redcap_site: str,
             redcap_project_id: int) -> 'FormIngestProjectMetadata':
         """Creates a FormIngestProjectMetadata object.
 

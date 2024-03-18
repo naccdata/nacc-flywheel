@@ -46,6 +46,26 @@ def get_object_lists_from_stream(stream) -> Optional[List[List[Any]]]:
         return [*element_gen]
 
 
+def load_from_stream(stream) -> Any:
+    """Loads object from the YAML IO stream.
+
+    Args:
+      stream: IO stream
+    Returns:
+      Object created from file or None if an error occurs
+    """
+    try:
+        return yaml.safe_load(stream)
+    except yaml.MarkedYAMLError as error:
+        mark = error.problem_mark
+        if mark:
+            raise YAMLReadError(f'Error in YAML: line {mark.line + 1}, '
+                                'column {mark.column + 1}') from error
+        raise YAMLReadError(f'Error in YAML file: {error}') from error
+    except yaml.YAMLError as error:
+        raise YAMLReadError(f'Error in YAML file: {error}') from error
+
+
 class YAMLReadError(Exception):
     """Exception class for errors that occur when reading objects from a YAML
     file."""

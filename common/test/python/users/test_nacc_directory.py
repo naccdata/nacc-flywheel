@@ -14,7 +14,7 @@ from users.nacc_directory import (Authorizations, Credentials, PersonName,
 def user_entry(email: str,
                name: Optional[PersonName] = None,
                user_id: Optional[str] = None,
-               submit: Optional[List[Literal['form', 'image']]] = None,
+               submit: Optional[List[Literal['form', 'dicom']]] = None,
                audit_data=False,
                approve_data=False,
                view_reports=False):
@@ -33,7 +33,8 @@ def user_entry(email: str,
     if not name:
         name = PersonName(first_name='dummy', last_name='name')
 
-    authorizations = Authorizations(submit=submit if submit else [],
+    authorizations = Authorizations(study_id='dummy',
+                                    submit=submit if submit else [],
                                     audit_data=audit_data,
                                     approve_data=approve_data,
                                     view_reports=view_reports)

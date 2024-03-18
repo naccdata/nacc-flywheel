@@ -9,11 +9,12 @@ from centers.nacc_group import NACCGroup
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.configuration import ConfigurationError, get_project, read_file
-from inputs.context_parser import ConfigParseError
 from inputs.parameter_store import ParameterError, ParameterStore
-from inputs.yaml import YAMLReadError, get_object_lists_from_stream
+from inputs.yaml import (YAMLReadError, get_object_lists_from_stream,
+                         load_from_stream)
+from pydantic import ValidationError
 from user_app.main import run
+from users.authorizations import AuthMap
 
 log = logging.getLogger(__name__)
 
@@ -22,27 +23,35 @@ def read_yaml_file(file_bytes: bytes) -> Optional[List[Any]]:
     """Reads user objects from YAML user file in the source project.
 
     Args:
-      source: the project where user file is located
-      user_filename: the name of the user file
+      file_bytes: The file input stream
     Returns:
       List of user objects
     """
-    user_docs = get_object_lists_from_stream(
+    entry_docs = get_object_lists_from_stream(
         StringIO(file_bytes.decode('utf-8')))
-    if not user_docs or not user_docs[0]:
+    if not entry_docs or not entry_docs[0]:
         return None
 
-    return user_docs[0]
+    return entry_docs[0]
 
 
+# pylint: disable=too-many-locals
 def main() -> None:
     """Main method to manage users."""
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
+        gear_context.log_config()
+
+        default_client = gear_context.client
+        if not default_client:
+            log.error('Flywheel client required to confirm gearbot access')
+            sys.exit(1)
 
         path_prefix = gear_context.config.get("apikey_path_prefix",
                                               "/prod/flywheel/gearbot")
+        log.info('Running gearbot with API key from %s/apikey', path_prefix)
+
         try:
             parameter_store = ParameterStore.create_from_environment()
             api_key = parameter_store.get_api_key(path_prefix=path_prefix)
@@ -50,33 +59,53 @@ def main() -> None:
             log.error('Parameter error: %s', error)
             sys.exit(1)
 
+        host = gear_context.client.api_client.configuration.host # type: ignore
+        if api_key.split(':')[0] not in host:
+            log.error('Gearbot API key does not match host')
+            sys.exit(1)
+
         dry_run = gear_context.config.get("dry_run", False)
         admin_group_id = gear_context.config.get("admin_group", "nacc")
         flywheel_proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
         admin_group = NACCGroup.create(proxy=flywheel_proxy,
                                        group_id=admin_group_id)
+
+        user_file_path = gear_context.get_input_path('user_file')
+        if not user_file_path:
+            log.error('User directory file missing')
+            sys.exit(1)
+
         try:
-            source = get_project(context=gear_context,
-                                 group=admin_group,
-                                 project_key='source')
-            file_bytes = read_file(context=gear_context,
-                                   source=source,
-                                   key='user_file')
-            user_list = read_yaml_file(file_bytes)
-        except ConfigurationError as error:
-            log.error('Source project not found: %s', error)
-            sys.exit(1)
-        except ConfigParseError as error:
-            log.error('Cannot read directory file: %s', error.message)
-            sys.exit(1)
+            with open(user_file_path, 'r', encoding='utf-8') as user_file:
+                user_list = load_from_stream(user_file)
         except YAMLReadError as error:
             log.error('No users read from user file: %s', error)
+            sys.exit(1)
+
+        auth_file_path = gear_context.get_input_path('auth_file')
+        if not auth_file_path:
+            log.error('User role file missing')
+            sys.exit(1)
+
+        try:
+            with open(auth_file_path, 'r', encoding='utf-8') as auth_file:
+                auth_object = load_from_stream(auth_file)
+                auth_map = AuthMap(project_authorizations=auth_object)
+        except YAMLReadError as error:
+            log.error('No authorizations read from auth file: %s', error)
+            sys.exit(1)
+        except ValidationError as error:
+            log.error('Unexpected format in auth file: %s', error)
             sys.exit(1)
 
         admin_users = admin_group.get_group_users(access='admin')
         admin_set = {user.id for user in admin_users if user.id}
 
-        run(proxy=flywheel_proxy, user_list=user_list, skip_list=admin_set)
+        run(proxy=flywheel_proxy,
+            user_list=user_list,
+            admin_group=admin_group,
+            skip_list=admin_set,
+            authorization_map=auth_map)
 
 
 if __name__ == "__main__":

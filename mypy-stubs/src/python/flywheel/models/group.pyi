@@ -1,5 +1,7 @@
 from typing import List
 
+from flywheel.finder import Finder
+
 from .access_permission import AccessPermission
 from .project import Project
 
@@ -20,7 +22,8 @@ class Group:
     def add_project(self, label: str) -> Project:
         ...
 
-    def projects(self) -> List[Project]:
+    @property
+    def projects(self) -> Finder[Project]:
         ...
 
     @property

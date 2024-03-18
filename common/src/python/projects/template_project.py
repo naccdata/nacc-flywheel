@@ -126,7 +126,7 @@ class TemplateProject:
         """
         role_assignments = self.__source_project.permissions
         for role_assignment in role_assignments:
-            destination.add_user_roles(role_assignment)
+            destination.add_user_role_assignments(role_assignment)
 
     def copy_description(self, *, destination: ProjectAdaptor,
                          values: Dict[str, str]) -> None:
