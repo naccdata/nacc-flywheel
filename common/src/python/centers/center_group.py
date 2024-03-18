@@ -313,7 +313,7 @@ class CenterGroup(GroupAdaptor):
         Args:
           study: the study
         """
-        portal_info = self.get_portal_info()
+        portal_info = self.get_project_info()
 
         study_info = portal_info.get(study)
 
@@ -321,15 +321,12 @@ class CenterGroup(GroupAdaptor):
         if study.is_primary():
             suffix = ""
 
-        site = self.proxy().get_site()
-
         accepted_label = f"accepted{suffix}"
         accepted_project = self.__add_project(accepted_label)
         study_info.add_accepted(
-            ProjectMetadata.create(site=site,
-                                   study_id=study.study_id,
-                                   project_id=accepted_project.id,
-                                   project_label=accepted_label))
+            ProjectMetadata(study_id=study.study_id,
+                            project_id=accepted_project.id,
+                            project_label=accepted_label))
 
         if self.__is_active:
             for pipeline in ['ingest', 'sandbox']:
@@ -337,14 +334,12 @@ class CenterGroup(GroupAdaptor):
                     project_label = f"{pipeline}-{datatype.lower()}{suffix}"
                     project = self.__add_project(project_label)
                     study_info.add_ingest(
-                        IngestProjectMetadata.create(
-                            site=site,
-                            study_id=study.study_id,
-                            project_id=project.id,
-                            project_label=project_label,
-                            datatype=datatype))
+                        IngestProjectMetadata(study_id=study.study_id,
+                                              project_id=project.id,
+                                              project_label=project_label,
+                                              datatype=datatype))
 
-        self.update_portal_info(portal_info)
+        self.update_project_info(portal_info)
 
         labels = [
             f"retrospective-{datatype.lower()}" for datatype in study.datatypes
@@ -352,7 +347,7 @@ class CenterGroup(GroupAdaptor):
         for label in labels:
             self.__add_project(label)
 
-    def get_portal_info(self) -> 'CenterPortalMetadata':
+    def get_project_info(self) -> 'CenterProjectMetadata':
         """Gets the portal info for this center.
 
         Returns:
@@ -360,28 +355,38 @@ class CenterGroup(GroupAdaptor):
         Raises:
             CenterError: if info in portal project is not in expected format
         """
-        portal_project = self.get_portal()
-        info = portal_project.get_info()
+        metadata_project = self.get_metadata()
+        if not metadata_project:
+            log.error('no metadata project for %s, cannot get info',
+                      self.label)
+            raise CenterError(f"no metadata project for {self.label}")
+
+        info = metadata_project.get_info()
         if not info:
-            return CenterPortalMetadata(studies={})
+            return CenterProjectMetadata(studies={})
 
         if 'studies' not in info:
-            return CenterPortalMetadata(studies={})
+            return CenterProjectMetadata(studies={})
 
         try:
-            return CenterPortalMetadata.model_validate(info)
+            return CenterProjectMetadata.model_validate(info)
         except ValidationError as error:
-            raise CenterError(f"Info in {self.label}/{portal_project.label}"
+            raise CenterError(f"Info in {self.label}/{metadata_project.label}"
                               " does not match expected format") from error
 
-    def update_portal_info(self, portal_info: 'CenterPortalMetadata') -> None:
+    def update_project_info(self, portal_info: 'CenterProjectMetadata') -> None:
         """Updates the portal info for this center.
 
         Args:
           portal_info: the center portal metadata object
         """
-        portal_project = self.get_portal()
-        portal_project.update_info(
+        metadata_project = self.get_metadata()
+        if not metadata_project:
+            log.error('no metadata project for %s, cannot update info',
+                      self.label)
+            return
+
+        metadata_project.update_info(
             portal_info.model_dump(by_alias=True, exclude_none=True))
 
     def __add_project(self, label: str) -> ProjectAdaptor:
@@ -410,7 +415,7 @@ class CenterGroup(GroupAdaptor):
         """
         assert user.id, "requires user has ID"
 
-        portal_info = self.get_portal_info()
+        portal_info = self.get_project_info()
         study_info = portal_info.studies.get(authorizations.study_id, None)
         if not study_info:
             log.warning('no study info for study %s in center %s',
@@ -520,54 +525,11 @@ class ProjectMetadata(BaseModel):
     study_id: str
     project_id: str
     project_label: str
-    project_url: str
-
-    @staticmethod
-    def create(*, site: str, study_id: str, project_id: str,
-               project_label: str) -> 'ProjectMetadata':
-        """Creates a ProjectMetadata object.
-
-        Args:
-          site: the site url
-          study_id: the study
-          project_id: the project id
-          project_label: the project label
-        Returns:
-          the constructed ProjectMetadata object
-        """
-        return ProjectMetadata(
-            study_id=study_id,
-            project_id=project_id,
-            project_label=project_label,
-            project_url=f"{site}/#/projects/{project_id}/information")
 
 
 class IngestProjectMetadata(ProjectMetadata):
     """Metadata for an ingest project of a center."""
     datatype: str
-
-    # pylint: disable=(arguments-differ)
-    @staticmethod
-    def create(  # type: ignore
-            *, site: str, study_id: str, project_id: str, project_label: str,
-            datatype: str) -> 'IngestProjectMetadata':
-        """Creates an IngestProjectMetadata object.
-
-        Args:
-            site: the site url
-            study_id: the study
-            project_id: the project id
-            project_label: the project label
-            datatype: the datatype
-        Returns:
-            the constructed IngestProjectMetadata object
-        """
-        return IngestProjectMetadata(
-            study_id=study_id,
-            project_id=project_id,
-            project_label=project_label,
-            project_url=f"{site}/#/projects/{project_id}/information",
-            datatype=datatype)
 
 
 class FormIngestProjectMetadata(IngestProjectMetadata):
@@ -578,36 +540,6 @@ class FormIngestProjectMetadata(IngestProjectMetadata):
     adds additional attributes specific to form ingest projects.
     """
     redcap_project_id: int
-    redcap_url: str
-
-    # pylint: disable=(arguments-differ)
-    @staticmethod
-    def create(  # type: ignore
-            *, site: str, study_id: str, project_id: str, project_label: str,
-            datatype: str, redcap_site: str,
-            redcap_project_id: int) -> 'FormIngestProjectMetadata':
-        """Creates a FormIngestProjectMetadata object.
-
-        Args:
-            site: the site url
-            study_id: the study
-            project_id: the project id
-            project_label: the project label
-            datatype: the datatype
-            redcap_site: the REDCap site url
-            redcap_project_id: the REDCap project id
-
-        Returns:
-            the constructed FormIngestProjectMetadata object
-        """
-        return FormIngestProjectMetadata(
-            study_id=study_id,
-            project_id=project_id,
-            project_label=project_label,
-            project_url=f"{site}/#/projects/{project_id}/information",
-            datatype=datatype,
-            redcap_project_id=redcap_project_id,
-            redcap_url=f"{redcap_site}/index.php?pid={redcap_project_id}")
 
 
 class StudyMetadata(BaseModel):
@@ -638,7 +570,7 @@ class StudyMetadata(BaseModel):
         self.ingest_projects[project.project_label] = project
 
 
-class CenterPortalMetadata(BaseModel):
+class CenterProjectMetadata(BaseModel):
     """Metadata to be stored in center portal project."""
     studies: Dict[str, StudyMetadata]
 
