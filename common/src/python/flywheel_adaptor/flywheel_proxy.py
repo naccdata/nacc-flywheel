@@ -822,8 +822,8 @@ class ProjectAdaptor:
           roles: the list of roles
         """
         if not roles:
-            log.warning('No roles to add to user %s in project %s', user.id,
-                        self.__project.label)
+            log.warning('No roles to add to user %s in project %s/%s', user.id,
+                        self.__project.group, self.__project.label)
             return False
 
         role_ids = [role.id for role in roles]
@@ -852,7 +852,11 @@ class ProjectAdaptor:
             log.info(log_message)
             user_role = RolesRoleAssignment(id=role_assignment.id,
                                             role_ids=role_assignment.role_ids)
-            self.__project.add_permission(user_role)
+            try:
+                self.__project.add_permission(user_role)
+            except ApiException as error:
+                log.error('Failed to add user role to project: %s', error)
+                return False
             self.__pull_project()
             return True
 
