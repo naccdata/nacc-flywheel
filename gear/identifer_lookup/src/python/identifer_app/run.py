@@ -89,7 +89,8 @@ def main():
                  apikey_path_prefix)
         try:
             parameter_store = ParameterStore.create_from_environment()
-            api_key = parameter_store.get_api_key(path_prefix=apikey_path_prefix)
+            api_key = parameter_store.get_api_key(
+                path_prefix=apikey_path_prefix)
 
             rds_parameters = parameter_store.get_rds_parameters(
                 param_path=get_config(gear_context=gear_context,
@@ -101,14 +102,13 @@ def main():
             log.error('Parameter error: %s', error)
             sys.exit(1)
 
-        host = gear_context.client.api_client.configuration.host # type: ignore
+        host = gear_context.client.api_client.configuration.host  # type: ignore
         if api_key.split(':')[0] not in host:
             log.error('Gearbot API key does not match host')
             sys.exit(1)
 
         dry_run = gear_context.config.get("dry_run", False)
-        proxy = FlywheelProxy(client=Client(api_key),
-                                dry_run=dry_run)
+        proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
 
         file_input = gear_context.get_input('input_file')
         if not file_input:

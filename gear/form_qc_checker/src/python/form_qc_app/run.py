@@ -48,7 +48,7 @@ def main():
             log.error('Incomplete configuration: %s', error.message)
             sys.exit(1)
 
-        host = gear_context.client.api_client.configuration.host # type: ignore
+        host = gear_context.client.api_client.configuration.host  # type: ignore
         if api_key.split(':')[0] not in host:
             log.error('Gearbot API key does not match host')
             sys.exit(1)

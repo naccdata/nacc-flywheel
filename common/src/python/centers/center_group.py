@@ -374,7 +374,8 @@ class CenterGroup(GroupAdaptor):
             raise CenterError(f"Info in {self.label}/{metadata_project.label}"
                               " does not match expected format") from error
 
-    def update_project_info(self, portal_info: 'CenterProjectMetadata') -> None:
+    def update_project_info(self,
+                            portal_info: 'CenterProjectMetadata') -> None:
         """Updates the portal info for this center.
 
         Args:
