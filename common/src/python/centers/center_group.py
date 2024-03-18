@@ -462,8 +462,7 @@ class CenterGroup(GroupAdaptor):
                                 authorizations=authorizations)
         roles = [role_map[role] for role in role_set]
 
-        project.add_user_roles(user=user, roles=roles)
-        return True
+        return project.add_user_roles(user=user, roles=roles)
 
 
 class CenterError(Exception):
