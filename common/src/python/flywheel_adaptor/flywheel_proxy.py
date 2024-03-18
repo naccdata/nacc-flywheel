@@ -821,6 +821,11 @@ class ProjectAdaptor:
           user: the user
           roles: the list of roles
         """
+        if not roles:
+            log.warning('No roles to add to user %s in project %s', user.id,
+                        self.__project.label)
+            return False
+
         role_ids = [role.id for role in roles]
         return self.add_user_role_assignments(
             RolesRoleAssignment(id=user.id, role_ids=role_ids))
