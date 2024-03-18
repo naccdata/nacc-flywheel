@@ -73,7 +73,7 @@ class Authorizations(BaseModel):
 
 class AuthMap(BaseModel):
     """Type class for mapping authorizations to roles.
-    
+
     Represents table as project label -> activity -> role.
     """
     project_authorizations: Dict[str, Dict[str, str]]
