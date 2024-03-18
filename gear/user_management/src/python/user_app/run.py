@@ -42,6 +42,10 @@ def main() -> None:
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
 
+        if not gear_context.client:
+            log.error('Flywheel client required to confirm gearbot access')
+            sys.exit(1)
+
         path_prefix = gear_context.config.get("apikey_path_prefix",
                                               "/prod/flywheel/gearbot")
         log.info('Running gearbot with API key from %s/apikey', path_prefix)
@@ -51,6 +55,11 @@ def main() -> None:
             api_key = parameter_store.get_api_key(path_prefix=path_prefix)
         except ParameterError as error:
             log.error('Parameter error: %s', error)
+            sys.exit(1)
+
+        host = gear_context.client.api_client.configuration.host # type: ignore
+        if api_key.split(':')[0] not in host:
+            log.error('Gearbot API key does not match host')
             sys.exit(1)
 
         dry_run = gear_context.config.get("dry_run", False)
