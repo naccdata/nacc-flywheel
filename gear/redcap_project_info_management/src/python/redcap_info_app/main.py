@@ -21,6 +21,7 @@ def run(*, project_list: List[REDCapProjectInput], admin_group: NACCGroup):
     id_map = {info.group: info for info in center_map.centers.values()}
 
     for project_input in project_list:
+        log.info("Adding info to center %s", project_input.center_id)
         center_info = id_map.get(project_input.center_id)
         if not center_info:
             log.error("Center %s not found", project_input.center_id)
