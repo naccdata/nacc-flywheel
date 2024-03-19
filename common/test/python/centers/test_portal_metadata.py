@@ -4,7 +4,8 @@ import pytest
 from centers.center_group import (CenterProjectMetadata,
                                   FormIngestProjectMetadata,
                                   IngestProjectMetadata, ProjectMetadata,
-                                  REDCapFormProject, StudyMetadata)
+                                  REDCapFormProject, REDCapProjectInput,
+                                  StudyMetadata)
 from pydantic import ValidationError
 
 
@@ -16,6 +17,16 @@ def project_with_datatype():
                                 project_id="9999999999",
                                 project_label="ingest-blah-test",
                                 datatype="blah")
+
+
+# pylint: disable=(redefined-outer-name)
+@pytest.fixture
+def form_ingest_without_redcap():
+    """Returns a form ingest project without redcap info."""
+    yield IngestProjectMetadata(study_id="alpha",
+                                project_id="11111111",
+                                project_label="ingest-form-alpha",
+                                datatype="form")
 
 
 # pylint: disable=(redefined-outer-name)
@@ -169,3 +180,40 @@ class TestCenterPortalMetadataSerialization:
             assert model_object == portal_metadata
         except ValidationError as error:
             assert False, error
+
+
+class TestREDCapUpdate:
+    """Tests for updating REDCap project info."""
+
+    def test_redcap_info_update(self, portal_metadata):
+        """Tests for updating redcap project info."""
+        assert portal_metadata, "expecting non-null info object"
+
+        input_object = REDCapProjectInput(center_id="dummy",
+                                   study_id="test",
+                                   project_label="ingest-form-test",
+                                   projects=[
+                                       REDCapFormProject(redcap_pid=12345,
+                                                         form_name="ptenrlv1")
+                                   ])
+        study_info = portal_metadata.studies.get(input_object.study_id)
+        ingest_project = study_info.get_ingest(input_object.project_label)
+        assert ingest_project, "expecting non-null ingest project"
+
+        ingest_project = FormIngestProjectMetadata.create_from_ingest(
+            ingest_project)
+        assert ingest_project, "expecting non-null ingest project after conversion"
+
+        for input_project in input_object.projects:
+            ingest_project.add(input_project)
+        assert ingest_project, "expecting non-null ingest project after update"
+        assert ingest_project.redcap_projects, "expecting non-null redcap projects after update"
+        assert ingest_project.redcap_projects.get(
+            "ptenrlv1"), "expecting non-null redcap project after update"
+
+        study_info.add_ingest(ingest_project)
+        portal_metadata.add(study_info)
+
+        assert portal_metadata.studies["test"].ingest_projects[
+            "ingest-form-test"].redcap_projects[
+                "ptenrlv1"], "expecting non-null redcap project after update"
