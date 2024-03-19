@@ -353,8 +353,8 @@ class CenterGroup(GroupAdaptor):
         Args:
           redcap_project: the REDCap project input
         """
-        portal_info = self.get_project_info()
-        study_info = portal_info.studies.get(redcap_project.study_id, None)
+        project_info = self.get_project_info()
+        study_info = project_info.studies.get(redcap_project.study_id, None)
         if not study_info:
             log.warning('no study info for study %s in center %s',
                         redcap_project.study_id, self.label)
@@ -366,13 +366,14 @@ class CenterGroup(GroupAdaptor):
                         redcap_project.study_id, self.label)
             return
 
-        ingest_project = FormIngestProjectMetadata.create_from_ingest(
+        form_ingest_project = FormIngestProjectMetadata.create_from_ingest(
             ingest_project)
         for form_project in redcap_project.projects:
-            ingest_project.add(form_project)
+            form_ingest_project.add(form_project)
 
-        study_info.add_ingest(ingest_project)
-        self.update_project_info(portal_info)
+        study_info.add_ingest(form_ingest_project)
+        project_info.add(study_info)
+        self.update_project_info(project_info)
 
     def get_project_info(self) -> 'CenterProjectMetadata':
         """Gets the portal info for this center.
@@ -402,7 +403,7 @@ class CenterGroup(GroupAdaptor):
                               " does not match expected format") from error
 
     def update_project_info(self,
-                            portal_info: 'CenterProjectMetadata') -> None:
+                            project_info: 'CenterProjectMetadata') -> None:
         """Updates the portal info for this center.
 
         Args:
@@ -415,7 +416,7 @@ class CenterGroup(GroupAdaptor):
             return
 
         metadata_project.update_info(
-            portal_info.model_dump(by_alias=True, exclude_none=True))
+            project_info.model_dump(by_alias=True, exclude_none=True))
 
     def __add_project(self, label: str) -> ProjectAdaptor:
         """Adds a project with the label to this group and returns the
