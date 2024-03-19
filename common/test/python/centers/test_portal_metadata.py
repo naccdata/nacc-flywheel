@@ -4,7 +4,7 @@ import pytest
 from centers.center_group import (CenterProjectMetadata,
                                   FormIngestProjectMetadata,
                                   IngestProjectMetadata, ProjectMetadata,
-                                  StudyMetadata)
+                                  REDCapFormProject, StudyMetadata)
 from pydantic import ValidationError
 
 
@@ -26,7 +26,11 @@ def ingest_project_with_redcap():
                                     project_id="88888888",
                                     project_label="ingest-form-test",
                                     datatype="form",
-                                    redcap_project_id=999)
+                                    redcap_projects={
+                                        "dummyv9":
+                                        REDCapFormProject(redcap_pid=12345,
+                                                          form_name="dummyv9")
+                                    })
 
 
 # pylint: disable=(redefined-outer-name)
@@ -76,7 +80,9 @@ class TestProjectMetadataSerialization:
         project_dump = ingest_project_with_redcap.model_dump(by_alias=True,
                                                              exclude_none=True)
         assert project_dump
-        assert 'redcap-project-id' in project_dump
+        assert 'redcap-projects' in project_dump
+        assert 'redcap-pid' in project_dump['redcap-projects']['dummyv9']
+        assert 'form-name' in project_dump['redcap-projects']['dummyv9']
         assert project_dump['project-label'] == "ingest-form-test"
 
         try:
