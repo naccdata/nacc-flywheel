@@ -63,5 +63,6 @@ def main():
 
         run(project_list=project_list, admin_group=admin_group)
 
-    if __name__ == "__main__":
-        main()
+
+if __name__ == "__main__":
+    main()
