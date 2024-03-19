@@ -347,6 +347,33 @@ class CenterGroup(GroupAdaptor):
         for label in labels:
             self.__add_project(label)
 
+    def add_redcap_project(self, redcap_project: 'REDCapProjectInput') -> None:
+        """Adds the REDCap project to the center group.
+
+        Args:
+          redcap_project: the REDCap project input
+        """
+        portal_info = self.get_project_info()
+        study_info = portal_info.studies.get(redcap_project.study_id, None)
+        if not study_info:
+            log.warning('no study info for study %s in center %s',
+                        redcap_project.study_id, self.label)
+            return
+
+        ingest_project = study_info.get_ingest(redcap_project.project_label)
+        if not ingest_project:
+            log.warning('no ingest project for study %s in center %s',
+                        redcap_project.study_id, self.label)
+            return
+
+        ingest_project = FormIngestProjectMetadata.create_from_ingest(
+            ingest_project)
+        for form_project in redcap_project.projects:
+            ingest_project.add(form_project)
+
+        study_info.add_ingest(ingest_project)
+        self.update_project_info(portal_info)
+
     def get_project_info(self) -> 'CenterProjectMetadata':
         """Gets the portal info for this center.
 
@@ -533,6 +560,15 @@ class IngestProjectMetadata(ProjectMetadata):
     datatype: str
 
 
+class REDCapFormProject(BaseModel):
+    """Metadata for a REDCap form project."""
+    model_config = ConfigDict(populate_by_name=True,
+                              alias_generator=AliasGenerator(alias=kebab_case))
+
+    redcap_pid: int
+    form_name: str
+
+
 class FormIngestProjectMetadata(IngestProjectMetadata):
     """Metadata for a form ingest project.
 
@@ -540,7 +576,40 @@ class FormIngestProjectMetadata(IngestProjectMetadata):
     a center. It inherits from the FormIngestProjectMetadata class and
     adds additional attributes specific to form ingest projects.
     """
-    redcap_project_id: int
+    redcap_projects: Dict[str, REDCapFormProject] = {}
+
+    @classmethod
+    def create_from_ingest(
+            cls, ingest: IngestProjectMetadata) -> 'FormIngestProjectMetadata':
+        """Creates a FormIngestProjectMetadata from an IngestProjectMetadata.
+
+        Args:
+            ingest: the ingest project metadata
+        Returns:
+            the FormIngestProjectMetadata for the ingest project
+        """
+        return FormIngestProjectMetadata(study_id=ingest.study_id,
+                                         project_id=ingest.project_id,
+                                         project_label=ingest.project_label,
+                                         datatype=ingest.datatype)
+
+    def add(self, redcap_project: REDCapFormProject) -> None:
+        """Adds the REDCap project to the form ingest project metadata.
+
+        Args:
+            redcap_project: the REDCap project metadata
+        """
+        self.redcap_projects[redcap_project.form_name] = redcap_project
+
+    def get(self, form_name: str) -> Optional[REDCapFormProject]:
+        """Gets the REDCap project metadata for the form name.
+
+        Args:
+            form_name: the form name
+        Returns:
+            the REDCap project metadata for the form name
+        """
+        return self.redcap_projects.get(form_name, None)
 
 
 class StudyMetadata(BaseModel):
@@ -569,6 +638,17 @@ class StudyMetadata(BaseModel):
             project: the ingest project metadata
         """
         self.ingest_projects[project.project_label] = project
+
+    def get_ingest(self,
+                   project_label: str) -> Optional[IngestProjectMetadata]:
+        """Gets the ingest project metadata for the project label.
+
+        Args:
+            project_label: the project label
+        Returns:
+            the ingest project metadata for the project label
+        """
+        return self.ingest_projects.get(project_label, None)
 
 
 class CenterProjectMetadata(BaseModel):
@@ -604,3 +684,14 @@ class CenterProjectMetadata(BaseModel):
                                    study_name=study.name)
         self.add(study_info)
         return study_info
+
+
+class REDCapProjectInput(BaseModel):
+    """Metadata for REDCap project details."""
+    model_config = ConfigDict(populate_by_name=True,
+                              alias_generator=AliasGenerator(alias=kebab_case))
+
+    center_id: str
+    study_id: str
+    project_label: str
+    projects: List[REDCapFormProject]
