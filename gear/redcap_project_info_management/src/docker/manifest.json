@@ -2,12 +2,12 @@
     "name": "redcap-project-info-management",
     "label": "REDCap Project Info Management",
     "description": "Manages metadata for REDCap form projects",
-    "version": "0.0.1",
+    "version": "0.0.4",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
     "license": "MPL-2.0",
-    "url": "https://naccdata.github.io/flywheel-gear-extensions",
+    "url": "https://naccdata.github.io/flywheel-gear-extensions/redcap_project_info_management",
     "source": "https://github.com/naccdata/flywheel-gear-extensions",
     "environment": {
         "FLYWHEEL": "/flywheel/v0"
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/redcap-project-info-management:0.0.1"
+            "image": "naccdata/redcap-project-info-management:0.0.4"
         },
         "flywheel": {
             "suite": "NACC Admin Gears",
@@ -47,12 +47,6 @@
             "description": "Name of the admin group",
             "type": "string",
             "default": "nacc"
-        },
-        "apikey_path_prefix": {
-            "description": "The instance specific AWS parameter path prefix for apikey",
-            "type": "string",
-            "default": "/prod/flywheel/gearbot"
-
         }
     },
     "command": "/bin/run"
