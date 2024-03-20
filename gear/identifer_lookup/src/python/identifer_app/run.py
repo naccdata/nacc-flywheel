@@ -61,7 +61,10 @@ def get_adcid(proxy: FlywheelProxy, file_id: str) -> Optional[int]:
     file = proxy.get_file(file_id)
     group_id = file.parents.group
     groups = proxy.find_groups(group_id)
-    center = CenterGroup.create_from_group(group=groups[0], proxy=proxy)
+    try:
+        center = CenterGroup.create_from_group(group=groups[0], proxy=proxy)
+    except CenterError:
+        return None
     return center.adcid
 
 
@@ -83,7 +86,7 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
         super().visit_context(context)
         self.rds_param_path = context.config.get('rds_parameter_path')
         if not self.rds_param_path:
-            raise GearExecutionError(f'No value for rds_parameter_path')
+            raise GearExecutionError('No value for rds_parameter_path')
 
         self.file_input = context.get_input('input_file')
         if not self.file_input:
@@ -103,28 +106,6 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
 
-    def __get_adcid(self, proxy: FlywheelProxy, file_id: str) -> int:
-        """Gets the adcid for the center group that owns the file.
-
-        Args:
-            proxy: the flywheel proxy object
-            file_id: the ID for the file
-        Returns:
-            the ADCID for the center
-        """
-        try:
-
-            adcid = get_adcid(proxy=proxy, file_id=file_id)
-        except CenterError as error:
-            raise GearExecutionError(
-                f'Unable to determine center ID for parent group of file: {error.message}'
-            ) from error
-
-        if not adcid:
-            raise GearExecutionError('Unable to determine center ID for file')
-
-        return adcid
-
     def run(self, gear: GearExecutionEngine):
         """Runs the identifier lookup app.
 
@@ -139,7 +120,9 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
         proxy = FlywheelProxy(client=self.client, dry_run=self.dry_run)
 
         file_id = self.file_input['object']['file_id']
-        adcid = self.__get_adcid(proxy=proxy, file_id=file_id)
+        adcid = get_adcid(proxy=proxy, file_id=file_id)
+        if not adcid:
+            raise GearExecutionError('Unable to determine center ID for file')
 
         identifiers = get_identifiers(rds_parameters=self.rds_parameters,
                                       adcid=adcid)
