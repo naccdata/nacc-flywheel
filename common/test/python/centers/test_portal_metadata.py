@@ -189,14 +189,11 @@ class TestREDCapUpdate:
         """Tests for updating redcap project info."""
         assert portal_metadata, "expect non-null info object"
 
-        input_object = REDCapProjectInput(center_id="dummy",
-                                          study_id="test",
-                                          project_label="ingest-form-test",
-                                          projects=[
-                                              REDCapFormProject(
-                                                  redcap_pid=12345,
-                                                  label="ptenrlv1")
-                                          ])
+        input_object = REDCapProjectInput(
+            center_id="dummy",
+            study_id="test",
+            project_label="ingest-form-test",
+            projects=[REDCapFormProject(redcap_pid=12345, label="ptenrlv1")])
         study_info = portal_metadata.studies.get(input_object.study_id)
         ingest_project = study_info.get_ingest(input_object.project_label)
         assert ingest_project, "expect non-null ingest project"
