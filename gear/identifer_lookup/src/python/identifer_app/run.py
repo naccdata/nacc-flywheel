@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from centers.center_group import CenterError, CenterGroup
+from common.gear_execution.gear_execution import (GearBotExecutionVisitor,
+                                                  GearExecutionEngine,
+                                                  GearExecutionError)
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
@@ -64,7 +67,86 @@ def get_adcid(proxy: FlywheelProxy, file_id: str) -> Optional[int]:
     return center.adcid
 
 
-# pylint: disable=(too-many-locals)
+class IdentifierLookupVisitor(GearBotExecutionVisitor):
+    """The gear execution visitor for the identifier lookup app."""
+
+    def __init__(self):
+        super().__init__()
+        self.file_input = None
+        self.rds_param_path = None
+        self.rds_parameters = None
+
+    def visit_context(self, context: GearToolkitContext):
+        super().visit_context(context)
+        try:
+            self.rds_param_path = get_config(gear_context=context,
+                                             key='rds_parameter_path')
+        except ConfigParseError as error:
+            raise GearExecutionError('Incomplete configuration: %s',
+                                     error.message)
+
+        self.file_input = context.get_input('input_file')
+        if not self.file_input:
+            raise GearExecutionError('Missing input file')
+
+    def visit_parameter_store(self, parameter_store: ParameterStore):
+        super().visit_parameter_store(parameter_store)
+        assert self.rds_param_path, 'RDS parameter path required'
+        try:
+            self.rds_parameters = parameter_store.get_rds_parameters(
+                param_path=self.rds_param_path)
+        except ParameterError as error:
+            raise GearExecutionError('Parameter error: %s', error)
+
+    def __get_adcid(self, proxy: FlywheelProxy, file_id: str) -> int:
+
+        try:
+
+            adcid = get_adcid(proxy=proxy, file_id=file_id)
+        except CenterError as error:
+            raise GearExecutionError(
+                'Unable to determine center ID for parent group of file: %s',
+                error.message)
+
+        if not adcid:
+            raise GearExecutionError('Unable to determine center ID for file')
+
+        return adcid
+
+    def run(self, engine: GearExecutionEngine):
+        assert self.client, 'Flywheel client required'
+        assert self.file_input, 'Input file required'
+        assert self.rds_parameters, 'RDS parameters required'
+        assert engine.context, 'Gear context required'
+
+        proxy = FlywheelProxy(client=self.client, dry_run=self.dry_run)
+
+        file_id = self.file_input['object']['file_id']
+        adcid = self.__get_adcid(proxy=proxy, file_id=file_id)
+
+        identifiers = get_identifiers(rds_parameters=self.rds_parameters,
+                                      adcid=adcid)
+        if not identifiers:
+            raise GearExecutionError('Unable to load center participant IDs')
+
+        filename = f"{self.file_input['location']['name']}-identifier"
+        input_path = Path(self.file_input['location']['path'])
+        with open(input_path, mode='r', encoding='utf-8') as csv_file:
+            with engine.context.open_output(f'{filename}.csv',
+                                            mode='w',
+                                            encoding='utf-8') as out_file:
+                error_writer = ListErrorWriter(container_id=file_id)
+                errors = run(input_file=csv_file,
+                             identifiers=identifiers,
+                             output_file=out_file,
+                             error_writer=error_writer)
+                engine.context.metadata.add_qc_result(
+                    self.file_input,
+                    name="validation",
+                    state="FAIL" if errors else "PASS",
+                    data={'data': error_writer.errors()})
+
+
 def main():
     """The Identifiers Lookup gear reads a CSV file with rows for participants
     at a single ADRC, and having a PTID for the participant. The gear looks up
@@ -74,79 +156,19 @@ def main():
     Writes errors to a CSV file compatible with Flywheel error UI.
     """
 
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
-        gear_context.log_config()
+    try:
+        parameter_store = ParameterStore.create_from_environment()
+    except ParameterError as error:
+        log.error('Unable to create Parameter Store: %s', error)
+        sys.exit(1)
 
-        default_client = gear_context.client
-        if not default_client:
-            log.error('Flywheel client required to confirm gearbot access')
-            sys.exit(1)
+    engine = GearExecutionEngine(parameter_store=parameter_store)
 
-        apikey_path_prefix = gear_context.config.get("apikey_path_prefix",
-                                                     "/prod/flywheel/gearbot")
-        log.info('Running gearbot with API key from %s/apikey',
-                 apikey_path_prefix)
-        try:
-            parameter_store = ParameterStore.create_from_environment()
-            api_key = parameter_store.get_api_key(
-                path_prefix=apikey_path_prefix)
-
-            rds_parameters = parameter_store.get_rds_parameters(
-                param_path=get_config(gear_context=gear_context,
-                                      key='rds_parameter_path'))
-        except ConfigParseError as error:
-            log.error('Incomplete configuration: %s', error.message)
-            sys.exit(1)
-        except ParameterError as error:
-            log.error('Parameter error: %s', error)
-            sys.exit(1)
-
-        host = gear_context.client.api_client.configuration.host  # type: ignore
-        if api_key.split(':')[0] not in host:
-            log.error('Gearbot API key does not match host')
-            sys.exit(1)
-
-        dry_run = gear_context.config.get("dry_run", False)
-        proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
-
-        file_input = gear_context.get_input('input_file')
-        if not file_input:
-            log.error('Missing input file')
-            sys.exit(1)
-
-        try:
-            file_id = file_input['object']['file_id']
-            adcid = get_adcid(proxy=proxy, file_id=file_id)
-        except CenterError as error:
-            log.error(
-                'Unable to determine center ID for parent group of file: %s',
-                error.message)
-            sys.exit(1)
-        assert adcid, "expect adcid unless exception thrown"
-
-        identifiers = get_identifiers(rds_parameters=rds_parameters,
-                                      adcid=adcid)
-        if not identifiers:
-            log.error('Unable to load center participant IDs')
-            sys.exit(1)
-
-        filename = f"{file_input['location']['name']}-identifier"
-        input_path = Path(file_input['location']['path'])
-        with open(input_path, mode='r', encoding='utf-8') as csv_file:
-            with gear_context.open_output(f'{filename}.csv',
-                                          mode='w',
-                                          encoding='utf-8') as out_file:
-                error_writer = ListErrorWriter(container_id=file_id)
-                errors = run(input_file=csv_file,
-                             identifiers=identifiers,
-                             output_file=out_file,
-                             error_writer=error_writer)
-                gear_context.metadata.add_qc_result(
-                    file_input,
-                    name="validation",
-                    state="FAIL" if errors else "PASS",
-                    data={'data': error_writer.errors()})
+    try:
+        engine.execute(IdentifierLookupVisitor())
+    except GearExecutionError as error:
+        log.error('Error: %s', error)
+        sys.exit(1)
 
     if __name__ == "__main__":
         main()
