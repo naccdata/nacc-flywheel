@@ -15,7 +15,6 @@ from identifer_app.main import run
 from identifiers.database import create_session
 from identifiers.identifiers_repository import IdentifierRepository
 from identifiers.model import Identifier
-from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import (ParameterError, ParameterStore,
                                     RDSParameters)
 from outputs.errors import ListErrorWriter
