@@ -76,47 +76,69 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
         self.rds_parameters = None
 
     def visit_context(self, context: GearToolkitContext):
+        """Visits the context and gathers the input file and RDS parameters.
+
+        Args:
+            context: The gear context.
+        """
         super().visit_context(context)
         try:
             self.rds_param_path = get_config(gear_context=context,
                                              key='rds_parameter_path')
         except ConfigParseError as error:
-            raise GearExecutionError('Incomplete configuration: %s',
-                                     error.message)
+            raise GearExecutionError(f'Incomplete configuration: {error.message}'
+                                     ) from error
 
         self.file_input = context.get_input('input_file')
         if not self.file_input:
             raise GearExecutionError('Missing input file')
 
     def visit_parameter_store(self, parameter_store: ParameterStore):
+        """Visits the parameter store and loads the RDS parameters.
+        
+        Args:
+            parameter_store: the parameter store object
+        """
         super().visit_parameter_store(parameter_store)
         assert self.rds_param_path, 'RDS parameter path required'
         try:
             self.rds_parameters = parameter_store.get_rds_parameters(
                 param_path=self.rds_param_path)
         except ParameterError as error:
-            raise GearExecutionError('Parameter error: %s', error)
+            raise GearExecutionError(f'Parameter error: {error}') from error
 
     def __get_adcid(self, proxy: FlywheelProxy, file_id: str) -> int:
-
+        """Gets the adcid for the center group that owns the file.
+        
+        Args:
+            proxy: the flywheel proxy object
+            file_id: the ID for the file
+        Returns:
+            the ADCID for the center
+        """
         try:
 
             adcid = get_adcid(proxy=proxy, file_id=file_id)
         except CenterError as error:
             raise GearExecutionError(
-                'Unable to determine center ID for parent group of file: %s',
-                error.message)
+                f'Unable to determine center ID for parent group of file: {error.message}'
+                ) from error
 
         if not adcid:
             raise GearExecutionError('Unable to determine center ID for file')
 
         return adcid
 
-    def run(self, engine: GearExecutionEngine):
+    def run(self, gear: GearExecutionEngine):
+        """Runs the identifier lookup app.
+        
+        Args:
+            gear: the gear execution engine
+        """
         assert self.client, 'Flywheel client required'
         assert self.file_input, 'Input file required'
         assert self.rds_parameters, 'RDS parameters required'
-        assert engine.context, 'Gear context required'
+        assert gear.context, 'Gear context required'
 
         proxy = FlywheelProxy(client=self.client, dry_run=self.dry_run)
 
@@ -131,7 +153,7 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
         filename = f"{self.file_input['location']['name']}-identifier"
         input_path = Path(self.file_input['location']['path'])
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
-            with engine.context.open_output(f'{filename}.csv',
+            with gear.context.open_output(f'{filename}.csv',
                                             mode='w',
                                             encoding='utf-8') as out_file:
                 error_writer = ListErrorWriter(container_id=file_id)
@@ -139,7 +161,7 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
                              identifiers=identifiers,
                              output_file=out_file,
                              error_writer=error_writer)
-                engine.context.metadata.add_qc_result(
+                gear.context.metadata.add_qc_result(
                     self.file_input,
                     name="validation",
                     state="FAIL" if errors else "PASS",

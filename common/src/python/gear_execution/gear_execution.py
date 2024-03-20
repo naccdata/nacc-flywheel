@@ -47,12 +47,18 @@ class GearExecutionVisitor(ABC):
 
 
 class GearContextVisitor(GearExecutionVisitor):
+    """Visitor that sets the client from the gear context."""
 
     def __init__(self):
-        self.client = None
         self.dry_run = False
+        super().__init__()
 
     def visit_context(self, context: GearToolkitContext):
+        """Visits the context and gathers the client and dry run settings.
+
+        Args:
+            context: The gear context.
+        """
         self.client = context.client
         self.dry_run = context.config.get("dry_run", False)
 
@@ -62,6 +68,7 @@ class GearBotExecutionVisitor(GearContextVisitor):
 
     def __init__(self):
         self.__apikey_path_prefix = None
+        self.__default_client = None
         super().__init__()
 
     def visit_context(self, context: GearToolkitContext):
@@ -71,8 +78,8 @@ class GearBotExecutionVisitor(GearContextVisitor):
             context: The gear context to visit.
         """
         super().visit_context(context)
-        self.default_client = context.client
-        if not self.default_client:
+        self.__default_client = context.client
+        if not self.__default_client:
             raise GearExecutionError(
                 "Flywheel client required to confirm gearbot access")
 
@@ -88,15 +95,17 @@ class GearBotExecutionVisitor(GearContextVisitor):
             api_key = parameter_store.get_api_key(
                 path_prefix=self.__apikey_path_prefix)
         except ParameterError as error:
-            raise GearExecutionError("Parameter error: %s" % error)
+            raise GearExecutionError(f"Parameter error: {error}") from error
 
-        host = self.default_client.api_client.configuration.host  # type: ignore
+        api_client = self.__default_client.api_client  # type: ignore
+        host = api_client.configuration.host
         if api_key.split(':')[0] not in host:
             raise GearExecutionError('Gearbot API key does not match host')
 
         self.client = Client(api_key)
 
 
+# pylint: disable=too-few-public-methods
 class GearExecutionEngine:
     """Class defining the gear execution engine."""
 
