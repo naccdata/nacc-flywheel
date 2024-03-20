@@ -1022,6 +1022,7 @@ class ProjectAdaptor:
         Args:
           info: the info object
         """
+        log.info("updating info for project %s", self.__project.label)
         self.__project.update_info(info)
 
     def get_custom_project_info(

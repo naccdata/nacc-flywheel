@@ -39,5 +39,5 @@ def main():
             object_list=object_list,
             new_only=new_only)
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()

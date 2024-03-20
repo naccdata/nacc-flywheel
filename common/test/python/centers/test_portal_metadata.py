@@ -4,6 +4,7 @@ import pytest
 from centers.center_group import (CenterProjectMetadata,
                                   FormIngestProjectMetadata,
                                   IngestProjectMetadata, ProjectMetadata,
+                                  REDCapFormProject, REDCapProjectInput,
                                   StudyMetadata)
 from pydantic import ValidationError
 
@@ -20,13 +21,27 @@ def project_with_datatype():
 
 # pylint: disable=(redefined-outer-name)
 @pytest.fixture
+def form_ingest_without_redcap():
+    """Returns a form ingest project without redcap info."""
+    yield IngestProjectMetadata(study_id="alpha",
+                                project_id="11111111",
+                                project_label="ingest-form-alpha",
+                                datatype="form")
+
+
+# pylint: disable=(redefined-outer-name)
+@pytest.fixture
 def ingest_project_with_redcap():
     """Returns a form ingest project."""
     yield FormIngestProjectMetadata(study_id="test",
                                     project_id="88888888",
                                     project_label="ingest-form-test",
                                     datatype="form",
-                                    redcap_project_id=999)
+                                    redcap_projects={
+                                        "dummyv9":
+                                        REDCapFormProject(redcap_pid=12345,
+                                                          label="dummyv9")
+                                    })
 
 
 # pylint: disable=(redefined-outer-name)
@@ -76,7 +91,9 @@ class TestProjectMetadataSerialization:
         project_dump = ingest_project_with_redcap.model_dump(by_alias=True,
                                                              exclude_none=True)
         assert project_dump
-        assert 'redcap-project-id' in project_dump
+        assert 'redcap-projects' in project_dump
+        assert 'redcap-pid' in project_dump['redcap-projects']['dummyv9']
+        assert 'form-name' in project_dump['redcap-projects']['dummyv9']
         assert project_dump['project-label'] == "ingest-form-test"
 
         try:
@@ -163,3 +180,42 @@ class TestCenterPortalMetadataSerialization:
             assert model_object == portal_metadata
         except ValidationError as error:
             assert False, error
+
+
+class TestREDCapUpdate:
+    """Tests for updating REDCap project info."""
+
+    def test_redcap_info_update(self, portal_metadata):
+        """Tests for updating redcap project info."""
+        assert portal_metadata, "expect non-null info object"
+
+        input_object = REDCapProjectInput(center_id="dummy",
+                                          study_id="test",
+                                          project_label="ingest-form-test",
+                                          projects=[
+                                              REDCapFormProject(
+                                                  redcap_pid=12345,
+                                                  label="ptenrlv1")
+                                          ])
+        study_info = portal_metadata.studies.get(input_object.study_id)
+        ingest_project = study_info.get_ingest(input_object.project_label)
+        assert ingest_project, "expect non-null ingest project"
+
+        ingest_project = FormIngestProjectMetadata.create_from_ingest(
+            ingest_project)
+        assert ingest_project, "expect non-null ingest after conversion"
+
+        for input_project in input_object.projects:
+            ingest_project.add(input_project)
+        assert ingest_project, "expect non-null ingest project after update"
+        assert ingest_project.redcap_projects, (
+            "expect non-null redcap projects after update")
+        assert ingest_project.redcap_projects.get(
+            "ptenrlv1"), "expect non-null redcap project after update"
+
+        study_info.add_ingest(ingest_project)
+        portal_metadata.add(study_info)
+
+        assert portal_metadata.studies["test"].ingest_projects[
+            "ingest-form-test"].redcap_projects[
+                "ptenrlv1"], "expect non-null redcap project after update"
