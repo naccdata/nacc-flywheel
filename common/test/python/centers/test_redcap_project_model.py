@@ -14,7 +14,7 @@ class TestREDCapProjectInput:
             center_id="test",
             study_id="test",
             project_label="test",
-            projects=[REDCapFormProject(redcap_pid=12345, form_name="test")])
+            projects=[REDCapFormProject(redcap_pid=12345, label="test")])
         project_dump = project_model.model_dump(by_alias=True,
                                                 exclude_none=True)
         assert 'center-id' in project_dump

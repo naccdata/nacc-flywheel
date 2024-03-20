@@ -567,7 +567,7 @@ class REDCapFormProject(BaseModel):
                               alias_generator=AliasGenerator(alias=kebab_case))
 
     redcap_pid: int
-    form_name: str
+    label: str
 
 
 class FormIngestProjectMetadata(IngestProjectMetadata):
@@ -600,7 +600,7 @@ class FormIngestProjectMetadata(IngestProjectMetadata):
         Args:
             redcap_project: the REDCap project metadata
         """
-        self.redcap_projects[redcap_project.form_name] = redcap_project
+        self.redcap_projects[redcap_project.label] = redcap_project
 
     def get(self, form_name: str) -> Optional[REDCapFormProject]:
         """Gets the REDCap project metadata for the form name.
