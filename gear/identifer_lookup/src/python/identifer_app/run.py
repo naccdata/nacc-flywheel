@@ -6,12 +6,10 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from centers.center_group import CenterError, CenterGroup
-from common.gear_execution.gear_execution import (GearBotExecutionVisitor,
-                                                  GearExecutionEngine,
-                                                  GearExecutionError)
-from flywheel import Client
+
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
+from gear_execution.gear_execution import GearBotExecutionVisitor, GearExecutionEngine, GearExecutionError
 from identifer_app.main import run
 from identifiers.database import create_session
 from identifiers.identifiers_repository import IdentifierRepository
