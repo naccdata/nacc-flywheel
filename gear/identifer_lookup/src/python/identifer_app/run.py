@@ -82,12 +82,9 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
             context: The gear context.
         """
         super().visit_context(context)
-        try:
-            self.rds_param_path = get_config(gear_context=context,
-                                             key='rds_parameter_path')
-        except ConfigParseError as error:
-            raise GearExecutionError(f'Incomplete configuration: {error.message}'
-                                     ) from error
+        self.rds_param_path = context.config.get('rds_parameter_path')
+        if not self.rds_param_path:
+            raise GearExecutionError(f'No value for rds_parameter_path')
 
         self.file_input = context.get_input('input_file')
         if not self.file_input:
@@ -95,7 +92,7 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
 
     def visit_parameter_store(self, parameter_store: ParameterStore):
         """Visits the parameter store and loads the RDS parameters.
-        
+
         Args:
             parameter_store: the parameter store object
         """
@@ -109,7 +106,7 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
 
     def __get_adcid(self, proxy: FlywheelProxy, file_id: str) -> int:
         """Gets the adcid for the center group that owns the file.
-        
+
         Args:
             proxy: the flywheel proxy object
             file_id: the ID for the file
@@ -122,7 +119,7 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
         except CenterError as error:
             raise GearExecutionError(
                 f'Unable to determine center ID for parent group of file: {error.message}'
-                ) from error
+            ) from error
 
         if not adcid:
             raise GearExecutionError('Unable to determine center ID for file')
@@ -131,7 +128,7 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
 
     def run(self, gear: GearExecutionEngine):
         """Runs the identifier lookup app.
-        
+
         Args:
             gear: the gear execution engine
         """
@@ -154,8 +151,8 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
         input_path = Path(self.file_input['location']['path'])
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
             with gear.context.open_output(f'{filename}.csv',
-                                            mode='w',
-                                            encoding='utf-8') as out_file:
+                                          mode='w',
+                                          encoding='utf-8') as out_file:
                 error_writer = ListErrorWriter(container_id=file_id)
                 errors = run(input_file=csv_file,
                              identifiers=identifiers,
