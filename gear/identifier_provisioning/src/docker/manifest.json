@@ -27,11 +27,11 @@
             "base": "api-key"
         },
         "input_file": {
-            "description": "The project YAML file",
+            "description": "The CSV input file with data from the PTENRL form",
             "base": "file",
             "type": {
                 "enum": [
-                    "source code"
+                    "tabular data"
                 ]
             }
         }
@@ -42,15 +42,10 @@
             "type": "boolean",
             "default": false
         },
-        "admin_group": {
-            "description": "Name of the admin group",
+        "rds_parameter_path": {
+            "description": "SSM parameter path for identifiers RDS credentials",
             "type": "string",
-            "default": "nacc"
-        },
-        "new_only": {
-            "description": "Only create projects for centers tagged as new",
-            "type": "boolean",
-            "default": false
+            "default": "/prod/flywheel/gearbot/identifiers"
         },
         "apikey_path_prefix": {
             "description": "The instance specific AWS parameter path prefix for apikey",
