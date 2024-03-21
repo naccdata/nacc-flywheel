@@ -4,40 +4,61 @@ import logging
 import sys
 
 from flywheel_gear_toolkit import GearToolkitContext
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from identifier_provisioning_app.main import run
-from inputs.yaml import YAMLReadError, get_object_lists
+from gear_execution.gear_execution import GearBotExecutionVisitor, GearExecutionEngine, GearExecutionError
+from inputs.parameter_store import ParameterError, ParameterStore
 
 log = logging.getLogger(__name__)
+
+
+class IdentifierProvisioningVisitor(GearBotExecutionVisitor):
+    """Execution visitor for NACCID provisioning gear"""
+
+    def visit_context(self, context: GearToolkitContext) -> None:
+        super().visit_context(context)
+        self.rds_param_path = context.config.get('rds_parameter_path')
+        if not self.rds_param_path:
+            raise GearExecutionError('No value for rds_parameter_path')
+
+        self.file_input = context.get_input('input_file')
+        if not self.file_input:
+            raise GearExecutionError('Missing input file')
+        
+    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
+        """Visits the parameter store and loads the RDS parameters.
+
+        Args:
+            parameter_store: the parameter store object
+        """
+        super().visit_parameter_store(parameter_store)
+        assert self.rds_param_path, 'RDS parameter path required'
+        try:
+            self.rds_parameters = parameter_store.get_rds_parameters(
+                param_path=self.rds_param_path)
+        except ParameterError as error:
+            raise GearExecutionError(f'Parameter error: {error}') from error
+
+    def run(self, gear: 'GearExecutionEngine') -> None:
+        pass
 
 def main():
     """Main method for Identifier Provisioning."""
 
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
+    try:
+        parameter_store = ParameterStore.create_from_environment()
+    except ParameterError as error:
+        log.error('Unable to create Parameter Store: %s', error)
+        sys.exit(1)
 
-        input_file = gear_context.get_input_path('input_file') 
-        try:
-            object_list = get_object_lists(input_file)
-        except YAMLReadError as error:
-            log.error('No objects read from input: %s', error)
-            sys.exit(1)
+    engine = GearExecutionEngine(parameter_store=parameter_store)
 
-        if not object_list:
-            log.error('No objects read from input file')
-            sys.exit(1)
+    try:
+        engine.execute(IdentifierLookupVisitor())
+    except GearExecutionError as error:
+        log.error('Error: %s', error)
+        sys.exit(1)
 
-        client = gear_context.client
-        if not client:
-            log.error('No Flywheel connection. Check API key configuration.')
-            sys.exit(1)
-        dry_run = gear_context.config.get("dry_run", False)
-        flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
-
-        new_only = gear_context.config.get("new_only", False)
-        run(proxy=flywheel_proxy,
-            object_list=object_list,
-            new_only=new_only)
+    if __name__ == "__main__":
+        main()
 
 if __name__ == "__main__":
     main()
