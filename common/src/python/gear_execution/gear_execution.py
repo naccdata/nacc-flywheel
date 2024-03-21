@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from flywheel.client import Client
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.parameter_store import ParameterError, ParameterStore
 
@@ -22,7 +23,7 @@ class GearExecutionVisitor(ABC):
         self.client: Optional[Client] = None
 
     @abstractmethod
-    def run(self, gear: 'GearExecutionEngine'):
+    def run(self, gear: 'GearExecutionEngine') -> None:
         """Run the gear after initialization by visit methods.
 
         Args:
@@ -30,7 +31,7 @@ class GearExecutionVisitor(ABC):
         """
 
     @abstractmethod
-    def visit_context(self, context: GearToolkitContext):
+    def visit_context(self, context: GearToolkitContext) -> None:
         """Visit method to be implemented by subclasses.
 
         Args:
@@ -38,7 +39,7 @@ class GearExecutionVisitor(ABC):
         """
 
     @abstractmethod
-    def visit_parameter_store(self, parameter_store: ParameterStore):
+    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
         """Visit method to be implemented by subclasses.
 
         Args:
@@ -53,7 +54,13 @@ class GearContextVisitor(GearExecutionVisitor):
         self.dry_run = False
         super().__init__()
 
-    def visit_context(self, context: GearToolkitContext):
+    def get_proxy(self) -> FlywheelProxy:
+        """Get the proxy for the gear execution visitor."""
+        if not self.client:
+            raise GearExecutionError("Flywheel client required")
+        return FlywheelProxy(client=self.client, dry_run=self.dry_run)
+
+    def visit_context(self, context: GearToolkitContext) -> None:
         """Visits the context and gathers the client and dry run settings.
 
         Args:
@@ -71,7 +78,7 @@ class GearBotExecutionVisitor(GearContextVisitor):
         self.__default_client = None
         super().__init__()
 
-    def visit_context(self, context: GearToolkitContext):
+    def visit_context(self, context: GearToolkitContext) -> None:
         """Visit method implementation for GearBot.
 
         Args:
@@ -88,7 +95,7 @@ class GearBotExecutionVisitor(GearContextVisitor):
         if not self.__apikey_path_prefix:
             raise GearExecutionError("API key path prefix required")
 
-    def visit_parameter_store(self, parameter_store: ParameterStore):
+    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
         """Visit method implementation for GearBot."""
         assert self.__apikey_path_prefix, "API key path prefix required"
         try:
