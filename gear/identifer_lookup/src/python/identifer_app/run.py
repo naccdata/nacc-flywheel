@@ -117,7 +117,7 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
         assert self.rds_parameters, 'RDS parameters required'
         assert gear.context, 'Gear context required'
 
-        proxy = FlywheelProxy(client=self.client, dry_run=self.dry_run)
+        proxy = self.get_proxy()
 
         file_id = self.file_input['object']['file_id']
         adcid = get_adcid(proxy=proxy, file_id=file_id)
