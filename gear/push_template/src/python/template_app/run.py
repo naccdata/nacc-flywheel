@@ -6,11 +6,67 @@ from centers.nacc_group import NACCGroup
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from fw_client import FWClient
+from gear_execution.gear_execution import (GearContextVisitor,
+                                           GearExecutionEngine,
+                                           GearExecutionError)
 from inputs.context_parser import get_api_key
+from inputs.parameter_store import ParameterStore
 from inputs.templates import get_template_projects
 from template_app.main import run
 
 log = logging.getLogger(__name__)
+
+
+class TemplatingVisitor(GearContextVisitor):
+    """Visitor for the templating gear."""
+
+    def __init__(self):
+        super().__init__()
+        self.admin_group_id = None
+        self.new_only = False
+        self.fw_client = None
+
+    def visit_context(self, context: GearToolkitContext) -> None:
+        """Visit context to accumulate inputs for the gear.
+
+        Args:
+            context: The gear context.
+        """
+        super().visit_context(context)
+        if not self.client:
+            raise GearExecutionError("Flywheel client required")
+
+        # Need fw-client because the SDK doesn't properly implement
+        # ViewerApp type used for copying viewer apps from template projects.
+        api_key = get_api_key(context)
+        self.fw_client = FWClient(api_key=api_key, client_name="push-template")
+
+        self.admin_group_id = context.config.get("admin_group", "nacc")
+        self.new_only = context.config.get("new_only", False)
+
+    def get_proxy(self) -> FlywheelProxy:
+        """Get a proxy that uses the FWClient for copying viewer apps.
+
+        Returns:
+            the flywheel proxy
+        """
+        assert self.client, "Flywheel client required"
+        return FlywheelProxy(client=self.client,
+                             fw_client=self.fw_client,
+                             dry_run=self.dry_run)
+
+    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
+        """dummy instantiation of absract method."""
+
+    def run(self, gear: 'GearExecutionEngine') -> None:
+        proxy = self.get_proxy()
+        admin_group = NACCGroup.create(proxy=proxy,
+                                       group_id=self.admin_group_id)
+        template_map = get_template_projects(group=admin_group)
+        run(proxy=proxy,
+            center_tag_pattern=r'adcid-\d+',
+            new_only=self.new_only,
+            template_map=template_map)
 
 
 def main():
@@ -30,34 +86,12 @@ def main():
     (These are pipeline stages that can be created for the project)
     """
 
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
-
-        client = gear_context.client
-        if not client:
-            log.error('No Flywheel connection. Check API key configuration.')
-            sys.exit(1)
-
-        # Need fw-client because the SDK doesn't properly implement
-        # ViewerApp type used for copying viewer apps from template projects.
-        api_key = get_api_key(gear_context)
-        fw_client = FWClient(api_key=api_key, client_name="push-template")
-
-        dry_run = gear_context.config.get("dry_run", False)
-        flywheel_proxy = FlywheelProxy(client=client,
-                                       fw_client=fw_client,
-                                       dry_run=dry_run)
-
-        admin_group_id = gear_context.config.get("admin_group", "nacc")
-        admin_group = NACCGroup.create(proxy=flywheel_proxy,
-                                       group_id=admin_group_id)
-
-        new_only = gear_context.config.get("new_only", False)
-        template_map = get_template_projects(group=admin_group)
-        run(proxy=flywheel_proxy,
-            center_tag_pattern=r'adcid-\d+',
-            new_only=new_only,
-            template_map=template_map)
+    engine = GearExecutionEngine()
+    try:
+        engine.execute(TemplatingVisitor())
+    except GearExecutionError as error:
+        log.error('Error: %s', error)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
