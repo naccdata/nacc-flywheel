@@ -2,11 +2,15 @@
 
 import logging
 import sys
+from typing import List
 
 from centers.center_group import REDCapProjectInput
 from centers.nacc_group import NACCGroup
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
+from gear_execution.gear_execution import (GearContextVisitor,
+                                           GearExecutionEngine,
+                                           GearExecutionError)
+from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, load_from_stream
 from pydantic import ValidationError
 from redcap_info_app.main import run
@@ -14,39 +18,63 @@ from redcap_info_app.main import run
 log = logging.getLogger(__name__)
 
 
-def main():
-    """Main method for REDCap Project Info Management."""
+class REDCapProjectInfoVisitor(GearContextVisitor):
+    """Visitor for the REDCap Project Info Management gear."""
 
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
-        gear_context.log_config()
+    def __init__(self):
+        super().__init__()
+        self.admin_group_id = None
+        self.input_file_path = None
 
-        client = gear_context.client
-        if not client:
-            log.error('No Flywheel connection. Check API key configuration.')
-            sys.exit(1)
-        dry_run = gear_context.config.get("dry_run", False)
-        flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
+    def visit_context(self, context: GearToolkitContext) -> None:
+        """Visit context to accumulate inputs for the gear.
 
-        admin_group_id = gear_context.config.get("admin_group", "nacc")
-        admin_group = NACCGroup.create(proxy=flywheel_proxy,
-                                       group_id=admin_group_id)
+        Args:
+            context: The gear context.
+        """
+        super().visit_context(context)
+        if not self.client:
+            raise GearExecutionError("Flywheel client required")
+        self.admin_group_id = context.config.get("admin_group", "nacc")
+        self.input_file_path = context.get_input_path('input_file')
+        if not self.input_file_path:
+            raise GearExecutionError('No input file provided')
 
-        input_file_path = gear_context.get_input_path('input_file')
-        if not input_file_path:
-            log.error('No input file provided')
-            sys.exit(1)
+    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
+        """dummy instantiation of abstract method."""
 
+    def run(self, gear: 'GearExecutionEngine') -> None:
+        """Run the REDCap Project Info Management gear.
+
+        Args:
+            gear: The execution environment for the gear.
+        """
+        assert self.input_file_path, 'Input file required'
+        proxy = self.get_proxy()
+        admin_group = NACCGroup.create(proxy=proxy,
+                                       group_id=self.admin_group_id)
+        project_list = self.__get_project_list(self.input_file_path)
+        run(project_list=project_list, admin_group=admin_group)
+
+    # pylint: disable=no-self-use
+    def __get_project_list(self,
+                           input_file_path: str) -> List[REDCapProjectInput]:
+        """Get the REDCap project info objects from the input file.
+
+        Args:
+            input_file_path: The path to the input file.
+        Returns:
+            A list of REDCap project info objects.
+        """
         try:
             with open(input_file_path, 'r', encoding='utf-8 ') as input_file:
                 object_list = load_from_stream(input_file)
         except YAMLReadError as error:
-            log.error('No REDCap project info read from input: %s', error)
-            sys.exit(1)
-
+            raise GearExecutionError(
+                f'No REDCap project info read from input: {error}') from error
         if not object_list:
-            log.error('No REDCap project info read from input file')
-            sys.exit(1)
+            raise GearExecutionError(
+                'No REDCap project info read from input file')
 
         project_list = []
         for project_object in object_list:
@@ -56,12 +84,22 @@ def main():
             except ValidationError as error:
                 log.error('Invalid REDCap project info: %s', error)
                 continue
-
         if not project_list:
-            log.error('No valid REDCap project info read from input file')
-            sys.exit(1)
+            raise GearExecutionError(
+                'No valid REDCap project info read from input file')
 
-        run(project_list=project_list, admin_group=admin_group)
+        return project_list
+
+
+def main():
+    """Main method for REDCap Project Info Management."""
+
+    engine = GearExecutionEngine()
+    try:
+        engine.execute(REDCapProjectInfoVisitor())
+    except GearExecutionError as error:
+        log.error('Gear execution error: %s', error)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
