@@ -5,13 +5,92 @@ import sys
 
 from directory_app.main import run
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.context_parser import ConfigParseError, get_config
+from gear_execution.gear_execution import (GearContextVisitor,
+                                           GearExecutionEngine,
+                                           GearExecutionError)
 from inputs.parameter_store import ParameterError, ParameterStore
 from redcap.redcap_connection import (REDCapConnectionError,
                                       REDCapReportConnection)
 from yaml.representer import RepresenterError
 
 log = logging.getLogger(__name__)
+
+
+class DirectoryPullVisitor(GearContextVisitor):
+    """Defines the directory pull gear."""
+
+    def __init__(self):
+        super().__init__()
+        self.param_path = None
+        self.user_filename = None
+        self.report_parameters = None
+        self.yaml_text = None
+
+    def visit_context(self, context: GearToolkitContext) -> None:
+        """Visit the GearToolkitContext and set the parameter path and user
+        filename.
+
+        Args:
+            context (GearToolkitContext): The gear context.
+        """
+        self.param_path = context.config.get('parameter_path')
+        self.user_filename = context.config.get('user_file')
+
+    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
+        """Visits the parameter store to retrieve report parameters and user
+        reports.
+
+        Args:
+            parameter_store (ParameterStore): The parameter store object.
+
+        Raises:
+            GearExecutionError: If there is an error retrieving report
+            parameters or user reports.
+
+        Returns:
+            None
+        """
+        assert self.param_path, 'Parameter path required'
+        try:
+            report_parameters = parameter_store.get_redcap_report_connection(
+                param_path=self.param_path)
+        except ParameterError as error:
+            raise GearExecutionError(f'Parameter error: {error}') from error
+
+        try:
+            directory_proxy = REDCapReportConnection.create_from(
+                report_parameters)
+            user_report = directory_proxy.get_report_records()
+        except REDCapConnectionError as error:
+            raise GearExecutionError(
+                f'Failed to pull users from directory: {error.message}'
+            ) from error
+        try:
+            self.yaml_text = run(user_report=user_report)
+        except RepresenterError as error:
+            raise GearExecutionError(
+                "Error: can't create YAML for file"
+                f"{self.user_filename}: {error}") from error
+
+    def run(self, gear: GearExecutionEngine) -> None:
+        """Runs the directory pull gear.
+
+        Args:
+            gear (GearExecutionEngine): The gear execution engine.
+        """
+        assert gear.context, 'Gear context required'
+        assert self.user_filename, 'User filename required'
+
+        if self.dry_run:
+            log.info('Would write user entries to file %s on %s %s',
+                     self.user_filename, gear.context.destination['type'],
+                     gear.context.destination['id'])
+            return
+
+        with gear.context.open_output(self.user_filename,
+                                      mode='w',
+                                      encoding='utf-8') as out_file:
+            out_file.write(self.yaml_text)
 
 
 def main() -> None:
@@ -22,53 +101,18 @@ def main() -> None:
     be given as environment variables.
     """
 
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
+    try:
+        parameter_store = ParameterStore.create_from_environment()
+    except ParameterError as error:
+        log.error('Unable to create Parameter Store: %s', error)
+        sys.exit(1)
 
-        try:
-            parameter_store = ParameterStore.create_from_environment()
-            param_path: str = get_config(gear_context=gear_context,
-                                         key='parameter_path')
-            report_parameters = parameter_store.get_redcap_report_connection(
-                param_path=param_path)
-            directory_proxy = REDCapReportConnection.create_from(
-                report_parameters)
-            user_report = directory_proxy.get_report_records()
-        except ParameterError as error:
-            log.error('Parameter error: %s', error)
-            sys.exit(1)
-        except ConfigParseError as error:
-            log.error('Incomplete configuration: %s', error.message)
-            sys.exit(1)
-        except REDCapConnectionError as error:
-            log.error('Failed to pull users from directory: %s', error.message)
-            sys.exit(1)
-
-        dry_run = gear_context.config.get("dry_run", False)
-        try:
-            user_filename: str = get_config(gear_context=gear_context,
-                                            key='user_file')
-        except ConfigParseError as error:
-            log.error('Incomplete configuration: %s', error.message)
-            sys.exit(1)
-
-        try:
-            yaml_text = run(user_report=user_report)
-        except RepresenterError as error:
-            log.error("Error: can't create YAML for file %s: %s",
-                      user_filename, error)
-            sys.exit(1)
-
-        if dry_run:
-            log.info('Would write user entries to file %s on %s %s',
-                     user_filename, gear_context.destination['type'],
-                     gear_context.destination['id'])
-            return
-
-        with gear_context.open_output(user_filename,
-                                      mode='w',
-                                      encoding='utf-8') as out_file:
-            out_file.write(yaml_text)
+    engine = GearExecutionEngine(parameter_store=parameter_store)
+    try:
+        engine.execute(DirectoryPullVisitor())
+    except GearExecutionError as error:
+        log.error('Error: %s', error)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
