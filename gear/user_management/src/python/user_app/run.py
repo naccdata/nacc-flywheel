@@ -6,10 +6,11 @@ from io import StringIO
 from typing import Any, List, Optional
 
 from centers.nacc_group import NACCGroup
-from flywheel import Client
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.parameter_store import ParameterError, ParameterStore
+from gear_execution.gear_execution import (GearContextVisitor,
+                                           GearExecutionEngine,
+                                           GearExecutionError)
+from inputs.parameter_store import ParameterStore
 from inputs.yaml import (YAMLReadError, get_object_lists_from_stream,
                          load_from_stream)
 from pydantic import ValidationError
@@ -35,77 +36,110 @@ def read_yaml_file(file_bytes: bytes) -> Optional[List[Any]]:
     return entry_docs[0]
 
 
-# pylint: disable=too-many-locals
-def main() -> None:
-    """Main method to manage users."""
+class UserManagementVisitor(GearContextVisitor):
+    """Defines the user management gear."""
 
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
-        gear_context.log_config()
+    def __init__(self):
+        super().__init__()
+        self.admin_group_id = None
+        self.user_file_path = None
+        self.auth_file_path = None
 
-        default_client = gear_context.client
-        if not default_client:
-            log.error('Flywheel client required to confirm gearbot access')
-            sys.exit(1)
+    def visit_context(self, context: GearToolkitContext) -> None:
+        """Visits the gear context to gather inputs.
 
-        path_prefix = gear_context.config.get("apikey_path_prefix",
-                                              "/prod/flywheel/gearbot")
-        log.info('Running gearbot with API key from %s/apikey', path_prefix)
+        Args:
+            context (GearToolkitContext): The gear context.
+        """
+        super().visit_context(context)
+        if not self.client:
+            raise GearExecutionError("Flywheel client required")
+        self.admin_group_id = context.config.get("admin_group", "nacc")
+        self.user_file_path = context.get_input_path('user_file')
+        if not self.user_file_path:
+            raise GearExecutionError('No user directory file provided')
+        self.auth_file_path = context.get_input_path('auth_file')
+        if not self.auth_file_path:
+            raise GearExecutionError('No user role file provided')
 
-        try:
-            parameter_store = ParameterStore.create_from_environment()
-            api_key = parameter_store.get_api_key(path_prefix=path_prefix)
-        except ParameterError as error:
-            log.error('Parameter error: %s', error)
-            sys.exit(1)
+    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
+        """dummy instantiation of abstract method."""
 
-        host = gear_context.client.api_client.configuration.host  # type: ignore
-        if api_key.split(':')[0] not in host:
-            log.error('Gearbot API key does not match host')
-            sys.exit(1)
+    def run(self, gear: 'GearExecutionEngine') -> None:
+        """Executes the gear.
 
-        dry_run = gear_context.config.get("dry_run", False)
-        admin_group_id = gear_context.config.get("admin_group", "nacc")
-        flywheel_proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
-        admin_group = NACCGroup.create(proxy=flywheel_proxy,
-                                       group_id=admin_group_id)
+        Args:
+            gear (GearExecutionEngine): The gear execution environment.
+        """
+        assert self.user_file_path, 'User directory file required'
+        assert self.auth_file_path, 'User role file required'
+        assert self.admin_group_id, 'Admin group ID required'
+        proxy = self.get_proxy()
+        admin_group = NACCGroup.create(proxy=proxy,
+                                       group_id=self.admin_group_id)
+        user_list = self.__get_user_list(self.user_file_path)
+        auth_map = self.__get_auth_map(self.auth_file_path)
+        admin_users = admin_group.get_group_users(access='admin')
+        admin_set = {user.id for user in admin_users if user.id}
+        run(proxy=proxy,
+            user_list=user_list,
+            admin_group=admin_group,
+            skip_list=admin_set,
+            authorization_map=auth_map)
 
-        user_file_path = gear_context.get_input_path('user_file')
-        if not user_file_path:
-            log.error('User directory file missing')
-            sys.exit(1)
+    # pylint: disable=no-self-use
+    def __get_user_list(self, user_file_path: str) -> List[Any]:
+        """Get the user objects from the user file.
 
+        Args:
+            user_file_path: The path to the user file.
+        Returns:
+            List of user objects
+        """
         try:
             with open(user_file_path, 'r', encoding='utf-8') as user_file:
                 user_list = load_from_stream(user_file)
         except YAMLReadError as error:
-            log.error('No users read from user file: %s', error)
-            sys.exit(1)
+            raise GearExecutionError(
+                f'No users read from user file {user_file_path}: {error}'
+            ) from error
+        if not user_list:
+            raise GearExecutionError('No users found in user file')
+        return user_list
 
-        auth_file_path = gear_context.get_input_path('auth_file')
-        if not auth_file_path:
-            log.error('User role file missing')
-            sys.exit(1)
+    # pylint: disable=no-self-use
+    def __get_auth_map(self, auth_file_path: str) -> AuthMap:
+        """Get the authorization map from the auth file.
 
+        Args:
+            auth_file_path: The path to the auth file.
+        Returns:
+            The authorization map
+        """
         try:
             with open(auth_file_path, 'r', encoding='utf-8') as auth_file:
                 auth_object = load_from_stream(auth_file)
                 auth_map = AuthMap(project_authorizations=auth_object)
         except YAMLReadError as error:
-            log.error('No authorizations read from auth file: %s', error)
-            sys.exit(1)
+            raise GearExecutionError('No authorizations read from auth file'
+                                     f'{auth_file_path}: {error}') from error
         except ValidationError as error:
-            log.error('Unexpected format in auth file: %s', error)
-            sys.exit(1)
+            raise GearExecutionError(
+                f'Unexpected format in auth file {auth_file_path}: {error}'
+            ) from error
+        return auth_map
 
-        admin_users = admin_group.get_group_users(access='admin')
-        admin_set = {user.id for user in admin_users if user.id}
 
-        run(proxy=flywheel_proxy,
-            user_list=user_list,
-            admin_group=admin_group,
-            skip_list=admin_set,
-            authorization_map=auth_map)
+# pylint: disable=too-many-locals
+def main() -> None:
+    """Main method to manage users."""
+
+    engine = GearExecutionEngine()
+    try:
+        engine.execute(UserManagementVisitor())
+    except GearExecutionError as error:
+        log.error(error)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
