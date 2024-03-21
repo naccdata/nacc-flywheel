@@ -13,12 +13,75 @@ import logging
 import sys
 
 from centers.nacc_group import NACCGroup
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
+from gear_execution.gear_execution import (GearContextVisitor,
+                                           GearExecutionEngine,
+                                           GearExecutionError)
+from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists
 from project_app.main import run
 
 log = logging.getLogger(__name__)
+
+
+class ProjectCreationVisitor(GearContextVisitor):
+    """Defines the project management gear."""
+
+    def __init__(self):
+        super().__init__()
+        self.admin_group_id = None
+        self.new_only = False
+        self.project_list = []
+
+    def visit_context(self, context: GearToolkitContext) -> None:
+        """Visits the gear context to gather inputs.
+
+        Args:
+            context (GearToolkitContext): The gear context.
+
+        Raises:
+            GearExecutionError: If the Flywheel client is not available or
+            if there is an error reading the YAML file.
+        """
+        super().visit_context(context)
+        if not self.client:
+            raise GearExecutionError("Flywheel client required")
+
+        project_file = context.get_input_path('project_file')
+        try:
+            self.project_list = get_object_lists(project_file)
+        except YAMLReadError as error:
+            raise GearExecutionError(
+                f'Unable to read YAML file {project_file}: {error}') from error
+
+        self.admin_group_id = context.config.get("admin_group", "nacc")
+        self.new_only = context.config.get("new_only", False)
+
+    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
+        """dummy instantiation of absract method."""
+
+    def run(self, gear: GearExecutionEngine) -> None:
+        """Executes the gear.
+
+        Args:
+            gear (GearExecutionEngine): The gear execution engine.
+
+        Raises:
+            AssertionError: If admin group ID or project list is not provided.
+        """
+
+        assert self.admin_group_id, 'Admin group ID required'
+        assert self.project_list, 'Project list required'
+
+        proxy = self.get_proxy()
+        admin_group = NACCGroup.create(proxy=proxy,
+                                       group_id=self.admin_group_id)
+        admin_access = admin_group.get_user_access()
+        run(proxy=proxy,
+            project_list=self.project_list,
+            admin_access=admin_access,
+            role_names=['curate', 'upload'],
+            new_only=self.new_only)
 
 
 def main():
@@ -40,37 +103,12 @@ def main():
     and `stage` is one of 'accepted', 'ingest' or 'retrospective'.
     (These are pipeline stages that can be created for the project)
     """
-
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
-        gear_context.log_config()
-
-        client = gear_context.client
-        if not client:
-            log.error('No Flywheel connection. Check API key configuration.')
-            sys.exit(1)
-        dry_run = gear_context.config.get("dry_run", False)
-        flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
-
-        project_file = gear_context.get_input_path('project_file')
-
-        try:
-            project_list = get_object_lists(project_file)
-        except YAMLReadError as error:
-            log.error('Unable to read YAML file %s: %s', project_file, error)
-            sys.exit(1)
-
-        admin_group_id = gear_context.config.get("admin_group", "nacc")
-        admin_group = NACCGroup.create(proxy=flywheel_proxy,
-                                       group_id=admin_group_id)
-        admin_access = admin_group.get_user_access()
-
-        new_only = gear_context.config.get("new_only", False)
-        run(proxy=flywheel_proxy,
-            project_list=project_list,
-            admin_access=admin_access,
-            role_names=['curate', 'upload'],
-            new_only=new_only)
+    engine = GearExecutionEngine()
+    try:
+        engine.execute(ProjectCreationVisitor())
+    except GearExecutionError as error:
+        log.error('Error: %s', error)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
