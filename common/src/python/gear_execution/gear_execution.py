@@ -101,6 +101,20 @@ class GearContextVisitor(GearExecutionVisitor):
         self.admin_group_id = context.config.get("admin_group", "nacc")
 
 
+class InputFileVisitor(GearContextVisitor):
+    """Defines a gear execution visitor that takes an input file."""
+
+    def visit_context(self, context: GearToolkitContext) -> None:
+        super().visit_context(context)
+
+        self.file_input = context.get_input('input_file')
+        if not self.file_input:
+            raise GearExecutionError('Missing input file')
+        
+        self.file_id = self.file_input['object']['file_id']
+        self.filename = self.file_input['location']['name']
+        self.filepath = self.file_input['location']['path']
+    
 class GearBotExecutionVisitor(GearContextVisitor):
     """Class implementing the gear execution visitor for GearBot."""
 
