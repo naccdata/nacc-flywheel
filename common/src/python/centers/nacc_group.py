@@ -138,7 +138,7 @@ class NACCGroup(GroupAdaptor):
             if center_info.group == group_id:
                 return adcid
         return None
-    
+
     def get_center(self, adcid: int) -> Optional[CenterGroup]:
         """Returns the center group for the given ADCID.
 
