@@ -114,6 +114,8 @@ class InputFileVisitor(GearContextVisitor):
         self.file_id = self.file_input['object']['file_id']
         self.filename = self.file_input['location']['name']
         self.filepath = self.file_input['location']['path']
+
+    
     
 class GearBotExecutionVisitor(GearContextVisitor):
     """Class implementing the gear execution visitor for GearBot."""
