@@ -51,6 +51,7 @@
             "description": "The instance specific AWS parameter gearbot path prefix",
             "type": "string",
             "default": "/prod/flywheel/gearbot"
+
         }
     },
     "command": "/bin/run"
