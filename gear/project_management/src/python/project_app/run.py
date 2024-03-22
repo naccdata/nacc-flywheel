@@ -12,12 +12,10 @@ published - boolean indicating whether data is to be published
 import logging
 import sys
 
-from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (GearContextVisitor,
                                            GearExecutionEngine,
                                            GearExecutionError)
-from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists
 from project_app.main import run
 
@@ -54,29 +52,23 @@ class ProjectCreationVisitor(GearContextVisitor):
             raise GearExecutionError(
                 f'Unable to read YAML file {project_file}: {error}') from error
 
-        self.admin_group_id = context.config.get("admin_group", "nacc")
         self.new_only = context.config.get("new_only", False)
 
-    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
-        """dummy instantiation of absract method."""
-
-    def run(self, gear: GearExecutionEngine) -> None:
+    def run(self, engine: GearExecutionEngine) -> None:
         """Executes the gear.
 
         Args:
-            gear (GearExecutionEngine): The gear execution engine.
+            engine (GearExecutionEngine): The gear execution engine.
 
         Raises:
             AssertionError: If admin group ID or project list is not provided.
         """
-
-        assert self.admin_group_id, 'Admin group ID required'
         assert self.project_list, 'Project list required'
 
-        proxy = self.get_proxy()
-        admin_group = NACCGroup.create(proxy=proxy,
-                                       group_id=self.admin_group_id)
+        admin_group = self.get_admin_group()
         admin_access = admin_group.get_user_access()
+
+        proxy = self.get_proxy()
         run(proxy=proxy,
             project_list=self.project_list,
             admin_access=admin_access,

@@ -72,24 +72,24 @@ class DirectoryPullVisitor(GearContextVisitor):
                 "Error: can't create YAML for file"
                 f"{self.user_filename}: {error}") from error
 
-    def run(self, gear: GearExecutionEngine) -> None:
+    def run(self, engine: GearExecutionEngine) -> None:
         """Runs the directory pull gear.
 
         Args:
-            gear (GearExecutionEngine): The gear execution engine.
+            engine (GearExecutionEngine): The gear execution engine.
         """
-        assert gear.context, 'Gear context required'
+        assert engine.context, 'Gear context required'
         assert self.user_filename, 'User filename required'
 
         if self.dry_run:
             log.info('Would write user entries to file %s on %s %s',
-                     self.user_filename, gear.context.destination['type'],
-                     gear.context.destination['id'])
+                     self.user_filename, engine.context.destination['type'],
+                     engine.context.destination['id'])
             return
 
-        with gear.context.open_output(self.user_filename,
-                                      mode='w',
-                                      encoding='utf-8') as out_file:
+        with engine.context.open_output(self.user_filename,
+                                        mode='w',
+                                        encoding='utf-8') as out_file:
             out_file.write(self.yaml_text)
 
 

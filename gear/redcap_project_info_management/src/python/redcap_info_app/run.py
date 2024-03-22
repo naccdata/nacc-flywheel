@@ -43,11 +43,11 @@ class REDCapProjectInfoVisitor(GearContextVisitor):
     def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
         """dummy instantiation of abstract method."""
 
-    def run(self, gear: 'GearExecutionEngine') -> None:
+    def run(self, engine: 'GearExecutionEngine') -> None:
         """Run the REDCap Project Info Management gear.
 
         Args:
-            gear: The execution environment for the gear.
+            engine: The execution environment for the gear.
         """
         assert self.input_file_path, 'Input file required'
         proxy = self.get_proxy()

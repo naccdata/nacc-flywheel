@@ -65,11 +65,11 @@ class UserManagementVisitor(GearContextVisitor):
     def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
         """dummy instantiation of abstract method."""
 
-    def run(self, gear: 'GearExecutionEngine') -> None:
+    def run(self, engine: 'GearExecutionEngine') -> None:
         """Executes the gear.
 
         Args:
-            gear (GearExecutionEngine): The gear execution environment.
+            engine (GearExecutionEngine): The gear execution environment.
         """
         assert self.user_file_path, 'User directory file required'
         assert self.auth_file_path, 'User role file required'

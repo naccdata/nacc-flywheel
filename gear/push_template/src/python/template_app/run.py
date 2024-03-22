@@ -58,10 +58,9 @@ class TemplatingVisitor(GearContextVisitor):
     def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
         """dummy instantiation of absract method."""
 
-    def run(self, gear: 'GearExecutionEngine') -> None:
+    def run(self, engine: 'GearExecutionEngine') -> None:
         proxy = self.get_proxy()
-        admin_group = NACCGroup.create(proxy=proxy,
-                                       group_id=self.admin_group_id)
+        admin_group = self.get_admin_group()
         template_map = get_template_projects(group=admin_group)
         run(proxy=proxy,
             center_tag_pattern=r'adcid-\d+',
