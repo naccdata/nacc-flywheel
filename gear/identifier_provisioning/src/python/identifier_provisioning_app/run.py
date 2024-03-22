@@ -4,14 +4,16 @@ import logging
 import sys
 
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import GearBotExecutionVisitor, GearExecutionEngine, GearExecutionError
+from gear_execution.gear_execution import (GearBotExecutionVisitor,
+                                           GearExecutionEngine,
+                                           GearExecutionError)
 from inputs.parameter_store import ParameterError, ParameterStore
 
 log = logging.getLogger(__name__)
 
 
 class IdentifierProvisioningVisitor(GearBotExecutionVisitor):
-    """Execution visitor for NACCID provisioning gear"""
+    """Execution visitor for NACCID provisioning gear."""
 
     def visit_context(self, context: GearToolkitContext) -> None:
         super().visit_context(context)
@@ -22,7 +24,7 @@ class IdentifierProvisioningVisitor(GearBotExecutionVisitor):
         self.file_input = context.get_input('input_file')
         if not self.file_input:
             raise GearExecutionError('Missing input file')
-        
+
     def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
         """Visits the parameter store and loads the RDS parameters.
 
@@ -39,6 +41,7 @@ class IdentifierProvisioningVisitor(GearBotExecutionVisitor):
 
     def run(self, gear: 'GearExecutionEngine') -> None:
         pass
+
 
 def main():
     """Main method for Identifier Provisioning."""
@@ -59,6 +62,7 @@ def main():
 
     if __name__ == "__main__":
         main()
+
 
 if __name__ == "__main__":
     main()
