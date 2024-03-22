@@ -4,6 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from centers.nacc_group import NACCGroup
 from flywheel.client import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
@@ -23,11 +24,14 @@ class GearExecutionVisitor(ABC):
         self.client: Optional[Client] = None
 
     @abstractmethod
-    def run(self, gear: 'GearExecutionEngine') -> None:
+    def run(self, engine: 'GearExecutionEngine') -> None:
         """Run the gear after initialization by visit methods.
 
+        Note: expects both visit_context and visit_parameter_store to be called
+        before this method.
+
         Args:
-            gear: The execution environment for the gear.
+            engine: The execution environment for the gear.
         """
 
     @abstractmethod
@@ -52,13 +56,39 @@ class GearContextVisitor(GearExecutionVisitor):
 
     def __init__(self):
         self.dry_run = False
+        self.admin_group_id = None
         super().__init__()
 
+    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
+        """Dummy instantiation of abstract method."""
+
     def get_proxy(self) -> FlywheelProxy:
-        """Get the proxy for the gear execution visitor."""
+        """Get the proxy for the gear execution visitor.
+
+        Note: assumes that the client has been set by calling visit_context.
+
+        Returns:
+            The Flywheel proxy object.
+        Raises:
+            GearExecutionError if the client is not set.
+        """
         if not self.client:
             raise GearExecutionError("Flywheel client required")
         return FlywheelProxy(client=self.client, dry_run=self.dry_run)
+
+    def get_admin_group(self) -> NACCGroup:
+        """Get the admin group.
+
+        Note: visit_context must be called before this method.
+
+        Returns:
+            The NACC group object.
+        Raises:
+            GearExecutionError if the client and admin group ID are not set.
+        """
+        assert self.admin_group_id, "Admin group ID required"
+        proxy = self.get_proxy()
+        return NACCGroup.create(group_id=self.admin_group_id, proxy=proxy)
 
     def visit_context(self, context: GearToolkitContext) -> None:
         """Visits the context and gathers the client and dry run settings.
@@ -68,6 +98,7 @@ class GearContextVisitor(GearExecutionVisitor):
         """
         self.client = context.client
         self.dry_run = context.config.get("dry_run", False)
+        self.admin_group_id = context.config.get("admin_group", "nacc")
 
 
 class GearBotExecutionVisitor(GearContextVisitor):
@@ -96,7 +127,15 @@ class GearBotExecutionVisitor(GearContextVisitor):
             raise GearExecutionError("API key path prefix required")
 
     def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
-        """Visit method implementation for GearBot."""
+        """Visit method implementation for GearBot.
+
+        Note: visit_context must be called before this method.
+
+        Args:
+            parameter_store: The parameter store to visit.
+        Raises:
+            GearExecutionError: If the API key path prefix is not set.
+        """
         assert self.__apikey_path_prefix, "API key path prefix required"
         try:
             api_key = parameter_store.get_api_key(
