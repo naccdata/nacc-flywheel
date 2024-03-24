@@ -472,6 +472,13 @@ class CenterGroup(GroupAdaptor):
                                              project_id=metadata_project.id,
                                              auth_map=auth_map,
                                              authorizations=authorizations)
+            
+        center_portal = self.get_portal()
+        if center_portal:
+            self.__add_user_roles_to_project(user=user,
+                                             project_id=center_portal.id,
+                                             auth_map=auth_map,
+                                             authorizations=authorizations)
 
     def __add_user_roles_to_project(self, *, user: User, project_id: str,
                                     authorizations: Authorizations,
