@@ -11,7 +11,7 @@ published - boolean indicating whether data is to be published
 """
 import logging
 import sys
-from typing import Any, List
+from typing import Any, List, Optional
 
 from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
@@ -19,6 +19,7 @@ from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearExecutionEngine,
                                            GearExecutionError,
                                            GearExecutionVisitor)
+from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists
 from project_app.main import run
 
@@ -39,7 +40,11 @@ class ProjectCreationVisitor(GearExecutionVisitor):
         self.__admin_id = admin_id
 
     @classmethod
-    def create(cls, context: GearToolkitContext) -> 'ProjectCreationVisitor':
+    def create(
+        cls,
+        context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore] = None
+    ) -> 'ProjectCreationVisitor':
         """Creates a projection creation execution visitor.
 
         Args:
@@ -66,11 +71,11 @@ class ProjectCreationVisitor(GearExecutionVisitor):
                                       new_only=context.config.get(
                                           "new_only", False))
 
-    def run(self, engine: GearExecutionEngine) -> None:
+    def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
 
         Args:
-            engine (GearExecutionEngine): The gear execution engine.
+            context: the gear execution context
 
         Raises:
             AssertionError: If admin group ID or project list is not provided.
@@ -104,9 +109,10 @@ def main():
     and `stage` is one of 'accepted', 'ingest' or 'retrospective'.
     (These are pipeline stages that can be created for the project)
     """
+
     engine = GearExecutionEngine()
     try:
-        engine.execute(ProjectCreationVisitor())
+        engine.run(visitor_type=ProjectCreationVisitor)
     except GearExecutionError as error:
         log.error('Error: %s', error)
         sys.exit(1)

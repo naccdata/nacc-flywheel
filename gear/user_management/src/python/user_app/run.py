@@ -7,9 +7,10 @@ from typing import Any, List, Optional
 
 from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (GearContextVisitor,
+from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearExecutionEngine,
-                                           GearExecutionError)
+                                           GearExecutionError,
+                                           GearExecutionVisitor)
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import (YAMLReadError, get_object_lists_from_stream,
                          load_from_stream)
@@ -36,49 +37,55 @@ def read_yaml_file(file_bytes: bytes) -> Optional[List[Any]]:
     return entry_docs[0]
 
 
-class UserManagementVisitor(GearContextVisitor):
+class UserManagementVisitor(GearExecutionVisitor):
     """Defines the user management gear."""
 
-    def __init__(self):
-        super().__init__()
-        self.admin_group_id = None
-        self.user_file_path = None
-        self.auth_file_path = None
+    def __init__(self, admin_id: str, client: ClientWrapper,
+                 user_filepath: str, auth_filepath: str):
+        self.__admin_id = admin_id
+        self.__client = client
+        self.__user_filepath = user_filepath
+        self.__auth_filepath = auth_filepath
 
-    def visit_context(self, context: GearToolkitContext) -> None:
+    @classmethod
+    def create(
+        cls,
+        context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore] = None
+    ) -> 'UserManagementVisitor':
         """Visits the gear context to gather inputs.
 
         Args:
             context (GearToolkitContext): The gear context.
         """
-        super().visit_context(context)
-        if not self.client:
-            raise GearExecutionError("Flywheel client required")
-        self.admin_group_id = context.config.get("admin_group", "nacc")
-        self.user_file_path = context.get_input_path('user_file')
-        if not self.user_file_path:
+        client = ContextClient.create(context=context)
+
+        user_filepath = context.get_input_path('user_file')
+        if not user_filepath:
             raise GearExecutionError('No user directory file provided')
-        self.auth_file_path = context.get_input_path('auth_file')
-        if not self.auth_file_path:
+        auth_filepath = context.get_input_path('auth_file')
+        if not auth_filepath:
             raise GearExecutionError('No user role file provided')
 
-    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
-        """dummy instantiation of abstract method."""
+        return UserManagementVisitor(admin_id=context.config.get(
+            "admin_group", "nacc"),
+                                     client=client,
+                                     user_filepath=user_filepath,
+                                     auth_filepath=auth_filepath)
 
-    def run(self, engine: 'GearExecutionEngine') -> None:
+    def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
 
         Args:
-            engine (GearExecutionEngine): The gear execution environment.
+            context: the gear execution context
         """
-        assert self.user_file_path, 'User directory file required'
-        assert self.auth_file_path, 'User role file required'
-        assert self.admin_group_id, 'Admin group ID required'
-        proxy = self.get_proxy()
-        admin_group = NACCGroup.create(proxy=proxy,
-                                       group_id=self.admin_group_id)
-        user_list = self.__get_user_list(self.user_file_path)
-        auth_map = self.__get_auth_map(self.auth_file_path)
+        assert self.__user_filepath, 'User directory file required'
+        assert self.__auth_filepath, 'User role file required'
+        assert self.__admin_id, 'Admin group ID required'
+        proxy = self.__client.get_proxy()
+        admin_group = NACCGroup.create(proxy=proxy, group_id=self.__admin_id)
+        user_list = self.__get_user_list(self.__user_filepath)
+        auth_map = self.__get_auth_map(self.__auth_filepath)
         admin_users = admin_group.get_group_users(access='admin')
         admin_set = {user.id for user in admin_users if user.id}
         run(proxy=proxy,
@@ -136,7 +143,7 @@ def main() -> None:
 
     engine = GearExecutionEngine()
     try:
-        engine.execute(UserManagementVisitor())
+        engine.run(visitor_type=UserManagementVisitor)
     except GearExecutionError as error:
         log.error(error)
         sys.exit(1)

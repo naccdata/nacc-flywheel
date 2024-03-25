@@ -2,12 +2,14 @@
 user management gear."""
 import logging
 import sys
+from typing import Optional
 
 from directory_app.main import run
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (GearContextVisitor,
+from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearExecutionEngine,
-                                           GearExecutionError)
+                                           GearExecutionError,
+                                           GearExecutionVisitor)
 from inputs.parameter_store import ParameterError, ParameterStore
 from redcap.redcap_connection import (REDCapConnectionError,
                                       REDCapReportConnection)
@@ -16,44 +18,40 @@ from yaml.representer import RepresenterError
 log = logging.getLogger(__name__)
 
 
-class DirectoryPullVisitor(GearContextVisitor):
+class DirectoryPullVisitor(GearExecutionVisitor):
     """Defines the directory pull gear."""
 
-    def __init__(self):
-        super().__init__()
-        self.param_path = None
-        self.user_filename = None
-        self.report_parameters = None
-        self.yaml_text = None
+    def __init__(self, client: ClientWrapper, user_filename: str,
+                 yaml_text: str):
+        self.__client = client
+        self.__user_filename = user_filename
+        self.__yaml_text = yaml_text
 
-    def visit_context(self, context: GearToolkitContext) -> None:
-        """Visit the GearToolkitContext and set the parameter path and user
-        filename.
-
-        Args:
-            context (GearToolkitContext): The gear context.
-        """
-        self.param_path = context.config.get('parameter_path')
-        self.user_filename = context.config.get('user_file')
-
-    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
-        """Visits the parameter store to retrieve report parameters and user
-        reports.
+    @classmethod
+    def create(
+            cls, context: GearToolkitContext,
+            parameter_store: Optional[ParameterStore]
+    ) -> 'DirectoryPullVisitor':
+        """Creates directory pull execution visitor.
 
         Args:
-            parameter_store (ParameterStore): The parameter store object.
-
-        Raises:
-            GearExecutionError: If there is an error retrieving report
-            parameters or user reports.
-
+          context: the gear context
+          parameter_store: the parameter store
         Returns:
-            None
+          the DirectoryPullVisitor
+        Raises:
+          GearExecutionError if the config or parameter path are missing values
         """
-        assert self.param_path, 'Parameter path required'
+        assert parameter_store, "Parameter store expected"
+
+        client = ContextClient.create(context)
+        param_path = context.config.get('parameter_path')
+        if not param_path:
+            raise GearExecutionError("No parameter path")
+
         try:
             report_parameters = parameter_store.get_redcap_report_connection(
-                param_path=self.param_path)
+                param_path=param_path)
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
 
@@ -65,32 +63,40 @@ class DirectoryPullVisitor(GearContextVisitor):
             raise GearExecutionError(
                 f'Failed to pull users from directory: {error.message}'
             ) from error
-        try:
-            self.yaml_text = run(user_report=user_report)
-        except RepresenterError as error:
-            raise GearExecutionError(
-                "Error: can't create YAML for file"
-                f"{self.user_filename}: {error}") from error
 
-    def run(self, engine: GearExecutionEngine) -> None:
+        user_filename = context.config.get('user_file')
+        if not user_filename:
+            raise GearExecutionError("No user file name provided")
+
+        try:
+            yaml_text = run(user_report=user_report)
+        except RepresenterError as error:
+            raise GearExecutionError("Error: can't create YAML for file"
+                                     f"{user_filename}: {error}") from error
+
+        return DirectoryPullVisitor(client=client,
+                                    user_filename=user_filename,
+                                    yaml_text=yaml_text)
+
+    def run(self, context: GearToolkitContext) -> None:
         """Runs the directory pull gear.
 
         Args:
             engine (GearExecutionEngine): The gear execution engine.
         """
-        assert engine.context, 'Gear context required'
-        assert self.user_filename, 'User filename required'
+        assert context, 'Gear context required'
+        assert self.__user_filename, 'User filename required'
 
-        if self.dry_run:
+        if self.__client.dry_run:
             log.info('Would write user entries to file %s on %s %s',
-                     self.user_filename, engine.context.destination['type'],
-                     engine.context.destination['id'])
+                     self.__user_filename, context.destination['type'],
+                     context.destination['id'])
             return
 
-        with engine.context.open_output(self.user_filename,
-                                        mode='w',
-                                        encoding='utf-8') as out_file:
-            out_file.write(self.yaml_text)
+        with context.open_output(self.__user_filename,
+                                 mode='w',
+                                 encoding='utf-8') as out_file:
+            out_file.write(self.__yaml_text)
 
 
 def main() -> None:
@@ -109,7 +115,7 @@ def main() -> None:
 
     engine = GearExecutionEngine(parameter_store=parameter_store)
     try:
-        engine.execute(DirectoryPullVisitor())
+        engine.run(visitor_type=DirectoryPullVisitor)
     except GearExecutionError as error:
         log.error('Error: %s', error)
         sys.exit(1)

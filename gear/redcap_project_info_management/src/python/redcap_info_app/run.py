@@ -2,14 +2,15 @@
 
 import logging
 import sys
-from typing import List
+from typing import List, Optional
 
 from centers.center_group import REDCapProjectInput
 from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (GearContextVisitor,
+from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearExecutionEngine,
-                                           GearExecutionError)
+                                           GearExecutionError,
+                                           GearExecutionVisitor)
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, load_from_stream
 from pydantic import ValidationError
@@ -18,42 +19,46 @@ from redcap_info_app.main import run
 log = logging.getLogger(__name__)
 
 
-class REDCapProjectInfoVisitor(GearContextVisitor):
+class REDCapProjectInfoVisitor(GearExecutionVisitor):
     """Visitor for the REDCap Project Info Management gear."""
 
-    def __init__(self):
-        super().__init__()
-        self.admin_group_id = None
-        self.input_file_path = None
+    def __init__(self, admin_id: str, client: ClientWrapper,
+                 input_filepath: str):
+        self.__admin_group_id = admin_id
+        self.__client = client
+        self.__input_file_path = input_filepath
 
-    def visit_context(self, context: GearToolkitContext) -> None:
+    @classmethod
+    def create(
+        cls,
+        context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore] = None
+    ) -> 'REDCapProjectInfoVisitor':
         """Visit context to accumulate inputs for the gear.
 
         Args:
             context: The gear context.
         """
-        super().visit_context(context)
-        if not self.client:
-            raise GearExecutionError("Flywheel client required")
-        self.admin_group_id = context.config.get("admin_group", "nacc")
-        self.input_file_path = context.get_input_path('input_file')
-        if not self.input_file_path:
+        client = ContextClient.create(context=context)
+        input_file_path = context.get_input_path('input_file')
+        if not input_file_path:
             raise GearExecutionError('No input file provided')
 
-    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
-        """dummy instantiation of abstract method."""
+        return REDCapProjectInfoVisitor(admin_id=context.config.get(
+            "admin_group", "nacc"),
+                                        client=client,
+                                        input_filepath=input_file_path)
 
-    def run(self, engine: 'GearExecutionEngine') -> None:
+    def run(self, context: GearToolkitContext) -> None:
         """Run the REDCap Project Info Management gear.
 
         Args:
-            engine: The execution environment for the gear.
+            context: the gear execution context
         """
-        assert self.input_file_path, 'Input file required'
-        proxy = self.get_proxy()
+        proxy = self.__client.get_proxy()
         admin_group = NACCGroup.create(proxy=proxy,
-                                       group_id=self.admin_group_id)
-        project_list = self.__get_project_list(self.input_file_path)
+                                       group_id=self.__admin_group_id)
+        project_list = self.__get_project_list(self.__input_file_path)
         run(project_list=project_list, admin_group=admin_group)
 
     # pylint: disable=no-self-use
@@ -96,7 +101,7 @@ def main():
 
     engine = GearExecutionEngine()
     try:
-        engine.execute(REDCapProjectInfoVisitor())
+        engine.run(visitor_type=REDCapProjectInfoVisitor)
     except GearExecutionError as error:
         log.error('Gear execution error: %s', error)
         sys.exit(1)
