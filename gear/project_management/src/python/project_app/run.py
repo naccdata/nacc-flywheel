@@ -11,48 +11,60 @@ published - boolean indicating whether data is to be published
 """
 import logging
 import sys
+from typing import Any, List
 
+from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (GearContextVisitor,
+from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearExecutionEngine,
-                                           GearExecutionError)
+                                           GearExecutionError,
+                                           GearExecutionVisitor)
 from inputs.yaml import YAMLReadError, get_object_lists
 from project_app.main import run
 
 log = logging.getLogger(__name__)
 
 
-class ProjectCreationVisitor(GearContextVisitor):
+class ProjectCreationVisitor(GearExecutionVisitor):
     """Defines the project management gear."""
 
-    def __init__(self):
-        super().__init__()
-        self.admin_group_id = None
-        self.new_only = False
-        self.project_list = []
+    def __init__(self,
+                 admin_id: str,
+                 client: ClientWrapper,
+                 project_list: List[List[Any]],
+                 new_only: bool = False):
+        self.__client = client
+        self.__new_only = new_only
+        self.__project_list = project_list
+        self.__admin_id = admin_id
 
-    def visit_context(self, context: GearToolkitContext) -> None:
-        """Visits the gear context to gather inputs.
+    @classmethod
+    def create(cls, context: GearToolkitContext) -> 'ProjectCreationVisitor':
+        """Creates a projection creation execution visitor.
 
         Args:
-            context (GearToolkitContext): The gear context.
-
+          context: the gear context
+        Returns:
+          the project creation visitor
         Raises:
-            GearExecutionError: If the Flywheel client is not available or
-            if there is an error reading the YAML file.
+          GearExecutionError if the project file cannot be loaded
         """
-        super().visit_context(context)
-        if not self.client:
-            raise GearExecutionError("Flywheel client required")
-
+        client = ContextClient.create(context=context)
         project_file = context.get_input_path('project_file')
         try:
-            self.project_list = get_object_lists(project_file)
+            project_list = get_object_lists(project_file)
         except YAMLReadError as error:
             raise GearExecutionError(
                 f'Unable to read YAML file {project_file}: {error}') from error
+        if not project_list:
+            raise GearExecutionError("Failed to read project file")
+        admin_id = context.config.get("admin_group", "nacc")
 
-        self.new_only = context.config.get("new_only", False)
+        return ProjectCreationVisitor(admin_id=admin_id,
+                                      client=client,
+                                      project_list=project_list,
+                                      new_only=context.config.get(
+                                          "new_only", False))
 
     def run(self, engine: GearExecutionEngine) -> None:
         """Executes the gear.
@@ -63,17 +75,14 @@ class ProjectCreationVisitor(GearContextVisitor):
         Raises:
             AssertionError: If admin group ID or project list is not provided.
         """
-        assert self.project_list, 'Project list required'
+        proxy = self.__client.get_proxy()
+        admin_group = NACCGroup.create(proxy=proxy, group_id=self.__admin_id)
 
-        admin_group = self.get_admin_group()
-        admin_access = admin_group.get_user_access()
-
-        proxy = self.get_proxy()
         run(proxy=proxy,
-            project_list=self.project_list,
-            admin_access=admin_access,
+            admin_group=admin_group,
+            project_list=self.__project_list,
             role_names=['curate', 'upload'],
-            new_only=self.new_only)
+            new_only=self.__new_only)
 
 
 def main():
