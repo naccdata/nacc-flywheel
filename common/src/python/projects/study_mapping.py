@@ -42,13 +42,8 @@ class StudyMappingAdaptor:
     """Defines an adaptor for the coordinating center Study class that supports
     mapping to a data pipeline using Flywheel groups and projects."""
 
-    def __init__(self,
-                 *,
-                 study: Study,
-                 nacc_group: NACCGroup,
-                 flywheel_proxy: FlywheelProxy,
-                 admin_access: Optional[List[AccessPermission]] = None,
-                 center_roles: List[GroupRole],
+    def __init__(self, *, study: Study, admin_group: NACCGroup,
+                 flywheel_proxy: FlywheelProxy, center_roles: List[GroupRole],
                  new_only: bool) -> None:
         """Creates an adaptor mapping the given study to the corresponding
         objects in the flywheel instance linked by the proxy.
@@ -56,16 +51,15 @@ class StudyMappingAdaptor:
         Args:
             study: the study
             flywheel_proxy: the proxy for the flywheel instance
-            admin_access: the access permissions for administrative users
             center_roles: the roles for center users
-            nacc_group: the admin group for managing centers
+            admin_group: the admin group for managing centers
             new_only: whether to only process new centers
         """
         self.__fw = flywheel_proxy
         self.__study = study
-        self.__nacc_group = nacc_group
+        self.__admin_group = admin_group
         self.__release_group: Optional[GroupAdaptor] = None
-        self.__admin_access = admin_access
+        self.__admin_access = admin_group.get_user_access()
         self.__center_roles = center_roles
         self.__new_centers_only = new_only
 
@@ -138,7 +132,7 @@ class StudyMappingAdaptor:
             center_group = CenterGroup.create_from_center(center=center,
                                                           proxy=self.__fw)
             center_group.add_roles(self.__center_roles)
-            self.__nacc_group.add_center(center_group)
+            self.__admin_group.add_center(center_group)
 
             if self.__admin_access:
                 center_group.add_permissions(self.__admin_access)

@@ -4,7 +4,6 @@ import logging
 from typing import List
 
 from centers.nacc_group import NACCGroup
-from flywheel import AccessPermission
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from projects.study import Study
@@ -37,8 +36,8 @@ def get_project_roles(flywheel_proxy,
 
 def run(*,
         proxy: FlywheelProxy,
+        admin_group: NACCGroup,
         project_list,
-        admin_access: List[AccessPermission],
         role_names: List[str],
         new_only: bool = False):
     """Runs project pipeline creation/management.
@@ -50,16 +49,13 @@ def run(*,
       role_names: list of project role names
       new_only: whether to only create centers with new tag
     """
-
-    nacc = NACCGroup.create(proxy=proxy, group_id='nacc')
     center_roles = get_project_roles(proxy, role_names)
 
     for study_doc in project_list:
         study = Study.create(study_doc)
         mapper = StudyMappingAdaptor(study=study,
                                      flywheel_proxy=proxy,
-                                     nacc_group=nacc,
-                                     admin_access=admin_access,
+                                     admin_group=admin_group,
                                      center_roles=center_roles,
                                      new_only=new_only)
         mapper.create_study_pipelines()
