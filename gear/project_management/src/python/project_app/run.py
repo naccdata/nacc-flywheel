@@ -43,6 +43,7 @@ def main():
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
+        gear_context.log_config()
 
         client = gear_context.client
         if not client:

@@ -1,21 +1,21 @@
 {
-    "name": "user-management",
-    "label": "User Management",
-    "description": "Creates and updates user and user roles",
-    "version": "0.0.25",
+    "name": "redcap-project-info-management",
+    "label": "REDCap Project Info Management",
+    "description": "Manages metadata for REDCap form projects",
+    "version": "0.0.4",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
     "license": "MPL-2.0",
-    "url": "https://naccdata.github.io/flywheel-gear-extensions/user_management",
-    "source": "https://github.com/naccdata/flywheel-extensions",
+    "url": "https://naccdata.github.io/flywheel-gear-extensions/redcap_project_info_management",
+    "source": "https://github.com/naccdata/flywheel-gear-extensions",
     "environment": {
         "FLYWHEEL": "/flywheel/v0"
     },
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/user-management:0.0.25"
+            "image": "naccdata/redcap-project-info-management:0.0.4"
         },
         "flywheel": {
             "suite": "NACC Admin Gears",
@@ -26,19 +26,9 @@
         "api-key": {
             "base": "api-key"
         },
-        "user_file": {
+        "input_file": {
+            "description": "The REDCap project YAML file",
             "base": "file",
-            "description": "The user YAML file",
-            "type": {
-                "enum": [
-                    "source code"
-                ]
-            },
-            "optional": false
-        },
-        "auth_file": {
-            "base": "file",
-            "description": "The role YAML file",
             "type": {
                 "enum": [
                     "source code"
@@ -57,11 +47,6 @@
             "description": "Name of the admin group",
             "type": "string",
             "default": "nacc"
-        },
-        "apikey_path_prefix": {
-            "description": "The instance specific AWS parameter gearbot path prefix",
-            "type": "string",
-            "default": "/prod/flywheel/gearbot"
         }
     },
     "command": "/bin/run"
