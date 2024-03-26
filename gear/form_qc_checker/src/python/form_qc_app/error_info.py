@@ -2,7 +2,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Optional
 
 from form_qc_app.parser import Keys
 from outputs.errors import JSONLocation, ListErrorWriter, QCError, system_error
@@ -303,9 +303,9 @@ class ErrorComposer():
                                                       field=field)
                 self.__error_writer.write(qc_error)
 
-    # pylint: disable=(too-many-locals)
+    # pylint: disable=(too-many-locals, too-many-branches)
     def compose_detailed_error_metadata(self, *, error_tree: Dict[str, Any],
-                                        err_code_map: Dict[str, Mapping]):
+                                        err_code_map: Dict[str, Dict]):
         """Compose detailed error metadata using the error code map to retrieve
         information from the NACC QC checks database.
 
@@ -347,11 +347,16 @@ class ErrorComposer():
                     continue
 
                 if error.rule not in code_shema:
-                    log.warning(
-                        'NACC error code not found '
-                        'for variable %s rule %s', field, error.rule)
-                    self.__write_qc_error_no_code(error_obj=error, field=field)
-                    continue
+                    if error.rule == Keys.NULLABLE and Keys.REQUIRED in code_shema:
+                        code_shema[error.rule] = code_shema[Keys.REQUIRED]
+                    else:
+                        log.warning(
+                            'NACC error code not found '
+                            'for variable %s rule %s - %s', field, error.rule,
+                            error.schema_path)
+                        self.__write_qc_error_no_code(error_obj=error,
+                                                      field=field)
+                        continue
 
                 if error.rule in (Keys.COMPAT, Keys.TEMPORAL):
                     checks = code_shema[error.rule]

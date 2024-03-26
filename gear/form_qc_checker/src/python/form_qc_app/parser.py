@@ -26,6 +26,8 @@ class Keys:
     INDEX = 'index'
     COMPAT = 'compatibility'
     TEMPORAL = 'temporalrules'
+    NULLABLE = 'nullable'
+    REQUIRED = 'required'
 
 
 class ParserException(Exception):

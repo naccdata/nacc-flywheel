@@ -5,7 +5,7 @@ import json
 import logging
 import sys
 from json.decoder import JSONDecodeError
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Optional
 
 from flywheel import Client
 from flywheel_gear_toolkit import GearToolkitContext
@@ -88,7 +88,7 @@ def compose_error_metadata(
     sys_failure: bool,
     error_composer: ErrorComposer,
     error_tree: Optional[Dict[str, Any]],
-    codes_map: Optional[Dict[str, Mapping]],
+    codes_map: Optional[Dict[str, Dict]],
 ):
     """Compose error metadata using validation errors and error code mapping.
 
@@ -167,7 +167,9 @@ def run(*,
         sys.exit(1)
 
     try:
-        codes_map = parser.download_rule_definitions(f'{s3_prefix}/codes/')
+        codes_map: Optional[Dict[str,
+                                 Dict]] = parser.download_rule_definitions(
+                                     f'{s3_prefix}/codes/')  # type: ignore
     # TODO - validate code mapping schema and compare with error check schema
     except ParserException as error:
         log.warning(error)
