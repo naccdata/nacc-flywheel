@@ -3,9 +3,9 @@ from typing import Dict, List, Literal, Optional, Sequence, Set
 
 from pydantic import BaseModel
 
-DatatypeNameType = Literal['form', 'dicom']
-AuthNameType = Literal['submit-form', 'submit-dicom', 'audit-data',
-                       'approve-data', 'view-reports']
+DatatypeNameType = Literal['form', 'dicom', 'enrollment']
+AuthNameType = Literal['submit-form', 'submit-dicom', 'submit-enrollment',
+                       'audit-data', 'approve-data', 'view-reports']
 
 
 class Authorizations(BaseModel):
@@ -62,6 +62,7 @@ class Authorizations(BaseModel):
         modalities: List[DatatypeNameType] = []
         if 'a' in activities:
             modalities.append('form')
+            modalities.append('enrollment')
         if 'b' in activities:
             modalities.append('dicom')
 

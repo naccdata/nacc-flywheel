@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import List, Literal, Optional
 
 import yaml
+from users.authorizations import DatatypeNameType
 from users.nacc_directory import (Authorizations, Credentials, PersonName,
                                   UserDirectory, UserDirectoryEntry)
 
@@ -14,7 +15,7 @@ from users.nacc_directory import (Authorizations, Credentials, PersonName,
 def user_entry(email: str,
                name: Optional[PersonName] = None,
                user_id: Optional[str] = None,
-               submit: Optional[List[Literal['form', 'dicom']]] = None,
+               submit: Optional[List[DatatypeNameType]] = None,
                audit_data=False,
                approve_data=False,
                view_reports=False):
