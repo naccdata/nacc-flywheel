@@ -1,6 +1,7 @@
 """Module defining utilities for gear execution."""
 
 import logging
+import sys
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Type, TypeVar
 
@@ -167,8 +168,8 @@ class InputFileWrapper:
 
 
 # pylint: disable=too-few-public-methods
-class GearExecutionVisitor(ABC):
-    """Base class for gear execution visitors."""
+class GearExecutionEnvironment(ABC):
+    """Base class for gear execution environments."""
 
     @abstractmethod
     def run(self, context: GearToolkitContext) -> None:
@@ -183,11 +184,11 @@ class GearExecutionVisitor(ABC):
 
     @classmethod
     def create(
-            cls, context: GearToolkitContext,
-            parameter_store: Optional[ParameterStore]
-    ) -> 'GearExecutionVisitor':
-        """Creates an execution visitor object from the context and parameter
-        store.
+        cls, context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore]
+    ) -> 'GearExecutionEnvironment':
+        """Creates an execution environment object from the context and
+        parameter store.
 
         Implementing classes must implement the full signature.
 
@@ -195,34 +196,58 @@ class GearExecutionVisitor(ABC):
           context: the gear context
           parameter_store: the parameter store
         Returns:
-          the GearExecutionVisitor initialized with the input
+          the GearExecutionEnvironment initialized with the input
         """
         raise GearExecutionError("Not implemented")
 
+
 # TODO: remove type ignore when using python 3.12 or above
-E = TypeVar('E', bound=GearExecutionVisitor)  # type: ignore
+E = TypeVar('E', bound=GearExecutionEnvironment)  # type: ignore
 
 
 # pylint: disable=too-few-public-methods
-class GearExecutionEngine:
+class GearEngine:
     """Class defining the gear execution engine."""
 
     def __init__(self, parameter_store: Optional[ParameterStore] = None):
         self.parameter_store = parameter_store
 
-    def run(self, visitor_type: Type[E]):
-        """Execute the gear visitor.
+    @classmethod
+    def create_with_parameter_store(cls) -> 'GearEngine':
+        """Creates a GearEngine with a parameter store defined from 
+        environment variables.
+        
+        Returns:
+          GearEngine object with a parameter store
+        Raises:
+          GearExecutionError if there is an error getting the parameter 
+          store object.
+        """
+        try:
+            parameter_store = ParameterStore.create_from_environment()
+        except ParameterError as error:
+            raise GearExecutionError(
+                f'Unable to create Parameter Store: {error}') from error
 
-        Creates a execution visitor object of the visitor_type using the
-        implementation of the GearExecutionVisitor.create method.
-        The runs the visitor.
+        return GearEngine(parameter_store=parameter_store)
+
+    def run(self, gear_type: Type[E]):
+        """Execute the gear.
+
+        Creates a execution environment object of the gear_type using the
+        implementation of the GearExecutionEnvironment.create method.
+        Then runs the gear.
 
         Args:
-            visitor_type: The type of the gear execution visitor.
+            gear_type: The type of the gear execution environment.
         """
-        with GearToolkitContext() as context:
-            context.init_logging()
-            context.log_config()
-            visitor = visitor_type.create(context=context,
-                                          parameter_store=self.parameter_store)
-            visitor.run(context)
+        try:
+            with GearToolkitContext() as context:
+                context.init_logging()
+                context.log_config()
+                visitor = gear_type.create(
+                    context=context, parameter_store=self.parameter_store)
+                visitor.run(context)
+        except GearExecutionError as error:
+            log.error('Error: %s', error)
+            sys.exit(1)
