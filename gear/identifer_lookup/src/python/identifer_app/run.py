@@ -1,16 +1,15 @@
 """Entrypoint script for the identifer lookup app."""
 
 import logging
-import sys
 from pathlib import Path
 from typing import Dict, Optional
 
 from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
-                                           GearExecutionEngine,
+                                           GearEngine,
+                                           GearExecutionEnvironment,
                                            GearExecutionError,
-                                           GearExecutionVisitor,
                                            InputFileWrapper)
 from identifer_app.main import run
 from identifiers.database import create_session
@@ -20,7 +19,6 @@ from inputs.parameter_store import (ParameterError, ParameterStore,
                                     RDSParameters)
 from outputs.errors import ListErrorWriter
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
@@ -50,7 +48,7 @@ def get_identifiers(rds_parameters: RDSParameters,
     return identifiers
 
 
-class IdentifierLookupVisitor(GearExecutionVisitor):
+class IdentifierLookupVisitor(GearExecutionEnvironment):
     """The gear execution visitor for the identifier lookup app."""
 
     def __init__(self, client: ClientWrapper, admin_id: str,
@@ -146,18 +144,9 @@ def main():
     Writes errors to a CSV file compatible with Flywheel error UI.
     """
 
-    try:
-        parameter_store = ParameterStore.create_from_environment()
-    except ParameterError as error:
-        log.error('Unable to create Parameter Store: %s', error)
-        sys.exit(1)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=IdentifierLookupVisitor)
 
-    engine = GearExecutionEngine(parameter_store=parameter_store)
-    try:
-        engine.run(visitor_type=IdentifierLookupVisitor)
-    except GearExecutionError as error:
-        log.error('Error: %s', error)
-        sys.exit(1)
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()

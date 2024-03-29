@@ -1,15 +1,14 @@
 """Script to pull directory information and convert to file expected by the
 user management gear."""
 import logging
-import sys
 from typing import Optional
 
 from directory_app.main import run
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearExecutionEngine,
-                                           GearExecutionError,
-                                           GearExecutionVisitor)
+                                           GearEngine,
+                                           GearExecutionEnvironment,
+                                           GearExecutionError)
 from inputs.parameter_store import ParameterError, ParameterStore
 from redcap.redcap_connection import (REDCapConnectionError,
                                       REDCapReportConnection)
@@ -18,7 +17,7 @@ from yaml.representer import RepresenterError
 log = logging.getLogger(__name__)
 
 
-class DirectoryPullVisitor(GearExecutionVisitor):
+class DirectoryPullVisitor(GearExecutionEnvironment):
     """Defines the directory pull gear."""
 
     def __init__(self, client: ClientWrapper, user_filename: str,
@@ -107,18 +106,8 @@ def main() -> None:
     be given as environment variables.
     """
 
-    try:
-        parameter_store = ParameterStore.create_from_environment()
-    except ParameterError as error:
-        log.error('Unable to create Parameter Store: %s', error)
-        sys.exit(1)
-
-    engine = GearExecutionEngine(parameter_store=parameter_store)
-    try:
-        engine.run(visitor_type=DirectoryPullVisitor)
-    except GearExecutionError as error:
-        log.error('Error: %s', error)
-        sys.exit(1)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=DirectoryPullVisitor)
 
 
 if __name__ == "__main__":

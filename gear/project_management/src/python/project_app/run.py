@@ -10,15 +10,14 @@ datatypes - array of datatype names (form, dicom)
 published - boolean indicating whether data is to be published
 """
 import logging
-import sys
 from typing import Any, List, Optional
 
 from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearExecutionEngine,
-                                           GearExecutionError,
-                                           GearExecutionVisitor)
+                                           GearEngine,
+                                           GearExecutionEnvironment,
+                                           GearExecutionError)
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists
 from project_app.main import run
@@ -26,7 +25,7 @@ from project_app.main import run
 log = logging.getLogger(__name__)
 
 
-class ProjectCreationVisitor(GearExecutionVisitor):
+class ProjectCreationVisitor(GearExecutionEnvironment):
     """Defines the project management gear."""
 
     def __init__(self,
@@ -110,12 +109,7 @@ def main():
     (These are pipeline stages that can be created for the project)
     """
 
-    engine = GearExecutionEngine()
-    try:
-        engine.run(visitor_type=ProjectCreationVisitor)
-    except GearExecutionError as error:
-        log.error('Error: %s', error)
-        sys.exit(1)
+    GearEngine().run(gear_type=ProjectCreationVisitor)
 
 
 if __name__ == "__main__":

@@ -1,16 +1,15 @@
 """Entry script for REDCap Project Info Management."""
 
 import logging
-import sys
 from typing import List, Optional
 
 from centers.center_group import REDCapProjectInput
 from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearExecutionEngine,
-                                           GearExecutionError,
-                                           GearExecutionVisitor)
+                                           GearEngine,
+                                           GearExecutionEnvironment,
+                                           GearExecutionError)
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, load_from_stream
 from pydantic import ValidationError
@@ -19,7 +18,7 @@ from redcap_info_app.main import run
 log = logging.getLogger(__name__)
 
 
-class REDCapProjectInfoVisitor(GearExecutionVisitor):
+class REDCapProjectInfoVisitor(GearExecutionEnvironment):
     """Visitor for the REDCap Project Info Management gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper,
@@ -99,12 +98,7 @@ class REDCapProjectInfoVisitor(GearExecutionVisitor):
 def main():
     """Main method for REDCap Project Info Management."""
 
-    engine = GearExecutionEngine()
-    try:
-        engine.run(visitor_type=REDCapProjectInfoVisitor)
-    except GearExecutionError as error:
-        log.error('Gear execution error: %s', error)
-        sys.exit(1)
+    GearEngine().run(gear_type=REDCapProjectInfoVisitor)
 
 
 if __name__ == "__main__":

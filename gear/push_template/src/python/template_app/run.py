@@ -1,15 +1,13 @@
 """Main function for running template push process."""
 import logging
-import sys
 from typing import Optional
 
 from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
 from fw_client import FWClient
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearExecutionEngine,
-                                           GearExecutionError,
-                                           GearExecutionVisitor)
+                                           GearEngine,
+                                           GearExecutionEnvironment)
 from inputs.context_parser import get_api_key
 from inputs.parameter_store import ParameterStore
 from inputs.templates import get_template_projects
@@ -18,7 +16,7 @@ from template_app.main import run
 log = logging.getLogger(__name__)
 
 
-class TemplatingVisitor(GearExecutionVisitor):
+class TemplatingVisitor(GearExecutionEnvironment):
     """Visitor for the templating gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper, new_only: bool):
@@ -81,12 +79,7 @@ def main():
     (These are pipeline stages that can be created for the project)
     """
 
-    engine = GearExecutionEngine()
-    try:
-        engine.run(visitor_type=TemplatingVisitor)
-    except GearExecutionError as error:
-        log.error('Error: %s', error)
-        sys.exit(1)
+    GearEngine().run(gear_type=TemplatingVisitor)
 
 
 if __name__ == "__main__":

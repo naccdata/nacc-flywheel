@@ -1,16 +1,15 @@
 """The run script for the user management gear."""
 
 import logging
-import sys
 from io import StringIO
 from typing import Any, List, Optional
 
 from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearExecutionEngine,
-                                           GearExecutionError,
-                                           GearExecutionVisitor)
+                                           GearEngine,
+                                           GearExecutionEnvironment,
+                                           GearExecutionError)
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import (YAMLReadError, get_object_lists_from_stream,
                          load_from_stream)
@@ -37,7 +36,7 @@ def read_yaml_file(file_bytes: bytes) -> Optional[List[Any]]:
     return entry_docs[0]
 
 
-class UserManagementVisitor(GearExecutionVisitor):
+class UserManagementVisitor(GearExecutionEnvironment):
     """Defines the user management gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper,
@@ -141,12 +140,7 @@ class UserManagementVisitor(GearExecutionVisitor):
 def main() -> None:
     """Main method to manage users."""
 
-    engine = GearExecutionEngine()
-    try:
-        engine.run(visitor_type=UserManagementVisitor)
-    except GearExecutionError as error:
-        log.error(error)
-        sys.exit(1)
+    GearEngine().run(gear_type=UserManagementVisitor)
 
 
 if __name__ == "__main__":
