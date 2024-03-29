@@ -2,11 +2,12 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Any, Dict, Optional, Type, TypeVar
 
 from flywheel.client import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
+from fw_client import FWClient
 from inputs.parameter_store import ParameterError, ParameterStore
 
 log = logging.getLogger(__name__)
@@ -16,123 +17,213 @@ class GearExecutionError(Exception):
     """Exception class for gear execution errors."""
 
 
-class GearExecutionVisitor(ABC):
-    """Abstract class defining the gear execution visitor."""
+class ClientWrapper:
+    """Wrapper class for client objects."""
 
-    def __init__(self) -> None:
-        self.client: Optional[Client] = None
-
-    @abstractmethod
-    def run(self, gear: 'GearExecutionEngine') -> None:
-        """Run the gear after initialization by visit methods.
-
-        Args:
-            gear: The execution environment for the gear.
-        """
-
-    @abstractmethod
-    def visit_context(self, context: GearToolkitContext) -> None:
-        """Visit method to be implemented by subclasses.
-
-        Args:
-            context: The gear context.
-        """
-
-    @abstractmethod
-    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
-        """Visit method to be implemented by subclasses.
-
-        Args:
-            parameter_store: The parameter store.
-        """
-
-
-class GearContextVisitor(GearExecutionVisitor):
-    """Visitor that sets the client from the gear context."""
-
-    def __init__(self):
-        self.dry_run = False
-        super().__init__()
+    def __init__(self, client: Client, dry_run: bool = False) -> None:
+        self.__client = client
+        self.__fw_client: Optional[FWClient] = None
+        self.__dry_run = dry_run
 
     def get_proxy(self) -> FlywheelProxy:
-        """Get the proxy for the gear execution visitor."""
-        if not self.client:
+        """Returns a proxy object for this client object."""
+        return FlywheelProxy(client=self.__client,
+                             fw_client=self.__fw_client,
+                             dry_run=self.__dry_run)
+
+    def set_fw_client(self, fw_client: FWClient) -> None:
+        """Sets the FWClient needed by some proxy methods.
+
+        Args:
+          fw_client: the FWClient object
+        """
+        self.__fw_client = fw_client
+
+    @property
+    def host(self) -> str:
+        """Returns the host for the client.
+
+        Returns:
+          hostname for the client.
+        """
+        api_client = self.__client.api_client  # type: ignore
+        return api_client.configuration.host
+
+    @property
+    def dry_run(self) -> bool:
+        """Returns whether client will run a dry run."""
+        return self.__dry_run
+
+
+# pylint: disable=too-few-public-methods
+class ContextClient:
+    """Defines a factory method for creating a client wrapper for the gear
+    context client."""
+
+    @classmethod
+    def create(cls, context: GearToolkitContext) -> ClientWrapper:
+        """Creates a ContextClient object from the context object.
+
+        Args:
+          context: the gear context
+        Returns:
+          the constructed ContextClient
+        Raises:
+          GearExecutionError if the context does not have a client
+        """
+        if not context.client:
             raise GearExecutionError("Flywheel client required")
-        return FlywheelProxy(client=self.client, dry_run=self.dry_run)
 
-    def visit_context(self, context: GearToolkitContext) -> None:
-        """Visits the context and gathers the client and dry run settings.
-
-        Args:
-            context: The gear context.
-        """
-        self.client = context.client
-        self.dry_run = context.config.get("dry_run", False)
+        return ClientWrapper(client=context.client,
+                             dry_run=context.config.get("dry_run", False))
 
 
-class GearBotExecutionVisitor(GearContextVisitor):
-    """Class implementing the gear execution visitor for GearBot."""
+# pylint: disable=too-few-public-methods
+class GearBotClient:
+    """Defines a factory method for creating a client wrapper for a gear bot
+    client."""
 
-    def __init__(self):
-        self.__apikey_path_prefix = None
-        self.__default_client = None
-        super().__init__()
-
-    def visit_context(self, context: GearToolkitContext) -> None:
-        """Visit method implementation for GearBot.
+    @classmethod
+    def create(cls, context: GearToolkitContext,
+               parameter_store: Optional[ParameterStore]) -> ClientWrapper:
+        """Creates a GearBotClient wrapper object from the context and
+        parameter store.
 
         Args:
-            context: The gear context to visit.
+          context: the gear context
+          parameter_store: the parameter store
+        Returns:
+          the GearBotClient
+        Raises:
+          GearExecutionClient if the context has no default client,
+          the api key path is missing, or the host for the api key parameter
+          does not match that of the default client.
         """
-        super().visit_context(context)
-        self.__default_client = context.client
-        if not self.__default_client:
+        try:
+            default_client = ContextClient.create(context=context)
+        except GearExecutionError as error:
             raise GearExecutionError(
-                "Flywheel client required to confirm gearbot access")
+                "Flywheel client required to confirm gearbot access"
+            ) from error
 
-        self.__apikey_path_prefix = context.config.get("apikey_path_prefix",
-                                                       None)
-        if not self.__apikey_path_prefix:
+        apikey_path_prefix = context.config.get("apikey_path_prefix", None)
+        if not apikey_path_prefix:
             raise GearExecutionError("API key path prefix required")
 
-    def visit_parameter_store(self, parameter_store: ParameterStore) -> None:
-        """Visit method implementation for GearBot."""
-        assert self.__apikey_path_prefix, "API key path prefix required"
+        assert parameter_store, "Parameter store expected"
         try:
             api_key = parameter_store.get_api_key(
-                path_prefix=self.__apikey_path_prefix)
+                path_prefix=apikey_path_prefix)
         except ParameterError as error:
-            raise GearExecutionError(f"Parameter error: {error}") from error
+            raise GearExecutionError(error) from error
 
-        api_client = self.__default_client.api_client  # type: ignore
-        host = api_client.configuration.host
+        host = default_client.host
         if api_key.split(':')[0] not in host:
             raise GearExecutionError('Gearbot API key does not match host')
 
-        self.client = Client(api_key)
+        return ClientWrapper(client=Client(api_key),
+                             dry_run=default_client.dry_run)
+
+
+class InputFileWrapper:
+    """Defines a gear execution visitor that takes an input file."""
+
+    def __init__(self, file_input: Dict[str, Dict[str, Any]]) -> None:
+        self.file_input = file_input
+
+    @property
+    def file_id(self) -> str:
+        """Returns the file ID."""
+        return self.file_input['object']['file_id']
+
+    @property
+    def filename(self) -> str:
+        """Returns the file name."""
+        return self.file_input['location']['name']
+
+    @property
+    def filepath(self) -> str:
+        """Returns the file path."""
+        return self.file_input['location']['path']
+
+    @classmethod
+    def create(cls, input_name: str,
+               context: GearToolkitContext) -> 'InputFileWrapper':
+        """Creates the named InputFile.
+
+        Args:
+          input_name: the name of the input file
+          context: the gear context
+        Returns:
+          the input file object
+        Raises:
+          GearExecutionError if there is no input with the name
+        """
+        file_input = context.get_input(input_name)
+        if not file_input:
+            raise GearExecutionError(f'Missing input file {input_name}')
+
+        return InputFileWrapper(file_input=file_input)
+
+
+# pylint: disable=too-few-public-methods
+class GearExecutionVisitor(ABC):
+    """Base class for gear execution visitors."""
+
+    @abstractmethod
+    def run(self, context: GearToolkitContext) -> None:
+        """Run the gear after initialization by visit methods.
+
+        Note: expects both visit_context and visit_parameter_store to be called
+        before this method.
+
+        Args:
+            context: The gear execution context
+        """
+
+    @abstractmethod
+    @classmethod
+    def create(
+            cls, context: GearToolkitContext,
+            parameter_store: Optional[ParameterStore]
+    ) -> 'GearExecutionVisitor':
+        """Creates an execution visitor object from the context and parameter
+        store.
+
+        Implementing classes must implement the full signature.
+
+        Args:
+          context: the gear context
+          parameter_store: the parameter store
+        Returns:
+          the GearExecutionVisitor initialized with the input
+        """
+
+
+# TODO: remove type ignore when using python 3.12 or above
+E = TypeVar('E', bound=GearExecutionVisitor)  # type: ignore
 
 
 # pylint: disable=too-few-public-methods
 class GearExecutionEngine:
     """Class defining the gear execution engine."""
 
-    def __init__(self,
-                 context: Optional[GearToolkitContext] = None,
-                 parameter_store: Optional[ParameterStore] = None):
+    def __init__(self, parameter_store: Optional[ParameterStore] = None):
         self.parameter_store = parameter_store
-        self.context = context
 
-    def execute(self, visitor: GearExecutionVisitor):
+    def run(self, visitor_type: Type[E]):
         """Execute the gear visitor.
 
+        Creates a execution visitor object of the visitor_type using the
+        implementation of the GearExecutionVisitor.create method.
+        The runs the visitor.
+
         Args:
-            visitor: The gear execution visitor.
+            visitor_type: The type of the gear execution visitor.
         """
         with GearToolkitContext() as context:
-            self.context = context
             context.init_logging()
             context.log_config()
-            visitor.visit_context(context)
-            if self.parameter_store:
-                visitor.visit_parameter_store(self.parameter_store)
-            visitor.run(self)
+            visitor = visitor_type.create(context=context,
+                                          parameter_store=self.parameter_store)
+            visitor.run(context)
