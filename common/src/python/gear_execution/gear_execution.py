@@ -181,7 +181,6 @@ class GearExecutionVisitor(ABC):
             context: The gear execution context
         """
 
-    @abstractmethod
     @classmethod
     def create(
             cls, context: GearToolkitContext,
@@ -198,7 +197,7 @@ class GearExecutionVisitor(ABC):
         Returns:
           the GearExecutionVisitor initialized with the input
         """
-
+        raise GearExecutionError("Not implemented")
 
 # TODO: remove type ignore when using python 3.12 or above
 E = TypeVar('E', bound=GearExecutionVisitor)  # type: ignore
