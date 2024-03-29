@@ -3,7 +3,7 @@
 import io
 from csv import DictReader
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 import yaml
 from users.authorizations import DatatypeNameType
