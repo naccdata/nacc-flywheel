@@ -80,7 +80,7 @@ class AuthMap(BaseModel):
     project_authorizations: Dict[str, Dict[str, str]]
 
     def get(self, *, project_label: str,
-            authorizations: 'Authorizations') -> Set[str]:
+            authorizations: Authorizations) -> Set[str]:
         """Gets the roles for a project and authorizations.
 
         Args:

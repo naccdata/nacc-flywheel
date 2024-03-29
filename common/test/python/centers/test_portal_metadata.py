@@ -93,7 +93,7 @@ class TestProjectMetadataSerialization:
         assert project_dump
         assert 'redcap-projects' in project_dump
         assert 'redcap-pid' in project_dump['redcap-projects']['dummyv9']
-        assert 'form-name' in project_dump['redcap-projects']['dummyv9']
+        assert 'label' in project_dump['redcap-projects']['dummyv9']
         assert project_dump['project-label'] == "ingest-form-test"
 
         try:
