@@ -673,6 +673,7 @@ class GroupAdaptor:
         """
         project = self._fw.get_project_by_id(project_id)
         if not project:
+            log.warning('No project found with ID %s', project_id)
             return None
 
         return ProjectAdaptor(project=project, proxy=self._fw)
