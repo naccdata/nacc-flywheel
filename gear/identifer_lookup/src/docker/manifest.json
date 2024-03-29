@@ -42,6 +42,11 @@
             "type": "boolean",
             "default": false
         },
+        "admin_group": {
+            "description": "Name of the admin group",
+            "type": "string",
+            "default": "nacc"
+        },
         "rds_parameter_path": {
             "description": "SSM parameter path for identifiers RDS credentials",
             "type": "string",

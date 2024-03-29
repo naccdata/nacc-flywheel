@@ -5,12 +5,13 @@ import sys
 from pathlib import Path
 from typing import Dict, Optional
 
-from centers.center_group import CenterError, CenterGroup
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (GearBotExecutionVisitor,
+from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            GearExecutionEngine,
-                                           GearExecutionError)
+                                           GearExecutionError,
+                                           GearExecutionVisitor,
+                                           InputFileWrapper)
 from identifer_app.main import run
 from identifiers.database import create_session
 from identifiers.identifiers_repository import IdentifierRepository
@@ -49,78 +50,67 @@ def get_identifiers(rds_parameters: RDSParameters,
     return identifiers
 
 
-def get_adcid(proxy: FlywheelProxy, file_id: str) -> Optional[int]:
-    """Get the adcid of the center group that owns the file.
-
-    Args:
-      proxy: the flwheel proxy object
-      file_id: the ID for the file
-    Returns:
-      the ADCID for the center
-    """
-    file = proxy.get_file(file_id)
-    group_id = file.parents.group
-    groups = proxy.find_groups(group_id)
-    try:
-        center = CenterGroup.create_from_group(group=groups[0], proxy=proxy)
-    except CenterError:
-        return None
-    return center.adcid
-
-
-class IdentifierLookupVisitor(GearBotExecutionVisitor):
+class IdentifierLookupVisitor(GearExecutionVisitor):
     """The gear execution visitor for the identifier lookup app."""
 
-    def __init__(self):
-        super().__init__()
-        self.file_input = None
-        self.rds_param_path = None
-        self.rds_parameters = None
+    def __init__(self, client: ClientWrapper, admin_id: str,
+                 file_input: InputFileWrapper, rds_parameters: RDSParameters):
+        self.__admin_id = admin_id
+        self.__client = client
+        self.__file_input = file_input
+        self.rds_parameters = rds_parameters
 
-    def visit_context(self, context: GearToolkitContext):
-        """Visits the context and gathers the input file and RDS parameters.
+    @classmethod
+    def create(
+        cls, context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore]
+    ) -> 'IdentifierLookupVisitor':
+        """Creates an identifier lookup execution visitor.
 
         Args:
-            context: The gear context.
+          context: the gear context
+          parameter_store: the parameter store
+        Raises:
+          GearExecutionError if rds parameter path is not set
         """
-        super().visit_context(context)
-        self.rds_param_path = context.config.get('rds_parameter_path')
-        if not self.rds_param_path:
+        assert parameter_store, "Parameter store expected"
+
+        client = GearBotClient.create(context=context,
+                                      parameter_store=parameter_store)
+        file_input = InputFileWrapper.create(input_name='input_file',
+                                             context=context)
+
+        rds_param_path = context.config.get('rds_parameter_path')
+        if not rds_param_path:
             raise GearExecutionError('No value for rds_parameter_path')
 
-        self.file_input = context.get_input('input_file')
-        if not self.file_input:
-            raise GearExecutionError('Missing input file')
-
-    def visit_parameter_store(self, parameter_store: ParameterStore):
-        """Visits the parameter store and loads the RDS parameters.
-
-        Args:
-            parameter_store: the parameter store object
-        """
-        super().visit_parameter_store(parameter_store)
-        assert self.rds_param_path, 'RDS parameter path required'
         try:
-            self.rds_parameters = parameter_store.get_rds_parameters(
-                param_path=self.rds_param_path)
+            rds_parameters = parameter_store.get_rds_parameters(
+                param_path=rds_param_path)
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
+        admin_id = context.config.get("admin_group", "nacc")
 
-    def run(self, gear: GearExecutionEngine):
+        return IdentifierLookupVisitor(client=client,
+                                       admin_id=admin_id,
+                                       file_input=file_input,
+                                       rds_parameters=rds_parameters)
+
+    def run(self, context: GearToolkitContext):
         """Runs the identifier lookup app.
 
         Args:
-            gear: the gear execution engine
+            context: the gear execution context
         """
-        assert self.client, 'Flywheel client required'
-        assert self.file_input, 'Input file required'
-        assert self.rds_parameters, 'RDS parameters required'
-        assert gear.context, 'Gear context required'
 
-        proxy = self.get_proxy()
+        assert context, 'Gear context required'
 
-        file_id = self.file_input['object']['file_id']
-        adcid = get_adcid(proxy=proxy, file_id=file_id)
+        proxy = self.__client.get_proxy()
+        admin_group = NACCGroup.create(proxy=proxy, group_id=self.__admin_id)
+
+        file_id = self.__file_input.file_id
+        group_id = proxy.get_file_group(file_id)
+        adcid = admin_group.get_adcid(group_id)
         if not adcid:
             raise GearExecutionError('Unable to determine center ID for file')
 
@@ -129,19 +119,19 @@ class IdentifierLookupVisitor(GearBotExecutionVisitor):
         if not identifiers:
             raise GearExecutionError('Unable to load center participant IDs')
 
-        filename = f"{self.file_input['location']['name']}-identifier"
-        input_path = Path(self.file_input['location']['path'])
+        filename = f"{self.__file_input.filename}-identifier"
+        input_path = Path(self.__file_input.filepath)
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
-            with gear.context.open_output(f'{filename}.csv',
-                                          mode='w',
-                                          encoding='utf-8') as out_file:
+            with context.open_output(f'{filename}.csv',
+                                     mode='w',
+                                     encoding='utf-8') as out_file:
                 error_writer = ListErrorWriter(container_id=file_id)
                 errors = run(input_file=csv_file,
                              identifiers=identifiers,
                              output_file=out_file,
                              error_writer=error_writer)
-                gear.context.metadata.add_qc_result(
-                    self.file_input,
+                context.metadata.add_qc_result(
+                    self.__file_input.file_input,
                     name="validation",
                     state="FAIL" if errors else "PASS",
                     data={'data': error_writer.errors()})
@@ -163,9 +153,8 @@ def main():
         sys.exit(1)
 
     engine = GearExecutionEngine(parameter_store=parameter_store)
-
     try:
-        engine.execute(IdentifierLookupVisitor())
+        engine.run(visitor_type=IdentifierLookupVisitor)
     except GearExecutionError as error:
         log.error('Error: %s', error)
         sys.exit(1)
