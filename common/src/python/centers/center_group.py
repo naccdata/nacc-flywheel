@@ -443,11 +443,12 @@ class CenterGroup(GroupAdaptor):
           authorizations: the authorizations for the user
         """
         assert user.id, "requires user has ID"
+        log.info("Adding roles for user %s", user.id)
 
         portal_info = self.get_project_info()
         study_info = portal_info.studies.get(authorizations.study_id, None)
         if not study_info:
-            log.warning('no study info for study %s in center %s',
+            log.warning('No study info for study %s in center %s',
                         authorizations.study_id, self.label)
             return
 
@@ -498,21 +499,21 @@ class CenterGroup(GroupAdaptor):
         if not project:
             return False
 
-        role_map = self._fw.get_roles()
         role_set = auth_map.get(project_label=project.label,
                                 authorizations=authorizations)
         if not role_set:
-            log.warning('no roles found for user %s in project %s/%s', user.id,
+            log.warning('No roles found for user %s in project %s/%s', user.id,
                         self.label, project.label)
             return False
 
+        role_map = self._fw.get_roles()
         roles = []
         for role_name in role_set:
             role = role_map.get(role_name)
             if role:
                 roles.append(role)
             else:
-                log.warning('no role %s found', role_name)
+                log.warning('No role %s found', role_name)
 
         return project.add_user_roles(user=user, roles=roles)
 

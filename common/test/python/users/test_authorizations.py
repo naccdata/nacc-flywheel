@@ -34,6 +34,12 @@ def auth_map_alpha():
                 'view-reports': 'read-only',
                 'submit-form': 'upload'
             },
+            'ingest-enrollment': {
+                'approve-data': 'read-only',
+                'audit-data': 'read-only',
+                'view-reports': 'read-only',
+                'submit-enrollment': 'upload'
+            },
             'sandbox-form': {
                 'submit-form': 'upload'
             }
@@ -51,6 +57,11 @@ def auth_map_alpha_yaml():
            '  view-reports: read-only\n'
            '  submit-form: read-only\n'
            '  submit-dicom: read-only\n'
+           'ingest-enrollment:\n'
+           '  approve-data: read-only\n'
+           '  audit-data: read-only\n'
+           '  view-reports: read-only\n'
+           '  submit-enrollment: upload\n'
            'ingest-form:\n'
            '  approve-data: read-only\n'
            '  audit-data: read-only\n'
@@ -64,7 +75,7 @@ def auth_map_alpha_yaml():
 def alpha_authorizations():
     """Authorizations object."""
     yield Authorizations(study_id='dummy',
-                         submit=['form'],
+                         submit=['form', 'enrollment'],
                          audit_data=True,
                          approve_data=True,
                          view_reports=True)
@@ -110,39 +121,43 @@ class TestAuthorizations:
         """Test create_from_record."""
         authorizations = Authorizations.create_from_record(
             activities=['a', 'b', 'c', 'd', 'e'])
-        assert authorizations == Authorizations(study_id='adrc',
-                                                submit=['form', 'dicom'],
-                                                audit_data=True,
-                                                approve_data=True,
-                                                view_reports=True)
+        assert authorizations == Authorizations(
+            study_id='adrc',
+            submit=['form', 'enrollment', 'dicom'],
+            audit_data=True,
+            approve_data=True,
+            view_reports=True)
 
         authorizations = Authorizations.create_from_record(
             activities=['a', 'b', 'c', 'd'])
-        assert authorizations == Authorizations(study_id='adrc',
-                                                submit=['form', 'dicom'],
-                                                audit_data=True,
-                                                approve_data=True,
-                                                view_reports=False)
+        assert authorizations == Authorizations(
+            study_id='adrc',
+            submit=['form', 'enrollment', 'dicom'],
+            audit_data=True,
+            approve_data=True,
+            view_reports=False)
 
         authorizations = Authorizations.create_from_record(
             activities=['a', 'b', 'c'])
-        assert authorizations == Authorizations(study_id='adrc',
-                                                submit=['form', 'dicom'],
-                                                audit_data=True,
-                                                approve_data=False,
-                                                view_reports=False)
+        assert authorizations == Authorizations(
+            study_id='adrc',
+            submit=['form', 'enrollment', 'dicom'],
+            audit_data=True,
+            approve_data=False,
+            view_reports=False)
 
         authorizations = Authorizations.create_from_record(
             activities=['a', 'b'])
-        assert authorizations == Authorizations(study_id='adrc',
-                                                submit=['form', 'dicom'],
-                                                audit_data=False,
-                                                approve_data=False,
-                                                view_reports=False)
+        assert authorizations == Authorizations(
+            study_id='adrc',
+            submit=['form', 'enrollment', 'dicom'],
+            audit_data=False,
+            approve_data=False,
+            view_reports=False)
 
         authorizations = Authorizations.create_from_record(activities=['a'])
         assert authorizations == Authorizations(study_id='adrc',
-                                                submit=['form'],
+                                                submit=['form', 'enrollment'],
                                                 audit_data=False,
                                                 approve_data=False,
                                                 view_reports=False)
@@ -159,11 +174,12 @@ class TestAuthorizations:
         """Test create_from_record with invalid input."""
         authorizations = Authorizations.create_from_record(
             activities=['a', 'b', 'x'])
-        assert authorizations == Authorizations(study_id='adrc',
-                                                submit=['form', 'dicom'],
-                                                audit_data=False,
-                                                approve_data=False,
-                                                view_reports=False)
+        assert authorizations == Authorizations(
+            study_id='adrc',
+            submit=['form', 'enrollment', 'dicom'],
+            audit_data=False,
+            approve_data=False,
+            view_reports=False)
 
     # pylint: disable=(redefined-outer-name,no-self-use)
     def test_create_from_record_empty(self):
