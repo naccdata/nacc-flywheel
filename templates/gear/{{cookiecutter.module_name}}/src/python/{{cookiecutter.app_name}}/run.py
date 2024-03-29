@@ -1,43 +1,60 @@
 """Entry script for {{cookiecutter.gear_name}}."""
 
 import logging
-import sys
 
+from typing import Optional
+
+from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from gear_execution.gear_execution import (ClientWrapper, ContextClient,
+                                           GearEngine,
+                                           GearExecutionEnvironment)
 from {{cookiecutter.app_name}}.main import run
+from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists
 
 log = logging.getLogger(__name__)
 
+class ExampleGear(GearExecutionEnvironment):
+    """Visitor for the templating gear."""
+
+    def __init__(self, admin_id: str, client: ClientWrapper, new_only: bool):
+        self.__admin_id = admin_id
+        self.__client = client
+        self.__new_only = new_only
+
+    @classmethod
+    def create(
+        cls,
+        context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore] = None
+    ) -> 'ExampleGear':
+        """Creates a gear execution object.
+
+        Args:
+            context: The gear context.
+            parameter_store: The parameter store
+        Returns:
+          the execution environment
+        Raises:
+          GearExecutionError if any expected inputs are missing
+        """
+        client = ContextClient.create(context=context)
+
+        return ExampleGear(
+            admin_id=context.config.get("admin_group", "nacc"),
+            client=client,
+            new_only=context.config.get("new_only", False))
+
+    def run(self, context: GearToolkitContext) -> None:
+        proxy = self.__client.get_proxy()
+        run(proxy=proxy,
+            new_only=.self.__new_only)
+        
 def main():
     """Main method for {{cookiecutter.gear_name}}."""
 
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
-
-        input_file = gear_context.get_input_path('input_file') 
-        try:
-            object_list = get_object_lists(input_file)
-        except YAMLReadError as error:
-            log.error('No objects read from input: %s', error)
-            sys.exit(1)
-
-        if not object_list:
-            log.error('No objects read from input file')
-            sys.exit(1)
-
-        client = gear_context.client
-        if not client:
-            log.error('No Flywheel connection. Check API key configuration.')
-            sys.exit(1)
-        dry_run = gear_context.config.get("dry_run", False)
-        flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
-
-        new_only = gear_context.config.get("new_only", False)
-        run(proxy=flywheel_proxy,
-            object_list=object_list,
-            new_only=new_only)
+    GearEngine().run(gear_type=ExampleGear)
 
 if __name__ == "__main__":
     main()
