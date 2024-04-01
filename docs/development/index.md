@@ -303,14 +303,15 @@ You will then be prompted to instantiate the gear.
 Type `enter` to accept the default value, or provide a new value.
 
 ```
-  [1/8] gear_name (Gear Name): Junk Gear
-  [2/8] gear_description (A NACC gear for Flywheel): A junk gear for trying this out
-  [3/8] package_name (junk-gear): 
-  [4/8] module_name (junk_gear): 
-  [5/8] app_name (junk_gear_app): junk_app
-  [6/8] image_tag (0.0.1):
-  [7/8] author (NACC):
-  [8/8] maintainer (NACC <nacchelp@uw.edu>):
+  [1/9] gear_name (Gear Name): Junk Gear
+  [2/9] gear_description (A NACC gear for Flywheel): A junk gear for trying this out
+  [3/9] package_name (junk-gear): 
+  [4/9] module_name (junk_gear): 
+  [5/9] app_name (junk_gear_app): junk_app
+  [6/9] gear_name (JunkGear): JunkGearExecution
+  [7/9] image_tag (0.0.1):
+  [8/9] author (NACC):
+  [9/9] maintainer (NACC <nacchelp@uw.edu>):
 ```
 
 This will create a directory with the structure
@@ -350,8 +351,27 @@ The `common` directory includes common code that may be used across the gears.
 
 If you need to add a file to the common library, either place it in an existing subdirectory for the package that makes the most sense, or create a directory for a new package.
 
-If you need to create a new package structure, add the subdirectory with the code, add an `__init__.py` file, and then run `pants tailor ::`.
-Then change the new `BUILD` file so that it contains the line `python_sources(name="lib")`
+```bash
+cookiecutter templates/common --output-dir common/src/python/
+```
+
+You will then be prompted to instantiate the package
+
+```bash
+  [1/2] library_name (Library Name): Junk Library
+  [2/2] package_name (junk_library): 
+```
+
+This will add a new package structure in the directory `common/src/python/junk_library`:
+
+```bash
+common/src/python/junk_library/
+├── BUILD
+├── __init__.py
+└── junk_library.py
+```
+
+To implement tests, you should create a corresponding directory `common/test/python/junk_library` containing the pytest files.
 
 ## Adding new dependencies
 
