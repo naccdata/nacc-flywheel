@@ -1,5 +1,9 @@
 """Defines functions to carry out the data quality checks for the input form
-data file."""
+data file.
+
+Uses nacc-form-validator (https://github.com/naccdata/nacc-form-
+validator) for validating the inputs.
+"""
 
 import json
 import logging
