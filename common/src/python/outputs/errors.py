@@ -45,7 +45,6 @@ class FileError(BaseModel):
             else:
                 result.append(fieldname)
         return result
-    
 
 
 def identifier_error(line: int, value: str) -> FileError:
