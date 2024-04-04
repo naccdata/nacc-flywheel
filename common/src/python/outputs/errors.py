@@ -45,7 +45,6 @@ class FileError(BaseModel):
             else:
                 result.append(fieldname)
         return result
-    
 
 
 class QCError(FileError):
@@ -101,7 +100,7 @@ def system_error(
     """
     return FileError(error_type='error',
                      error_code='system-error',
-                     error_location=error_location,
+                     location=error_location,
                      message=message)
 
 

@@ -256,7 +256,7 @@ class ErrorComposer():
         return QCError(
             error_type=error_type,  # type: ignore
             error_code=error_code,
-            error_location=JSONLocation(key_path=field),
+            location=JSONLocation(key_path=field),
             value=value,
             message=error_msg,
             ptid=self.__input_data[Keys.PTID]
