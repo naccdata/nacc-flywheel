@@ -498,7 +498,7 @@ class FlywheelProxy:
         container_name = get_name(container)
         ancestors = container.parents
 
-        # names of containers of FW hierarchy listed in order
+        # names of containers of FW hierarchy listed in order minus files
         levels = [
             'group', 'project', 'subject', 'session', 'acquisition', 'analysis'
         ]
