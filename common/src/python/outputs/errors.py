@@ -45,7 +45,13 @@ class FileError(BaseModel):
             else:
                 result.append(fieldname)
         return result
-    
+
+
+class QCError(FileError):
+    """Represents an error that might be found in the input file 
+    during NACC QC checks."""
+    ptid: Optional[str] = None
+    visitnum: Optional[str] = None
 
 
 def identifier_error(line: int, value: str) -> FileError:
@@ -78,6 +84,24 @@ def missing_header_error() -> FileError:
     return FileError(error_type='error',
                      error_code='missing-header',
                      message='No file header found')
+
+
+def system_error(
+    message: str,
+    error_location: Optional[CSVLocation | JSONLocation],
+) -> FileError:
+    """Creates a FileError object for a system error.
+
+    Args:
+      message: error message
+      error_location [Optional]: CSV or JSON file location related to the error
+    Returns:
+      a FileError object initialized for system error
+    """
+    return FileError(error_type='error',
+                     error_code='system-error',
+                     location=error_location,
+                     message=message)
 
 
 class ErrorWriter(ABC):
