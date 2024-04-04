@@ -18,13 +18,19 @@ class TestFileError:
         string."""
         error = FileError(error_type='error',
                           error_code='the-error',
-                          error_location=JSONLocation(key_path='k1.k2.k3'),
+                          location=JSONLocation(key_path='k1.k2.k3'),
                           value='the-value',
                           message='the-message')
-        result = error.model_dump()
+        result = error.model_dump(by_alias=True)
         assert isinstance(result, dict)
-        assert result['error_location'] == {"key_path": "k1.k2.k3"}
-        assert result['error_type'] == 'error'
+        assert 'type' in result
+        assert 'code' in result
+        assert 'location' in result
+        assert 'flywheel_path' in result
+        assert 'container_id' in result
+        assert 'message' in result
+        assert result['location'] == {"key_path": "k1.k2.k3"}
+        assert result['type'] == 'error'
 
     def test_identifier_serialization(self):
         """Tests that error created by identifier_error can be serialized."""
@@ -46,6 +52,17 @@ class TestFileError:
 class TestErrorWriter:
     """Tests the error writer class."""
 
+    def test_fieldnames(self):
+        fieldnames = FileError.fieldnames()
+        assert 'type' in fieldnames
+        assert 'code' in fieldnames
+        assert 'location' in fieldnames
+        assert 'container_id' in fieldnames
+        assert 'flywheel_path' in fieldnames
+        assert 'value' in fieldnames
+        assert 'expected' in fieldnames
+        assert 'message' in fieldnames
+
     def test_stream_write(self):
         """Tests that the stream error writer writes CSV with the flywheel
         hierarchy information inserted."""
@@ -54,7 +71,7 @@ class TestErrorWriter:
         writer.write(
             FileError(error_type='error',
                       error_code='the-error',
-                      error_location=CSVLocation(line=10, column_name='ptid'),
+                      location=CSVLocation(line=10, column_name='ptid'),
                       container_id=None,
                       value='the-value',
                       expected=None,
@@ -62,7 +79,7 @@ class TestErrorWriter:
         stream.seek(0)
         reader = DictReader(stream, dialect='unix')
         assert reader.fieldnames
-        assert reader.fieldnames == list(FileError.__annotations__.keys())
+        assert reader.fieldnames == list(FileError.fieldnames())
         row = next(reader)
         assert row['container_id'] == 'the-id'
 
@@ -73,7 +90,7 @@ class TestErrorWriter:
         writer.write(
             FileError(error_type='error',
                       error_code='the-error',
-                      error_location=CSVLocation(line=10, column_name='ptid'),
+                      location=CSVLocation(line=10, column_name='ptid'),
                       container_id=None,
                       value='the-value',
                       expected=None,
