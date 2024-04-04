@@ -484,6 +484,49 @@ class FlywheelProxy:
         """Returns URL for site of this instance."""
         return self.__fw.get_config()["site"]["redirect_url"]
 
+    def get_lookup_path(self, container) -> str:
+        """Returns the path to the container.
+
+        Args:
+          container: the container
+        Returns:
+          the path to the container
+        """
+        assert container.parents, "expect parents for container"
+
+        path = "fw://"
+        container_name = get_name(container)
+        ancestors = container.parents
+
+        # names of containers of FW hierarchy listed in order
+        levels = [
+            'group', 'project', 'subject', 'session', 'acquisition', 'analysis'
+        ]
+        for level in levels:
+            ancestor_id = ancestors[level]
+            if ancestor_id:
+                ancestor = self.__fw.get(ancestor_id)
+                ancestor_name = get_name(ancestor)
+                path = f"{path}{ancestor_name}/"
+
+            return f"{path}{container_name}"
+
+
+def get_name(container) -> str:
+    """Returns the name for the container.
+
+    Args:
+        container: the container
+    Returns:
+        ID for a group, name for a file, and label for everything else
+    """
+    if container.container_type == 'file':
+        return container.name
+    if container.container_type == 'group':
+        return container.id
+
+    return container.label
+
 
 class GroupAdaptor:
     """Defines an adaptor for a flywheel group."""
