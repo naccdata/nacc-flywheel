@@ -10,67 +10,89 @@ datatypes - array of datatype names (form, dicom)
 published - boolean indicating whether data is to be published
 """
 import logging
-import sys
+from typing import Any, List, Optional
 
 from centers.nacc_group import NACCGroup
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
+from gear_execution.gear_execution import (ClientWrapper, ContextClient,
+                                           GearEngine,
+                                           GearExecutionEnvironment,
+                                           GearExecutionError)
+from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists
 from project_app.main import run
 
 log = logging.getLogger(__name__)
 
 
-def main():
-    """Main method to create project from the adrc_program.yaml file.
+class ProjectCreationVisitor(GearExecutionEnvironment):
+    """Defines the project management gear."""
 
-    Uses command line argument `gear` to indicate whether being run as a gear.
-    If running as a gear, the arguments are taken from the gear context.
-    Otherwise, arguments are taken from the command line.
+    def __init__(self,
+                 admin_id: str,
+                 client: ClientWrapper,
+                 project_list: List[List[Any]],
+                 new_only: bool = False):
+        self.__client = client
+        self.__new_only = new_only
+        self.__project_list = project_list
+        self.__admin_id = admin_id
 
-    Arguments are
-      * admin_group: the name of the admin group in the instance
-        default is `nacc`
-      * dry_run: whether to run as a dry run, default is False
-      * the project file
+    @classmethod
+    def create(
+        cls,
+        context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore] = None
+    ) -> 'ProjectCreationVisitor':
+        """Creates a projection creation execution visitor.
 
-    Gear rules are taken from template projects in the admin group.
-    These projects are expected to be named `<datatype>-<stage>-template`,
-    where `datatype` is one of the datatypes that occur in the project file,
-    and `stage` is one of 'accepted', 'ingest' or 'retrospective'.
-    (These are pipeline stages that can be created for the project)
-    """
-
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
-        gear_context.log_config()
-
-        client = gear_context.client
-        if not client:
-            log.error('No Flywheel connection. Check API key configuration.')
-            sys.exit(1)
-        dry_run = gear_context.config.get("dry_run", False)
-        flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
-
-        project_file = gear_context.get_input_path('project_file')
-
+        Args:
+          context: the gear context
+        Returns:
+          the project creation visitor
+        Raises:
+          GearExecutionError if the project file cannot be loaded
+        """
+        client = ContextClient.create(context=context)
+        project_file = context.get_input_path('project_file')
         try:
             project_list = get_object_lists(project_file)
         except YAMLReadError as error:
-            log.error('Unable to read YAML file %s: %s', project_file, error)
-            sys.exit(1)
+            raise GearExecutionError(
+                f'Unable to read YAML file {project_file}: {error}') from error
+        if not project_list:
+            raise GearExecutionError("Failed to read project file")
+        admin_id = context.config.get("admin_group", "nacc")
 
-        admin_group_id = gear_context.config.get("admin_group", "nacc")
-        admin_group = NACCGroup.create(proxy=flywheel_proxy,
-                                       group_id=admin_group_id)
-        admin_access = admin_group.get_user_access()
+        return ProjectCreationVisitor(admin_id=admin_id,
+                                      client=client,
+                                      project_list=project_list,
+                                      new_only=context.config.get(
+                                          "new_only", False))
 
-        new_only = gear_context.config.get("new_only", False)
-        run(proxy=flywheel_proxy,
-            project_list=project_list,
-            admin_access=admin_access,
+    def run(self, context: GearToolkitContext) -> None:
+        """Executes the gear.
+
+        Args:
+            context: the gear execution context
+
+        Raises:
+            AssertionError: If admin group ID or project list is not provided.
+        """
+        proxy = self.__client.get_proxy()
+        admin_group = NACCGroup.create(proxy=proxy, group_id=self.__admin_id)
+
+        run(proxy=proxy,
+            admin_group=admin_group,
+            project_list=self.__project_list,
             role_names=['curate', 'upload'],
-            new_only=new_only)
+            new_only=self.__new_only)
+
+
+def main():
+    """Main method to run the project creation gear."""
+
+    GearEngine().run(gear_type=ProjectCreationVisitor)
 
 
 if __name__ == "__main__":

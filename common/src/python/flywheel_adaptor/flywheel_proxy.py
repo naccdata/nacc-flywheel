@@ -155,6 +155,17 @@ class FlywheelProxy:
         """
         return self.__fw.get_file(file_id)
 
+    def get_file_group(self, file_id: str) -> str:
+        """Returns the group ID for the file.
+
+        Args:
+          file_id: the file ID
+        Returns:
+          the group ID for the file
+        """
+        file = self.get_file(file_id)
+        return file.parents.group
+
     def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
         """Returns the flywheel group with the given ID and label.
 
