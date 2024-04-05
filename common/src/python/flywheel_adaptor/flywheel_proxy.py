@@ -505,8 +505,12 @@ class FlywheelProxy:
         for level in levels:
             ancestor_id = ancestors[level]
             if ancestor_id:
-                ancestor = self.__fw.get(ancestor_id)
-                ancestor_name = get_name(ancestor)
+                # gears invoked by a gear rule does not have access to group
+                if level == 'group':
+                    ancestor_name = ancestor_id
+                else:
+                    ancestor = self.__fw.get(ancestor_id)
+                    ancestor_name = get_name(ancestor)
                 path = f"{path}{ancestor_name}/"
 
             return f"{path}{container_name}"
