@@ -123,7 +123,9 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
             with context.open_output(f'{filename}.csv',
                                      mode='w',
                                      encoding='utf-8') as out_file:
-                error_writer = ListErrorWriter(container_id=file_id)
+                error_writer = ListErrorWriter(container_id=file_id,
+                                               fw_path=proxy.get_lookup_path(
+                                                   proxy.get_file(file_id)))
                 errors = run(input_file=csv_file,
                              identifiers=identifiers,
                              output_file=out_file,
