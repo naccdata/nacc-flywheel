@@ -524,7 +524,7 @@ class FlywheelProxy:
                     ancestor_name = get_name(ancestor)
                 path = f"{path}{ancestor_name}/"
 
-            return f"{path}{container_name}"
+        return f"{path}{container_name}"
 
 
 def get_name(container) -> str:
