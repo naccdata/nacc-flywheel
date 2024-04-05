@@ -12,6 +12,7 @@ from json.decoder import JSONDecodeError
 from typing import Any, Dict, List, Optional
 
 from flywheel import Client
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from form_qc_app.error_info import ErrorComposer, REDCapErrorStore
 from form_qc_app.flywheel_datastore import FlywheelDatastore
@@ -194,7 +195,10 @@ def run(*,
     valid, sys_failure, dict_errors, error_tree = qual_check.validate_record(
         form_data)
 
-    error_writer = ListErrorWriter(container_id=file_id)
+    proxy = FlywheelProxy(client=fw_client)
+    error_writer = ListErrorWriter(container_id=file_id,
+                                   fw_path=proxy.get_lookup_path(
+                                       proxy.get_file(file_id)))
     if not valid:
         error_messages = qual_check.validator.get_error_messages()
         error_composer = ErrorComposer(input_data=form_data,
