@@ -125,6 +125,20 @@ class NACCGroup(GroupAdaptor):
 
         return center_map
 
+    def get_adcid(self, group_id: str) -> Optional[int]:
+        """Returns the ADCID for the center group.
+
+        Args:
+          group_id: the ID for the center group
+        Returns:
+          the ADCID for the center
+        """
+        center_map = self.get_center_map()
+        for adcid, center_info in center_map.centers.items():
+            if center_info.group == group_id:
+                return adcid
+        return None
+
     def get_center(self, adcid: int) -> Optional[CenterGroup]:
         """Returns the center group for the given ADCID.
 

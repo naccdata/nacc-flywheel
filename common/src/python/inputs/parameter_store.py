@@ -137,6 +137,8 @@ class ParameterStore:
 
         Returns:
             parameter store object if credentials are valid, and None otherwise
+        Raises:
+            ParameterError if any of the environment variables are missing
         """
         secret_key = get_environment_variable('AWS_SECRET_ACCESS_KEY')
         access_id = get_environment_variable('AWS_ACCESS_KEY_ID')
