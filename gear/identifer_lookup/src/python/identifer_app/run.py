@@ -133,11 +133,13 @@ def main():
 
         filename = f"{file_input['location']['name']}-identifier"
         input_path = Path(file_input['location']['path'])
+        fw_path = proxy.get_lookup_path(proxy.get_file(file_id))
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
             with gear_context.open_output(f'{filename}.csv',
                                           mode='w',
                                           encoding='utf-8') as out_file:
-                error_writer = ListErrorWriter(container_id=file_id)
+                error_writer = ListErrorWriter(container_id=file_id,
+                                               fw_path=fw_path)
                 errors = run(input_file=csv_file,
                              identifiers=identifiers,
                              output_file=out_file,

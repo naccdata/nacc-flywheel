@@ -113,7 +113,8 @@ class TestIdentifierLookup:
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=StreamErrorWriter(stream=err_stream,
-                                                    container_id='dummy'))
+                                                    container_id='dummy',
+                                                    fw_path='dummy-path'))
         assert errors
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -127,7 +128,8 @@ class TestIdentifierLookup:
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=StreamErrorWriter(stream=err_stream,
-                                                    container_id='dummy'))
+                                                    container_id='dummy',
+                                                    fw_path='dummy-path'))
         assert errors
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -141,7 +143,8 @@ class TestIdentifierLookup:
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=StreamErrorWriter(stream=err_stream,
-                                                    container_id='dummy'))
+                                                    container_id='dummy',
+                                                    fw_path='dummy-path'))
         assert errors
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -155,7 +158,8 @@ class TestIdentifierLookup:
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=StreamErrorWriter(stream=err_stream,
-                                                    container_id='dummy'))
+                                                    container_id='dummy',
+                                                    fw_path='dummy-path'))
         assert not errors
         assert empty(err_stream)
         assert not empty(out_stream)
@@ -178,7 +182,8 @@ class TestIdentifierLookup:
                      identifiers=mismatched_identifiers_map,
                      output_file=out_stream,
                      error_writer=StreamErrorWriter(stream=err_stream,
-                                                    container_id='dummy'))
+                                                    container_id='dummy',
+                                                    fw_path='dummy-path'))
         assert errors
         assert empty(out_stream)
         assert not empty(err_stream)

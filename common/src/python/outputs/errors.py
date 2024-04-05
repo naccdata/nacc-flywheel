@@ -1,5 +1,6 @@
 """Utilities for writing errors to a CSV error file."""
 from abc import ABC, abstractmethod
+from datetime import datetime as dt
 from typing import Any, Dict, List, Literal, Optional, TextIO
 
 from outputs.outputs import CSVWriter
@@ -34,6 +35,7 @@ class FileError(BaseModel):
     value: Optional[str] = None
     expected: Optional[str] = None
     message: str
+    timestamp: Optional[str] = None
 
     @classmethod
     def fieldnames(cls) -> List[str]:
@@ -82,52 +84,66 @@ def missing_header_error() -> FileError:
 class ErrorWriter(ABC):
     """Abstract base class for error writer."""
 
-    def __init__(self, container_id: str) -> None:
+    def __init__(self, container_id: str, fw_path: str) -> None:
         self.__container_id = container_id
+        self.__flyweel_path = fw_path
+        self.__timestamp = (dt.now()).strftime('%Y-%m-%d %H:%M:%S')
 
     @abstractmethod
-    def write(self, error: FileError) -> None:
+    def write(self, error: FileError, set_timestamp: bool = True) -> None:
         """Writes the error to the output target of implementing class."""
 
     def set_container(self, error: FileError) -> None:
-        """Assigns the container ID for the error."""
+        """Assigns the container ID and Flywheel path for the error."""
         error.container_id = self.__container_id
+        error.flywheel_path = self.__flyweel_path
+
+    def set_timestamp(self, error: FileError) -> None:
+        """Assigns the timestamp the error."""
+        error.timestamp = self.__timestamp
 
 
 # pylint: disable=(too-few-public-methods)
 class StreamErrorWriter(ErrorWriter):
     """Writes FileErrors to a stream as CSV."""
 
-    def __init__(self, stream: TextIO, container_id: str) -> None:
+    def __init__(self, stream: TextIO, container_id: str,
+                 fw_path: str) -> None:
         self.__writer = CSVWriter(stream=stream,
                                   fieldnames=FileError.fieldnames())
-        super().__init__(container_id)
+        super().__init__(container_id, fw_path)
 
-    def write(self, error: FileError) -> None:
+    def write(self, error: FileError, set_timestamp: bool = True) -> None:
         """Writes the error to the output stream with flywheel hierarchy
         information filled in for the reference file.
 
         Args:
           error: the file error object
+          set_timestamp: if True, assign the writer timestamp to the error
         """
         self.set_container(error)
+        if set_timestamp:
+            self.set_timestamp(error)
         self.__writer.write(error.model_dump(by_alias=True))
 
 
 class ListErrorWriter(ErrorWriter):
     """Collects FileErrors to file metadata."""
 
-    def __init__(self, container_id: str) -> None:
-        super().__init__(container_id)
+    def __init__(self, container_id: str, fw_path: str) -> None:
+        super().__init__(container_id, fw_path)
         self.__errors: List[Dict[str, Any]] = []
 
-    def write(self, error: FileError) -> None:
+    def write(self, error: FileError, set_timestamp: bool = True) -> None:
         """Captures error for writing to metadata.
 
         Args:
           error: the file error object
+          set_timestamp: if True, assign the writer timestamp to the error
         """
         self.set_container(error)
+        if set_timestamp:
+            self.set_timestamp(error)
         self.__errors.append(error.model_dump(by_alias=True))
 
     def errors(self) -> List[Dict[str, Any]]:
