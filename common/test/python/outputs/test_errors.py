@@ -53,6 +53,8 @@ class TestErrorWriter:
     """Tests the error writer class."""
 
     def test_fieldnames(self):
+        """Checks that the FileError.fieldnames method returns the correct
+        names."""
         fieldnames = FileError.fieldnames()
         assert 'type' in fieldnames
         assert 'code' in fieldnames

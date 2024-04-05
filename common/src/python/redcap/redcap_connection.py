@@ -134,7 +134,7 @@ class REDCapConnection:
             forms: Optional[list[str]] = None,
             events: Optional[list[str]] = None,
             filters: Optional[str] = None) -> List[Dict[str, str]] | str:
-        """ Export records from the REDCap project.
+        """Export records from the REDCap project.
 
         Args:
             exp_format: Export format, defaults to 'json'
@@ -145,7 +145,7 @@ class REDCapConnection:
             filters (Optional) : Filter logic as a string (e.g. [age]>30)
 
         Returns:
-            The list of records (JSON objects) or 
+            The list of records (JSON objects) or
             a CSV text string depending on exp_format.
 
         Raises:

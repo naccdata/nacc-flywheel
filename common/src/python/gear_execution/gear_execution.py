@@ -96,7 +96,7 @@ class GearBotClient:
         Returns:
           the GearBotClient
         Raises:
-          GearExecutionClient if the context has no default client,
+          GearExecutionError if the context has no default client,
           the api key path is missing, or the host for the api key parameter
           does not match that of the default client.
         """
@@ -214,13 +214,13 @@ class GearEngine:
 
     @classmethod
     def create_with_parameter_store(cls) -> 'GearEngine':
-        """Creates a GearEngine with a parameter store defined from 
-        environment variables.
-        
+        """Creates a GearEngine with a parameter store defined from environment
+        variables.
+
         Returns:
           GearEngine object with a parameter store
         Raises:
-          GearExecutionError if there is an error getting the parameter 
+          GearExecutionError if there is an error getting the parameter
           store object.
         """
         try:

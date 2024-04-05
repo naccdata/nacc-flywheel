@@ -44,8 +44,8 @@ def run(*,
 
     Args:
       proxy: the proxy for the Flywheel instance
+      admin_group: the administrative group
       project_list: the list of project input
-      admin_access: the list of user access permissions for admin group
       role_names: list of project role names
       new_only: whether to only create centers with new tag
     """

@@ -1,7 +1,7 @@
 """Script to pull directory information and convert to file expected by the
 user management gear."""
 import logging
-from typing import Optional
+from typing import Dict, List, Optional
 
 from directory_app.main import run
 from flywheel_gear_toolkit import GearToolkitContext
@@ -21,10 +21,10 @@ class DirectoryPullVisitor(GearExecutionEnvironment):
     """Defines the directory pull gear."""
 
     def __init__(self, client: ClientWrapper, user_filename: str,
-                 yaml_text: str):
+                 user_report: List[Dict[str, str]]):
         self.__client = client
         self.__user_filename = user_filename
-        self.__yaml_text = yaml_text
+        self.__user_report = user_report
 
     @classmethod
     def create(
@@ -67,15 +67,9 @@ class DirectoryPullVisitor(GearExecutionEnvironment):
         if not user_filename:
             raise GearExecutionError("No user file name provided")
 
-        try:
-            yaml_text = run(user_report=user_report)
-        except RepresenterError as error:
-            raise GearExecutionError("Error: can't create YAML for file"
-                                     f"{user_filename}: {error}") from error
-
         return DirectoryPullVisitor(client=client,
                                     user_filename=user_filename,
-                                    yaml_text=yaml_text)
+                                    user_report=user_report)
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the directory pull gear.
@@ -92,10 +86,17 @@ class DirectoryPullVisitor(GearExecutionEnvironment):
                      context.destination['id'])
             return
 
+        try:
+            yaml_text = run(user_report=self.__user_report)
+        except RepresenterError as error:
+            raise GearExecutionError(
+                "Error: can't create YAML for file"
+                f"{self.__user_filename}: {error}") from error
+
         with context.open_output(self.__user_filename,
                                  mode='w',
                                  encoding='utf-8') as out_file:
-            out_file.write(self.__yaml_text)
+            out_file.write(yaml_text)
 
 
 def main() -> None:

@@ -132,7 +132,7 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                     self.__file_input.file_input,
                     name="validation",
                     state="FAIL" if errors else "PASS",
-                    data={'data': error_writer.errors()})
+                    data=error_writer.errors())
 
 
 def main():

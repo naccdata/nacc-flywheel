@@ -63,21 +63,7 @@ class TemplatingVisitor(GearExecutionEnvironment):
 
 
 def main():
-    """Main method to copy template projects to center projects.
-
-    Arguments are taken from the gear context.
-    Arguments are
-      * admin_group: the name of the admin group in the instance
-        default is `nacc`
-      * dry_run: whether to run as a dry run, default is False
-      * new_only: whether to only run on groups tagged as new
-
-    Gear pushes contents from the template projects in the admin group.
-    These projects are expected to be named `<datatype>-<stage>-template`,
-    where `datatype` is one of the datatypes that occur in the project file,
-    and `stage` is one of 'accepted', 'ingest' or 'retrospective'.
-    (These are pipeline stages that can be created for the project)
-    """
+    """Main method to run template copy gear."""
 
     GearEngine().run(gear_type=TemplatingVisitor)
 

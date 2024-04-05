@@ -90,24 +90,7 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
 
 
 def main():
-    """Main method to create project from the adrc_program.yaml file.
-
-    Uses command line argument `gear` to indicate whether being run as a gear.
-    If running as a gear, the arguments are taken from the gear context.
-    Otherwise, arguments are taken from the command line.
-
-    Arguments are
-      * admin_group: the name of the admin group in the instance
-        default is `nacc`
-      * dry_run: whether to run as a dry run, default is False
-      * the project file
-
-    Gear rules are taken from template projects in the admin group.
-    These projects are expected to be named `<datatype>-<stage>-template`,
-    where `datatype` is one of the datatypes that occur in the project file,
-    and `stage` is one of 'accepted', 'ingest' or 'retrospective'.
-    (These are pipeline stages that can be created for the project)
-    """
+    """Main method to run the project creation gear."""
 
     GearEngine().run(gear_type=ProjectCreationVisitor)
 

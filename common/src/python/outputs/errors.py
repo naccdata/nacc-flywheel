@@ -48,8 +48,8 @@ class FileError(BaseModel):
 
 
 class QCError(FileError):
-    """Represents an error that might be found in the input file 
-    during NACC QC checks."""
+    """Represents an error that might be found in the input file during NACC QC
+    checks."""
     ptid: Optional[str] = None
     visitnum: Optional[str] = None
 
