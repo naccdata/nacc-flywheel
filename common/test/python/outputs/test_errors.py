@@ -69,7 +69,9 @@ class TestErrorWriter:
         """Tests that the stream error writer writes CSV with the flywheel
         hierarchy information inserted."""
         stream = StringIO()
-        writer = StreamErrorWriter(stream=stream, container_id='the-id')
+        writer = StreamErrorWriter(stream=stream,
+                                   container_id='the-id',
+                                   fw_path='the-path')
         writer.write(
             FileError(error_type='error',
                       error_code='the-error',
@@ -88,7 +90,7 @@ class TestErrorWriter:
     def test_capture_write(self):
         """Tests that the capture error writer inserts the flywheel hierarchy
         information inserted."""
-        writer = ListErrorWriter(container_id='the-id')
+        writer = ListErrorWriter(container_id='the-id', fw_path='the-path')
         writer.write(
             FileError(error_type='error',
                       error_code='the-error',
