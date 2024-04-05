@@ -48,6 +48,7 @@ class FileError(BaseModel):
                 result.append(fieldname)
         return result
 
+
 class QCError(FileError):
     """Represents an error that might be found in the input file during NACC QC
     checks."""
