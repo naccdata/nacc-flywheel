@@ -55,6 +55,11 @@ class ClientWrapper:
         """Returns whether client will run a dry run."""
         return self.__dry_run
 
+    @property
+    def client(self) -> Client:
+        """Returns the Flywheel SDK client."""
+        return self.__client
+
 
 # pylint: disable=too-few-public-methods
 class ContextClient:

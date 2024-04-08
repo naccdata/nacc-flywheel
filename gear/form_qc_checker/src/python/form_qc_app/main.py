@@ -7,16 +7,15 @@ validator) for validating the inputs.
 
 import json
 import logging
-import sys
 from json.decoder import JSONDecodeError
 from typing import Any, Dict, List, Optional
 
-from flywheel import Client
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from form_qc_app.error_info import ErrorComposer, REDCapErrorStore
 from form_qc_app.flywheel_datastore import FlywheelDatastore
 from form_qc_app.parser import Keys, Parser, ParserException
+from gear_execution.gear_execution import (ClientWrapper, GearExecutionError,
+                                           InputFileWrapper)
 from outputs.errors import ListErrorWriter
 from redcap.redcap_connection import REDCapReportConnection
 from s3.s3_client import S3BucketReader
@@ -25,7 +24,8 @@ from validator.quality_check import QualityCheck, QualityCheckException
 log = logging.getLogger(__name__)
 
 
-def update_file_metadata(*, gear_context: GearToolkitContext, file_input: Any,
+def update_file_metadata(*, gear_context: GearToolkitContext,
+                         file_input: Dict[str, Dict[str, Any]],
                          qc_status: bool, error_writer: ListErrorWriter):
     """Write error details to input file metadata and add gear tag.
 
@@ -112,9 +112,10 @@ def compose_error_metadata(
         error_composer.compose_minimal_error_metadata()
 
 
-# pylint: disable=(too-many-locals, too-many-statements)
+# pylint: disable=(too-many-locals)
 def run(*,
-        fw_client: Client,
+        client_wrapper: ClientWrapper,
+        input_wrapper: InputFileWrapper,
         s3_client: S3BucketReader,
         gear_context: GearToolkitContext,
         redcap_connection: Optional[REDCapReportConnection] = None):
@@ -122,29 +123,23 @@ def run(*,
     S3, read input data file, runs data validation, generate error report.
 
     Args:
-        fw_client: the Flywheel SDK client
-        s3_client: boto3 client for rules S3 bucket
+        client_wrapper: Flywheel SDK client wrapper
+        input_wrapper: Gear input file wrapper
+        s3_client: boto3 client for QC rules S3 bucket
         gear_context: Flywheel gear context
         redcap_connection (Optional): REDCap project for NACC QC checks
+
+    Raises:
+          GearExecutionError if any problem occurrs while validating input file
     """
 
-    try:
-        form_file_name = gear_context.get_input_filename('form_data_file')
-    except ValueError as error:
-        log.error('Gear input error for form_data_file: %s', error)
-        sys.exit(1)
+    if not input_wrapper.file_input:
+        raise GearExecutionError('form_data_file input not found')
 
-    if form_file_name is None:
-        log.error('Missing input - form_data_file')
-        sys.exit(1)
+    file_id = input_wrapper.file_id
 
-    file_input = gear_context.get_input('form_data_file')
-    if file_input is None:
-        log.error('Input file %s not found', form_file_name)
-        sys.exit(1)
-
-    file_id = file_input['object']['file_id']
-    file = fw_client.get_file(file_id)
+    proxy = client_wrapper.get_proxy()
+    file = proxy.get_file(file_id)
 
     try:
         with gear_context.open_input('form_data_file', 'r',
@@ -152,13 +147,13 @@ def run(*,
             form_data = json.load(form_file)
     except (FileNotFoundError, JSONDecodeError, TypeError,
             ValueError) as error:
-        log.error('Failed to read the input file: %s', error)
-        sys.exit(1)
+        raise GearExecutionError(
+            'Failed to read the input file: {error}') from error
 
     pk_field = (gear_context.config.get('primary_key', Keys.NACCID)).lower()
     keys = [pk_field, Keys.MODULE]
     if not validate_required_keys(keys=keys, data=form_data):
-        sys.exit(1)
+        raise GearExecutionError('Missing required fields in the input data')
 
     s3_prefix = form_data[Keys.MODULE]
     if Keys.PACKET in form_data:
@@ -168,8 +163,7 @@ def run(*,
     try:
         schema = parser.download_rule_definitions(f'{s3_prefix}/rules/')
     except ParserException as error:
-        log.error(error)
-        sys.exit(1)
+        raise GearExecutionError(error) from error
 
     try:
         codes_map: Optional[Dict[str,
@@ -180,7 +174,7 @@ def run(*,
         log.warning(error)
         codes_map = None
 
-    datastore = FlywheelDatastore(fw_client, file.parents.group,
+    datastore = FlywheelDatastore(client_wrapper.client, file.parents.group,
                                   file.parents.project)
 
     error_store = REDCapErrorStore(redcap_con=redcap_connection)
@@ -189,16 +183,14 @@ def run(*,
     try:
         qual_check = QualityCheck(pk_field, schema, strict, datastore)
     except QualityCheckException as error:
-        log.error('Error occured while initializing the QC module: %s', error)
-        sys.exit(1)
+        raise GearExecutionError(
+            f'Failed to initialize QC module: {error}') from error
 
     valid, sys_failure, dict_errors, error_tree = qual_check.validate_record(
         form_data)
 
-    proxy = FlywheelProxy(client=fw_client)
     error_writer = ListErrorWriter(container_id=file_id,
-                                   fw_path=proxy.get_lookup_path(
-                                       proxy.get_file(file_id)))
+                                   fw_path=proxy.get_lookup_path(file))
     if not valid:
         error_messages = qual_check.validator.get_error_messages()
         error_composer = ErrorComposer(input_data=form_data,
@@ -213,6 +205,6 @@ def run(*,
             codes_map=codes_map)
 
     update_file_metadata(gear_context=gear_context,
-                         file_input=file_input,
+                         file_input=input_wrapper.file_input,
                          qc_status=valid,
                          error_writer=error_writer)
