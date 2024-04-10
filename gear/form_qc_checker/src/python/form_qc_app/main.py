@@ -8,15 +8,18 @@ validator) for validating the inputs.
 import json
 import logging
 from json.decoder import JSONDecodeError
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Mapping, Optional
 
+from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
-from form_qc_app.error_info import ErrorComposer, REDCapErrorStore
+from form_qc_app.csv_visitor import FormQCCSVVisitor, read_first_data_row
+from form_qc_app.error_info import ErrorComposer, ErrorStore, REDCapErrorStore
 from form_qc_app.flywheel_datastore import FlywheelDatastore
 from form_qc_app.parser import Keys, Parser, ParserException
 from gear_execution.gear_execution import (ClientWrapper, GearExecutionError,
                                            InputFileWrapper)
-from outputs.errors import ListErrorWriter
+from outputs.errors import ListErrorWriter, empty_field_error, empty_file_error
 from redcap.redcap_connection import REDCapReportConnection
 from s3.s3_client import S3BucketReader
 from validator.quality_check import QualityCheck, QualityCheckException
@@ -64,52 +67,191 @@ def update_file_metadata(*, gear_context: GearToolkitContext,
     log.info('QC check status for file %s : %s', file_name, status_str)
 
 
-def validate_required_keys(*, keys: List[str], data: Dict[str, str]) -> bool:
+def validate_input_file_type(mimetype: str) -> Optional[str]:
+    """Check whether the input file type is accepted.
+
+    Args:
+        mimetype: input file mimetype
+
+    Returns:
+        Optional[str]: If accepted file type, return the type, else None
+    """
+    if not mimetype:
+        return None
+
+    mimetype = mimetype.lower()
+    if mimetype.find('json') != -1:
+        return 'json'
+
+    if mimetype.find('csv') != -1:
+        return 'csv'
+
+    return None
+
+
+def validate_required_keys(*, keys: List[str], data: Dict[str, str],
+                           error_writer: ListErrorWriter) -> bool:
     """Check whether all required keys are present in the input file.
 
     Args:
         keys: list of keys to validate
         data: input data to validate
+        error_writer: error writer object to output error metadata
 
     Returns:
         bool: returns True if all keys are present in data
     """
 
     if not data:
-        log.error('Empty input file')
+        error_writer.write(empty_file_error())
         return False
 
     present = True
     for key in keys:
-        if key not in data:
-            log.error('Missing required field %s in input data', key)
+        if key not in data or data[key] == '':
+            error_writer.write(empty_field_error(key))
             present = False
 
     return present
 
 
-def compose_error_metadata(
-    *,
-    sys_failure: bool,
-    error_composer: ErrorComposer,
-    error_tree: Optional[Dict[str, Any]],
-    codes_map: Optional[Dict[str, Dict]],
-):
+def compose_error_metadata(*, sys_failure: bool, error_composer: ErrorComposer,
+                           error_tree: Optional[Dict[str, Any]],
+                           codes_map: Optional[Dict[str, Dict]],
+                           line_number: Optional[int]):
     """Compose error metadata using validation errors and error code mapping.
 
     Args:
         sys_failure: True if any system errors occurred during validation
-        error_compose: class to compose error metadata
+        error_composer: class to compose error metadata
         error_tree: dict like object containing validation error details
         codes_map: schema to map NACC QC check info to validation errors
+        line_number: line # in CSV file if the record is from CSV
     """
     if sys_failure:
-        error_composer.compose_system_errors_metadata()
+        error_composer.compose_system_errors_metadata(line_number)
     elif codes_map and error_tree is not None:
         error_composer.compose_detailed_error_metadata(error_tree=error_tree,
-                                                       err_code_map=codes_map)
+                                                       err_code_map=codes_map,
+                                                       line_number=line_number)
     else:
-        error_composer.compose_minimal_error_metadata()
+        error_composer.compose_minimal_error_metadata(line_number)
+
+
+def process_csv_file(*, csv_visitor: FormQCCSVVisitor,
+                     qual_check: QualityCheck, error_store: ErrorStore,
+                     error_writer: ListErrorWriter,
+                     codes_map: Optional[Dict[str, Dict]]) -> bool:
+    """Read the csv file and validate each record using nacc-form-validator
+    library (https://github.com/naccdata/nacc-form-validator)
+
+    Note: Assumes the CSV headers are validated and correct at this point.
+
+    Args:
+        csv_visitor: CSV visitor instance with CSV DictReader object
+        qual_check: NACC data quality checker object
+        error_store: database connection to retrieve NACC QC chek info
+        error_writer: error writer object to output error metadata
+        codes_map: schema to map NACC QC check info to validation errors
+
+    Returns:
+        bool: True if all records passed NACC data quality checks, else False
+    """
+
+    if not csv_visitor.reader:
+        raise GearExecutionError('CSV reader cannot be empty')
+
+    passed_all = True
+    for row in csv_visitor.reader:
+        if not process_data_record(record=row,
+                                   qual_check=qual_check,
+                                   error_store=error_store,
+                                   error_writer=error_writer,
+                                   codes_map=codes_map,
+                                   line_number=csv_visitor.reader.line_num):
+            passed_all = False
+
+    return passed_all
+
+
+def process_data_record(*,
+                        record: Dict[str, str],
+                        qual_check: QualityCheck,
+                        error_store: ErrorStore,
+                        error_writer: ListErrorWriter,
+                        codes_map: Optional[Dict[str, Dict]] = None,
+                        line_number: Optional[int] = None) -> bool:
+    """Validate the data record using nacc-form-validator library
+    (https://github.com/naccdata/nacc-form-validator)
+
+    Args:
+        record: input data record
+        qual_check: NACC data quality checker object
+        error_store: database connection to retrieve NACC QC chek info
+        error_writer: error writer object to output error metadata
+        codes_map(optional): schema to map NACC QC checks to validation errors
+        line_number (optional): line # in CSV file if the record is from CSV
+
+    Returns:
+        bool: True if record passed NACC data quality checks, else False
+    """
+
+    valid, sys_failure, dict_errors, error_tree = qual_check.validate_record(
+        record)
+
+    if not valid:
+        error_messages = qual_check.validator.get_error_messages()
+        error_composer = ErrorComposer(input_data=record,
+                                       error_store=error_store,
+                                       dict_errors=dict_errors,
+                                       error_messages=error_messages,
+                                       error_writer=error_writer)
+        compose_error_metadata(
+            sys_failure=sys_failure,
+            error_composer=error_composer,
+            error_tree=error_tree,  # type: ignore
+            codes_map=codes_map,
+            line_number=line_number)
+
+    return valid
+
+
+def load_rule_definition_schemas(
+    input_data: dict[str, Any], s3_client: S3BucketReader
+) -> tuple[Dict[str, Mapping], Optional[Dict[str, Dict]]]:
+    """Download QC rule definitions and error code mappings from S3 bucket.
+
+    Args:
+        input_data: input data record
+        s3_client: S3 client
+
+    Raises:
+        GearExecutionError: if error occurred while loading schemas
+
+    Returns:
+        rule definition schema, code mapping schema (optional)
+    """
+    # For CSV, assumes all the records belong to the same module
+    s3_prefix = input_data[Keys.MODULE]
+    if Keys.PACKET in input_data:
+        s3_prefix = f'{s3_prefix}/{input_data[Keys.PACKET]}'
+
+    parser = Parser(s3_client)
+    try:
+        schema = parser.download_rule_definitions(f'{s3_prefix}/rules/')
+    except ParserException as error:
+        raise GearExecutionError(error) from error
+
+    try:
+        codes_map: Optional[Dict[str,
+                                 Dict]] = parser.download_rule_definitions(
+                                     f'{s3_prefix}/codes/')  # type: ignore
+    # TODO - validate code mapping schema and compare with error check schema
+    except ParserException as error:
+        log.warning(error)
+        codes_map = None
+
+    return schema, codes_map
 
 
 # pylint: disable=(too-many-locals)
@@ -130,79 +272,84 @@ def run(*,
         redcap_connection (Optional): REDCap project for NACC QC checks
 
     Raises:
-          GearExecutionError if any problem occurrs while validating input file
+        GearExecutionError if any problem occurrs while validating input file
     """
 
     if not input_wrapper.file_input:
         raise GearExecutionError('form_data_file input not found')
 
-    file_id = input_wrapper.file_id
-
-    proxy = client_wrapper.get_proxy()
-    file = proxy.get_file(file_id)
-
-    try:
-        with gear_context.open_input('form_data_file', 'r',
-                                     encoding='utf-8') as form_file:
-            form_data = json.load(form_file)
-    except (FileNotFoundError, JSONDecodeError, TypeError,
-            ValueError) as error:
+    file_type = validate_input_file_type(input_wrapper.file_type)
+    if not file_type:
         raise GearExecutionError(
-            'Failed to read the input file: {error}') from error
+            'Unsupported input file type {input_wrapper.file_type}')
+
+    file_id = input_wrapper.file_id
+    proxy = client_wrapper.get_proxy()
+    try:
+        file = proxy.get_file(file_id)
+    except ApiException as error:
+        raise GearExecutionError(
+            'Failed to find the input file: {error}') from error
 
     pk_field = (gear_context.config.get('primary_key', Keys.NACCID)).lower()
-    keys = [pk_field, Keys.MODULE]
-    if not validate_required_keys(keys=keys, data=form_data):
-        raise GearExecutionError('Missing required fields in the input data')
-
-    s3_prefix = form_data[Keys.MODULE]
-    if Keys.PACKET in form_data:
-        s3_prefix = f'{s3_prefix}/{form_data[Keys.PACKET]}'
-
-    parser = Parser(s3_client)
-    try:
-        schema = parser.download_rule_definitions(f'{s3_prefix}/rules/')
-    except ParserException as error:
-        raise GearExecutionError(error) from error
-
-    try:
-        codes_map: Optional[Dict[str,
-                                 Dict]] = parser.download_rule_definitions(
-                                     f'{s3_prefix}/codes/')  # type: ignore
-    # TODO - validate code mapping schema and compare with error check schema
-    except ParserException as error:
-        log.warning(error)
-        codes_map = None
-
-    datastore = FlywheelDatastore(client_wrapper.client, file.parents.group,
-                                  file.parents.project)
-
-    error_store = REDCapErrorStore(redcap_con=redcap_connection)
-
-    strict = gear_context.config.get("strict_mode", True)
-    try:
-        qual_check = QualityCheck(pk_field, schema, strict, datastore)
-    except QualityCheckException as error:
-        raise GearExecutionError(
-            f'Failed to initialize QC module: {error}') from error
-
-    valid, sys_failure, dict_errors, error_tree = qual_check.validate_record(
-        form_data)
-
     error_writer = ListErrorWriter(container_id=file_id,
                                    fw_path=proxy.get_lookup_path(file))
-    if not valid:
-        error_messages = qual_check.validator.get_error_messages()
-        error_composer = ErrorComposer(input_data=form_data,
-                                       error_store=error_store,
-                                       dict_errors=dict_errors,
-                                       error_messages=error_messages,
-                                       error_writer=error_writer)
-        compose_error_metadata(
-            sys_failure=sys_failure,
-            error_composer=error_composer,
-            error_tree=error_tree,  # type: ignore
-            codes_map=codes_map)
+    input_path = Path(input_wrapper.filepath)
+    valid = False
+    try:
+        with open(input_path, mode='r', encoding='utf-8') as file_obj:
+            if file_type == 'json':
+                try:
+                    input_data = json.load(file_obj)
+                    if not validate_required_keys(keys=[pk_field, Keys.MODULE],
+                                                  data=input_data,
+                                                  error_writer=error_writer):
+                        input_data = None
+                except (JSONDecodeError, TypeError) as error:
+                    raise GearExecutionError(
+                        'Failed to parse JSON file: {error}') from error
+            else:
+                csv_visitor = FormQCCSVVisitor(pk_field=pk_field,
+                                               error_writer=error_writer)
+                input_data = read_first_data_row(input_file=file_obj,
+                                                 error_writer=error_writer,
+                                                 visitor=csv_visitor)
+
+            if not input_data:
+                raise GearExecutionError(
+                    'Missing required fields in input data file')
+
+            schema, codes_map = load_rule_definition_schemas(
+                input_data=input_data, s3_client=s3_client)
+
+            datastore = FlywheelDatastore(client_wrapper.client,
+                                          file.parents.group,
+                                          file.parents.project)
+
+            error_store = REDCapErrorStore(redcap_con=redcap_connection)
+
+            strict = gear_context.config.get("strict_mode", True)
+            try:
+                qual_check = QualityCheck(pk_field, schema, strict, datastore)
+            except QualityCheckException as error:
+                raise GearExecutionError(
+                    f'Failed to initialize QC module: {error}') from error
+
+            if file_type == 'json':
+                valid = process_data_record(record=input_data,
+                                            qual_check=qual_check,
+                                            error_store=error_store,
+                                            error_writer=error_writer,
+                                            codes_map=codes_map)
+            else:
+                valid = process_csv_file(csv_visitor=csv_visitor,
+                                         qual_check=qual_check,
+                                         error_store=error_store,
+                                         error_writer=error_writer,
+                                         codes_map=codes_map)
+    except (FileNotFoundError, ValueError) as error:
+        raise GearExecutionError(
+            'Failed to read the input file: {error}') from error
 
     update_file_metadata(gear_context=gear_context,
                          file_input=input_wrapper.file_input,
