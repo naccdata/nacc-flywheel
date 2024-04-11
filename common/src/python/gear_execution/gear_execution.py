@@ -55,6 +55,11 @@ class ClientWrapper:
         """Returns whether client will run a dry run."""
         return self.__dry_run
 
+    @property
+    def client(self) -> Client:
+        """Returns the Flywheel SDK client."""
+        return self.__client
+
 
 # pylint: disable=too-few-public-methods
 class ContextClient:
@@ -147,6 +152,11 @@ class InputFileWrapper:
         """Returns the file path."""
         return self.file_input['location']['path']
 
+    @property
+    def file_type(self) -> str:
+        """Returns the mimetype."""
+        return self.file_input['object']['mimetype']
+
     @classmethod
     def create(cls, input_name: str,
                context: GearToolkitContext) -> 'InputFileWrapper':
@@ -163,6 +173,9 @@ class InputFileWrapper:
         file_input = context.get_input(input_name)
         if not file_input:
             raise GearExecutionError(f'Missing input file {input_name}')
+        if file_input["base"] != "file":
+            raise GearExecutionError(
+                f"The specified input {input_name} is not a file")
 
         return InputFileWrapper(file_input=file_input)
 
