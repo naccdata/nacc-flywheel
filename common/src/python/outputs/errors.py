@@ -104,6 +104,13 @@ def empty_field_error(field: str, line: Optional[int] = None) -> FileError:
                      message=f'Field {field} is required')
 
 
+def malformed_file_error(error: str) -> FileError:
+    """Creates a FileError for a malformed input file."""
+    return FileError(error_type='error',
+                     error_code='malformed-file',
+                     message=f'Malformed input file: {error}')
+
+
 def system_error(
     message: str,
     error_location: Optional[CSVLocation | JSONLocation],

@@ -19,7 +19,8 @@ from form_qc_app.flywheel_datastore import FlywheelDatastore
 from form_qc_app.parser import Keys, Parser, ParserException
 from gear_execution.gear_execution import (ClientWrapper, GearExecutionError,
                                            InputFileWrapper)
-from outputs.errors import ListErrorWriter, empty_field_error, empty_file_error
+from outputs.errors import (ListErrorWriter, empty_field_error,
+                            empty_file_error, malformed_file_error)
 from redcap.redcap_connection import REDCapReportConnection
 from s3.s3_client import S3BucketReader
 from validator.quality_check import QualityCheck, QualityCheckException
@@ -306,8 +307,8 @@ def run(*,
                                                   error_writer=error_writer):
                         input_data = None
                 except (JSONDecodeError, TypeError) as error:
-                    raise GearExecutionError(
-                        'Failed to parse JSON file: {error}') from error
+                    error_writer.write(malformed_file_error(str(error)))
+                    input_data = None
             else:
                 csv_visitor = FormQCCSVVisitor(pk_field=pk_field,
                                                error_writer=error_writer)
@@ -315,38 +316,36 @@ def run(*,
                                                  error_writer=error_writer,
                                                  visitor=csv_visitor)
 
-            if not input_data:
-                raise GearExecutionError(
-                    'Missing required fields in input data file')
+            if input_data:
+                schema, codes_map = load_rule_definition_schemas(
+                    input_data=input_data, s3_client=s3_client)
 
-            schema, codes_map = load_rule_definition_schemas(
-                input_data=input_data, s3_client=s3_client)
+                datastore = FlywheelDatastore(client_wrapper.client,
+                                              file.parents.group,
+                                              file.parents.project)
 
-            datastore = FlywheelDatastore(client_wrapper.client,
-                                          file.parents.group,
-                                          file.parents.project)
+                error_store = REDCapErrorStore(redcap_con=redcap_connection)
 
-            error_store = REDCapErrorStore(redcap_con=redcap_connection)
+                strict = gear_context.config.get("strict_mode", True)
+                try:
+                    qual_check = QualityCheck(pk_field, schema, strict,
+                                              datastore)
+                except QualityCheckException as error:
+                    raise GearExecutionError(
+                        f'Failed to initialize QC module: {error}') from error
 
-            strict = gear_context.config.get("strict_mode", True)
-            try:
-                qual_check = QualityCheck(pk_field, schema, strict, datastore)
-            except QualityCheckException as error:
-                raise GearExecutionError(
-                    f'Failed to initialize QC module: {error}') from error
-
-            if file_type == 'json':
-                valid = process_data_record(record=input_data,
-                                            qual_check=qual_check,
-                                            error_store=error_store,
-                                            error_writer=error_writer,
-                                            codes_map=codes_map)
-            else:
-                valid = process_csv_file(csv_visitor=csv_visitor,
-                                         qual_check=qual_check,
-                                         error_store=error_store,
-                                         error_writer=error_writer,
-                                         codes_map=codes_map)
+                if file_type == 'json':
+                    valid = process_data_record(record=input_data,
+                                                qual_check=qual_check,
+                                                error_store=error_store,
+                                                error_writer=error_writer,
+                                                codes_map=codes_map)
+                else:
+                    valid = process_csv_file(csv_visitor=csv_visitor,
+                                             qual_check=qual_check,
+                                             error_store=error_store,
+                                             error_writer=error_writer,
+                                             codes_map=codes_map)
     except (FileNotFoundError, ValueError) as error:
         raise GearExecutionError(
             'Failed to read the input file: {error}') from error

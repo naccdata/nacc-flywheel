@@ -1,12 +1,13 @@
 """Helper module for processing CSV files."""
 
-from csv import DictReader, Sniffer
+from csv import DictReader, Error, Sniffer
 from typing import Any, Dict, List, Optional, TextIO
 
 from form_qc_app.parser import Keys
 from inputs.csv_reader import CSVVisitor
 from outputs.errors import (ErrorWriter, empty_field_error, empty_file_error,
-                            missing_field_error, missing_header_error)
+                            malformed_file_error, missing_field_error,
+                            missing_header_error)
 
 
 class FormQCCSVVisitor(CSVVisitor):
@@ -115,8 +116,13 @@ def read_first_data_row(input_file: TextIO, error_writer: ErrorWriter,
         return None
 
     input_file.seek(0)
-    detected_dialect = sniffer.sniff(csv_sample, delimiters=',')
-    reader = DictReader(input_file, dialect=detected_dialect)
+    try:
+        detected_dialect = sniffer.sniff(csv_sample, delimiters=',')
+        reader = DictReader(input_file, dialect=detected_dialect)
+    except Error as error:
+        error_writer.write(malformed_file_error(str(error)))
+        return None
+
     assert reader.fieldnames, "File has header, reader should have fieldnames"
 
     # missing required fields in the header
