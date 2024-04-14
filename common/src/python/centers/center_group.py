@@ -67,8 +67,7 @@ class CenterGroup(GroupAdaptor):
         return center_group
 
     @classmethod
-    def create_from_group_adaptor(cls, *, proxy: FlywheelProxy,
-                                  adaptor: GroupAdaptor) -> 'CenterGroup':
+    def create_from_group_adaptor(cls, adaptor: GroupAdaptor) -> 'CenterGroup':
         """Creates a CenterGroup from a GroupAdaptor.
 
         Args:
@@ -78,7 +77,8 @@ class CenterGroup(GroupAdaptor):
           the CenterGroup for the group
         """
         # pylint: disable=protected-access
-        return CenterGroup.create_from_group(proxy=proxy, group=adaptor._group)
+        return CenterGroup.create_from_group(proxy=adaptor.proxy(),
+                                             group=adaptor._group)
 
     @classmethod
     def create_from_center(cls, *, proxy: FlywheelProxy,
@@ -294,6 +294,25 @@ class CenterGroup(GroupAdaptor):
             self.apply_to_ingest(stage=stage, template_map=template_map)
 
         self.apply_to_accepted(template_map)
+
+    def apply_template(self, template: TemplateProject) -> None:
+        """Applies the template to projects of this center group that match.
+
+        Args:
+          template: the template project
+        """
+        prefix_pattern = template.get_pattern()
+        if not prefix_pattern:
+            return
+
+        projects = self.__get_matching_projects(prefix_pattern)
+        for project in projects:
+            template.copy_to(project,
+                             value_map={
+                                 'adrc': self.label,
+                                 'project_id': project.id,
+                                 'site': self.proxy().get_site()
+                             })
 
     def get_portal(self) -> ProjectAdaptor:
         """Returns the center-portal project.
