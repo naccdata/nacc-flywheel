@@ -98,7 +98,8 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
 def main():
     """Main method to run the project creation gear."""
 
-    GearEngine().run(gear_type=ProjectCreationVisitor)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=ProjectCreationVisitor)
 
 
 if __name__ == "__main__":
