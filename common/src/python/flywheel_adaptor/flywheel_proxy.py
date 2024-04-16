@@ -230,6 +230,8 @@ class FlywheelProxy:
                       project_label)
             return None
 
+        # reload the group to ensure projects are refreshed
+        group = group.reload()
         project = group.projects.find_first(f"label={project_label}")
         if project:
             log.info('Project %s/%s exists', group.id, project_label)
