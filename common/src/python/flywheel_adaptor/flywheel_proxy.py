@@ -20,6 +20,10 @@ from fw_utils import AttrDict
 log = logging.getLogger(__name__)
 
 
+class FlywheelError(Exception):
+    """Exception class for Flywheel errors."""
+
+
 # pylint: disable=(too-many-public-methods)
 class FlywheelProxy:
     """Defines a proxy object for group and project creation on a Flywheel
@@ -75,7 +79,11 @@ class FlywheelProxy:
         Returns:
             the group (or empty list if not found)
         """
-        return self.__fw.groups.find(f'_id={group_id}')
+        try:
+            return self.__fw.groups.find(f'_id={group_id}')
+        except ApiException as error:
+            raise FlywheelError(
+                f"Cannot get group {group_id}: {error}") from error
 
     def find_group(self, group_id: str) -> Optional['GroupAdaptor']:
         """Returns group for group id.
@@ -185,6 +193,11 @@ class FlywheelProxy:
         if group_list:
             return group_list[0]
 
+        conflict = self.__fw.groups.find_first(f"label={group_label}")
+        if conflict:
+            raise FlywheelError(
+                f"Group with label {group_label} exists: {conflict.id}")
+
         if self.__dry_run:
             log.info('Dry Run: would create group %s', group_id)
             return flywheel.Group(label=group_label, id=group_id)
@@ -217,6 +230,8 @@ class FlywheelProxy:
                       project_label)
             return None
 
+        # reload the group to ensure projects are refreshed
+        group = group.reload()
         project = group.projects.find_first(f"label={project_label}")
         if project:
             log.info('Project %s/%s exists', group.id, project_label)

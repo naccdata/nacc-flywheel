@@ -13,8 +13,9 @@ import logging
 from typing import Any, List, Optional
 
 from centers.nacc_group import NACCGroup
+from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, ContextClient,
+from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            GearEngine,
                                            GearExecutionEnvironment,
                                            GearExecutionError)
@@ -53,7 +54,8 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
         Raises:
           GearExecutionError if the project file cannot be loaded
         """
-        client = ContextClient.create(context=context)
+        client = GearBotClient.create(context=context,
+                                      parameter_store=parameter_store)
         project_file = context.get_input_path('project_file')
         try:
             project_list = get_object_lists(project_file)
@@ -80,7 +82,11 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
             AssertionError: If admin group ID or project list is not provided.
         """
         proxy = self.__client.get_proxy()
-        admin_group = NACCGroup.create(proxy=proxy, group_id=self.__admin_id)
+        try:
+            admin_group = NACCGroup.create(proxy=proxy,
+                                           group_id=self.__admin_id)
+        except FlywheelError as error:
+            raise GearExecutionError(str(error)) from error
 
         run(proxy=proxy,
             admin_group=admin_group,
@@ -92,7 +98,8 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
 def main():
     """Main method to run the project creation gear."""
 
-    GearEngine().run(gear_type=ProjectCreationVisitor)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=ProjectCreationVisitor)
 
 
 if __name__ == "__main__":
