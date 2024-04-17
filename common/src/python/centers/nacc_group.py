@@ -78,7 +78,8 @@ class NACCGroup(GroupAdaptor):
         """
         if not self.__metadata:
             self.__metadata = self.get_project('metadata')
-            assert self.__metadata, "expecting metadata project"
+            assert self.__metadata, ("Expecting metadata project. "
+                                     "Check user has permissions.")
 
         return self.__metadata
 
