@@ -321,12 +321,15 @@ class CenterGroup(GroupAdaptor):
         if study.is_primary():
             suffix = ""
 
+        admin_access = self.get_user_access()
+
         accepted_label = f"accepted{suffix}"
         accepted_project = self.__add_project(accepted_label)
         study_info.add_accepted(
             ProjectMetadata(study_id=study.study_id,
                             project_id=accepted_project.id,
                             project_label=accepted_label))
+        accepted_project.add_admin_users(admin_access)
 
         if self.__is_active:
             for pipeline in ['ingest', 'sandbox']:
@@ -338,6 +341,7 @@ class CenterGroup(GroupAdaptor):
                                               project_id=project.id,
                                               project_label=project_label,
                                               datatype=datatype))
+                    project.add_admin_users(admin_access)
 
         self.update_project_info(portal_info)
 
@@ -345,7 +349,8 @@ class CenterGroup(GroupAdaptor):
             f"retrospective-{datatype.lower()}" for datatype in study.datatypes
         ]
         for label in labels:
-            self.__add_project(label)
+            project = self.__add_project(label)
+            project.add_admin_users(admin_access)
 
     def add_redcap_project(self, redcap_project: 'REDCapProjectInput') -> None:
         """Adds the REDCap project to the center group.
