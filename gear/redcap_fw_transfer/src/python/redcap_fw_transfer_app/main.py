@@ -1,4 +1,5 @@
 """Defines REDCap to Flywheel Transfer."""
+
 import json
 import logging
 import sys
@@ -6,7 +7,6 @@ from datetime import datetime
 from typing import Any, Dict, List, TextIO
 
 import pandas as pd
-from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from redcap.redcap_connection import (REDCapConnectionError,
                                       REDCapReportConnection)
@@ -59,8 +59,9 @@ def reset_upload_checkbox(redcap_con: REDCapReportConnection,
         sys.exit(1)
 
 
-def run(*, gear_context: GearToolkitContext, fw_prj_adaptor: ProjectAdaptor,
-        redcap_con: REDCapReportConnection, redcap_pid: str):
+def run(*, gear_context: GearToolkitContext,
+        redcap_con: REDCapReportConnection, redcap_pid: str, module: str,
+        fw_group: str, fw_project: str):
     """Download new/updated records from REDCap and upload to Flywheel as a CSV
     file.
 
@@ -68,6 +69,9 @@ def run(*, gear_context: GearToolkitContext, fw_prj_adaptor: ProjectAdaptor,
         fw_prj_adaptor: Flywheel project to transfer data
         redcap_con: API connection to REDCap project
         redcap_pid: REDCap project id
+        module: Forms module
+        fw_group: Flywheel group id
+        fw_project: Flywheel project label
     """
 
     try:
@@ -78,14 +82,16 @@ def run(*, gear_context: GearToolkitContext, fw_prj_adaptor: ProjectAdaptor,
 
     if len(records_list) == 0:
         log.info(
-            'No new/updated visits found in REDCap project '
-            '%s for Flywheel project %s/%s', redcap_pid, fw_prj_adaptor.group,
-            fw_prj_adaptor.label)
+            'No new/updated visits found in REDCap project pid=%s module=%s '
+            'for Flywheel project %s/%s', redcap_pid, module, fw_group,
+            fw_project)
         sys.exit(0)
 
     timestamp = datetime.now()
-    file_name = 'udsv4_' + timestamp.strftime('%Y-%m-%d-%H%M%S') + '.csv'
+    file_name = timestamp.strftime('%Y-%m-%d-%H%M%S') + '_' + module + '.csv'
+
     with gear_context.open_output(file_name, mode='w',
                                   encoding='utf-8') as output_file:
         upload_to_flywheel(records_list, output_file)
+
     reset_upload_checkbox(redcap_con, records_list, timestamp)
