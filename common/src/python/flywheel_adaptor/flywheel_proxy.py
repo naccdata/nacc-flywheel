@@ -262,9 +262,9 @@ class FlywheelProxy:
         return self.__fw.projects.find_first(f"_id={project_id}")
 
     def get_roles(self) -> Mapping[str, RoleOutput]:
-        """Gets all roles for the FW instance.
+        """Gets all user roles for the FW instance.
 
-        Does not include GroupRoles.
+        Does not include access roles for Groups.
         """
         if not self.__project_roles:
             all_roles = self.__fw.get_all_roles()
@@ -272,7 +272,7 @@ class FlywheelProxy:
         return self.__project_roles
 
     def get_role(self, label: str) -> Optional[RoleOutput]:
-        """Gets project role with label.
+        """Gets project role by label.
 
         Args:
           label: the name of the role
