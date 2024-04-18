@@ -1,13 +1,13 @@
 """Defines REDCap to Flywheel Transfer."""
+
 import json
 import logging
-import sys
 from datetime import datetime
 from typing import Any, Dict, List, TextIO
 
 import pandas as pd
-from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
+from gear_execution.gear_execution import GearExecutionError
 from redcap.redcap_connection import (REDCapConnectionError,
                                       REDCapReportConnection)
 
@@ -18,18 +18,27 @@ def upload_to_flywheel(visits: List[Dict[str, Any]], output_file: TextIO):
     """Convert the visits details to CSV format and upload to Flywheel.
 
     Args:
-        visits (List[Dict[str, str]]): List of new/updated visits
-        output_file (TextIO): output file created in Flywheel ingest project
+        visits: List of new/updated visits
+        output_file: output file created in the Flywheel ingest project
+
+    Raises:
+        GearExecutionError if CSV upload fails
     """
 
     input_df = pd.DataFrame(visits)
-    # drop REDCap specific columns
-    output_df = input_df.drop([
+    redcap_labels = [
         'redcap_event_name', 'redcap_repeat_instrument',
         'redcap_repeat_instance', 'upld_ready___1'
-    ],
-                              axis=1)
-    output_df.to_csv(path_or_buf=output_file, index=False, doublequote=False)
+    ]
+    # drop REDCap longitudinal project columns if exists
+    output_df = input_df.drop(labels=redcap_labels, axis=1, errors='ignore')
+    try:
+        output_df.to_csv(path_or_buf=output_file,
+                         index=False,
+                         doublequote=False)
+    except Exception as error:
+        raise GearExecutionError(
+            f'Problem occurred while writing CSV: {error}') from error
 
 
 def reset_upload_checkbox(redcap_con: REDCapReportConnection,
@@ -37,16 +46,23 @@ def reset_upload_checkbox(redcap_con: REDCapReportConnection,
     """Reset the upload checkboxes in REDCap records.
 
     Args:
-        redcap_con (REDCapReportConnection): API connection to REDCap project
-        visits (List[Dict[str, str]]): List of new/updated visits
-        timestamp (datetime): Upload timestamp
+        redcap_con: API connection to REDCap project
+        visits: List of new/updated visits
+        timestamp: Upload timestamp
+
+    Raises:
+        GearExecutionError if failed to update REDCap records
     """
+
     updates = []
+
     for visit in visits:
         update = {}
-        update['ptid'] = visit['ptid']
-        update['redcap_event_name'] = visit['redcap_event_name']
-        update['redcap_repeat_instance'] = visit['redcap_repeat_instance']
+        update[redcap_con.primary_key_field] = visit[
+            redcap_con.primary_key_field]
+        if redcap_con.has_repeating_instruments_or_events():
+            update['redcap_event_name'] = visit['redcap_event_name']
+            update['redcap_repeat_instance'] = visit['redcap_repeat_instance']
         update['upld_ready___1'] = '0'
         update['upld_time'] = timestamp.strftime('%Y-%m-%d %H:%M:%S')
         updates.append(update)
@@ -55,12 +71,37 @@ def reset_upload_checkbox(redcap_con: REDCapReportConnection,
         num_updated = redcap_con.import_records(json.dumps(updates))
         log.info('Number of updated records: %s', num_updated)
     except REDCapConnectionError as error:
-        log.error(error.message)
-        sys.exit(1)
+        raise GearExecutionError(error.message) from error
 
 
-def run(*, gear_context: GearToolkitContext, fw_prj_adaptor: ProjectAdaptor,
-        redcap_con: REDCapReportConnection, redcap_pid: str):
+def validate_redcap_report(redcap_con: REDCapReportConnection,
+                           record: Dict[str, str]):
+    """Check whether the required fields included in the report.
+
+    Args:
+        redcap_con: API connection to REDCap project
+        record: sample record from the report
+
+    Raises:
+        GearExecutionError if required fields are missing in the report
+    """
+
+    if redcap_con.primary_key_field not in record:
+        raise GearExecutionError(
+            f'Primary key {redcap_con.primary_key_field} not included '
+            f'in project {redcap_con.pid} report {redcap_con.report_id}')
+
+    if redcap_con.has_repeating_instruments_or_events():
+        if ('redcap_event_name' not in record
+                or 'redcap_repeat_instance' not in record):
+            raise GearExecutionError(
+                f'REDCap repeating instance fields not included '
+                f'in project {redcap_con.pid} report {redcap_con.report_id}')
+
+
+def run(*, gear_context: GearToolkitContext,
+        redcap_con: REDCapReportConnection, redcap_pid: str, module: str,
+        fw_group: str, fw_project: str):
     """Download new/updated records from REDCap and upload to Flywheel as a CSV
     file.
 
@@ -68,24 +109,34 @@ def run(*, gear_context: GearToolkitContext, fw_prj_adaptor: ProjectAdaptor,
         fw_prj_adaptor: Flywheel project to transfer data
         redcap_con: API connection to REDCap project
         redcap_pid: REDCap project id
+        module: Forms module
+        fw_group: Flywheel group id
+        fw_project: Flywheel project label
+
+    Raises:
+        GearExecutionError if any problem occurs during the transfer
     """
 
     try:
         records_list = redcap_con.get_report_records()
     except REDCapConnectionError as error:
-        log.error(error.message)
-        sys.exit(1)
+        raise GearExecutionError(error.message) from error
 
     if len(records_list) == 0:
         log.info(
-            'No new/updated visits found in REDCap project '
-            '%s for Flywheel project %s/%s', redcap_pid, fw_prj_adaptor.group,
-            fw_prj_adaptor.label)
-        sys.exit(0)
+            'No new/updated visits found in REDCap project pid=%s module=%s '
+            'for Flywheel project %s/%s', redcap_pid, module, fw_group,
+            fw_project)
+        return
+
+    validate_redcap_report(redcap_con, records_list[0])
 
     timestamp = datetime.now()
-    file_name = 'udsv4_' + timestamp.strftime('%Y-%m-%d-%H%M%S') + '.csv'
+    file_name = 'redcap_ingest-' + timestamp.strftime(
+        '%Y%m%d_%H%M%S') + '-' + module + '.csv'
+
     with gear_context.open_output(file_name, mode='w',
                                   encoding='utf-8') as output_file:
         upload_to_flywheel(records_list, output_file)
+
     reset_upload_checkbox(redcap_con, records_list, timestamp)
