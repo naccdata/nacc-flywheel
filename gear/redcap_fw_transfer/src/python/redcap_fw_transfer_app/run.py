@@ -155,6 +155,9 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
 
         Args:
             context: the gear execution context
+
+        Raises:
+            GearExecutionError if error occurrs while transferring data
         """
 
         assert context, 'Gear context required'
@@ -187,6 +190,7 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                 'REDCap project information not found for '
                 f'{group_id}/{project.label}')
 
+        failed_count = 0
         for redcap_project in redcap_projects.values():
             redcap_project_path = (self.__param_path + 'pid_' +
                                    str(redcap_project.redcap_pid) + '/' +
@@ -201,12 +205,23 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                           error)
                 continue
 
-            run(gear_context=context,
-                redcap_con=redcap_report_con,
-                redcap_pid=str(redcap_project.redcap_pid),
-                module=redcap_project.label,
-                fw_group=group_id,
-                fw_project=project.label)
+            try:
+                run(gear_context=context,
+                    redcap_con=redcap_report_con,
+                    redcap_pid=str(redcap_project.redcap_pid),
+                    module=redcap_project.label,
+                    fw_group=group_id,
+                    fw_project=project.label)
+            except GearExecutionError as error:
+                log.error(
+                    'Error in ingesting module %s from REDCap project %s: %s',
+                    redcap_project.label, redcap_project.redcap_pid, error)
+                failed_count += 1
+                continue
+
+        if failed_count > 0:
+            raise GearExecutionError(
+                'Failed to ingest data for {failed_count} module(s)')
 
 
 def main():
