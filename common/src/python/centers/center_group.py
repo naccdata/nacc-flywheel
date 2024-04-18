@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 
 import flywheel
 from flywheel.models.group import Group
+from flywheel.models.role_output import RoleOutput
 from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
@@ -513,7 +514,7 @@ class CenterGroup(GroupAdaptor):
             return False
 
         role_map = self._fw.get_roles()
-        roles = []
+        roles: List[RoleOutput] = []
         for role_name in role_set:
             role = role_map.get(role_name)
             if role:
