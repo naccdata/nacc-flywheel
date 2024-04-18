@@ -201,8 +201,11 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                 redcap_report_con = REDCapReportConnection.create_from(
                     redcap_params)
             except ParameterError as error:
-                log.error('Error in retrieving REDCap report credentials: %s',
-                          error)
+                log.error(
+                    'Error in retrieving REDCap report credentials '
+                    'for project %s module %s: %s', redcap_project.redcap_pid,
+                    redcap_project.label, error)
+                failed_count += 1
                 continue
 
             try:
