@@ -64,6 +64,7 @@ class CenterGroup(GroupAdaptor):
                                    active=active,
                                    group=group,
                                    proxy=proxy)
+        metadata_project.add_admin_users(center_group.get_user_access())
 
         return center_group
 
@@ -108,6 +109,7 @@ class CenterGroup(GroupAdaptor):
 
         metadata_project = center_group.get_metadata()
         assert metadata_project, "expecting metadata project"
+        metadata_project.add_admin_users(center_group.get_user_access())
         metadata_project.update_info({
             'adcid': center.adcid,
             'active': center.is_active()
@@ -344,6 +346,9 @@ class CenterGroup(GroupAdaptor):
                                               project_label=project_label,
                                               datatype=datatype))
                     project.add_admin_users(admin_access)
+
+        portal_project = self.__add_project('center-portal')
+        portal_project.add_admin_users(admin_access)
 
         self.update_project_info(portal_info)
 
