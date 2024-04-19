@@ -24,6 +24,32 @@ class REDCapConnection:
         """
         self.__token = token
         self.__url = url
+        self.__set_project_info()
+
+    @property
+    def primary_key_field(self) -> str:
+        """Returns primary key field for the project."""
+        return self.__pk_field
+
+    def __set_project_info(self):
+        """Set project attributes and primary key field."""
+
+        project_info = self.export_project_info()
+        self.pid = project_info['project_id']
+        self.title = project_info['project_title']
+        self.__longitudinal = (project_info['is_longitudinal'] == 1)
+        self.__repeating_ins = (
+            project_info['has_repeating_instruments_or_events'] == 1)
+        field_names = self.export_field_names()
+        self.__pk_field = field_names[0]['export_field_name']
+
+    def is_longitudinal(self) -> bool:
+        """Is this project set up to collect longitudinal data."""
+        return self.__longitudinal
+
+    def has_repeating_instruments_or_events(self) -> bool:
+        """Does this project has repeating instruments or events."""
+        return self.__repeating_ins
 
     def post_request(self,
                      *,
@@ -185,6 +211,40 @@ class REDCapConnection:
         return self.request_text_value(data=data,
                                        result_format=exp_format,
                                        message=message)
+
+    def export_field_names(self) -> List[Dict[str, str]]:
+        """Get the export field names for the project variables.
+
+        Returns:
+            The list of field names (JSON objects) with info
+
+        Raises:
+          REDCapConnectionError if the response has an error
+        """
+
+        message = "exporting list of field names"
+        data = {
+            'content': 'exportFieldNames',
+        }
+
+        return self.request_json_value(data=data, message=message)
+
+    def export_project_info(self) -> Dict[str, Any]:
+        """Export the basic attributes of the project.
+
+        Returns:
+            Project attributes as JSON object
+
+        Raises:
+          REDCapConnectionError if the response has an error
+        """
+
+        message = "exporting project info"
+        data = {
+            'content': 'project',
+        }
+
+        return self.request_json_value(data=data, message=message)
 
 
 class REDCapReportConnection(REDCapConnection):

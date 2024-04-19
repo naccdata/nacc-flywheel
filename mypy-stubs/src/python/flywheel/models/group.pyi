@@ -47,3 +47,6 @@ class Group:
     def update_permission(self, user_id: str,
                           permission: AccessPermission) -> None:
         ...
+
+    def reload(self) -> Group:
+        ...

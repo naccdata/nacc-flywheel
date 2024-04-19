@@ -68,7 +68,11 @@ class NACCGroup(GroupAdaptor):
           the NACCGroup object
         """
         group = proxy.get_group(group_label="NACC", group_id=group_id)
-        return NACCGroup(group=group, proxy=proxy)
+        admin_group = NACCGroup(group=group, proxy=proxy)
+        metadata_project = admin_group.get_metadata()
+        metadata_project.add_admin_users(admin_group.get_user_access())
+
+        return admin_group
 
     def get_metadata(self) -> ProjectAdaptor:
         """Returns the metadata project.
@@ -78,7 +82,8 @@ class NACCGroup(GroupAdaptor):
         """
         if not self.__metadata:
             self.__metadata = self.get_project('metadata')
-            assert self.__metadata, "expecting metadata project"
+            assert self.__metadata, ("Expecting metadata project. "
+                                     "Check user has permissions.")
 
         return self.__metadata
 

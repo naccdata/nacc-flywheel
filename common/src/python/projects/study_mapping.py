@@ -30,8 +30,8 @@ from typing import List, Optional
 from centers.center_group import CenterError, CenterGroup
 from centers.nacc_group import NACCGroup
 from flywheel.models.group_role import GroupRole
-from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
-                                             ProjectAdaptor)
+from flywheel_adaptor.flywheel_proxy import (FlywheelError, FlywheelProxy,
+                                             GroupAdaptor, ProjectAdaptor)
 from projects.study import Study
 
 log = logging.getLogger(__name__)
@@ -128,8 +128,13 @@ class StudyMappingAdaptor:
             if self.__new_centers_only and 'new-center' not in center.tags:
                 continue
 
-            center_group = CenterGroup.create_from_center(center=center,
-                                                          proxy=self.__fw)
+            try:
+                center_group = CenterGroup.create_from_center(center=center,
+                                                              proxy=self.__fw)
+            except FlywheelError as error:
+                log.warning("Unable to create center: %s", str(error))
+                continue
+
             center_group.add_roles(self.__center_roles)
             self.__admin_group.add_center(center_group)
 

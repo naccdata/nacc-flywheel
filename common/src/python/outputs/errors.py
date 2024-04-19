@@ -88,6 +88,29 @@ def missing_header_error() -> FileError:
                      message='No file header found')
 
 
+def missing_field_error(field: str) -> FileError:
+    """Creates a FileError for a missing field in header."""
+    return FileError(error_type='error',
+                     error_code='missing-field',
+                     message=f'Missing field {field} in the header')
+
+
+def empty_field_error(field: str, line: Optional[int] = None) -> FileError:
+    """Creates a FileError for an empty field."""
+    return FileError(error_type='error',
+                     error_code='empty-field',
+                     location=CSVLocation(line=line, column_name=field)
+                     if line else JSONLocation(key_path=field),
+                     message=f'Field {field} is required')
+
+
+def malformed_file_error(error: str) -> FileError:
+    """Creates a FileError for a malformed input file."""
+    return FileError(error_type='error',
+                     error_code='malformed-file',
+                     message=f'Malformed input file: {error}')
+
+
 def system_error(
     message: str,
     error_location: Optional[CSVLocation | JSONLocation],
