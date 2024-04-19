@@ -213,7 +213,7 @@ class REDCapConnection:
                                        message=message)
 
     def export_field_names(self) -> List[Dict[str, str]]:
-        """Get the export field names for the project variables
+        """Get the export field names for the project variables.
 
         Returns:
             The list of field names (JSON objects) with info
@@ -230,7 +230,7 @@ class REDCapConnection:
         return self.request_json_value(data=data, message=message)
 
     def export_project_info(self) -> Dict[str, Any]:
-        """Export the basic attributes of the project
+        """Export the basic attributes of the project.
 
         Returns:
             Project attributes as JSON object
