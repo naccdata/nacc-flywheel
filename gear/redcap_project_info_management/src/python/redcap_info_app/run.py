@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from centers.center_group import REDCapProjectInput
 from centers.nacc_group import NACCGroup
+from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearEngine,
@@ -55,8 +56,11 @@ class REDCapProjectInfoVisitor(GearExecutionEnvironment):
             context: the gear execution context
         """
         proxy = self.__client.get_proxy()
-        admin_group = NACCGroup.create(proxy=proxy,
-                                       group_id=self.__admin_group_id)
+        try:
+            admin_group = NACCGroup.create(proxy=proxy,
+                                           group_id=self.__admin_group_id)
+        except FlywheelError as error:
+            raise GearExecutionError(str(error)) from error
         project_list = self.__get_project_list(self.__input_file_path)
         run(project_list=project_list, admin_group=admin_group)
 

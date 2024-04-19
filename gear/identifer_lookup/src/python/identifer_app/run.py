@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from centers.nacc_group import NACCGroup
+from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            GearEngine,
@@ -104,7 +105,11 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
         assert context, 'Gear context required'
 
         proxy = self.__client.get_proxy()
-        admin_group = NACCGroup.create(proxy=proxy, group_id=self.__admin_id)
+        try:
+            admin_group = NACCGroup.create(proxy=proxy,
+                                           group_id=self.__admin_id)
+        except FlywheelError as error:
+            raise GearExecutionError(str(error)) from error
 
         file_id = self.__file_input.file_id
         group_id = proxy.get_file_group(file_id)

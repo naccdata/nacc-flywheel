@@ -5,6 +5,7 @@ from io import StringIO
 from typing import Any, List, Optional
 
 from centers.nacc_group import NACCGroup
+from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearEngine,
@@ -82,7 +83,11 @@ class UserManagementVisitor(GearExecutionEnvironment):
         assert self.__auth_filepath, 'User role file required'
         assert self.__admin_id, 'Admin group ID required'
         proxy = self.__client.get_proxy()
-        admin_group = NACCGroup.create(proxy=proxy, group_id=self.__admin_id)
+        try:
+            admin_group = NACCGroup.create(proxy=proxy,
+                                           group_id=self.__admin_id)
+        except FlywheelError as error:
+            raise GearExecutionError(str(error)) from error
         user_list = self.__get_user_list(self.__user_filepath)
         auth_map = self.__get_auth_map(self.__auth_filepath)
         admin_users = admin_group.get_group_users(access='admin')

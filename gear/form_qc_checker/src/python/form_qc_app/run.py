@@ -53,9 +53,6 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
         """
         assert parameter_store, "Parameter store expected"
 
-        context.init_logging()
-        context.log_config()
-
         client = GearBotClient.create(context=context,
                                       parameter_store=parameter_store)
         file_input = InputFileWrapper.create(input_name='form_data_file',
@@ -91,7 +88,7 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
                                     s3_client=s3_client)
 
     def run(self, context: GearToolkitContext):
-        """Runs the identifier lookup app.
+        """Runs the form-qc-checker app.
 
         Args:
             context: the gear execution context
@@ -110,12 +107,8 @@ def main():
     """Load necessary environment variables, create Flywheel, S3 connections,
     invoke QC app."""
 
-    try:
-        GearEngine.create_with_parameter_store().run(
-            gear_type=FormQCCheckerVisitor)
-    except GearExecutionError as error:
-        log.error('Gear execution error: %s', error)
-        sys.exit(1)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=FormQCCheckerVisitor)
 
 
 if __name__ == "__main__":

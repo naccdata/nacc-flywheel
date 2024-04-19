@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 
 from centers.nacc_group import NACCGroup
+from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from fw_client import FWClient
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
@@ -67,7 +68,11 @@ class TemplatingVisitor(GearExecutionEnvironment):
 
     def run(self, context: GearToolkitContext) -> None:
         proxy = self.__client.get_proxy()
-        admin_group = NACCGroup.create(proxy=proxy, group_id=self.__admin_id)
+        try:
+            admin_group = NACCGroup.create(proxy=proxy,
+                                           group_id=self.__admin_id)
+        except FlywheelError as error:
+            raise GearExecutionError(str(error)) from error
         projects = proxy.find_projects(group_id=self.__template_group,
                                        project_label=self.__template_label)
         if not projects:

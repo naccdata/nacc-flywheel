@@ -21,6 +21,10 @@ from fw_utils import AttrDict
 log = logging.getLogger(__name__)
 
 
+class FlywheelError(Exception):
+    """Exception class for Flywheel errors."""
+
+
 # pylint: disable=(too-many-public-methods)
 class FlywheelProxy:
     """Defines a proxy object for group and project creation on a Flywheel
@@ -76,7 +80,11 @@ class FlywheelProxy:
         Returns:
             the group (or empty list if not found)
         """
-        return self.__fw.groups.find(f'_id={group_id}')
+        try:
+            return self.__fw.groups.find(f'_id={group_id}')
+        except ApiException as error:
+            raise FlywheelError(
+                f"Cannot get group {group_id}: {error}") from error
 
     def find_group(self, group_id: str) -> Optional['GroupAdaptor']:
         """Returns group for group id.
@@ -186,6 +194,11 @@ class FlywheelProxy:
         if group_list:
             return group_list[0]
 
+        conflict = self.__fw.groups.find_first(f"label={group_label}")
+        if conflict:
+            raise FlywheelError(
+                f"Group with label {group_label} exists: {conflict.id}")
+
         if self.__dry_run:
             log.info('Dry Run: would create group %s', group_id)
             return flywheel.Group(label=group_label, id=group_id)
@@ -250,9 +263,9 @@ class FlywheelProxy:
         return self.__fw.projects.find_first(f"_id={project_id}")
 
     def get_roles(self) -> Mapping[str, RoleOutput]:
-        """Gets all roles for the FW instance.
+        """Gets all user roles for the FW instance.
 
-        Does not include GroupRoles.
+        Does not include access roles for Groups.
         """
         if not self.__project_roles:
             all_roles = self.__fw.get_all_roles()
@@ -260,7 +273,7 @@ class FlywheelProxy:
         return self.__project_roles
 
     def get_role(self, label: str) -> Optional[RoleOutput]:
-        """Gets project role with label.
+        """Gets project role by label.
 
         Args:
           label: the name of the role
@@ -973,10 +986,13 @@ class ProjectAdaptor:
         """
         admin_role = self.__fw.get_admin_role()
         assert admin_role
-        for permission in permissions:
+        admin_users = [
+            permission.id for permission in permissions
+            if permission.access == 'admin'
+        ]
+        for user_id in admin_users:
             self.add_user_role_assignments(
-                RolesRoleAssignment(id=permission.id,
-                                    role_ids=[admin_role.id]))
+                RolesRoleAssignment(id=user_id, role_ids=[admin_role.id]))
 
     def get_gear_rules(self) -> List[GearRule]:
         """Gets the gear rules for this project.
