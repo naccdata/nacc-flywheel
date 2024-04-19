@@ -346,7 +346,7 @@ def run(*,
                                              error_store=error_store,
                                              error_writer=error_writer,
                                              codes_map=codes_map)
-    except (FileNotFoundError, ValueError) as error:
+    except FileNotFoundError as error:
         raise GearExecutionError(
             f'Failed to read the input file: {error}') from error
 
