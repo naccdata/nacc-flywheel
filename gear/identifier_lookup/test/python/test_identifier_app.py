@@ -4,7 +4,7 @@ from io import StringIO
 from typing import Any, List
 
 import pytest
-from identifer_app.main import run
+from identifier_app.main import run
 from identifiers.model import Identifier
 from outputs.errors import StreamErrorWriter
 
