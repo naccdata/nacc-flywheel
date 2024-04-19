@@ -233,9 +233,9 @@ def load_rule_definition_schemas(
         rule definition schema, code mapping schema (optional)
     """
     # For CSV, assumes all the records belong to the same module
-    s3_prefix = input_data[Keys.MODULE]
+    s3_prefix = str(input_data[Keys.MODULE]).lower()
     if Keys.PACKET in input_data:
-        s3_prefix = f'{s3_prefix}/{input_data[Keys.PACKET]}'
+        s3_prefix = f'{s3_prefix}/{str(input_data[Keys.PACKET]).lower()}'
 
     parser = Parser(s3_client)
     try:
@@ -282,7 +282,7 @@ def run(*,
     file_type = validate_input_file_type(input_wrapper.file_type)
     if not file_type:
         raise GearExecutionError(
-            'Unsupported input file type {input_wrapper.file_type}')
+            f'Unsupported input file type {input_wrapper.file_type}')
 
     file_id = input_wrapper.file_id
     proxy = client_wrapper.get_proxy()
@@ -290,7 +290,7 @@ def run(*,
         file = proxy.get_file(file_id)
     except ApiException as error:
         raise GearExecutionError(
-            'Failed to find the input file: {error}') from error
+            f'Failed to find the input file: {error}') from error
 
     pk_field = (gear_context.config.get('primary_key', Keys.NACCID)).lower()
     error_writer = ListErrorWriter(container_id=file_id,
@@ -348,7 +348,7 @@ def run(*,
                                              codes_map=codes_map)
     except (FileNotFoundError, ValueError) as error:
         raise GearExecutionError(
-            'Failed to read the input file: {error}') from error
+            f'Failed to read the input file: {error}') from error
 
     update_file_metadata(gear_context=gear_context,
                          file_input=input_wrapper.file_input,

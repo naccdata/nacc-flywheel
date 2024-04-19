@@ -83,10 +83,10 @@ def get_redcap_projects_metadata(
     for study, study_metadata in center_metadata.studies.items():
         # there should be only one study with matching project label
         # iterate until a match found
-        project_metadata: Optional[
-            FormIngestProjectMetadata] = study_metadata.get_ingest(
-                project_label)  # type: ignore
-        if not project_metadata or not project_metadata.redcap_projects:
+        project_metadata = study_metadata.get_ingest(project_label)
+        if (not project_metadata
+                or not isinstance(project_metadata, FormIngestProjectMetadata)
+                or not project_metadata.redcap_projects):
             continue
 
         matches += 1
@@ -224,7 +224,7 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
 
         if failed_count > 0:
             raise GearExecutionError(
-                'Failed to ingest data for {failed_count} module(s)')
+                f'Failed to ingest data for {failed_count} module(s)')
 
 
 def main():
