@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 
 import flywheel
 from flywheel.models.group import Group
+from flywheel.models.role_output import RoleOutput
 from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
@@ -63,6 +64,7 @@ class CenterGroup(GroupAdaptor):
                                    active=active,
                                    group=group,
                                    proxy=proxy)
+        metadata_project.add_admin_users(center_group.get_user_access())
 
         return center_group
 
@@ -107,6 +109,7 @@ class CenterGroup(GroupAdaptor):
 
         metadata_project = center_group.get_metadata()
         assert metadata_project, "expecting metadata project"
+        metadata_project.add_admin_users(center_group.get_user_access())
         metadata_project.update_info({
             'adcid': center.adcid,
             'active': center.is_active()
@@ -164,7 +167,8 @@ class CenterGroup(GroupAdaptor):
         """
         if not self.__metadata:
             self.__metadata = self.get_project('metadata')
-            assert self.__metadata, "expecting metadata project"
+            assert self.__metadata, ("Expecting metadata project. "
+                                     "Check user has permissions.")
 
         return self.__metadata
 
@@ -321,12 +325,15 @@ class CenterGroup(GroupAdaptor):
         if study.is_primary():
             suffix = ""
 
+        admin_access = self.get_user_access()
+
         accepted_label = f"accepted{suffix}"
         accepted_project = self.__add_project(accepted_label)
         study_info.add_accepted(
             ProjectMetadata(study_id=study.study_id,
                             project_id=accepted_project.id,
                             project_label=accepted_label))
+        accepted_project.add_admin_users(admin_access)
 
         if self.__is_active:
             for pipeline in ['ingest', 'sandbox']:
@@ -338,6 +345,10 @@ class CenterGroup(GroupAdaptor):
                                               project_id=project.id,
                                               project_label=project_label,
                                               datatype=datatype))
+                    project.add_admin_users(admin_access)
+
+        portal_project = self.__add_project('center-portal')
+        portal_project.add_admin_users(admin_access)
 
         self.update_project_info(portal_info)
 
@@ -345,7 +356,8 @@ class CenterGroup(GroupAdaptor):
             f"retrospective-{datatype.lower()}" for datatype in study.datatypes
         ]
         for label in labels:
-            self.__add_project(label)
+            project = self.__add_project(label)
+            project.add_admin_users(admin_access)
 
     def add_redcap_project(self, redcap_project: 'REDCapProjectInput') -> None:
         """Adds the REDCap project to the center group.
@@ -507,7 +519,7 @@ class CenterGroup(GroupAdaptor):
             return False
 
         role_map = self._fw.get_roles()
-        roles = []
+        roles: List[RoleOutput] = []
         for role_name in role_set:
             role = role_map.get(role_name)
             if role:

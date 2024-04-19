@@ -230,8 +230,6 @@ class FlywheelProxy:
                       project_label)
             return None
 
-        # reload the group to ensure projects are refreshed
-        group = group.reload()
         project = group.projects.find_first(f"label={project_label}")
         if project:
             log.info('Project %s/%s exists', group.id, project_label)
@@ -264,9 +262,9 @@ class FlywheelProxy:
         return self.__fw.projects.find_first(f"_id={project_id}")
 
     def get_roles(self) -> Mapping[str, RoleOutput]:
-        """Gets all roles for the FW instance.
+        """Gets all user roles for the FW instance.
 
-        Does not include GroupRoles.
+        Does not include access roles for Groups.
         """
         if not self.__project_roles:
             all_roles = self.__fw.get_all_roles()
@@ -274,7 +272,7 @@ class FlywheelProxy:
         return self.__project_roles
 
     def get_role(self, label: str) -> Optional[RoleOutput]:
-        """Gets project role with label.
+        """Gets project role by label.
 
         Args:
           label: the name of the role
@@ -961,10 +959,13 @@ class ProjectAdaptor:
         """
         admin_role = self.__fw.get_admin_role()
         assert admin_role
-        for permission in permissions:
+        admin_users = [
+            permission.id for permission in permissions
+            if permission.access == 'admin'
+        ]
+        for user_id in admin_users:
             self.add_user_role_assignments(
-                RolesRoleAssignment(id=permission.id,
-                                    role_ids=[admin_role.id]))
+                RolesRoleAssignment(id=user_id, role_ids=[admin_role.id]))
 
     def get_gear_rules(self) -> List[GearRule]:
         """Gets the gear rules for this project.
