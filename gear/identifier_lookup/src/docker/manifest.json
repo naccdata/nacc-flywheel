@@ -1,5 +1,5 @@
 {
-    "name": "identifer-lookup",
+    "name": "identifier-lookup",
     "label": "NACC ID Lookup",
     "description": "Gear to check for NACC ID for incoming data",
     "version": "0.0.1",
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/identifer-lookup:0.0.1"
+            "image": "naccdata/identifier-lookup:0.0.1"
         },
         "flywheel": {
             "suite": "NACC Data Gears",

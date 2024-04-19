@@ -1,4 +1,4 @@
-"""Entrypoint script for the identifer lookup app."""
+"""Entrypoint script for the identifier lookup app."""
 
 import logging
 from pathlib import Path
@@ -12,7 +12,7 @@ from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            GearExecutionEnvironment,
                                            GearExecutionError,
                                            InputFileWrapper)
-from identifer_app.main import run
+from identifier_app.main import run
 from identifiers.database import create_session
 from identifiers.identifiers_repository import IdentifierRepository
 from identifiers.model import Identifier
@@ -35,8 +35,8 @@ def get_identifiers(rds_parameters: RDSParameters,
       the dictionary mapping from PTID to Identifier object
     """
     identifiers = {}
-    identifers_session = create_session(rds_parameters)
-    with identifers_session as session:
+    identifiers_session = create_session(rds_parameters)
+    with identifiers_session as session:
         identifiers_repo = IdentifierRepository(session)
         center_identifiers = identifiers_repo.list(adc_id=adcid)
         if center_identifiers:
