@@ -61,17 +61,17 @@ style start fill:#000, stroke:#000
 A form from a "previous" center, will indicate that the center is aware of the transfer.
 This case is indicated in the diagram by the record transfer activity:
 
-*Record Transfer*: know reported ADCID for new center.
+> *Record Transfer*: know reported ADCID for new center.
     Automation: Capture transfer information in enrollment metadata.
     (No error?)
 
 For a form from a receiving center, the goal is to verify the identity of the participant and that the previous center knows about the transfer.
 The activies in the diagram for this case are:
 
-*Identify Transfer*: know reported ADCID for previous center, but participant's identity at previous center is not confirmed.
+> *Identify Transfer*: know reported ADCID for previous center, but participant's identity at previous center is not confirmed.
 Possible automation check recorded transfers for possible match based on reported demographics.
 Would appear as error to center.
 
-*Confirm Transfer*: know reported ADCID for previous center.
+> *Confirm Transfer*: know reported ADCID for previous center.
 If previous center reported transfer and details match, associate NACCID to new ADCID, PTID and mark old association as "inactive" (maybe not the right idea)
 Otherwise, create error, and then need to manually confirm transfer with centers.
