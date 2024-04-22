@@ -38,40 +38,71 @@ graph TB
 style start fill:#000, stroke:#000
 ```
 
+
+```mermaid
+sequenceDiagram
+    Gear->>Identifiers: get(ADCID,PTID)
+    alt has NACCID
+        Identifiers->>Gear: identifier record
+        break when NACCID exists
+            Gear->>File: exists error
+        end
+    else no match
+        Identifiers->>Gear: no match error
+        Gear->>Demographics: get(demographics)
+        Demographics->>Gear: NACCID list
+        alt has matches
+          break when list not empty
+              Gear->>File: demographic match error
+          end
+        else no match
+            Gear->>Identifiers: add(ADCID,PTID,GUID)
+            Identifiers->>Gear: NACCID
+            Gear->>Demographics: add(NACCID,demographics)
+        end
+
+    end
+```
+
 ### Transfer
 
 A transfer could either be for the receiving center or the previous center.
+The form has a slight ambiguity about whether it is a transfer out of a center or into a center.
+This is due to asking both whether the participant was previously enrolled and whether the participant is transferring out.
+This is handled by first checking the response for whether they are transferring elsewhere, and, if so, not checking the information about the previous center.
 
 ```mermaid
 graph TB
-    start((*)) --> prevenrolled{Was\n previously\n enrolled?}
-    prevenrolled -- no --> transferout{Transferring\n elsewhere?}
-    prevenrolled -- yes --> oldptidknown{Is old\n PTID known?}
-    oldptidknown -- no --> identifytransfer(Identify Transfer)
-    oldptidknown -- yes --> naccidforoldptid{Does NACCID\n exist for PTID\n of previous\n enrollment?}
-    naccidforoldptid -- no --> nonaccid((error))
-    naccidforoldptid -- yes --> existingnaccid{Does\n provided\n NACCID\n match?}
-    existingnaccid -- no --> mismatch((error))
-    existingnaccid -- yes --> logtransfer1(Confirm Transfer)
-    transferout -- no --> whattransfer((error))
-    transferout -- yes --> logtransfer(Record Transfer)
+    start((*)) --> transferout{Transferring\n elsewhere?}
+    transferout -- yes --> logtransfer(Record pending\n outgoing transfer\n in enrollment metadata) --> stop((done))
+    transferout -- no --> prevenrolled{Was\n previously\n enrolled?}
+    prevenrolled -- yes --> transferin(Transfer In)  --> stop((done))
+    prevenrolled -- no --> whattransfer((error)) 
 style start fill:#000, stroke:#000
 ```
 
-A form from a "previous" center, will indicate that the center is aware of the transfer.
-This case is indicated in the diagram by the record transfer activity:
+When a form represents transferring into a center, the goal is to
 
-> *Record Transfer*: know reported ADCID for new center.
-    Automation: Capture transfer information in enrollment metadata.
-    (No error?)
+* identify the participant by NACCID
+* confirm that the participant has transferred
+* link new identifiers to the NACCID
 
-For a form from a receiving center, the goal is to verify the identity of the participant and that the previous center knows about the transfer.
-The activies in the diagram for this case are:
 
-> *Identify Transfer*: know reported ADCID for previous center, but participant's identity at previous center is not confirmed.
-Possible automation check recorded transfers for possible match based on reported demographics.
-Would appear as error to center.
+```mermaid
+graph TB
+    start((*)) --> oldptidknown{Is old\n PTID known?}
+    oldptidknown -- yes --> naccidforoldptid{Does NACCID\n exist for PTID\n of previous\n enrollment?}
+    oldptidknown -- no --> identifytransfer(Record pending\n incoming transfer\n needing identification) --> identifyerror((error))
+    naccidforoldptid -- yes --> naccidprovided{Is NACCID\n provided?}
+    naccidforoldptid -- no --> nonaccid((error))
+    naccidprovided -- yes --> existingnaccid{Does\n provided\n NACCID\n match?}
+    naccidprovided -- no --> recordpending1(Record pending\n incoming transfer\n needing confirmation) --> pendingerror2((error))
 
-> *Confirm Transfer*: know reported ADCID for previous center.
-If previous center reported transfer and details match, associate NACCID to new ADCID, PTID and mark old association as "inactive" (maybe not the right idea)
-Otherwise, create error, and then need to manually confirm transfer with centers.
+    existingnaccid -- yes --> matchpendingtransfer{Does a pending\n transfer exactly\n match?}
+    existingnaccid -- no --> mismatch((error))
+    matchpendingtransfer -- yes --> recordtransfer(Associate NACCID\n and record transfer) --> stop((done))
+    matchpendingtransfer -- no --> recordpending(Record pending\n incoming transfer\n waiting for match) --> pendingerror((error))
+style start fill:#000, stroke:#000
+```
+
+Only the case where 
