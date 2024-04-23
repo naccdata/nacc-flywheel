@@ -124,3 +124,19 @@ class TestIdentifierRepository:
             Identifier(nacc_id=2, nacc_adc=5397, adc_id=1, patient_id="168721")
         ]
         assert not repo.list(adc_id=99)
+
+    def test_add(self, session):
+        """Test adding single identifier."""
+        repo = IdentifierRepository(session)
+        assert not repo.list(), "repo should be empty"
+
+        input = Identifier(nacc_id=5,
+                           nacc_adc=3333,
+                           adc_id=3,
+                           patient_id='92413')
+        repo.add(identifier=input)
+        try:
+            output = repo.get(nacc_id=input.nacc_id)
+            assert output == input, "should be added identifier"
+        except NoMatchingIdentifier:
+            assert False, "should be added identifier"
