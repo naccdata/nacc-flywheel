@@ -74,10 +74,23 @@ This is handled by first checking the response for whether they are transferring
 ```mermaid
 graph TB
     start((*)) --> transferout{Transferring\n elsewhere?}
-    transferout -- yes --> logtransfer(Record pending\n outgoing transfer\n in enrollment metadata) --> stop((done))
+    transferout -- yes --> transferout(Transfer Out) --> stop((done))
     transferout -- no --> prevenrolled{Was\n previously\n enrolled?}
     prevenrolled -- yes --> transferin(Transfer In)  --> stop((done))
     prevenrolled -- no --> whattransfer((error)) 
+style start fill:#000, stroke:#000
+```
+
+When a form represents transferring out of a center, the goal is to either
+
+* identify a corresponding incoming transfer, or
+* create a record of the pending outgoing transfer
+
+```mermaid
+graph TB
+    start((*)) --> matchpendingtransfer{Does a pending\n transfer exactly\n match?}
+    matchpendingtransfer -- yes --> recordtransfer(Associate NACCID\n and record transfer) --> stop((done))
+    matchpendingtransfer -- no --> logtransfer(Record pending\n outgoing transfer\n in enrollment metadata) --> stop((done))
 style start fill:#000, stroke:#000
 ```
 
