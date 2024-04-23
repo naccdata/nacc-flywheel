@@ -73,9 +73,9 @@ This is handled by first checking the response for whether they are transferring
 
 ```mermaid
 graph TB
-    start((*)) --> transferout{Transferring\n elsewhere?}
-    transferout -- yes --> transferout(Transfer Out) --> stop((done))
-    transferout -- no --> prevenrolled{Was\n previously\n enrolled?}
+    start((*)) --> istransferout{Transferring\n elsewhere?}
+    istransferout -- yes --> transferout(Transfer Out) --> stop((done))
+    istransferout -- no --> prevenrolled{Was\n previously\n enrolled?}
     prevenrolled -- yes --> transferin(Transfer In)  --> stop((done))
     prevenrolled -- no --> whattransfer((error)) 
 style start fill:#000, stroke:#000
