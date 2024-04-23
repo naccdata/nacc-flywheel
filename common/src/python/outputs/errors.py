@@ -111,6 +111,18 @@ def malformed_file_error(error: str) -> FileError:
                      message=f'Malformed input file: {error}')
 
 
+def unexpected_value_error(field: str,
+                           value: str,
+                           line: int,
+                           message: Optional[str] = None) -> FileError:
+    error_message = message if message else f'Expected {value} for field {field}'
+    """Creates a FileError for an incorrect module."""
+    return FileError(error_type='error',
+                     error_code='unexpected-value',
+                     location=CSVLocation(line=line, column_name=field),
+                     message=error_message)
+
+
 def system_error(
     message: str,
     error_location: Optional[CSVLocation | JSONLocation],
