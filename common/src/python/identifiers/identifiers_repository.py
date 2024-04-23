@@ -4,6 +4,7 @@ Inspired by
 https://github.com/cosmicpython/code/tree/chapter_02_repository_exercise
 """
 
+import abc
 from typing import List, Optional, overload
 
 from identifiers.model import Identifier
@@ -22,6 +23,12 @@ class IdentifierRepository:
 
     def __init__(self, session: Session) -> None:
         self.__session = session
+
+    def add(self, identifier: Identifier) -> None:
+        self.__session.add(identifier)
+
+    def add_list(self, identifiers: List[Identifier]) -> None:
+        self.__session.add_all(identifiers)
 
     @overload
     def get(self, nacc_id: int) -> Identifier:
@@ -51,7 +58,6 @@ class IdentifierRepository:
           NoMatchingIdentifier: if no Identifier record was found
           TypeError: if the arguments are nonsensical
         """
-        print(f"arguments: {nacc_id}, {adc_id}, {ptid}")
         if nacc_id is not None:
             try:
                 return self.__session.query(Identifier).filter_by(
@@ -92,6 +98,89 @@ class IdentifierRepository:
             return self.__session.query(Identifier).all()
 
         return self.__session.query(Identifier).filter_by(adc_id=adc_id).all()
+
+
+class IdentifierUnitOfWork(abc.ABC):
+    """UnitOfWork object for managing interactions with the idenfier
+    repository.
+
+    Inspired by https://www.cosmicpython.com/book/chapter_06_uow.html
+    """
+
+    @property
+    def repository(self) -> Optional[IdentifierRepository]:
+        """Returns the IdentifierRepository for this unit of work."""
+        return None
+
+    def __enter__(self):
+        """Entrypoint for context manager."""
+        return self
+
+    def __exit__(self, *args):
+        """Exit for context manager.
+
+        By default calls rollback
+        """
+        self.rollback()
+
+    @abc.abstractmethod
+    def commit(self):
+        """Commits identifiers to repository."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def rollback(self):
+        """Rollsback any identifiers added to repository."""
+        raise NotImplementedError
+
+
+class SQLAlchemyUnitOfWork(IdentifierUnitOfWork):
+    """Unit-of-work object for managing indentifier repository using
+    SQLAlchemy.
+
+    Inspired by https://www.cosmicpython.com/book/chapter_06_uow.html
+    """
+
+    def __init__(self, session_factory):
+        self.__session_factory = session_factory
+        self.__session: Optional[Session] = None
+        self.__repository: Optional[IdentifierRepository] = None
+
+    @property
+    def repository(self) -> Optional[IdentifierRepository]:
+        """Returns the currently set repository.
+
+        Repository is created when context manager is entered.
+        """
+        return self.__repository
+
+    def __enter__(self):
+        """Entry for context manager.
+
+        Creates session and repository object.
+        """
+        self.__session = self.__session_factory()
+        self.__repository = IdentifierRepository(self.__session)
+        return super().__enter__()
+
+    def __exit__(self, *args):
+        """Exit for context manager.
+
+        Closes session.
+        """
+        super().__exit__(*args)
+        if self.__session:
+            self.__session.close()
+
+    def commit(self):
+        """Commits any identifiers added to the repository."""
+        if self.__session:
+            self.__session.commit()
+
+    def rollback(self):
+        """Rolls back any identifiers added to repository."""
+        if self.__session:
+            self.__session.rollback()
 
 
 class NoMatchingIdentifier(Exception):
