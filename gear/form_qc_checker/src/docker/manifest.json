@@ -2,7 +2,7 @@
     "name": "form-qc-checker",
     "label": "Form QC Checker",
     "description": "Gear to check form data as JSON with QC rule set",
-    "version": "0.0.17",
+    "version": "0.0.18",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/form-qc-checker:0.0.17"
+            "image": "naccdata/form-qc-checker:0.0.18"
         },
         "flywheel": {
             "suite": "Curation",
