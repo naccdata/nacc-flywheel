@@ -7,6 +7,7 @@ validator) for validating the inputs.
 
 import json
 import logging
+from csv import DictReader
 from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
@@ -56,7 +57,6 @@ def update_file_metadata(*, gear_context: GearToolkitContext,
         current_tags.append(new_tag)
     else:
         current_tags = [new_tag]
-
     gear_context.metadata.add_qc_result(file_input,
                                         name='validation',
                                         state=status_str,
@@ -139,9 +139,8 @@ def compose_error_metadata(*, sys_failure: bool, error_composer: ErrorComposer,
         error_composer.compose_minimal_error_metadata(line_number)
 
 
-def process_csv_file(*, csv_visitor: FormQCCSVVisitor,
-                     qual_check: QualityCheck, error_store: ErrorStore,
-                     error_writer: ListErrorWriter,
+def process_csv_file(*, csv_reader: DictReader, qual_check: QualityCheck,
+                     error_store: ErrorStore, error_writer: ListErrorWriter,
                      codes_map: Optional[Dict[str, Dict]]) -> bool:
     """Read the csv file and validate each record using nacc-form-validator
     library (https://github.com/naccdata/nacc-form-validator)
@@ -149,7 +148,7 @@ def process_csv_file(*, csv_visitor: FormQCCSVVisitor,
     Note: Assumes the CSV headers are validated and correct at this point.
 
     Args:
-        csv_visitor: CSV visitor instance with CSV DictReader object
+        csv_reader: CSV DictReader object
         qual_check: NACC data quality checker object
         error_store: database connection to retrieve NACC QC chek info
         error_writer: error writer object to output error metadata
@@ -159,17 +158,17 @@ def process_csv_file(*, csv_visitor: FormQCCSVVisitor,
         bool: True if all records passed NACC data quality checks, else False
     """
 
-    if not csv_visitor.reader:
-        raise GearExecutionError('CSV reader cannot be empty')
+    if not csv_reader:
+        raise GearExecutionError('CSV reader cannot be null')
 
     passed_all = True
-    for row in csv_visitor.reader:
+    for row in csv_reader:
         if not process_data_record(record=row,
                                    qual_check=qual_check,
                                    error_store=error_store,
                                    error_writer=error_writer,
                                    codes_map=codes_map,
-                                   line_number=csv_visitor.reader.line_num):
+                                   line_number=csv_reader.line_num):
             passed_all = False
 
     return passed_all
@@ -341,7 +340,9 @@ def run(*,
                                                 error_writer=error_writer,
                                                 codes_map=codes_map)
                 else:
-                    valid = process_csv_file(csv_visitor=csv_visitor,
+                    csv_reader = DictReader(
+                        file_obj, dialect=csv_visitor.dialect)  # type: ignore
+                    valid = process_csv_file(csv_reader=csv_reader,
                                              qual_check=qual_check,
                                              error_store=error_store,
                                              error_writer=error_writer,

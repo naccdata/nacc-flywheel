@@ -435,7 +435,7 @@ class ErrorComposer():
                   'please fix the issues below and retry '
                   'or contact the system administrator.')
         log.error(self.__dict_errors)
-        for field, err_list in self.__dict_errors:
+        for field, err_list in self.__dict_errors.items():
             for error_msg in err_list:
                 self.__error_writer.write(
                     system_error(
@@ -452,7 +452,7 @@ class ErrorComposer():
             line_number (optional): line # in CSV file if record is from CSV
         """
 
-        for field, err_list in self.__dict_errors:
+        for field, err_list in self.__dict_errors.items():
             value = ''
             if field in self.__input_data:
                 value = self.__input_data[field]
