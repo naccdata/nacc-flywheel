@@ -497,7 +497,7 @@ class ErrorComposer():
                 for error_msg in err_list:
                     qc_error = self.__get_qc_error_object(
                         error_type='error',
-                        error_code='qc-error',
+                        error_code='unknown-field',
                         error_msg=error_msg,
                         value=value,
                         field=field,

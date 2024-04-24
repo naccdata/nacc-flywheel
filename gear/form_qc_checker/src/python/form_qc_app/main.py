@@ -251,6 +251,12 @@ def load_rule_definition_schemas(
         log.warning(error)
         codes_map = None
 
+    if codes_map:
+        diff_keys = set(schema.keys()) ^ (codes_map.keys())
+        if diff_keys:
+            raise GearExecutionError(
+                'Rule definitions and codes definitions does not match, '
+                f'list of fields missing in one of the schemas: {diff_keys}')
     return schema, codes_map
 
 
