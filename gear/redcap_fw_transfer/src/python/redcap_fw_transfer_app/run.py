@@ -74,11 +74,11 @@ def get_redcap_projects_metadata(
     try:
         center_group = CenterGroup.create_from_group_adaptor(
             proxy=fw_proxy, adaptor=group_adaptor)
+        center_metadata = center_group.get_project_info()
     except CenterError as error:
         raise GearExecutionError(
-            f'Error in creating CenterGroup: {error}') from error
+            f'Error in retrieving center metadata: {error}') from error
 
-    center_metadata = center_group.get_project_info()
     matches = 0
     for study, study_metadata in center_metadata.studies.items():
         # there should be only one study with matching project label
@@ -150,6 +150,7 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                                              parameter_store=parameter_store,
                                              param_path=param_path)
 
+    # pylint: disable=(too-many-locals)
     def run(self, context: GearToolkitContext):
         """Runs the redcap_fw_transfer app.
 
@@ -214,7 +215,7 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                     redcap_pid=str(redcap_project.redcap_pid),
                     module=redcap_project.label,
                     fw_group=group_id,
-                    fw_project=project.label)
+                    fw_project=project)
             except GearExecutionError as error:
                 log.error(
                     'Error in ingesting module %s from REDCap project %s: %s',
