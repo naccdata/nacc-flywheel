@@ -5,8 +5,8 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 from form_qc_app.parser import Keys
-from outputs.errors import (CSVLocation, JSONLocation, ListErrorWriter,
-                            QCError, system_error)
+from outputs.errors import (CSVLocation, FileError, JSONLocation,
+                            ListErrorWriter, system_error)
 from pydantic import BaseModel, ValidationError
 from redcap.redcap_connection import (REDCapConnectionError,
                                       REDCapReportConnection)
@@ -265,7 +265,7 @@ class ErrorComposer():
                               error_msg: str,
                               value: str,
                               field: str,
-                              line_number: Optional[int] = None) -> QCError:
+                              line_number: Optional[int] = None) -> FileError:
         """Creates a QCError object from the given input.
 
         Args:
@@ -277,10 +277,10 @@ class ErrorComposer():
             line_number (optional):line # in CSV file if record is from CSV
 
         Returns:
-            QCError object
+            FileError object
         """
 
-        return QCError(
+        return FileError(
             error_type=error_type,  # type: ignore
             error_code=error_code,
             location=CSVLocation(line=line_number, column_name=field)
@@ -492,7 +492,6 @@ class ErrorComposer():
                 value = str(self.__input_data[field])
 
             if field not in err_code_map or field not in error_tree:
-                log.warning('Error code info not found for variable %s', field)
                 err_list = self.__dict_errors[field]
                 for error_msg in err_list:
                     qc_error = self.__get_qc_error_object(
