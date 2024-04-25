@@ -95,13 +95,16 @@ def missing_field_error(field: str) -> FileError:
                      message=f'Missing field {field} in the header')
 
 
-def empty_field_error(field: str, line: Optional[int] = None) -> FileError:
+def empty_field_error(field: str,
+                      line: Optional[int] = None,
+                      message: Optional[str] = None) -> FileError:
     """Creates a FileError for an empty field."""
+    error_message = message if message else f'Field {field} is required'
     return FileError(error_type='error',
                      error_code='empty-field',
                      location=CSVLocation(line=line, column_name=field)
                      if line else JSONLocation(key_path=field),
-                     message=f'Field {field} is required')
+                     message=error_message)
 
 
 def malformed_file_error(error: str) -> FileError:
