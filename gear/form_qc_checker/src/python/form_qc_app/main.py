@@ -21,7 +21,8 @@ from form_qc_app.parser import Keys, Parser, ParserException
 from gear_execution.gear_execution import (ClientWrapper, GearExecutionError,
                                            InputFileWrapper)
 from outputs.errors import (ListErrorWriter, empty_field_error,
-                            empty_file_error, malformed_file_error)
+                            empty_file_error, malformed_file_error,
+                            missing_header_error, unknown_field_error)
 from redcap.redcap_connection import REDCapReportConnection
 from s3.s3_client import S3BucketReader
 from validator.quality_check import QualityCheck, QualityCheckException
@@ -158,8 +159,17 @@ def process_csv_file(*, csv_reader: DictReader, qual_check: QualityCheck,
         bool: True if all records passed NACC data quality checks, else False
     """
 
-    if not csv_reader:
-        raise GearExecutionError('CSV reader cannot be null')
+    if not csv_reader.fieldnames:
+        error_writer.write(missing_header_error())
+        return False
+
+    unknown_fields = set(csv_reader.fieldnames).difference(
+        set(qual_check.schema.keys()))
+
+    if unknown_fields:
+        for unknown_field in unknown_fields:
+            error_writer.write(unknown_field_error(unknown_field))
+        return False
 
     passed_all = True
     for row in csv_reader:
