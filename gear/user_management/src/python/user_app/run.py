@@ -8,7 +8,7 @@ from centers.nacc_group import NACCGroup
 from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearEngine,
+                                           GearBotClient, GearEngine,
                                            GearExecutionEnvironment,
                                            GearExecutionError)
 from inputs.parameter_store import ParameterStore
@@ -58,7 +58,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
         Args:
             context (GearToolkitContext): The gear context.
         """
-        client = ContextClient.create(context=context)
+        client = GearBotClient.create(context=context,
+                                      parameter_store=parameter_store)
 
         user_filepath = context.get_input_path('user_file')
         if not user_filepath:
@@ -145,7 +146,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
 def main() -> None:
     """Main method to manage users."""
 
-    GearEngine().run(gear_type=UserManagementVisitor)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=UserManagementVisitor)
 
 
 if __name__ == "__main__":
