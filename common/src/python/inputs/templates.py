@@ -42,7 +42,9 @@ def get_template_projects(
                 stage = match.group(stage_group)
 
                 # TODO: stage list needs to come from elsewhere
-                if stage not in ['accepted', 'ingest', 'retrospective']:
+                if stage not in [
+                        'accepted', 'ingest', 'retrospective', 'sandbox'
+                ]:
                     log.error(
                         'unrecognized pipeline stage %s'
                         ' in template project %s', stage, project.label)
