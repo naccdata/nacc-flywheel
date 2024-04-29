@@ -59,10 +59,10 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
                                              context=context)
 
         try:
-            s3_param_path = get_config(gear_context=context,
-                                       key='parameter_path')
-            qc_checks_db_path = get_config(gear_context=context,
-                                           key='qc_checks_db_path')
+            s3_param_path: str = get_config(gear_context=context,
+                                            key='parameter_path')
+            qc_checks_db_path: str = get_config(gear_context=context,
+                                                key='qc_checks_db_path')
         except ConfigParseError as error:
             raise GearExecutionError(
                 f'Incomplete configuration: {error.message}') from error
