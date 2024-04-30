@@ -287,9 +287,9 @@ class ErrorComposer():
             if line_number else JSONLocation(key_path=field),
             value=value,
             message=error_msg,
-            ptid=self.__input_data[Keys.PTID]
+            ptid=str(self.__input_data[Keys.PTID])
             if Keys.PTID in self.__input_data else None,
-            visitnum=self.__input_data[Keys.VISITNUM]
+            visitnum=str(self.__input_data[Keys.VISITNUM])
             if Keys.VISITNUM in self.__input_data else None)
 
     def __write_qc_error_no_code(self,
