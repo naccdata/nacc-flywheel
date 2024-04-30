@@ -515,7 +515,7 @@ class CenterGroup(GroupAdaptor):
                                 authorizations=authorizations)
         if not role_set:
             log.warning('No roles found for user %s in project %s/%s', user.id,
-                        self.label, project.label)
+                        self.id, project.label)
             return False
 
         role_map = self._fw.get_roles()

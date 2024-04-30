@@ -110,8 +110,8 @@ class TemplateProject:
         self.__clean_up_rules(destination)
 
         for rule in self.__rules:
-            log.info('copying rule %s to project %s', rule.name,
-                     destination.label)
+            log.info('copying rule %s to project %s/%s', rule.name,
+                     destination.group, destination.label)
             fixed_inputs = self.__map_fixed_inputs(inputs=rule.fixed_inputs,
                                                    destination=destination)
             gear_rule_input = self.__create_gear_rule_input(
@@ -210,6 +210,9 @@ class TemplateProject:
                 self.__copy_file(file_object, destination)
 
             destination_file = destination.get_file(fixed_input.name)
+            if not destination_file:
+                log.warn('Could not find file for input %s', fixed_input.name)
+                continue
 
             dest_inputs.append(
                 FixedInput(id=destination.id,
