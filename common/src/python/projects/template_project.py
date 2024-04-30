@@ -231,9 +231,11 @@ class TemplateProject:
           file: the file entry for the file
           destination: the destination project
         """
-        log.info("copying file %s to %s", file.name, destination.label)
+        log.info("copying file %s to %s/%s", file.name, destination.group,
+                 destination.label)
         file_spec = flywheel.FileSpec(file.name, file.read(), file.mimetype)
         destination.upload_file(file_spec)
+        destination.reload()
 
     @staticmethod
     def __same_file_exists(file: FileEntry, project: ProjectAdaptor) -> bool:
