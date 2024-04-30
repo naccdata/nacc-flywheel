@@ -7,8 +7,8 @@ from typing import Any, List, Optional
 from centers.nacc_group import NACCGroup
 from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearBotClient, GearEngine,
+from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
+                                           GearEngine,
                                            GearExecutionEnvironment,
                                            GearExecutionError)
 from inputs.parameter_store import ParameterStore

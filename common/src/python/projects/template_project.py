@@ -211,7 +211,8 @@ class TemplateProject:
 
             destination_file = destination.get_file(fixed_input.name)
             if not destination_file:
-                log.warn('Could not find file for input %s', fixed_input.name)
+                log.warning('Could not find file for input %s',
+                            fixed_input.name)
                 continue
 
             dest_inputs.append(
