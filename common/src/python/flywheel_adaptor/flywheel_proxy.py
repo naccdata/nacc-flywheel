@@ -842,6 +842,10 @@ class ProjectAdaptor:
         """
         return self.__project.get_file(name)
 
+    def reload(self):
+        """Forces a reload on the project."""
+        self.__project = self.__project.reload()
+
     def read_file(self, name: str) -> bytes:
         """Reads file from the named file.
 
