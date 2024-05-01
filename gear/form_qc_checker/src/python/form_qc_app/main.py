@@ -7,6 +7,7 @@ validator) for validating the inputs.
 
 import json
 import logging
+from csv import DictReader
 from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
@@ -20,7 +21,8 @@ from form_qc_app.parser import Keys, Parser, ParserException
 from gear_execution.gear_execution import (ClientWrapper, GearExecutionError,
                                            InputFileWrapper)
 from outputs.errors import (ListErrorWriter, empty_field_error,
-                            empty_file_error, malformed_file_error)
+                            empty_file_error, malformed_file_error,
+                            missing_header_error, unknown_field_error)
 from redcap.redcap_connection import REDCapReportConnection
 from s3.s3_client import S3BucketReader
 from validator.quality_check import QualityCheck, QualityCheckException
@@ -56,7 +58,6 @@ def update_file_metadata(*, gear_context: GearToolkitContext,
         current_tags.append(new_tag)
     else:
         current_tags = [new_tag]
-
     gear_context.metadata.add_qc_result(file_input,
                                         name='validation',
                                         state=status_str,
@@ -139,9 +140,8 @@ def compose_error_metadata(*, sys_failure: bool, error_composer: ErrorComposer,
         error_composer.compose_minimal_error_metadata(line_number)
 
 
-def process_csv_file(*, csv_visitor: FormQCCSVVisitor,
-                     qual_check: QualityCheck, error_store: ErrorStore,
-                     error_writer: ListErrorWriter,
+def process_csv_file(*, csv_reader: DictReader, qual_check: QualityCheck,
+                     error_store: ErrorStore, error_writer: ListErrorWriter,
                      codes_map: Optional[Dict[str, Dict]]) -> bool:
     """Read the csv file and validate each record using nacc-form-validator
     library (https://github.com/naccdata/nacc-form-validator)
@@ -149,7 +149,7 @@ def process_csv_file(*, csv_visitor: FormQCCSVVisitor,
     Note: Assumes the CSV headers are validated and correct at this point.
 
     Args:
-        csv_visitor: CSV visitor instance with CSV DictReader object
+        csv_reader: CSV DictReader object
         qual_check: NACC data quality checker object
         error_store: database connection to retrieve NACC QC chek info
         error_writer: error writer object to output error metadata
@@ -159,17 +159,26 @@ def process_csv_file(*, csv_visitor: FormQCCSVVisitor,
         bool: True if all records passed NACC data quality checks, else False
     """
 
-    if not csv_visitor.reader:
-        raise GearExecutionError('CSV reader cannot be empty')
+    if not csv_reader.fieldnames:
+        error_writer.write(missing_header_error())
+        return False
+
+    unknown_fields = set(csv_reader.fieldnames).difference(
+        set(qual_check.schema.keys()))
+
+    if unknown_fields:
+        for unknown_field in unknown_fields:
+            error_writer.write(unknown_field_error(unknown_field))
+        return False
 
     passed_all = True
-    for row in csv_visitor.reader:
+    for row in csv_reader:
         if not process_data_record(record=row,
                                    qual_check=qual_check,
                                    error_store=error_store,
                                    error_writer=error_writer,
                                    codes_map=codes_map,
-                                   line_number=csv_visitor.reader.line_num):
+                                   line_number=csv_reader.line_num - 1):
             passed_all = False
 
     return passed_all
@@ -233,9 +242,9 @@ def load_rule_definition_schemas(
         rule definition schema, code mapping schema (optional)
     """
     # For CSV, assumes all the records belong to the same module
-    s3_prefix = input_data[Keys.MODULE]
+    s3_prefix = str(input_data[Keys.MODULE]).upper()
     if Keys.PACKET in input_data:
-        s3_prefix = f'{s3_prefix}/{input_data[Keys.PACKET]}'
+        s3_prefix = f'{s3_prefix}/{str(input_data[Keys.PACKET]).upper()}'
 
     parser = Parser(s3_client)
     try:
@@ -252,6 +261,12 @@ def load_rule_definition_schemas(
         log.warning(error)
         codes_map = None
 
+    if codes_map:
+        diff_keys = set(schema.keys()) ^ (codes_map.keys())
+        if diff_keys:
+            raise GearExecutionError(
+                'Rule definitions and codes definitions does not match, '
+                f'list of fields missing in one of the schemas: {diff_keys}')
     return schema, codes_map
 
 
@@ -282,7 +297,7 @@ def run(*,
     file_type = validate_input_file_type(input_wrapper.file_type)
     if not file_type:
         raise GearExecutionError(
-            'Unsupported input file type {input_wrapper.file_type}')
+            f'Unsupported input file type {input_wrapper.file_type}')
 
     file_id = input_wrapper.file_id
     proxy = client_wrapper.get_proxy()
@@ -290,7 +305,7 @@ def run(*,
         file = proxy.get_file(file_id)
     except ApiException as error:
         raise GearExecutionError(
-            'Failed to find the input file: {error}') from error
+            f'Failed to find the input file: {error}') from error
 
     pk_field = (gear_context.config.get('primary_key', Keys.NACCID)).lower()
     error_writer = ListErrorWriter(container_id=file_id,
@@ -341,14 +356,16 @@ def run(*,
                                                 error_writer=error_writer,
                                                 codes_map=codes_map)
                 else:
-                    valid = process_csv_file(csv_visitor=csv_visitor,
+                    csv_reader = DictReader(
+                        file_obj, dialect=csv_visitor.dialect)  # type: ignore
+                    valid = process_csv_file(csv_reader=csv_reader,
                                              qual_check=qual_check,
                                              error_store=error_store,
                                              error_writer=error_writer,
                                              codes_map=codes_map)
-    except (FileNotFoundError, ValueError) as error:
+    except FileNotFoundError as error:
         raise GearExecutionError(
-            'Failed to read the input file: {error}') from error
+            f'Failed to read the input file: {error}') from error
 
     update_file_metadata(gear_context=gear_context,
                          file_input=input_wrapper.file_input,

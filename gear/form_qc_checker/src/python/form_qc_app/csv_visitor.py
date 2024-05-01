@@ -1,6 +1,6 @@
 """Helper module for processing CSV files."""
 
-from csv import DictReader, Error, Sniffer
+from csv import Dialect, DictReader, Error, Sniffer
 from typing import Any, Dict, List, Optional, TextIO
 
 from form_qc_app.parser import Keys
@@ -26,6 +26,7 @@ class FormQCCSVVisitor(CSVVisitor):
         self.__error_writer = error_writer
         self.__header: Optional[List[str]] = None
         self.__reader: Optional[DictReader] = None
+        self.__dialect: Optional[Dialect] = None
 
     @property
     def header(self) -> Optional[List[str]]:
@@ -46,6 +47,21 @@ class FormQCCSVVisitor(CSVVisitor):
         """
 
         self.__reader = reader
+
+    @property
+    def dialect(self) -> Optional[Dialect]:
+        """Returns dialect."""
+        return self.__dialect
+
+    @dialect.setter
+    def dialect(self, dialect: Dialect):
+        """Set the dialect.
+
+        Args:
+            dialect: csv Dialect
+        """
+
+        self.__dialect = dialect
 
     def visit_header(self, header: List[str]) -> bool:
         """Validates the header fields in file. If the header doesn't have
@@ -96,6 +112,7 @@ class FormQCCSVVisitor(CSVVisitor):
 def read_first_data_row(input_file: TextIO, error_writer: ErrorWriter,
                         visitor: FormQCCSVVisitor) -> Optional[Dict[str, Any]]:
     """Reads CSV file and applies the visitor to header and first data row.
+    Sets the CSV dialect for the visitor by sniffing a data sample.
 
     Args:
         input_file: the input stream for the CSV file
@@ -111,13 +128,14 @@ def read_first_data_row(input_file: TextIO, error_writer: ErrorWriter,
         error_writer.write(empty_file_error())
         return None
 
-    if not sniffer.has_header(csv_sample):
-        error_writer.write(missing_header_error())
-        return None
-
-    input_file.seek(0)
     try:
+        if not sniffer.has_header(csv_sample):
+            error_writer.write(missing_header_error())
+            return None
+
         detected_dialect = sniffer.sniff(csv_sample, delimiters=',')
+
+        input_file.seek(0)
         reader = DictReader(input_file, dialect=detected_dialect)
     except Error as error:
         error_writer.write(malformed_file_error(str(error)))
@@ -131,10 +149,10 @@ def read_first_data_row(input_file: TextIO, error_writer: ErrorWriter,
 
     first_row = next(reader)
     # missing/empty required fields in the first row
-    if visitor.visit_row(first_row, line_num=reader.line_num):
+    if visitor.visit_row(first_row, line_num=1):
         return None
 
-    reader.line_num = 0
-    visitor.reader = reader
+    input_file.seek(0)
+    visitor.dialect = detected_dialect  # type: ignore
 
     return first_row

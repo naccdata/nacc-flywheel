@@ -36,6 +36,8 @@ class FileError(BaseModel):
     expected: Optional[str] = None
     message: str
     timestamp: Optional[str] = None
+    ptid: Optional[str] = None
+    visitnum: Optional[str] = None
 
     @classmethod
     def fieldnames(cls) -> List[str]:
@@ -47,13 +49,6 @@ class FileError(BaseModel):
             else:
                 result.append(fieldname)
         return result
-
-
-class QCError(FileError):
-    """Represents an error that might be found in the input file during NACC QC
-    checks."""
-    ptid: Optional[str] = None
-    visitnum: Optional[str] = None
 
 
 def identifier_error(line: int, value: str) -> FileError:
@@ -124,6 +119,13 @@ def unexpected_value_error(field: str,
                      error_code='unexpected-value',
                      location=CSVLocation(line=line, column_name=field),
                      message=error_message)
+
+
+def unknown_field_error(field: str) -> FileError:
+    """Creates a FileError for an unknown field in file header."""
+    return FileError(error_type='error',
+                     error_code='unknown-field',
+                     message=f'Unknown field {field} in header')
 
 
 def system_error(
