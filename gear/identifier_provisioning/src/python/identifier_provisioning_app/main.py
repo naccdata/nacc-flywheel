@@ -1,13 +1,15 @@
 """Defines Identifier Provisioning."""
 
+import abc
 import logging
 from typing import Any, Dict, List, Optional, TextIO
 
 from identifiers.identifiers_repository import IdentifierUnitOfWork
 from identifiers.model import Identifier
 from inputs.csv_reader import CSVVisitor, read_csv
-from outputs.errors import (CSVLocation, ErrorWriter, FileError, empty_field_error,
-                            missing_header_error, unexpected_value_error)
+from outputs.errors import (CSVLocation, ErrorWriter, FileError,
+                            empty_field_error, missing_header_error,
+                            unexpected_value_error)
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +39,18 @@ class IdentifierBatch:
     def add(self, identifier: Identifier):
         self.__identifiers.append(identifier)
 
+    def get(self,
+            adcid: Optional[int] = None,
+            ptid: Optional[int] = None,
+            guid: Optional[str] = None) -> Optional[Identifier]:
+        if adcid and ptid:
+            return None
+
+        if guid:
+            return None
+
+        return None
+
     def commit(self, unit_of_work: IdentifierUnitOfWork) -> None:
         """Adds identifiers to the repository managed by the unit of work
         object.
@@ -50,6 +64,41 @@ class IdentifierBatch:
             assert identifiers_repo, "repository is defined by context manager"
             identifiers_repo.add_list(self.__identifiers)
             unit_of_work.commit()
+
+
+class RowValidator(abc.ABC):
+    """Abstract class for a RowValidator."""
+
+    @abc.abstractmethod
+    def check(self, row: Dict[str, Any], line_number: int) -> bool:
+        """Checks the row passes the validation criteria of the implementing
+        class.
+
+        Args:
+            row: the dictionary for the input row
+        Returns:
+            True if the validator check is true, False otherwise.
+        """
+
+
+class AggregateRowValidator(RowValidator):
+
+    def __init__(self, validators: List[RowValidator] = []) -> None:
+        self.__validators = validators
+
+    def check(self, row: Dict[str, Any], line_number: int) -> bool:
+        """Checks the row against each of the validators.
+
+        Args:
+            row: the dictionary for the input row
+        Returns:
+            True if all the validator checks are true, False otherwise
+        """
+        for validator in self.__validators:
+            if not validator.check(row, line_number):
+                return False
+
+        return True
 
 
 class TransferOutVisitor(CSVVisitor):
@@ -73,8 +122,8 @@ class TransferInVisitor(CSVVisitor):
         self.__error_writer = error_writer
 
     def visit_header(self, header: List[str]) -> bool:
-        """Checks that the header has expected column headings
-        
+        """Checks that the header has expected column headings.
+
         Args:
           header: the list of column headings for file
         Returns:
@@ -88,7 +137,7 @@ class TransferInVisitor(CSVVisitor):
         return False
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        """"""
+        """Visits enrollment/transfer data for single form."""
         previous_adcid = row['oldadcid']
         if not previous_adcid:
             self.__error_writer.write(
@@ -126,35 +175,110 @@ def existing_participant_error(field: str,
                      message=error_message)
 
 
-class NewEnrollmentVisitor(CSVVisitor):
+class NewPTIDRowValidator(RowValidator):
 
-    def __init__(self, error_writer: ErrorWriter,
-                 batch: IdentifierBatch) -> None:
+    def __init__(self, batch: IdentifierBatch,
+                 error_writer: ErrorWriter) -> None:
         self.__identifiers = batch
         self.__error_writer = error_writer
 
+    def check(self, row: Dict[str, Any], line_number: int) -> bool:
+        """Checks that PTID does not already correspond to a NACCID.
+
+        Args:
+          row: the dictionary for the row
+        Returns:
+          True if no existing NACCID is found for the PTID, False otherwise
+        """
+        ptid = row['ptid']
+        identifier = self.__identifiers.get(adcid=row['adcid'], ptid=ptid)
+        if not identifier:
+            return True
+
+        self.__error_writer.write(
+            existing_participant_error(field='ptid',
+                                       line=line_number,
+                                       value=ptid))
+        return False
+
+
+class NewGUIDRowValidator(RowValidator):
+    """Row Validator to check whether a GUID corresponds to an existing
+    NACCID."""
+
+    def __init__(self, batch: IdentifierBatch,
+                 error_writer: ErrorWriter) -> None:
+        self.__identifiers = batch
+        self.__error_writer = error_writer
+
+    def check(self, row: Dict[str, Any], line_number: int) -> bool:
+        """Checks that the GUID does not already correspond to a NACCID.
+
+        Args:
+          row: the dictionary for the row
+        Returns:
+          True if no existing NACCID is found for the GUID, False otherwise
+        """
+        guid = row['guid']
+        identifier = self.__identifiers.get(guid=guid)
+        if not identifier:
+            return True
+
+        self.__error_writer.write(
+            existing_participant_error(
+                field='guid',
+                line=line_number,
+                value=guid,
+                message=f'Participant exists for GUID {guid}'))
+        return False
+
+
+class NoDemographicMatchRowValidator(RowValidator):
+    """Row Validator to check whether the demographics match any existing
+    participants."""
+
+    def __init__(self, batch: IdentifierBatch,
+                 error_writer: ErrorWriter) -> None:
+        self.__identifiers = batch
+        self.__error_writer = error_writer
+
+    def check(self, row: Dict[str, Any], line_number: int) -> bool:
+        """Checks that row demographics do not match an existing participant.
+
+        Args:
+          row: the dictionary for the row
+        Returns:
+          True if no existing participant matches demographics, False otherwise
+        """
+        return True
+
+
+class NewEnrollmentVisitor(CSVVisitor):
+    """A CSV Visitor class for processing new enrollment forms."""
+
+    def __init__(self, error_writer: ErrorWriter,
+                 batch: IdentifierBatch) -> None:
+        self.__validator = AggregateRowValidator([
+            NewPTIDRowValidator(batch, error_writer),
+            NewGUIDRowValidator(batch, error_writer),
+            NoDemographicMatchRowValidator(batch, error_writer)
+        ])
+        self.__error_writer = error_writer
+
     def visit_header(self, header: List[str]) -> bool:
+        expected_columns = {'adcid', 'ptid', 'guid', 'naccid'}
+        if not expected_columns.issubset(set(header)):
+            self.__error_writer.write(missing_header_error())
+            return True
+
         return False
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-
-        identifier = self.__identifiers.get(adcid=adcid, ptid=ptid)
-        if identifier:
-            self.__error_writer.write(
-                existing_participant_error(field='ptid',
-                                           line=line_num,
-                                           value=ptid))
+        if not self.__validator.check(row, line_num):
             return True
 
-        identifier = self.__identifiers.get(guid=guid)
-        if identifier:
-            self.__error_writer.write(
-                existing_participant_error(field='guid', line=line_num, value=guid, message=f'Participant exists for GUID {guid}')
-            )
-            return True
-
-        # get naccids for demographics
-        # if found, then error
+        # provision naccid
+        identifier = Identifier(nacc_id=newnaccid, patient_id=)
         # add ids to list (?) for creation
 
         return False
@@ -167,7 +291,8 @@ class ProvisioningVisitor(CSVVisitor):
     def __init__(self, error_writer: ErrorWriter,
                  batch: IdentifierBatch) -> None:
         self.__error_writer = error_writer
-        self.__enrollment_visitor = NewEnrollmentVisitor(error_writer, batch=batch)
+        self.__enrollment_visitor = NewEnrollmentVisitor(error_writer,
+                                                         batch=batch)
         self.__transfer_in_visitor = TransferInVisitor(error_writer)
         self.__transfer_out_visitor = TransferOutVisitor(error_writer)
 
@@ -241,11 +366,11 @@ def run(*, input_file: TextIO, unit_of_work: IdentifierUnitOfWork,
       input_file: the data input stream
       error_writer: the error output writer
     """
-    identifier_manager = IdentifierBatch()
+    identifier_batch = IdentifierBatch()
     has_error = read_csv(input_file=input_file,
                          error_writer=error_writer,
                          visitor=ProvisioningVisitor(
-                             error_writer=error_writer,
-                             identifier_manager=identifier_manager))
-    identifier_manager.commit(unit_of_work=unit_of_work)
+                             batch=identifier_batch,
+                             error_writer=error_writer))
+    identifier_batch.commit(unit_of_work=unit_of_work)
     return has_error
