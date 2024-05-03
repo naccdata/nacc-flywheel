@@ -49,7 +49,7 @@ class DirectoryPullVisitor(GearExecutionEnvironment):
             raise GearExecutionError("No parameter path")
 
         try:
-            report_parameters = parameter_store.get_redcap_report_connection(
+            report_parameters = parameter_store.get_redcap_report_parameters(
                 param_path=param_path)
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
