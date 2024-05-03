@@ -189,14 +189,20 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                 f'{group_id}/{project.label}')
 
         failed_count = 0
-        for redcap_project in redcap_projects.values():
+        for module, redcap_project in redcap_projects.items():
+            if (not redcap_project.label or not redcap_project.redcap_pid
+                    or not redcap_project.report_id):
+                log.error(
+                    'Incomplete REDCap project info in %s/metadata '
+                    'for module %s', group_id, module)
+                failed_count += 1
+                continue
+
             try:
-                redcap_params = self.__param_store.get_redcap_parameters_for_module(
+                redcap_params = self.__param_store.get_redcap_project_prameters(
                     base_path=self.__param_path,
                     pid=redcap_project.redcap_pid,
-                    module=redcap_project.label,
-                    fw_group=group_id,
-                    fw_project=project.label)
+                    report_id=redcap_project.report_id)
                 redcap_report_con = REDCapReportConnection.create_from(
                     redcap_params)
             except ParameterError as error:

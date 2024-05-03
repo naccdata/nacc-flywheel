@@ -10,11 +10,15 @@ class TestREDCapProjectInput:
     # pylint: disable=no-self-use
     def test_redcap_project_input(self):
         """Test REDCap Project Input."""
-        project_model = REDCapProjectInput(
-            center_id="test",
-            study_id="test",
-            project_label="test",
-            projects=[REDCapFormProject(redcap_pid=12345, label="test")])
+        project_model = REDCapProjectInput(center_id="test",
+                                           study_id="test",
+                                           project_label="test",
+                                           projects=[
+                                               REDCapFormProject(
+                                                   redcap_pid=12345,
+                                                   label="test",
+                                                   report_id=22)
+                                           ])
         project_dump = project_model.model_dump(by_alias=True,
                                                 exclude_none=True)
         assert 'center-id' in project_dump

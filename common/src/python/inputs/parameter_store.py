@@ -93,20 +93,17 @@ class ParameterStore:
 
         return apikey
 
-    def get_redcap_parameters_for_module(
-            self, *, base_path: str, pid: int, module: str, fw_group: str,
-            fw_project: str) -> REDCapReportParameters:
-        """Pulls URL, Token, and ReportID for the respective REDCap report for
-        the specified module from SSM parameter store.
+    def get_redcap_project_prameters(self, *, base_path: str, pid: int,
+                                     report_id: int) -> REDCapReportParameters:
+        """Pulls URL and Token for the respective REDCap project from SSM
+        parameter store.
 
         Args:
           base_path: base path in the parameter store
           pid: REDCap project ID
-          module: module name
-          fw_group: Flywheel group id for the center
-          fw_project: Flywheel project label
+          report_id: REDCap report ID
         Returns:
-          the REDCap report credentials stored at the parameter path
+          the REDCap credentials stored at the parameter path
         Raises:
           ParameterError if any of the credentials are missing
         """
@@ -126,25 +123,15 @@ class ParameterStore:
                 or 'token' not in prj_params):
             raise ParameterError(f"Incorrect parameters at {param_path}")
 
-        param_path = base_path + fw_group + '/' + fw_project + '/' + module
-        try:
-            module_params = self.__store.get_parameters_by_path(param_path,
-                                                                decrypt=True)
-        except (ClientError, ParamValidationError) as error:
-            raise ParameterError(
-                f"Failed to retrieve parameters at {param_path}") from error
-
-        if not module_params or 'reportid' not in module_params:
-            raise ParameterError(f"Incorrect parameters at {param_path}")
-
         url = prj_params.get('url')
         token = prj_params.get('token')
-        reportid = module_params.get('reportid')
 
-        if not url or not token or not reportid:
+        if not url or not token:
             raise ParameterError(f"Incorrect parameters at {param_path}")
 
-        return REDCapReportParameters(url=url, token=token, reportid=reportid)
+        return REDCapReportParameters(url=url,
+                                      token=token,
+                                      reportid=str(report_id))
 
     def get_redcap_report_parameters(
             self, param_path: str) -> REDCapReportParameters:
