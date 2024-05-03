@@ -1,7 +1,7 @@
 """Tests for IdentifierRepository."""
 
 import pytest
-from identifiers.identifiers_repository import (IdentifierRepository,
+from identifiers.identifiers_repository import (IdentifierSQLAlchemyRepository,
                                                 NoMatchingIdentifier)
 from identifiers.identifiers_tables import metadata
 from identifiers.model import Identifier
@@ -63,7 +63,7 @@ class TestIdentifierRepository:
 
     def test_empty_repository(self, session):
         """Test empty repository behaves empty."""
-        repo = IdentifierRepository(session)
+        repo = IdentifierSQLAlchemyRepository(session)
         assert not repo.list()
 
         with pytest.raises(NoMatchingIdentifier) as error:
@@ -84,7 +84,7 @@ class TestIdentifierRepository:
             session.add(identifier)
         session.commit()
 
-        repo = IdentifierRepository(session)
+        repo = IdentifierSQLAlchemyRepository(session)
         assert repo.list() == expected
         assert repo.get(nacc_id=1) == Identifier(nacc_id=1,
                                                  nacc_adc=2934,
@@ -118,7 +118,7 @@ class TestIdentifierRepository:
                        patient_id="168721"))
         session.commit()
 
-        repo = IdentifierRepository(session)
+        repo = IdentifierSQLAlchemyRepository(session)
         assert repo.list(adc_id=0) == expected
         assert repo.list(adc_id=1) == [
             Identifier(nacc_id=2, nacc_adc=5397, adc_id=1, patient_id="168721")
@@ -127,7 +127,7 @@ class TestIdentifierRepository:
 
     def test_add(self, session):
         """Test adding single identifier."""
-        repo = IdentifierRepository(session)
+        repo = IdentifierSQLAlchemyRepository(session)
         assert not repo.list(), "repo should be empty"
 
         input = Identifier(nacc_id=5,

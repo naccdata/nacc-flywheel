@@ -5,14 +5,92 @@ https://github.com/cosmicpython/code/tree/chapter_02_repository_exercise
 """
 
 import abc
+import logging
+from abc import abstractmethod
 from typing import List, Optional, overload
 
 from identifiers.model import Identifier
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
+log = logging.getLogger(__name__)
 
-class IdentifierRepository:
+
+class IdentifierRepository(abc.ABC):
+
+    @abstractmethod
+    def add(self, identifier: Identifier) -> None:
+        """Adds an Identifier to the repository.
+
+        Args:
+          identifier: the Identifier object to add
+        """
+
+    @abstractmethod
+    def add_list(self, identifiers: List[Identifier]) -> None:
+        """Adds a list of identifiers to the repository.
+
+        Args:
+          identifiers: the list of Identifiers
+        """
+
+    @abstractmethod
+    @overload
+    def get(self, nacc_id: int) -> Identifier:
+        ...
+
+    @abstractmethod
+    @overload
+    def get(self, nacc_id: Optional[int], adc_id: int,
+            ptid: str) -> Identifier:
+        ...
+
+    @abstractmethod
+    def get(self,
+            nacc_id: Optional[int] = None,
+            adc_id: Optional[int] = None,
+            ptid: Optional[str] = None) -> Identifier:
+        """Returns Identifier object for the IDs given.
+
+        Note: some valid arguments can be falsey.
+        These are explicitly checked that they are not None.
+
+        Args:
+          nacc_id: the (integer part of the) NACCID
+          adc_id: the center ID
+          ptid: the participant ID assigned by the center
+        Returns:
+          the identifier for the nacc_id or the adcid-ptid pair
+        Raises:
+          NoMatchingIdentifier: if no Identifier record was found
+          TypeError: if the arguments are nonsensical
+        """
+
+    @abstractmethod
+    @overload
+    def list(self, adc_id: int) -> List[Identifier]:
+        ...
+
+    @abstractmethod
+    @overload
+    def list(self) -> List[Identifier]:
+        ...
+
+    @abstractmethod
+    def list(self, adc_id: Optional[int] = None) -> List[Identifier]:
+        """Returns the list of all identifiers in the repository.
+
+        If an ADCID is given filters identifiers by the center.
+
+        Args:
+          adc_id: the ADCID used for filtering
+
+        Returns:
+          List of all identifiers in the repository
+        """
+
+
+class IdentifierSQLAlchemyRepository(IdentifierRepository):
     """Repository for Identifier records.
 
     Assumes the Identifier class is mapped to the identifier table.
@@ -108,7 +186,7 @@ class IdentifierUnitOfWork(abc.ABC):
     """
 
     @property
-    def repository(self) -> Optional[IdentifierRepository]:
+    def repository(self) -> Optional[IdentifierSQLAlchemyRepository]:
         """Returns the IdentifierRepository for this unit of work."""
         return None
 
@@ -144,10 +222,10 @@ class SQLAlchemyUnitOfWork(IdentifierUnitOfWork):
     def __init__(self, session_factory):
         self.__session_factory = session_factory
         self.__session: Optional[Session] = None
-        self.__repository: Optional[IdentifierRepository] = None
+        self.__repository: Optional[IdentifierSQLAlchemyRepository] = None
 
     @property
-    def repository(self) -> Optional[IdentifierRepository]:
+    def repository(self) -> Optional[IdentifierSQLAlchemyRepository]:
         """Returns the currently set repository.
 
         Repository is created when context manager is entered.
@@ -160,7 +238,7 @@ class SQLAlchemyUnitOfWork(IdentifierUnitOfWork):
         Creates session and repository object.
         """
         self.__session = self.__session_factory()
-        self.__repository = IdentifierRepository(self.__session)
+        self.__repository = IdentifierSQLAlchemyRepository(self.__session)
         return super().__enter__()
 
     def __exit__(self, *args):
