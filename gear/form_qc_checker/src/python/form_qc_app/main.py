@@ -178,7 +178,7 @@ def process_csv_file(*, csv_reader: DictReader, qual_check: QualityCheck,
                                    error_store=error_store,
                                    error_writer=error_writer,
                                    codes_map=codes_map,
-                                   line_number=csv_reader.line_num):
+                                   line_number=csv_reader.line_num - 1):
             passed_all = False
 
     return passed_all
@@ -242,9 +242,9 @@ def load_rule_definition_schemas(
         rule definition schema, code mapping schema (optional)
     """
     # For CSV, assumes all the records belong to the same module
-    s3_prefix = str(input_data[Keys.MODULE]).lower()
+    s3_prefix = str(input_data[Keys.MODULE]).upper()
     if Keys.PACKET in input_data:
-        s3_prefix = f'{s3_prefix}/{str(input_data[Keys.PACKET]).lower()}'
+        s3_prefix = f'{s3_prefix}/{str(input_data[Keys.PACKET]).upper()}'
 
     parser = Parser(s3_client)
     try:

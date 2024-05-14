@@ -143,9 +143,6 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
         client_wrapper = GearBotClient.create(context=context,
                                               parameter_store=parameter_store)
 
-        if not param_path.endswith('/'):
-            param_path += '/'
-
         return REDCapFlywheelTransferVisitor(client=client_wrapper,
                                              parameter_store=parameter_store,
                                              param_path=param_path)
@@ -192,13 +189,20 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                 f'{group_id}/{project.label}')
 
         failed_count = 0
-        for redcap_project in redcap_projects.values():
-            redcap_project_path = (self.__param_path + 'pid_' +
-                                   str(redcap_project.redcap_pid) + '/' +
-                                   redcap_project.label)
+        for module, redcap_project in redcap_projects.items():
+            if (not redcap_project.label or not redcap_project.redcap_pid
+                    or not redcap_project.report_id):
+                log.error(
+                    'Incomplete REDCap project info in %s/metadata '
+                    'for module %s', group_id, module)
+                failed_count += 1
+                continue
+
             try:
-                redcap_params = self.__param_store.get_redcap_report_connection(
-                    param_path=redcap_project_path)
+                redcap_params = self.__param_store.get_redcap_project_prameters(
+                    base_path=self.__param_path,
+                    pid=redcap_project.redcap_pid,
+                    report_id=redcap_project.report_id)
                 redcap_report_con = REDCapReportConnection.create_from(
                     redcap_params)
             except ParameterError as error:

@@ -9,6 +9,7 @@ from flywheel.models.viewer_app import ViewerApp
 from .finder import Finder
 from .models.acquisition import Acquisition
 from .models.container_id_view_input import ContainerIdViewInput
+from .models.container_output import ContainerOutput
 from .models.data_view import DataView
 from .models.deleted_result import DeletedResult
 from .models.gear_rule import GearRule
