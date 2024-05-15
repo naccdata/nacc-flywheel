@@ -588,6 +588,7 @@ class REDCapFormProject(BaseModel):
 
     redcap_pid: int
     label: str
+    report_id: int
 
 
 class FormIngestProjectMetadata(IngestProjectMetadata):
@@ -622,15 +623,15 @@ class FormIngestProjectMetadata(IngestProjectMetadata):
         """
         self.redcap_projects[redcap_project.label] = redcap_project
 
-    def get(self, form_name: str) -> Optional[REDCapFormProject]:
-        """Gets the REDCap project metadata for the form name.
+    def get(self, module_name: str) -> Optional[REDCapFormProject]:
+        """Gets the REDCap project metadata for the module name.
 
         Args:
-            form_name: the form name
+            module_name: the module name
         Returns:
-            the REDCap project metadata for the form name
+            the REDCap project metadata for the module name
         """
-        return self.redcap_projects.get(form_name, None)
+        return self.redcap_projects.get(module_name, None)
 
 
 class StudyMetadata(BaseModel):
