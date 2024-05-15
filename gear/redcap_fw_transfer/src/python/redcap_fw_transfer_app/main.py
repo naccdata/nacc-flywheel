@@ -156,8 +156,8 @@ def run(*, gear_context: GearToolkitContext,
                                           schema['definitions'])
 
     timestamp = datetime.now()
-    file_name = 'redcap_ingest-' + timestamp.strftime(
-        '%Y%m%d_%H%M%S') + '-' + module + '.csv'
+    file_name = 'redcapingest-' + timestamp.strftime(
+        '%Y%m%d-%H%M%S') + '-' + module + '.csv'
 
     with gear_context.open_output(file_name, mode='w',
                                   encoding='utf-8') as output_file:

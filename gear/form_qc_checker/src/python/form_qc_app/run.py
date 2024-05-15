@@ -71,7 +71,7 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
             s3_parameters = parameter_store.get_s3_parameters(
                 param_path=s3_param_path)
 
-            redcap_params = parameter_store.get_redcap_report_connection(
+            redcap_params = parameter_store.get_redcap_report_parameters(
                 param_path=qc_checks_db_path)
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
