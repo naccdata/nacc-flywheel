@@ -7,6 +7,7 @@ validator) for validating the inputs.
 
 import json
 import logging
+import re
 from csv import DictReader
 from json.decoder import JSONDecodeError
 from pathlib import Path
@@ -227,13 +228,14 @@ def process_data_record(*,
 
 
 def load_rule_definition_schemas(
-    input_data: dict[str, Any], s3_client: S3BucketReader
-) -> tuple[Dict[str, Mapping], Optional[Dict[str, Dict]]]:
+        s3_client: S3BucketReader, input_data: dict[str, Any],
+        filename: str) -> tuple[Dict[str, Mapping], Optional[Dict[str, Dict]]]:
     """Download QC rule definitions and error code mappings from S3 bucket.
 
     Args:
-        input_data: input data record
         s3_client: S3 client
+        input_data: input data record
+        filename: input file name
 
     Raises:
         GearExecutionError: if error occurred while loading schemas
@@ -241,9 +243,19 @@ def load_rule_definition_schemas(
     Returns:
         rule definition schema, code mapping schema (optional)
     """
-    # For CSV, assumes all the records belong to the same module
-    s3_prefix = str(input_data[Keys.MODULE]).upper()
-    if Keys.PACKET in input_data:
+
+    # For CSV input, assumes all the records belong to the same module
+    if Keys.MODULE in input_data and input_data[Keys.MODULE]:
+        module = str(input_data[Keys.MODULE])
+    else:
+        module = get_module_name_from_file_suffix(filename)
+
+    if not module:
+        raise GearExecutionError(
+            f'Failed to extract module information from file {filename}')
+
+    s3_prefix = module.upper()
+    if Keys.PACKET in input_data and input_data[Keys.PACKET]:
         s3_prefix = f'{s3_prefix}/{str(input_data[Keys.PACKET]).upper()}'
 
     parser = Parser(s3_client)
@@ -256,7 +268,7 @@ def load_rule_definition_schemas(
         codes_map: Optional[Dict[str,
                                  Dict]] = parser.download_rule_definitions(
                                      f'{s3_prefix}/codes/')  # type: ignore
-    # TODO - validate code mapping schema and compare with error check schema
+    # TODO - validate code mapping schema
     except ParserException as error:
         log.warning(error)
         codes_map = None
@@ -268,6 +280,23 @@ def load_rule_definition_schemas(
                 'Rule definitions and codes definitions does not match, '
                 f'list of fields missing in one of the schemas: {diff_keys}')
     return schema, codes_map
+
+
+def get_module_name_from_file_suffix(filename: str) -> Optional[str]:
+    """Get the module name from CSV file suffix.
+
+    Args:
+        filename: input file name
+
+    Returns:
+        Optional[str]: module name
+    """
+    module = None
+    pattern = '^.*-([a-z]+v[0-9])\\.csv$'
+    if match := re.search(pattern, filename, re.IGNORECASE):
+        module = match.group(1)
+
+    return module
 
 
 # pylint: disable=(too-many-locals)
@@ -333,7 +362,9 @@ def run(*,
 
             if input_data:
                 schema, codes_map = load_rule_definition_schemas(
-                    input_data=input_data, s3_client=s3_client)
+                    s3_client=s3_client,
+                    input_data=input_data,
+                    filename=input_wrapper.filename)
 
                 datastore = FlywheelDatastore(client_wrapper.client,
                                               file.parents.group,
