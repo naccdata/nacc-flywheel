@@ -122,6 +122,10 @@ class CenterGroup(GroupAdaptor):
         """The ADCID of this center."""
         return self.__adcid
 
+    def is_active(self) -> bool:
+        """Indicates whether the center is active."""
+        return self.__is_active
+
     def __get_matching_projects(self, prefix: str) -> List[ProjectAdaptor]:
         """Returns the projects for the center with labels that match the
         prefix.
