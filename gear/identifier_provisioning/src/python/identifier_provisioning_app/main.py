@@ -5,7 +5,7 @@ import logging
 from typing import Any, Dict, List, Optional, TextIO
 
 from identifiers.identifiers_repository import IdentifierUnitOfWork
-from identifiers.model import Identifier
+from identifiers.model import Identifier, IdentifierObject
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import (CSVLocation, ErrorWriter, FileError,
                             empty_field_error, missing_header_error,
@@ -34,15 +34,15 @@ class IdentifierBatch:
     """Collects new Identifier objects for commiting to repository."""
 
     def __init__(self) -> None:
-        self.__identifiers: List[Identifier] = []
+        self.__identifiers: List[IdentifierObject] = []
 
-    def add(self, identifier: Identifier):
+    def add(self, identifier: IdentifierObject):
         self.__identifiers.append(identifier)
 
     def get(self,
             adcid: Optional[int] = None,
             ptid: Optional[int] = None,
-            guid: Optional[str] = None) -> Optional[Identifier]:
+            guid: Optional[str] = None) -> Optional[IdentifierObject]:
         if adcid and ptid:
             return None
 
@@ -278,7 +278,7 @@ class NewEnrollmentVisitor(CSVVisitor):
             return True
 
         # provision naccid
-        identifier = Identifier(nacc_id=newnaccid, patient_id=)
+        #identifier = Identifier(nacc_id=newnaccid, patient_id=)
         # add ids to list (?) for creation
 
         return False
@@ -367,10 +367,10 @@ def run(*, input_file: TextIO, unit_of_work: IdentifierUnitOfWork,
       error_writer: the error output writer
     """
     identifier_batch = IdentifierBatch()
-    has_error = read_csv(input_file=input_file,
-                         error_writer=error_writer,
-                         visitor=ProvisioningVisitor(
-                             batch=identifier_batch,
-                             error_writer=error_writer))
+    has_error = read_csv(
+        input_file=input_file,
+        error_writer=error_writer,
+        visitor=ProvisioningVisitor(batch=identifier_batch,
+                                    error_writer=error_writer))
     identifier_batch.commit(unit_of_work=unit_of_work)
     return has_error

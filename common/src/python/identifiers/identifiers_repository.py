@@ -9,7 +9,7 @@ import logging
 from abc import abstractmethod
 from typing import List, Optional, overload
 
-from identifiers.model import Identifier
+from identifiers.model import Identifier, IdentifierObject
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 class IdentifierRepository(abc.ABC):
 
     @abstractmethod
-    def add(self, identifier: Identifier) -> None:
+    def add(self, identifier: IdentifierObject) -> None:
         """Adds an Identifier to the repository.
 
         Args:
@@ -27,7 +27,7 @@ class IdentifierRepository(abc.ABC):
         """
 
     @abstractmethod
-    def add_list(self, identifiers: List[Identifier]) -> None:
+    def add_list(self, identifiers: List[IdentifierObject]) -> None:
         """Adds a list of identifiers to the repository.
 
         Args:
@@ -36,20 +36,20 @@ class IdentifierRepository(abc.ABC):
 
     @abstractmethod
     @overload
-    def get(self, nacc_id: int) -> Identifier:
+    def get(self, nacc_id: int) -> IdentifierObject:
         ...
 
     @abstractmethod
     @overload
     def get(self, nacc_id: Optional[int], adc_id: int,
-            ptid: str) -> Identifier:
+            ptid: str) -> IdentifierObject:
         ...
 
     @abstractmethod
     def get(self,
             nacc_id: Optional[int] = None,
             adc_id: Optional[int] = None,
-            ptid: Optional[str] = None) -> Identifier:
+            ptid: Optional[str] = None) -> IdentifierObject:
         """Returns Identifier object for the IDs given.
 
         Note: some valid arguments can be falsey.
@@ -68,16 +68,16 @@ class IdentifierRepository(abc.ABC):
 
     @abstractmethod
     @overload
-    def list(self, adc_id: int) -> List[Identifier]:
+    def list(self, adc_id: int) -> List[IdentifierObject]:
         ...
 
     @abstractmethod
     @overload
-    def list(self) -> List[Identifier]:
+    def list(self) -> List[IdentifierObject]:
         ...
 
     @abstractmethod
-    def list(self, adc_id: Optional[int] = None) -> List[Identifier]:
+    def list(self, adc_id: Optional[int] = None) -> List[IdentifierObject]:
         """Returns the list of all identifiers in the repository.
 
         If an ADCID is given filters identifiers by the center.
@@ -102,25 +102,25 @@ class IdentifierSQLAlchemyRepository(IdentifierRepository):
     def __init__(self, session: Session) -> None:
         self.__session = session
 
-    def add(self, identifier: Identifier) -> None:
+    def add(self, identifier: IdentifierObject) -> None:
         self.__session.add(identifier)
 
-    def add_list(self, identifiers: List[Identifier]) -> None:
+    def add_list(self, identifiers: List[IdentifierObject]) -> None:
         self.__session.add_all(identifiers)
 
     @overload
-    def get(self, nacc_id: int) -> Identifier:
+    def get(self, nacc_id: int) -> IdentifierObject:
         ...
 
     @overload
     def get(self, nacc_id: Optional[int], adc_id: int,
-            ptid: str) -> Identifier:
+            ptid: str) -> IdentifierObject:
         ...
 
     def get(self,
             nacc_id: Optional[int] = None,
             adc_id: Optional[int] = None,
-            ptid: Optional[str] = None) -> Identifier:
+            ptid: Optional[str] = None) -> IdentifierObject:
         """Returns Identifier object for the IDs given.
 
         Note: some valid arguments can be falsey.
@@ -138,15 +138,17 @@ class IdentifierSQLAlchemyRepository(IdentifierRepository):
         """
         if nacc_id is not None:
             try:
-                return self.__session.query(Identifier).filter_by(
-                    nacc_id=nacc_id).one()
+                return IdentifierObject.create_from(
+                    self.__session.query(Identifier).filter_by(
+                        nacc_id=nacc_id).one())
             except NoResultFound as error:
                 raise NoMatchingIdentifier("NACCID not found") from error
 
         if adc_id is not None and ptid:
             try:
-                return self.__session.query(Identifier).filter_by(
-                    adc_id=adc_id, patient_id=ptid).one()
+                return IdentifierObject.create_from(
+                    self.__session.query(Identifier).filter_by(
+                        adc_id=adc_id, patient_id=ptid).one())
             except NoResultFound as error:
                 raise NoMatchingIdentifier(
                     "ADCID-PTID pair not found") from error
@@ -154,14 +156,14 @@ class IdentifierSQLAlchemyRepository(IdentifierRepository):
         raise TypeError("Invalid arguments")
 
     @overload
-    def list(self, adc_id: int) -> List[Identifier]:
+    def list(self, adc_id: int) -> List[IdentifierObject]:
         ...
 
     @overload
-    def list(self) -> List[Identifier]:
+    def list(self) -> List[IdentifierObject]:
         ...
 
-    def list(self, adc_id: Optional[int] = None) -> List[Identifier]:
+    def list(self, adc_id: Optional[int] = None) -> List[IdentifierObject]:
         """Returns the list of all identifiers in the repository.
 
         If an ADCID is given filters identifiers by the center.
@@ -173,9 +175,16 @@ class IdentifierSQLAlchemyRepository(IdentifierRepository):
           List of all identifiers in the repository
         """
         if adc_id is None:
-            return self.__session.query(Identifier).all()
+            return [
+                IdentifierObject.create_from(identifier)
+                for identifier in self.__session.query(Identifier).all()
+            ]
 
-        return self.__session.query(Identifier).filter_by(adc_id=adc_id).all()
+        return [
+            IdentifierObject.create_from(identifier)
+            for identifier in self.__session.query(Identifier).filter_by(
+                adc_id=adc_id).all()
+        ]
 
 
 class IdentifierUnitOfWork(abc.ABC):
