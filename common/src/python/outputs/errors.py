@@ -51,7 +51,10 @@ class FileError(BaseModel):
         return result
 
 
-def identifier_error(line: int, value: str) -> FileError:
+def identifier_error(line: int,
+                     value: str,
+                     field: str = 'ptid',
+                     message: Optional[str] = None) -> FileError:
     """Creates a FileError for an unrecognized PTID error in a CSV file.
 
     Tags the error type as 'error:identifier'
@@ -62,11 +65,12 @@ def identifier_error(line: int, value: str) -> FileError:
     Returns:
       a FileError object initialized for an identifier error
     """
+    error_message = message if message else f'Unrecognized participant ID'
     return FileError(error_type='error',
                      error_code='identifier',
-                     location=CSVLocation(line=line, column_name='ptid'),
+                     location=CSVLocation(line=line, column_name=field),
                      value=value,
-                     message='Unrecognized participant ID')
+                     message=error_message)
 
 
 def empty_file_error() -> FileError:
