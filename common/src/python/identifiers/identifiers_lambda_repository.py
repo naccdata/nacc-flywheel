@@ -54,10 +54,12 @@ class IdentifierList(BaseModel):
     root: List[IdentifierObject]
 
 
+IdentifiersMode = Literal['dev', 'prod']
+
+
 class IdentifiersLambdaRepository(IdentifierRepository):
 
-    def __init__(self, client: LambdaClient, mode: Literal['dev',
-                                                           'prod']) -> None:
+    def __init__(self, client: LambdaClient, mode: IdentifiersMode) -> None:
         self.__client = client
         self.__mode: Literal['dev', 'prod'] = mode
 
@@ -75,7 +77,7 @@ class IdentifiersLambdaRepository(IdentifierRepository):
             request=IdentifierRequest(mode=self.__mode, adcid=adcid,
                                       ptid=ptid))
         if response.statusCode != 200 or response.statusCode != 201:
-            raise NoMatchingIdentifier("No identifer created")
+            raise NoMatchingIdentifier("No identifier created")
 
         return IdentifierObject.model_validate_json(response.body)
 
@@ -174,7 +176,7 @@ class IdentifiersLambdaRepository(IdentifierRepository):
             # TODO: this is not implemented by lambda
             return []
 
-        identifer_list: List[IdentifierObject] = []
+        identifier_list: List[IdentifierObject] = []
         index = 0
         limit = 100
         read_length = limit
@@ -190,8 +192,8 @@ class IdentifiersLambdaRepository(IdentifierRepository):
 
             response_object = ListResponseObject.model_validate_json(
                 response.body)
-            identifer_list += response_object.data
+            identifier_list += response_object.data
             read_length = len(response_object.data)
             index += limit
 
-        return identifer_list
+        return identifier_list
