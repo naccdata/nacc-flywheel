@@ -6,7 +6,7 @@ from identifiers.identifiers_repository import (IdentifierRepository,
                                                 NoMatchingIdentifier)
 from identifiers.model import IdentifierObject
 from lambdas.lambda_function import BaseRequest, LambdaClient
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 
 class ListRequest(BaseRequest):
@@ -48,9 +48,9 @@ class ListResponseObject(BaseModel):
     limit: int
     data: List[IdentifierObject]
 
+
 class IdentifierList(BaseModel):
-    """Class to allow serialization of lists of identifiers.
-    """
+    """Class to allow serialization of lists of identifiers."""
     root: List[IdentifierObject]
 
 
@@ -79,21 +79,21 @@ class IdentifiersLambdaRepository(IdentifierRepository):
 
         return IdentifierObject.model_validate_json(response.body)
 
-    def create_list(self, identifiers: IdentifierListRequest) -> List[IdentifierObject]:
+    def create_list(
+            self,
+            identifiers: IdentifierListRequest) -> List[IdentifierObject]:
         """Creates several Identifiers in the repository.
-        
+
         Args:
           identifiers: list of identifiers requests
         Returns:
            list of Identifier objects
         """
         response = self.__client.invoke(
-            name='create-identifier-list-lambda-function',
-            request=identifiers
-        )
+            name='create-identifier-list-lambda-function', request=identifiers)
         if response.statusCode != 200:
             raise NoMatchingIdentifier("No identifier created")
-        
+
         return IdentifierList.model_validate_json(response.body).root
 
     @overload
