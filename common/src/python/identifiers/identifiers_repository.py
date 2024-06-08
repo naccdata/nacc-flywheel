@@ -34,7 +34,7 @@ class IdentifierRepository(abc.ABC):
 
     @abstractmethod
     @overload
-    def get(self, *, naccid: int) -> IdentifierObject:
+    def get(self, *, naccid: str) -> IdentifierObject:
         ...
 
     @abstractmethod
@@ -48,13 +48,13 @@ class IdentifierRepository(abc.ABC):
             *,
             adcid: int,
             ptid: str,
-            naccid: Optional[int] = None) -> IdentifierObject:
+            naccid: Optional[str] = None) -> IdentifierObject:
         ...
 
     @abstractmethod
     def get(self,
             *,
-            naccid: Optional[int] = None,
+            naccid: Optional[str] = None,
             adcid: Optional[int] = None,
             ptid: Optional[str] = None,
             guid: Optional[str] = None) -> IdentifierObject:
@@ -64,7 +64,7 @@ class IdentifierRepository(abc.ABC):
         These are explicitly checked that they are not None.
 
         Args:
-          naccid: the (integer part of the) NACCID
+          naccid: the NACCID
           adc_id: the center ID
           ptid: the participant ID assigned by the center
         Returns:

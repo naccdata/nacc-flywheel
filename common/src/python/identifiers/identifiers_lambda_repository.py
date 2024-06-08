@@ -99,7 +99,7 @@ class IdentifiersLambdaRepository(IdentifierRepository):
         return IdentifierList.model_validate_json(response.body).root
 
     @overload
-    def get(self, naccid: str) -> IdentifierObject:
+    def get(self, *, naccid: str) -> IdentifierObject:
         ...
 
     @overload
@@ -107,8 +107,11 @@ class IdentifiersLambdaRepository(IdentifierRepository):
         ...
 
     @overload
-    def get(self, naccid: Optional[str], adcid: int,
-            ptid: str) -> IdentifierObject:
+    def get(self,
+            *,
+            adcid: int,
+            ptid: str,
+            naccid: Optional[str] = None) -> IdentifierObject:
         ...
 
     def get(self,
