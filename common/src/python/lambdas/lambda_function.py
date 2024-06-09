@@ -1,3 +1,4 @@
+"""Utilities for invoking AWS Lambda functions."""
 from typing import Dict, Literal, Optional
 
 import boto3
@@ -37,6 +38,7 @@ class ResponseObject(BaseModel):
     body: str
 
 
+# pylint: disable=(too-few-public-methods)
 class LambdaClient:
     """Wrapper for boto3 lambda client."""
 

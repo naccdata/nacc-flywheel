@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 
 
 class IdentifierRepository(abc.ABC):
+    """Abstract class for identifier repositories."""
 
     @abstractmethod
     def create(self, adcid: int, ptid: str) -> IdentifierObject:
@@ -61,7 +62,7 @@ class IdentifierRepository(abc.ABC):
 
         Args:
           naccid: the NACCID
-          adc_id: the center ID
+          adcid: the center ID
           ptid: the participant ID assigned by the center
         Returns:
           the identifier for the naccid or the adcid-ptid pair
@@ -72,7 +73,7 @@ class IdentifierRepository(abc.ABC):
 
     @abstractmethod
     @overload
-    def list(self, adc_id: int) -> List[IdentifierObject]:
+    def list(self, adcid: int) -> List[IdentifierObject]:
         ...
 
     @abstractmethod
@@ -81,13 +82,13 @@ class IdentifierRepository(abc.ABC):
         ...
 
     @abstractmethod
-    def list(self, adc_id: Optional[int] = None) -> List[IdentifierObject]:
+    def list(self, adcid: Optional[int] = None) -> List[IdentifierObject]:
         """Returns the list of all identifiers in the repository.
 
         If an ADCID is given filters identifiers by the center.
 
         Args:
-          adc_id: the ADCID used for filtering
+          adcid: the ADCID used for filtering
 
         Returns:
           List of all identifiers in the repository

@@ -58,6 +58,7 @@ IdentifiersMode = Literal['dev', 'prod']
 
 
 class IdentifiersLambdaRepository(IdentifierRepository):
+    """Implementation of IdentifierRepository based on AWS Lambdas."""
 
     def __init__(self, client: LambdaClient, mode: IdentifiersMode) -> None:
         self.__client = client
@@ -102,18 +103,17 @@ class IdentifiersLambdaRepository(IdentifierRepository):
     def get(self, *, naccid: str) -> IdentifierObject:
         ...
 
+    # pylint: disable=(arguments-differ)
     @overload
     def get(self, *, guid: str) -> IdentifierObject:
         ...
 
+    # pylint: disable=(arguments-differ)
     @overload
-    def get(self,
-            *,
-            adcid: int,
-            ptid: str,
-            naccid: Optional[str] = None) -> IdentifierObject:
+    def get(self, *, adcid: int, ptid: str) -> IdentifierObject:
         ...
 
+    # pylint: disable=(arguments-differ)
     def get(self,
             naccid: Optional[str] = None,
             adcid: Optional[int] = None,

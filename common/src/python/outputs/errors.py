@@ -117,9 +117,18 @@ def unexpected_value_error(field: str,
                            value: str,
                            line: int,
                            message: Optional[str] = None) -> FileError:
+    """Creates a FileError for an unexpected value.
+
+    Args:
+      field: the field name
+      value: the unexpected value
+      line: the line number
+      message: the error message
+    Returns:
+      the constructed FileError
+    """
     error_message = message if message else (
         f'Expected {value} for field {field}')
-    """Creates a FileError for an incorrect module."""
     return FileError(error_type='error',
                      error_code='unexpected-value',
                      location=CSVLocation(line=line, column_name=field),

@@ -30,8 +30,9 @@ class Demographics(BaseModel):
 
     @classmethod
     def create_from(cls, row: Dict[str, Any]) -> 'Demographics':
-        """Constructs a Demographics object from row of enrollment/transfer form.
-        
+        """Constructs a Demographics object from row of enrollment/transfer
+        form.
+
         Args:
           row: the dictionary for the row of form.
         Returns:
@@ -120,7 +121,7 @@ class Demographics(BaseModel):
 
 
 class TransferRecord(BaseModel):
-    """Model representing transfer between centers"""
+    """Model representing transfer between centers."""
     date: datetime
     initials: str
     center_identifiers: CenterIdentifiers
