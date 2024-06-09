@@ -77,41 +77,22 @@ When a form represents a transfer into a center, the goal is to
   
 ```mermaid
 graph TB
-    start((*)) --> prevenrolled{Was\n previously\n enrolled or unknown?}
+    start((*)) --> naccidprovided{Is NACCID\n provided?}
+    naccidprovided -- yes --> hasparticipant{Is there a participant for provided NACCID?}
+    naccidprovided -- no --> prevenrolled{Was\n previously\n enrolled?}
+    hasparticipant -- yes --> prevenrolled
+    hasparticipant -- no --> noparticipant((error))
+
     prevenrolled -- yes --> oldptidknown{Is old\n PTID known?}
     prevenrolled -- no --> whattransfer((error))
+    prevenrolled -- unkwnown --> recordtransfer(Create transfer record) --> pendingerror((error))
+
     oldptidknown -- yes --> naccidforoldptid{Does NACCID\n exist for PTID\n of previous\n enrollment?}
     oldptidknown -- no --> identifytransfer(Record pending\n incoming transfer\n needing identification) --> identifyerror((error))
-    naccidforoldptid -- yes --> naccidprovided{Is NACCID\n provided?}
+    naccidforoldptid -- yes --> existingnaccid{Does\n provided\n NACCID\n match?}
     naccidforoldptid -- no --> nonaccid((error))
-    naccidprovided -- yes --> existingnaccid{Does\n provided\n NACCID\n match?}
-    naccidprovided -- no --> recordpending1(Record pending\n incoming transfer\n needing confirmation) --> pendingerror2((error))
-
-    existingnaccid -- yes --> matchpendingtransfer{Does a pending\n transfer exactly\n match?}
+    existingnaccid -- yes --> recordtransfer
     existingnaccid -- no --> mismatch((error))
-    matchpendingtransfer -- yes --> recordtransfer(Associate NACCID\n and record transfer) --> stop((done))
-    matchpendingtransfer -- no --> recordpending(Record pending\n incoming transfer\n waiting for match) --> pendingerror((error))
 style start fill:#000, stroke:#000
 ```
 
-
-
-
-```mermaid
-graph TB
-    start((*)) --> oldptidknown{Is old\n PTID known?}
-    oldptidknown -- yes --> naccidforoldptid{Does NACCID\n exist for PTID\n of previous\n enrollment?}
-    oldptidknown -- no --> identifytransfer(Record pending\n incoming transfer\n needing identification) --> identifyerror((error))
-    naccidforoldptid -- yes --> naccidprovided{Is NACCID\n provided?}
-    naccidforoldptid -- no --> nonaccid((error))
-    naccidprovided -- yes --> existingnaccid{Does\n provided\n NACCID\n match?}
-    naccidprovided -- no --> recordpending1(Record pending\n incoming transfer\n needing confirmation) --> pendingerror2((error))
-
-    existingnaccid -- yes --> matchpendingtransfer{Does a pending\n transfer exactly\n match?}
-    existingnaccid -- no --> mismatch((error))
-    matchpendingtransfer -- yes --> recordtransfer(Associate NACCID\n and record transfer) --> stop((done))
-    matchpendingtransfer -- no --> recordpending(Record pending\n incoming transfer\n waiting for match) --> pendingerror((error))
-style start fill:#000, stroke:#000
-```
-
-Only the case where 
