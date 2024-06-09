@@ -77,18 +77,21 @@ When a form represents a transfer into a center, the goal is to
   
 ```mermaid
 graph TB
-    start((*)) --> naccidprovided{Is NACCID\n provided?}
-    naccidprovided -- yes --> hasparticipant{Is there a participant for provided NACCID?}
+    start((*)) --> 
+    
+    
+    naccidprovided{Is NACCID\n provided?}
+    naccidprovided -- yes --> hasparticipant{Is NACCID valid?}
     naccidprovided -- no --> prevenrolled{Was\n previously\n enrolled?}
     hasparticipant -- yes --> prevenrolled
     hasparticipant -- no --> noparticipant((error))
 
     prevenrolled -- yes --> oldptidknown{Is old\n PTID known?}
     prevenrolled -- no --> whattransfer((error))
-    prevenrolled -- unkwnown --> recordtransfer(Create transfer record) --> pendingerror((error))
+    prevenrolled -- unkwown --> recordtransfer(Create transfer record) --> pendingerror((error))
 
     oldptidknown -- yes --> naccidforoldptid{Does NACCID\n exist for PTID\n of previous\n enrollment?}
-    oldptidknown -- no --> identifytransfer(Record pending\n incoming transfer\n needing identification) --> identifyerror((error))
+    oldptidknown -- no --> recordtransfer
     naccidforoldptid -- yes --> existingnaccid{Does\n provided\n NACCID\n match?}
     naccidforoldptid -- no --> nonaccid((error))
     existingnaccid -- yes --> recordtransfer
