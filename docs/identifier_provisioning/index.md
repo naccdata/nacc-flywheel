@@ -85,14 +85,13 @@ graph TB
     naccidprovided -- no --> prevenrolled{Was\n previously\n enrolled?}
     hasparticipant -- yes --> prevenrolled
     hasparticipant -- no --> noparticipant((error))
-
-    prevenrolled -- yes --> oldptidknown{Is old\n PTID known?}
     prevenrolled -- no --> whattransfer((error))
-    prevenrolled -- unkwown --> recordtransfer(Create transfer record) --> pendingerror((error))
+    prevenrolled -- yes --> oldptidknown{Is old\n PTID known?}
+    prevenrolled -- unknown --> recordtransfer(Create transfer record) --> pendingerror((error))
 
     oldptidknown -- yes --> naccidforoldptid{Does NACCID\n exist for PTID\n of previous\n enrollment?}
     oldptidknown -- no --> recordtransfer
-    naccidforoldptid -- yes --> existingnaccid{Does\n provided\n NACCID\n match?}
+    naccidforoldptid -- yes --> existingnaccid{Do\n NACCIDs\n match?}
     naccidforoldptid -- no --> nonaccid((error))
     existingnaccid -- yes --> recordtransfer
     existingnaccid -- no --> mismatch((error))
