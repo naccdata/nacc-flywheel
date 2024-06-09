@@ -4,7 +4,7 @@ import abc
 import logging
 from typing import Any, Dict, List, Optional, TextIO
 
-from enrollment.enrollment_transfer import TransferRecord
+from enrollment.enrollment_transfer import TransferRecord, TransferWriter
 from identifiers.identifiers_lambda_repository import IdentifierRequestObject
 from identifiers.identifiers_repository import (IdentifierRepository,
                                                 NoMatchingIdentifier)
@@ -177,7 +177,8 @@ def transfer_not_implemented_error(line: int,
 class TransferVisitor(CSVVisitor):
     """Visitor for processing transfers into a center."""
 
-    def __init__(self, error_writer: ErrorWriter, transfer_writer: CSVWriter,
+    def __init__(self, error_writer: ErrorWriter,
+                 transfer_writer: TransferWriter,
                  batch: IdentifierBatch) -> None:
         self.__error_writer = error_writer
         self.__transfer_writer = transfer_writer
@@ -287,7 +288,7 @@ class TransferVisitor(CSVVisitor):
             center_identifiers=new_identifiers,
             previous_identifiers=previous_identifiers,
             naccid=naccid)
-        self.__transfer_writer.write(transfer_record)
+        self.__transfer_writer.write(transfer_record.model_dump())
 
         self.__error_writer.write(
             transfer_not_implemented_error(field='enrltype',
