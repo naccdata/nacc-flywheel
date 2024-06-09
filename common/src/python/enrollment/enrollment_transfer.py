@@ -1,6 +1,7 @@
 """Models to represent information in the Participant enrollment/transfer form.
 """
 
+from datetime import datetime
 from typing import List, Literal, Optional, TextIO
 from pydantic import BaseModel, Field
 
@@ -101,12 +102,13 @@ class TransferRecord(BaseModel):
     previous_identifiers: Optional[CenterIdentifiers]
     naccid: Optional[str] = Field(min_length=10, pattern=r"^NACC\d{6}$")
 
-class TransferWriter(CSVWriter):
-    """CSVWRiter for writing transfer records."""
 
-    def __init__(self, stream: TextIO) -> None:
-        fieldnames = TransferRecord
-        super().__init__(stream, fieldnames)
+# class TransferWriter(CSVWriter):
+#     """CSVWRiter for writing transfer records."""
+
+#     def __init__(self, stream: TextIO) -> None:
+#         fieldnames = list(TransferRecord.model_fields.keys())
+#         super().__init__(stream, fieldnames)
 
 class EnrollmentRecord(BaseModel):
     center_identifier: CenterIdentifiers
