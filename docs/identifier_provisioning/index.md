@@ -66,39 +66,35 @@ sequenceDiagram
 
 ### Transfer
 
-A transfer could either be for the receiving center or the previous center.
+A transfer is reported by the receiving center.
 The form has a slight ambiguity about whether it is a transfer out of a center or into a center.
-This is due to asking both whether the participant was previously enrolled and whether the participant is transferring out.
-This is handled by first checking the response for whether they are transferring elsewhere, and, if so, not checking the information about the previous center.
 
-```mermaid
-graph TB
-    start((*)) --> istransferout{Transferring\n elsewhere?}
-    istransferout -- yes --> transferout(Transfer Out) --> stop((done))
-    istransferout -- no --> prevenrolled{Was\n previously\n enrolled?}
-    prevenrolled -- yes --> transferin(Transfer In)  --> stop((done))
-    prevenrolled -- no --> whattransfer((error)) 
-style start fill:#000, stroke:#000
-```
-
-When a form represents transferring out of a center, the goal is to either
-
-* identify a corresponding incoming transfer, or
-* create a record of the pending outgoing transfer
-
-```mermaid
-graph TB
-    start((*)) --> matchpendingtransfer{Does a pending\n transfer exactly\n match?}
-    matchpendingtransfer -- yes --> recordtransfer(Associate NACCID\n and record transfer) --> stop((done))
-    matchpendingtransfer -- no --> logtransfer(Record pending\n outgoing transfer\n in enrollment metadata) --> stop((done))
-style start fill:#000, stroke:#000
-```
-
-When a form represents transferring into a center, the goal is to
+When a form represents a transfer into a center, the goal is to
 
 * identify the participant by NACCID
 * confirm that the participant has transferred
 * link new identifiers to the NACCID
+  
+```mermaid
+graph TB
+    start((*)) --> prevenrolled{Was\n previously\n enrolled or unknown?}
+    prevenrolled -- yes --> oldptidknown{Is old\n PTID known?}
+    prevenrolled -- no --> whattransfer((error))
+    oldptidknown -- yes --> naccidforoldptid{Does NACCID\n exist for PTID\n of previous\n enrollment?}
+    oldptidknown -- no --> identifytransfer(Record pending\n incoming transfer\n needing identification) --> identifyerror((error))
+    naccidforoldptid -- yes --> naccidprovided{Is NACCID\n provided?}
+    naccidforoldptid -- no --> nonaccid((error))
+    naccidprovided -- yes --> existingnaccid{Does\n provided\n NACCID\n match?}
+    naccidprovided -- no --> recordpending1(Record pending\n incoming transfer\n needing confirmation) --> pendingerror2((error))
+
+    existingnaccid -- yes --> matchpendingtransfer{Does a pending\n transfer exactly\n match?}
+    existingnaccid -- no --> mismatch((error))
+    matchpendingtransfer -- yes --> recordtransfer(Associate NACCID\n and record transfer) --> stop((done))
+    matchpendingtransfer -- no --> recordpending(Record pending\n incoming transfer\n waiting for match) --> pendingerror((error))
+style start fill:#000, stroke:#000
+```
+
+
 
 
 ```mermaid
