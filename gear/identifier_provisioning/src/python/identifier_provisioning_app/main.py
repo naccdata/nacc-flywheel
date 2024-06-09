@@ -4,14 +4,16 @@ import abc
 import logging
 from typing import Any, Dict, List, Optional, TextIO
 
+from enrollment.enrollment_transfer import TransferRecord
 from identifiers.identifiers_lambda_repository import IdentifierRequestObject
 from identifiers.identifiers_repository import (IdentifierRepository,
                                                 NoMatchingIdentifier)
-from identifiers.model import IdentifierObject
+from identifiers.model import CenterIdentifiers, IdentifierObject
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import (CSVLocation, ErrorWriter, FileError,
                             empty_field_error, identifier_error,
                             missing_header_error, unexpected_value_error)
+from outputs.outputs import CSVWriter
 
 log = logging.getLogger(__name__)
 
@@ -27,17 +29,6 @@ def is_new_enrollment(row: Dict[str, Any]) -> bool:
     return int(row['enrltype']) == 1
 
 
-def is_transfer_out(row: Dict[str, Any]) -> bool:
-    """Checks if row is a transfer out of center.
-
-    Args:
-      row: the dictionary for the row.
-    Returns:
-      True if the row represents a transfer. False, otherwise.
-    """
-    return int(row['ptxfer']) == 1
-
-
 def previously_enrolled(row: Dict[str, Any]) -> bool:
     """Checks if row is has previous enrollment set.
 
@@ -47,6 +38,17 @@ def previously_enrolled(row: Dict[str, Any]) -> bool:
       True if the row represents a previous enrollment. False, otherwise.
     """
     return int(row['prevenrl']) == 1
+
+
+def guid_available(row: Dict[str, Any]) -> bool:
+    """Checks if row has available GUID.
+
+    Args:
+      row: the dictionary for the row
+    Returns:
+      True if the row indicates the GUID is available
+    """
+    return int(row['guidavail']) == 1
 
 
 def has_known_naccid(row: Dict[str, Any]) -> bool:
@@ -93,10 +95,16 @@ class IdentifierBatch:
           NoMatchingIdentifier if there is no Identifier for the search
         """
         if adcid and ptid:
-            return self.__repo.get(adcid=adcid, ptid=ptid)
+            try:
+                return self.__repo.get(adcid=adcid, ptid=ptid)
+            except NoMatchingIdentifier:
+                return None
 
         if naccid:
-            return self.__repo.get(naccid=naccid)
+            try:
+                return self.__repo.get(naccid=naccid)
+            except NoMatchingIdentifier:
+                return None
 
         if guid:
             return None
@@ -166,43 +174,15 @@ def transfer_not_implemented_error(line: int,
                      message=error_message)
 
 
-class TransferOutVisitor(CSVVisitor):
-    """Visitor for processing transfer out of center."""
-
-    def __init__(self, error_writer: ErrorWriter) -> None:
-        self.__error_writer = error_writer
-
-    def visit_header(self, header: List[str]) -> bool:
-        """Checks the header for a transfer from a center.
-
-        Args:
-          header: the list of column headers
-        Returns:
-          True if the column header has errors, False otherwise
-        """
-        return False
-
-    def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Visits row for transfer out of center.
-
-        Args:
-          row: the form row
-        Returns:
-          True if there are errors with the row, False otherwise.
-        """
-        # check for matching incoming record at other center
-        # if one exists, assign IDs
-        # otherwise create outgoing transfer record, tag possible matches
-        return False
-
-
-class TransferInVisitor(CSVVisitor):
+class TransferVisitor(CSVVisitor):
     """Visitor for processing transfers into a center."""
 
-    def __init__(self, error_writer: ErrorWriter,
+    def __init__(self, error_writer: ErrorWriter, transfer_writer: CSVWriter,
                  batch: IdentifierBatch) -> None:
         self.__error_writer = error_writer
+        self.__transfer_writer = transfer_writer
         self.__batch = batch
+        self.__validator = NewPTIDRowValidator(batch, error_writer)
 
     def visit_header(self, header: List[str]) -> bool:
         """Checks that the header has expected column headings.
@@ -212,7 +192,9 @@ class TransferInVisitor(CSVVisitor):
         Returns:
           True if there are errors, False otherwise.
         """
-        expected_columns = {'oldadcid', 'oldptid', 'naccidknwn', 'naccid'}
+        expected_columns = {
+            'oldadcid', 'oldptid', 'naccidknwn', 'naccid', 'prevenrl'
+        }
         if not expected_columns.issubset(set(header)):
             self.__error_writer.write(missing_header_error())
             return True
@@ -221,71 +203,96 @@ class TransferInVisitor(CSVVisitor):
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Visits enrollment/transfer data for single form."""
-        previous_adcid = row['oldadcid']
-        if not previous_adcid:
-            self.__error_writer.write(
-                empty_field_error(field='oldadcid',
-                                  line=line_num,
-                                  message='No ADCID given for transfer'))
-            return True
-        previous_ptid = row['oldptid']
-        if not previous_ptid:
-            # TODO: record pending incoming transfer needing identification
-            self.__error_writer.write(
-                empty_field_error(field='oldptid',
-                                  line=line_num,
-                                  message='No PTID given for transfer'))
+        if not self.__validator.check(row, line_num):
             return True
 
-        try:
-            ptid_identifier = self.__batch.get(adcid=previous_adcid,
-                                               ptid=previous_ptid)
-            assert ptid_identifier
-        except NoMatchingIdentifier:
-            self.__error_writer.write(
-                identifier_error(
-                    value=previous_ptid,
-                    line=line_num,
-                    message=(f"No NACCID found for ADCID {previous_adcid}, "
-                             f"PTID {previous_ptid}")))
-            return True
+        new_identifiers = CenterIdentifiers(adcid=row['adcid'],
+                                            ptid=row['ptid'])
+        previous_identifiers = None
+        naccid_identifier = None
+        ptid_identifier = None
+        guid_identifier = None
 
         if has_known_naccid(row):
             known_naccid = row['naccid']
             if known_naccid:
-                try:
-                    naccid_identifier = self.__batch.get(naccid=known_naccid)
-                    assert naccid_identifier
-                    self.__error_writer.write(
-                        transfer_not_implemented_error(
-                            field='naccid',
-                            line=line_num,
-                            message=("Transfer not performed for NACCID "
-                                     f"{naccid_identifier.naccid}")))
-                except NoMatchingIdentifier:
+                naccid_identifier = self.__batch.get(naccid=known_naccid)
+                if not naccid_identifier:
                     self.__error_writer.write(
                         identifier_error(field='naccid',
                                          value=known_naccid,
                                          line=line_num))
                     return True
 
-        if ptid_identifier != naccid_identifier:
-            self.__error_writer.write(
-                FileError(error_type='error',
-                          error_code='mismatched-id',
-                          location=CSVLocation(line=line_num,
-                                               column_name='naccid'),
-                          message=("mismatched NACCID for "
-                                   f"{previous_adcid}-{previous_ptid} "
-                                   f"and {known_naccid}")))
-            return True
+        if guid_available(row):
+            guid_identifier = self.__batch.get(guid=row['guid'])
+
+            if not guid_identifier:
+                self.__error_writer.write(
+                    identifier_error(
+                        field='guid',
+                        value=row['guid'],
+                        line=line_num,
+                        message=f"No NACCID found for GUID {row['guid']}"))
+
+            if naccid_identifier and guid_identifier != naccid_identifier:
+                self.__error_writer.write(
+                    FileError(error_type='error',
+                              error_code='mismatched-id',
+                              location=CSVLocation(line=line_num,
+                                                   column_name='naccid'),
+                              message=("mismatched NACCID for "
+                                       f"Guid {row['guid']} "
+                                       f"and provided NACCID {known_naccid}")))
+                return True
+            naccid_identifier = guid_identifier
+
+        if previously_enrolled(row):
+            previous_adcid = row['oldadcid']
+            previous_ptid = row['oldptid']
+            if previous_adcid and previous_ptid:
+                ptid_identifier = self.__batch.get(adcid=previous_adcid,
+                                                   ptid=previous_ptid)
+                if not ptid_identifier:
+                    self.__error_writer.write(
+                        identifier_error(
+                            value=previous_ptid,
+                            line=line_num,
+                            message=(
+                                f"No NACCID found for ADCID {previous_adcid}, "
+                                f"PTID {previous_ptid}")))
+                    return True
+
+                if naccid_identifier and ptid_identifier != naccid_identifier:
+                    self.__error_writer.write(
+                        FileError(error_type='error',
+                                  error_code='mismatched-id',
+                                  location=CSVLocation(line=line_num,
+                                                       column_name='naccid'),
+                                  message=("mismatched NACCID for "
+                                           f"{previous_adcid}-{previous_ptid} "
+                                           f"and {known_naccid}")))
+                    return True
+                naccid_identifier = ptid_identifier
+
+                previous_identifiers = CenterIdentifiers(adcid=previous_adcid,
+                                                         ptid=previous_ptid)
+
+        naccid = None
+        if naccid_identifier:
+            naccid = naccid_identifier.naccid
+        transfer_record = TransferRecord(
+            date=row['frmdate_enrl'],
+            initials=row['initials_enrl'],
+            center_identifiers=new_identifiers,
+            previous_identifiers=previous_identifiers,
+            naccid=naccid)
+        self.__transfer_writer.write(transfer_record)
 
         self.__error_writer.write(
-            transfer_not_implemented_error(
-                field='oldptid',
-                line=line_num,
-                message=("Transfer not performed. NACCID: "
-                         f"{ptid_identifier.naccid}")))
+            transfer_not_implemented_error(field='enrltype',
+                                           line=line_num,
+                                           message="Transfer not performed"))
         return True
 
 
@@ -325,6 +332,7 @@ class NewPTIDRowValidator(RowValidator):
         if not identifier:
             return True
 
+        log.info('Found participant for (%s,%s)', row['adcid'], row['ptid'])
         self.__error_writer.write(
             existing_participant_error(field='ptid',
                                        line=line_number,
@@ -350,11 +358,15 @@ class NewGUIDRowValidator(RowValidator):
         Returns:
           True if no existing NACCID is found for the GUID, False otherwise
         """
+        if not guid_available(row):
+            return True
+
         guid = row['guid']
         identifier = self.__identifiers.get(guid=guid)
         if not identifier:
             return True
 
+        log.info('Found participant for GUID %s', row['guid'])
         self.__error_writer.write(
             existing_participant_error(
                 field='guid',
@@ -425,6 +437,8 @@ class NewEnrollmentVisitor(CSVVisitor):
         if not self.__validator.check(row, line_num):
             return True
 
+        log.info('Adding new enrollment for (%s,%s)', row['adcid'],
+                 row['ptid'])
         self.__batch.add(
             IdentifierRequestObject(adcid=row['adcid'], ptid=row['ptid']))
 
@@ -441,9 +455,7 @@ class ProvisioningVisitor(CSVVisitor):
         self.__error_writer = error_writer
         self.__enrollment_visitor = NewEnrollmentVisitor(error_writer,
                                                          batch=batch)
-        self.__transfer_in_visitor = TransferInVisitor(error_writer,
-                                                       batch=batch)
-        self.__transfer_out_visitor = TransferOutVisitor(error_writer)
+        self.__transfer_in_visitor = TransferVisitor(error_writer, batch=batch)
 
     def visit_header(self, header: List[str]) -> bool:
         """Prepares visitor to work with CSV file with given header.
@@ -453,14 +465,13 @@ class ProvisioningVisitor(CSVVisitor):
         Returns:
           True if all of the visitors return True. False otherwise
         """
-        expected_columns = {'module', 'enrltype', 'prevenrl', 'ptxfer'}
+        expected_columns = {'module', 'enrltype'}
         if not expected_columns.issubset(set(header)):
             self.__error_writer.write(missing_header_error())
             return True
 
         return (self.__enrollment_visitor.visit_header(header)
-                and self.__transfer_in_visitor.visit_header(header)
-                and self.__transfer_out_visitor.visit_header(header))
+                and self.__transfer_in_visitor.visit_header(header))
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Provisions a NACCID for the NACCID and PTID.
@@ -490,25 +501,7 @@ class ProvisioningVisitor(CSVVisitor):
             return self.__enrollment_visitor.visit_row(row=row,
                                                        line_num=line_num)
 
-        # if is_transfer_out(row):
-        #     return self.__transfer_out_visitor.visit_row(row=row,
-        #                                                  line_num=line_num)
-        # if previously_enrolled(row):
-        #     return self.__transfer_in_visitor.visit_row(row=row,
-        #                                                 line_num=line_num)
-
-        # self.__error_writer.write(
-        #     unexpected_value_error(
-        #         field='prevenrl',
-        #         value='1',
-        #         line=line_num,
-        #         message='Incoming transfer must have previous enrollment'))
-        # return False
-
-        self.__error_writer.write(
-            transfer_not_implemented_error(line=line_num,
-                                           message="Transfer not performed."))
-        return True
+        return self.__transfer_in_visitor.visit_row(row=row, line_num=line_num)
 
 
 def run(*, input_file: TextIO, form_name: str, repo: IdentifierRepository,
