@@ -1,7 +1,8 @@
 """Defines the Identifier data class."""
 from dataclasses import dataclass
+from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 @dataclass(unsafe_hash=True)
@@ -57,3 +58,17 @@ class IdentifierObject(BaseModel):
                                 naccadc=identifier.nacc_adc,
                                 ptid=identifier.ptid,
                                 naccid=identifier.naccid)
+
+
+class CenterIdentifiers(BaseModel):
+    """Model for ADCID, PTID pair."""
+    adcid: int = Field(ge=0)
+    ptid: str = Field(max_length=10)
+
+
+class ParticipantIdentifiers(BaseModel):
+    """Model for participant identifiers."""
+    center_identifiers: CenterIdentifiers
+    naccid: str = Field(min_length=10, pattern=r"^NACC\d{6}$")
+    aliases: Optional[List[str]]
+    guid: str
