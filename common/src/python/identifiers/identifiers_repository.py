@@ -44,11 +44,7 @@ class IdentifierRepository(abc.ABC):
 
     @abstractmethod
     @overload
-    def get(self,
-            *,
-            adcid: int,
-            ptid: str,
-            naccid: Optional[str] = None) -> IdentifierObject:
+    def get(self, *, adcid: int, ptid: str) -> IdentifierObject:
         ...
 
     @abstractmethod

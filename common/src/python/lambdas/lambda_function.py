@@ -1,5 +1,4 @@
-import json
-from typing import Any, Dict, Literal, Optional
+from typing import Dict, Literal, Optional
 
 import boto3
 from botocore.exceptions import ClientError
@@ -19,10 +18,11 @@ def create_lambda_client():
     if not secret_key or not access_id or not region:
         return None
 
-    return boto3.client('lambda',
-                        aws_access_key_id=access_id,
-                        aws_secret_access_key=secret_key,
-                        region_name=region)
+    return boto3.client(
+        'lambda',  # type: ignore
+        aws_access_key_id=access_id,
+        aws_secret_access_key=secret_key,
+        region_name=region)
 
 
 class BaseRequest(BaseModel):

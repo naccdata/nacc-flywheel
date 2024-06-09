@@ -65,7 +65,7 @@ def identifier_error(line: int,
     Returns:
       a FileError object initialized for an identifier error
     """
-    error_message = message if message else f'Unrecognized participant ID'
+    error_message = message if message else 'Unrecognized participant ID'
     return FileError(error_type='error',
                      error_code='identifier',
                      location=CSVLocation(line=line, column_name=field),
@@ -117,7 +117,8 @@ def unexpected_value_error(field: str,
                            value: str,
                            line: int,
                            message: Optional[str] = None) -> FileError:
-    error_message = message if message else f'Expected {value} for field {field}'
+    error_message = message if message else (
+        f'Expected {value} for field {field}')
     """Creates a FileError for an incorrect module."""
     return FileError(error_type='error',
                      error_code='unexpected-value',
