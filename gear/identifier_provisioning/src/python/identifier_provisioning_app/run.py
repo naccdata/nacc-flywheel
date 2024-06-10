@@ -18,6 +18,7 @@ from identifiers.identifiers_lambda_repository import (
 from inputs.parameter_store import ParameterStore
 from lambdas.lambda_function import LambdaClient, create_lambda_client
 from outputs.errors import ListErrorWriter
+from outputs.outputs import ListJSONWriter
 
 log = logging.getLogger(__name__)
 
@@ -27,12 +28,11 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
 
     # pylint: disable=(too-many-arguments)
     def __init__(self, client: ClientWrapper, admin_id: str,
-                 file_input: InputFileWrapper, form_name: str,
+                 file_input: InputFileWrapper,
                  identifiers_mode: IdentifiersMode) -> None:
         self.__client = client
         self.__admin_id = admin_id
         self.__file_input = file_input
-        self.__form_name = form_name
         self.__identifiers_mode: IdentifiersMode = identifiers_mode
 
     @classmethod
@@ -48,13 +48,11 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
                                              context=context)
         admin_id = context.config.get("admin_group", "nacc")
         mode = context.config.get("identifiers_mode", "dev")
-        form_name = context.config.get("form_name", "ptenrlv1")
 
         return IdentifierProvisioningVisitor(client=client,
                                              admin_id=admin_id,
                                              file_input=file_input,
-                                             identifiers_mode=mode,
-                                             form_name=form_name)
+                                             identifiers_mode=mode)
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the identifier provisioning app.
@@ -82,15 +80,17 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
         if not adcid:
             raise GearExecutionError('Unable to determine center ID for file')
 
+        transfer_writer = ListJSONWriter()
         input_path = Path(self.__file_input.filepath)
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(container_id=file_id,
                                            fw_path=proxy.get_lookup_path(
                                                proxy.get_file(file_id)))
             errors = run(input_file=csv_file,
-                         form_name=self.__form_name,
                          error_writer=error_writer,
+                         transfer_writer=transfer_writer,
                          repo=identifiers_repo)
+            # TODO: write (?) transfer_writer.object_list()
             context.metadata.add_qc_result(self.__file_input.file_input,
                                            name="validation",
                                            state="FAIL" if errors else "PASS",
