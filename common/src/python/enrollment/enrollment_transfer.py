@@ -1,13 +1,13 @@
 """Models to represent information in the Participant enrollment/transfer
 form."""
 
-import abc
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 from identifiers.identifiers_repository import IdentifierRepository
 from identifiers.model import CenterIdentifiers
+from inputs.csv_reader import RowValidator
 from outputs.errors import CSVLocation, ErrorWriter, FileError
 from pydantic import BaseModel, Field
 
@@ -167,48 +167,6 @@ def existing_participant_error(field: str,
                      error_code='participant-exists',
                      location=CSVLocation(column_name=field, line=line),
                      message=error_message)
-
-
-# pylint: disable=(too-few-public-methods)
-class RowValidator(abc.ABC):
-    """Abstract class for a RowValidator."""
-
-    @abc.abstractmethod
-    def check(self, row: Dict[str, Any], line_number: int) -> bool:
-        """Checks the row passes the validation criteria of the implementing
-        class.
-
-        Args:
-            row: the dictionary for the input row
-        Returns:
-            True if the validator check is true, False otherwise.
-        """
-
-
-# pylint: disable=(too-few-public-methods)
-class AggregateRowValidator(RowValidator):
-    """Row validator for running more than one validator."""
-
-    def __init__(self,
-                 validators: Optional[List[RowValidator]] = None) -> None:
-        if validators:
-            self.__validators = validators
-        else:
-            self.__validators = []
-
-    def check(self, row: Dict[str, Any], line_number: int) -> bool:
-        """Checks the row against each of the validators.
-
-        Args:
-            row: the dictionary for the input row
-        Returns:
-            True if all the validator checks are true, False otherwise
-        """
-        for validator in self.__validators:
-            if not validator.check(row, line_number):
-                return False
-
-        return True
 
 
 # pylint: disable=(too-few-public-methods)
