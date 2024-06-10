@@ -4,163 +4,45 @@ import abc
 import logging
 from typing import Any, Dict, List, Optional, TextIO
 
-from enrollment.enrollment_transfer import TransferRecord, TransferWriter
-from identifiers.identifiers_lambda_repository import IdentifierRequestObject
-from identifiers.identifiers_repository import (IdentifierRepository,
-                                                NoMatchingIdentifier)
+from enrollment.enrollment_transfer import (
+    AggregateRowValidator, EnrollmentRecord, NewGUIDRowValidator,
+    NewPTIDRowValidator, TransferRecord, guid_available, has_known_naccid,
+    is_new_enrollment, previously_enrolled)
+from identifiers.identifiers_repository import IdentifierRepository
 from identifiers.model import CenterIdentifiers, IdentifierObject
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import (CSVLocation, ErrorWriter, FileError,
-                            empty_field_error, identifier_error,
-                            missing_header_error, unexpected_value_error)
-from outputs.outputs import CSVWriter
+                            identifier_error, missing_header_error,
+                            unexpected_value_error)
+from outputs.outputs import JSONWriter
 
 log = logging.getLogger(__name__)
-
-
-def is_new_enrollment(row: Dict[str, Any]) -> bool:
-    """Checks if row is a new enrollment.
-
-    Args:
-      row: the dictionary for the row.
-    Returns:
-      True if the row represents a new enrollment. False, otherwise.
-    """
-    return int(row['enrltype']) == 1
-
-
-def previously_enrolled(row: Dict[str, Any]) -> bool:
-    """Checks if row is has previous enrollment set.
-
-    Args:
-      row: the dictionary for the row.
-    Returns:
-      True if the row represents a previous enrollment. False, otherwise.
-    """
-    return int(row['prevenrl']) == 1
-
-
-def guid_available(row: Dict[str, Any]) -> bool:
-    """Checks if row has available GUID.
-
-    Args:
-      row: the dictionary for the row
-    Returns:
-      True if the row indicates the GUID is available
-    """
-    return int(row['guidavail']) == 1
-
-
-def has_known_naccid(row: Dict[str, Any]) -> bool:
-    """Checks if row has a known NACCID.
-
-    Args:
-      row: the dictionary for the row.
-    Returns:
-      True if the row represents a known NACCID. False, otherwise.
-    """
-    return int(row['naccidknwn']) == 1
 
 
 class IdentifierBatch:
     """Collects new Identifier objects for commiting to repository."""
 
     def __init__(self, repo: IdentifierRepository) -> None:
-        self.__identifiers: List[IdentifierRequestObject] = []
+        self.__identifiers: List[EnrollmentRecord] = []
         self.__repo = repo
 
-    def add(self, identifier: IdentifierRequestObject) -> None:
+    def add(self, enrollment_record: EnrollmentRecord) -> None:
         """Adds the Identifier request object to this bacth.
 
         Args:
           identifier: the identifier request object
         """
-        self.__identifiers.append(identifier)
+        self.__identifiers.append(enrollment_record)
 
-    def get(self,
-            adcid: Optional[int] = None,
-            ptid: Optional[str] = None,
-            guid: Optional[str] = None,
-            naccid: Optional[str] = None) -> Optional[IdentifierObject]:
-        """Gets the identifier object for the parameters.
 
-        Args:
-          adcid: the ADCID (expect ptid)
-          ptid: the PTID (expect adcid)
-          guid: the NIA GUID
-          naccid: the NACCID
-        Returns:
-          the identifier object for the ID, None b/c I'm lazy
-        Raises:
-          NoMatchingIdentifier if there is no Identifier for the search
-        """
-        if adcid and ptid:
-            try:
-                return self.__repo.get(adcid=adcid, ptid=ptid)
-            except NoMatchingIdentifier:
-                return None
-
-        if naccid:
-            try:
-                return self.__repo.get(naccid=naccid)
-            except NoMatchingIdentifier:
-                return None
-
-        if guid:
-            return None
-
-        return None
-
-    def commit(self) -> None:
+    def commit(self) -> List[IdentifierObject]:
         """Adds identifiers to the repository.
 
         Args:
         identifier_repo: the repository for identifiers
         identifiers: the list of identifiers to add
         """
-        self.__repo.create_list(self.__identifiers)
-
-
-# pylint: disable=(too-few-public-methods)
-class RowValidator(abc.ABC):
-    """Abstract class for a RowValidator."""
-
-    @abc.abstractmethod
-    def check(self, row: Dict[str, Any], line_number: int) -> bool:
-        """Checks the row passes the validation criteria of the implementing
-        class.
-
-        Args:
-            row: the dictionary for the input row
-        Returns:
-            True if the validator check is true, False otherwise.
-        """
-
-
-# pylint: disable=(too-few-public-methods)
-class AggregateRowValidator(RowValidator):
-    """Row validator for running more than one validator."""
-
-    def __init__(self,
-                 validators: Optional[List[RowValidator]] = None) -> None:
-        if validators:
-            self.__validators = validators
-        else:
-            self.__validators = []
-
-    def check(self, row: Dict[str, Any], line_number: int) -> bool:
-        """Checks the row against each of the validators.
-
-        Args:
-            row: the dictionary for the input row
-        Returns:
-            True if all the validator checks are true, False otherwise
-        """
-        for validator in self.__validators:
-            if not validator.check(row, line_number):
-                return False
-
-        return True
+        return self.__repo.create_list(self.__identifiers)
 
 
 def transfer_not_implemented_error(line: int,
@@ -177,13 +59,12 @@ def transfer_not_implemented_error(line: int,
 class TransferVisitor(CSVVisitor):
     """Visitor for processing transfers into a center."""
 
-    def __init__(self, error_writer: ErrorWriter,
-                 transfer_writer: TransferWriter,
-                 batch: IdentifierBatch) -> None:
+    def __init__(self, error_writer: ErrorWriter, transfer_writer: JSONWriter,
+                 repo: IdentifierRepository) -> None:
         self.__error_writer = error_writer
         self.__transfer_writer = transfer_writer
-        self.__batch = batch
-        self.__validator = NewPTIDRowValidator(batch, error_writer)
+        self.__repo = repo
+        self.__validator = NewPTIDRowValidator(repo, error_writer)
 
     def visit_header(self, header: List[str]) -> bool:
         """Checks that the header has expected column headings.
@@ -217,7 +98,7 @@ class TransferVisitor(CSVVisitor):
         if has_known_naccid(row):
             known_naccid = row['naccid']
             if known_naccid:
-                naccid_identifier = self.__batch.get(naccid=known_naccid)
+                naccid_identifier = self.__repo.get(naccid=known_naccid)
                 if not naccid_identifier:
                     self.__error_writer.write(
                         identifier_error(field='naccid',
@@ -226,7 +107,7 @@ class TransferVisitor(CSVVisitor):
                     return True
 
         if guid_available(row):
-            guid_identifier = self.__batch.get(guid=row['guid'])
+            guid_identifier = self.__repo.get(guid=row['guid'])
 
             if not guid_identifier:
                 self.__error_writer.write(
@@ -252,8 +133,8 @@ class TransferVisitor(CSVVisitor):
             previous_adcid = row['oldadcid']
             previous_ptid = row['oldptid']
             if previous_adcid and previous_ptid:
-                ptid_identifier = self.__batch.get(adcid=previous_adcid,
-                                                   ptid=previous_ptid)
+                ptid_identifier = self.__repo.get(adcid=previous_adcid,
+                                                  ptid=previous_ptid)
                 if not ptid_identifier:
                     self.__error_writer.write(
                         identifier_error(
@@ -297,117 +178,15 @@ class TransferVisitor(CSVVisitor):
         return True
 
 
-def existing_participant_error(field: str,
-                               value: str,
-                               line: int,
-                               message: Optional[str] = None) -> FileError:
-    """Creates a FileError for unexpected existing participant."""
-    error_message = message if message else ('Participant exists for PTID '
-                                             f'{value}')
-    return FileError(error_type='error',
-                     error_code='participant-exists',
-                     location=CSVLocation(column_name=field, line=line),
-                     message=error_message)
-
-
-# pylint: disable=(too-few-public-methods)
-class NewPTIDRowValidator(RowValidator):
-    """Row validator to check that the PTID in the rows does not have a
-    NACCID."""
-
-    def __init__(self, batch: IdentifierBatch,
-                 error_writer: ErrorWriter) -> None:
-        self.__identifiers = batch
-        self.__error_writer = error_writer
-
-    def check(self, row: Dict[str, Any], line_number: int) -> bool:
-        """Checks that PTID does not already correspond to a NACCID.
-
-        Args:
-          row: the dictionary for the row
-        Returns:
-          True if no existing NACCID is found for the PTID, False otherwise
-        """
-        ptid = row['ptid']
-        identifier = self.__identifiers.get(adcid=row['adcid'], ptid=ptid)
-        if not identifier:
-            return True
-
-        log.info('Found participant for (%s,%s)', row['adcid'], row['ptid'])
-        self.__error_writer.write(
-            existing_participant_error(field='ptid',
-                                       line=line_number,
-                                       value=ptid))
-        return False
-
-
-# pylint: disable=(too-few-public-methods)
-class NewGUIDRowValidator(RowValidator):
-    """Row Validator to check whether a GUID corresponds to an existing
-    NACCID."""
-
-    def __init__(self, batch: IdentifierBatch,
-                 error_writer: ErrorWriter) -> None:
-        self.__identifiers = batch
-        self.__error_writer = error_writer
-
-    def check(self, row: Dict[str, Any], line_number: int) -> bool:
-        """Checks that the GUID does not already correspond to a NACCID.
-
-        Args:
-          row: the dictionary for the row
-        Returns:
-          True if no existing NACCID is found for the GUID, False otherwise
-        """
-        if not guid_available(row):
-            return True
-
-        guid = row['guid']
-        identifier = self.__identifiers.get(guid=guid)
-        if not identifier:
-            return True
-
-        log.info('Found participant for GUID %s', row['guid'])
-        self.__error_writer.write(
-            existing_participant_error(
-                field='guid',
-                line=line_number,
-                value=guid,
-                message=f'Participant exists for GUID {guid}'))
-        return False
-
-
-# pylint: disable=(too-few-public-methods)
-class NoDemographicMatchRowValidator(RowValidator):
-    """Row Validator to check whether the demographics match any existing
-    participants."""
-
-    def __init__(self, batch: IdentifierBatch,
-                 error_writer: ErrorWriter) -> None:
-        self.__identifiers = batch
-        self.__error_writer = error_writer
-
-    def check(self, row: Dict[str, Any], line_number: int) -> bool:
-        """Checks that row demographics do not match an existing participant.
-
-        Args:
-          row: the dictionary for the row
-        Returns:
-          True if no existing participant matches demographics, False otherwise
-        """
-        return True
-
-
 class NewEnrollmentVisitor(CSVVisitor):
     """A CSV Visitor class for processing new enrollment forms."""
 
-    def __init__(self, error_writer: ErrorWriter,
+    def __init__(self, error_writer: ErrorWriter, repo: IdentifierRepository,
                  batch: IdentifierBatch) -> None:
         self.__batch = batch
         self.__validator = AggregateRowValidator([
-            NewPTIDRowValidator(batch, error_writer),
-            NewGUIDRowValidator(batch, error_writer),
-            NoDemographicMatchRowValidator(batch, error_writer)
+            NewPTIDRowValidator(repo, error_writer),
+            NewGUIDRowValidator(repo, error_writer)
         ])
         self.__error_writer = error_writer
 
@@ -440,8 +219,7 @@ class NewEnrollmentVisitor(CSVVisitor):
 
         log.info('Adding new enrollment for (%s,%s)', row['adcid'],
                  row['ptid'])
-        self.__batch.add(
-            IdentifierRequestObject(adcid=row['adcid'], ptid=row['ptid']))
+        self.__batch.add(EnrollmentRecord.create_from(row))
 
         return False
 
@@ -451,12 +229,15 @@ class ProvisioningVisitor(CSVVisitor):
     forms."""
 
     def __init__(self, form_name: str, error_writer: ErrorWriter,
-                 batch: IdentifierBatch) -> None:
+                 transfer_writer: JSONWriter, batch: IdentifierBatch,
+                 repo: IdentifierRepository) -> None:
         self.__form_name = form_name
         self.__error_writer = error_writer
         self.__enrollment_visitor = NewEnrollmentVisitor(error_writer,
+                                                         repo=repo,
                                                          batch=batch)
-        self.__transfer_in_visitor = TransferVisitor(error_writer, batch=batch)
+        self.__transfer_in_visitor = TransferVisitor(
+            error_writer, repo=repo, transfer_writer=transfer_writer)
 
     def visit_header(self, header: List[str]) -> bool:
         """Prepares visitor to work with CSV file with given header.
@@ -506,7 +287,7 @@ class ProvisioningVisitor(CSVVisitor):
 
 
 def run(*, input_file: TextIO, form_name: str, repo: IdentifierRepository,
-        error_writer: ErrorWriter):
+        error_writer: ErrorWriter, transfer_writer: JSONWriter):
     """Runs identifier provisioning process.
 
     Args:
@@ -520,6 +301,9 @@ def run(*, input_file: TextIO, form_name: str, repo: IdentifierRepository,
                          visitor=ProvisioningVisitor(
                              form_name=form_name,
                              batch=identifier_batch,
-                             error_writer=error_writer))
-    identifier_batch.commit()
+                             repo=repo,
+                             error_writer=error_writer,
+                             transfer_writer=transfer_writer))
+    identifier_list = identifier_batch.commit()
+
     return has_error
