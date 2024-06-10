@@ -41,3 +41,4 @@ from .models.user import User as User
 from .models.view_id_output import ViewIdOutput as ViewIdOutput
 from .models.viewer_app import ViewerApp as ViewerApp
 from .typing.role_assignment import RoleAssignment as RoleAssignment
+from .models.session import Session
