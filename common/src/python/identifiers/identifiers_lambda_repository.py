@@ -4,7 +4,7 @@ from typing import List, Literal, Optional, overload
 
 from identifiers.identifiers_repository import (IdentifierRepository,
                                                 NoMatchingIdentifier)
-from identifiers.model import IdentifierObject
+from identifiers.model import CenterIdentifiers, IdentifierObject
 from lambdas.lambda_function import BaseRequest, LambdaClient
 from pydantic import BaseModel, Field
 
@@ -15,21 +15,13 @@ class ListRequest(BaseRequest):
     limit: int = Field(le=100)
 
 
-class IdentifierRequest(BaseRequest):
+class IdentifierRequest(BaseRequest, CenterIdentifiers):
     """Request model for creating Identifier."""
-    adcid: int = Field(ge=0)
-    ptid: str = Field(max_length=10)
-
-
-class IdentifierRequestObject(BaseModel):
-    """Model for individual identifiers within a list."""
-    adcid: int
-    ptid: str
 
 
 class IdentifierListRequest(BaseRequest):
     """Model for request to lambda."""
-    identifiers: List[IdentifierRequestObject]
+    identifiers: List[CenterIdentifiers]
 
 
 class ADCIDRequest(ListRequest):
@@ -84,7 +76,7 @@ class IdentifiersLambdaRepository(IdentifierRepository):
 
     def create_list(
             self,
-            identifiers: IdentifierListRequest) -> List[IdentifierObject]:
+            identifiers: List[CenterIdentifiers]) -> List[IdentifierObject]:
         """Creates several Identifiers in the repository.
 
         Args:
@@ -93,7 +85,9 @@ class IdentifiersLambdaRepository(IdentifierRepository):
            list of Identifier objects
         """
         response = self.__client.invoke(
-            name='create-identifier-list-lambda-function', request=identifiers)
+            name='create-identifier-list-lambda-function',
+            request=IdentifierListRequest(mode=self.__mode,
+                                          identifiers=identifiers))
         if response.statusCode != 200:
             raise NoMatchingIdentifier("No identifier created")
 
