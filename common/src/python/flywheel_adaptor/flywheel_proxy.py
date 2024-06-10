@@ -12,6 +12,7 @@ from flywheel.models.group_role import GroupRole
 from flywheel.models.project_parents import ProjectParents
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
+from flywheel.models.subject import Subject
 from flywheel.models.user import User
 from flywheel.rest import ApiException
 from fw_client import FWClient
@@ -1124,3 +1125,23 @@ class ProjectAdaptor:
             index += 1
 
         return info
+
+    def add_subject(self, label: str) -> Subject:
+        """Adds a subject with the given label.
+        
+        Args:
+          label: the subject label
+        Returns:
+          the created Subject object
+        """
+        return self.__project.add_subject(label=label)
+    
+    def find_subject(self, label: str) -> Optional[Subject]:
+        """Finds the suject with the label.
+        
+        Args:
+          label: the subject label
+        Returns:
+          the Subject object with the label. None, otherwise
+        """
+        session = self.__project.subjects.find_first(f'label={label}')
