@@ -6,6 +6,8 @@ from typing import Any, Dict, Iterator, List, Optional, TextIO
 from enrollment.enrollment_transfer import (
     EnrollmentRecord, NewGUIDRowValidator, NewPTIDRowValidator, TransferRecord,
     guid_available, has_known_naccid, is_new_enrollment, previously_enrolled)
+from flywheel.file_spec import FileSpec
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from identifiers.identifiers_repository import IdentifierRepository
 from identifiers.model import CenterIdentifiers
 from inputs.csv_reader import AggregateRowValidator, CSVVisitor, read_csv
@@ -303,7 +305,7 @@ class ProvisioningVisitor(CSVVisitor):
         return self.__transfer_in_visitor.visit_row(row=row, line_num=line_num)
 
 
-def run(*, input_file: TextIO, repo: IdentifierRepository,
+def run(*, input_file: TextIO, repo: IdentifierRepository, enrollment_project: ProjectAdaptor,
         error_writer: ErrorWriter, transfer_writer: JSONWriter):
     """Runs identifier provisioning process.
 
@@ -323,9 +325,26 @@ def run(*, input_file: TextIO, repo: IdentifierRepository,
     enrollment_batch.commit()
     
     for record in enrollment_batch:
-        # create subject
-        # 
-        pass
+        if not record.naccid:
+            log.error('NACCID should exist for enrollment record %s/%s', record.center_identifier.adcid, record.center_identifier.ptid)
+            continue
+
+        if enrollment_project.find_subject(label=record.naccid):
+            log.error('Subject with NACCID %s exists', record.naccid)
+            continue
+
+        subject = enrollment_project.add_subject(record.naccid)
+
+        session = subject.sessions.find_first('label=enrollment_transfer')
+        if not session:
+            session = subject.add_session("enrollment_transfer")
+        
+        acquisition = session.acquisitions.find_first("label=enrollment")
+        if not acquisition:
+            acquisition = session.add_acquisition("enrollment")
+
+        record_file_spec = FileSpec('enrollment.json', record.model_dump_json(exclude_none=True), 'application/json')
+        acquisition.upload_file(record_file_spec)
 
     
 
