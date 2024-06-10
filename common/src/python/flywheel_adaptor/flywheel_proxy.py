@@ -1128,17 +1128,17 @@ class ProjectAdaptor:
 
     def add_subject(self, label: str) -> Subject:
         """Adds a subject with the given label.
-        
+
         Args:
           label: the subject label
         Returns:
           the created Subject object
         """
         return self.__project.add_subject(label=label)
-    
+
     def find_subject(self, label: str) -> Optional[Subject]:
         """Finds the suject with the label.
-        
+
         Args:
           label: the subject label
         Returns:

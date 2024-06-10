@@ -29,7 +29,7 @@ class EnrollmentBatch:
     def __iter__(self) -> Iterator[EnrollmentRecord]:
         """Returns an iterator to the the enrollment records in this batch."""
         return iter(self.__records.values())
-    
+
     def __len__(self) -> int:
         """Returns the number of enrollment records in this batch."""
         return len(self.__records.values())
@@ -248,9 +248,8 @@ class ProvisioningVisitor(CSVVisitor):
     """A CSV Visitor class for processing participant enrollment and transfer
     forms."""
 
-    def __init__(self, error_writer: ErrorWriter,
-                 transfer_writer: JSONWriter, batch: EnrollmentBatch,
-                 repo: IdentifierRepository) -> None:
+    def __init__(self, error_writer: ErrorWriter, transfer_writer: JSONWriter,
+                 batch: EnrollmentBatch, repo: IdentifierRepository) -> None:
         self.__error_writer = error_writer
         self.__enrollment_visitor = NewEnrollmentVisitor(error_writer,
                                                          repo=repo,
@@ -305,8 +304,9 @@ class ProvisioningVisitor(CSVVisitor):
         return self.__transfer_in_visitor.visit_row(row=row, line_num=line_num)
 
 
-def run(*, input_file: TextIO, repo: IdentifierRepository, enrollment_project: ProjectAdaptor,
-        error_writer: ErrorWriter, transfer_writer: JSONWriter):
+def run(*, input_file: TextIO, repo: IdentifierRepository,
+        enrollment_project: ProjectAdaptor, error_writer: ErrorWriter,
+        transfer_writer: JSONWriter):
     """Runs identifier provisioning process.
 
     Args:
@@ -323,10 +323,12 @@ def run(*, input_file: TextIO, repo: IdentifierRepository, enrollment_project: P
                              error_writer=error_writer,
                              transfer_writer=transfer_writer))
     enrollment_batch.commit()
-    
+
     for record in enrollment_batch:
         if not record.naccid:
-            log.error('NACCID should exist for enrollment record %s/%s', record.center_identifier.adcid, record.center_identifier.ptid)
+            log.error('NACCID should exist for enrollment record %s/%s',
+                      record.center_identifier.adcid,
+                      record.center_identifier.ptid)
             continue
 
         if enrollment_project.find_subject(label=record.naccid):
@@ -338,14 +340,15 @@ def run(*, input_file: TextIO, repo: IdentifierRepository, enrollment_project: P
         session = subject.sessions.find_first('label=enrollment_transfer')
         if not session:
             session = subject.add_session("enrollment_transfer")
-        
+
         acquisition = session.acquisitions.find_first("label=enrollment")
         if not acquisition:
             acquisition = session.add_acquisition("enrollment")
 
-        record_file_spec = FileSpec('enrollment.json', record.model_dump_json(exclude_none=True), 'application/json')
+        record_file_spec = FileSpec(
+            name='enrollment.json',
+            contents=record.model_dump_json(exclude_none=True),
+            content_type='application/json')
         acquisition.upload_file(record_file_spec)
-
-    
 
     return has_error
