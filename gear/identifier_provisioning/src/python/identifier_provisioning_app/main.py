@@ -1,7 +1,7 @@
 """Defines Identifier Provisioning."""
 
 import logging
-from typing import Any, Dict, List, Optional, TextIO
+from typing import Any, Dict, Iterator, List, Optional, TextIO
 
 from enrollment.enrollment_transfer import (
     EnrollmentRecord, NewGUIDRowValidator, NewPTIDRowValidator, TransferRecord,
@@ -17,12 +17,20 @@ from outputs.outputs import JSONWriter
 log = logging.getLogger(__name__)
 
 
-class IdentifierBatch:
+class EnrollmentBatch:
     """Collects new Identifier objects for commiting to repository."""
 
     def __init__(self, repo: IdentifierRepository) -> None:
         self.__records: Dict[str, EnrollmentRecord] = {}
         self.__repo = repo
+
+    def __iter__(self) -> Iterator[EnrollmentRecord]:
+        """Returns an iterator to the the enrollment records in this batch."""
+        return iter(self.__records.values())
+    
+    def __len__(self) -> int:
+        """Returns the number of enrollment records in this batch."""
+        return len(self.__records.values())
 
     def add(self, enrollment_record: EnrollmentRecord) -> None:
         """Adds the Identifier request object to this bacth.
@@ -192,7 +200,7 @@ class NewEnrollmentVisitor(CSVVisitor):
     """A CSV Visitor class for processing new enrollment forms."""
 
     def __init__(self, error_writer: ErrorWriter, repo: IdentifierRepository,
-                 batch: IdentifierBatch) -> None:
+                 batch: EnrollmentBatch) -> None:
         self.__batch = batch
         self.__validator = AggregateRowValidator([
             NewPTIDRowValidator(repo, error_writer),
@@ -239,7 +247,7 @@ class ProvisioningVisitor(CSVVisitor):
     forms."""
 
     def __init__(self, error_writer: ErrorWriter,
-                 transfer_writer: JSONWriter, batch: IdentifierBatch,
+                 transfer_writer: JSONWriter, batch: EnrollmentBatch,
                  repo: IdentifierRepository) -> None:
         self.__error_writer = error_writer
         self.__enrollment_visitor = NewEnrollmentVisitor(error_writer,
@@ -304,14 +312,21 @@ def run(*, input_file: TextIO, repo: IdentifierRepository,
       form_name: the module designator for the form
       error_writer: the error output writer
     """
-    identifier_batch = IdentifierBatch(repo=repo)
+    enrollment_batch = EnrollmentBatch(repo=repo)
     has_error = read_csv(input_file=input_file,
                          error_writer=error_writer,
                          visitor=ProvisioningVisitor(
-                             batch=identifier_batch,
+                             batch=enrollment_batch,
                              repo=repo,
                              error_writer=error_writer,
                              transfer_writer=transfer_writer))
-    identifier_batch.commit()
+    enrollment_batch.commit()
+    
+    for record in enrollment_batch:
+        # create subject
+        # 
+        pass
+
+    
 
     return has_error
