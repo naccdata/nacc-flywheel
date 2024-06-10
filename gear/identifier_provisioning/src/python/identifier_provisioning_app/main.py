@@ -1,16 +1,14 @@
 """Defines Identifier Provisioning."""
 
-import abc
 import logging
 from typing import Any, Dict, List, Optional, TextIO
 
 from enrollment.enrollment_transfer import (
-    AggregateRowValidator, EnrollmentRecord, NewGUIDRowValidator,
-    NewPTIDRowValidator, TransferRecord, guid_available, has_known_naccid,
-    is_new_enrollment, previously_enrolled)
+    EnrollmentRecord, NewGUIDRowValidator, NewPTIDRowValidator, TransferRecord,
+    guid_available, has_known_naccid, is_new_enrollment, previously_enrolled)
 from identifiers.identifiers_repository import IdentifierRepository
-from identifiers.model import CenterIdentifiers, IdentifierObject
-from inputs.csv_reader import CSVVisitor, read_csv
+from identifiers.model import CenterIdentifiers
+from inputs.csv_reader import AggregateRowValidator, CSVVisitor, read_csv
 from outputs.errors import (CSVLocation, ErrorWriter, FileError,
                             identifier_error, missing_header_error,
                             unexpected_value_error)
@@ -23,7 +21,7 @@ class IdentifierBatch:
     """Collects new Identifier objects for commiting to repository."""
 
     def __init__(self, repo: IdentifierRepository) -> None:
-        self.__identifiers: List[EnrollmentRecord] = []
+        self.__records: Dict[str, EnrollmentRecord] = {}
         self.__repo = repo
 
     def add(self, enrollment_record: EnrollmentRecord) -> None:
@@ -32,17 +30,29 @@ class IdentifierBatch:
         Args:
           identifier: the identifier request object
         """
-        self.__identifiers.append(enrollment_record)
+        identifier = enrollment_record.center_identifier
+        self.__records[identifier.ptid] = enrollment_record
 
-
-    def commit(self) -> List[IdentifierObject]:
+    def commit(self) -> None:
         """Adds identifiers to the repository.
 
         Args:
         identifier_repo: the repository for identifiers
         identifiers: the list of identifiers to add
         """
-        return self.__repo.create_list(self.__identifiers)
+        query = [
+            record.center_identifier for record in self.__records.values()
+        ]
+        identifiers = self.__repo.create_list(query)
+        log.info(f"created {len(identifiers)} new NACCIDs")
+        if len(query) != len(identifiers):
+            log.warning(
+                f"expected {len(query)} new IDs, got {len(identifiers)}")
+
+        for identifier in identifiers:
+            record = self.__records.get(identifier.ptid)
+            if record:
+                record.naccid = identifier.naccid
 
 
 def transfer_not_implemented_error(line: int,
@@ -228,10 +238,9 @@ class ProvisioningVisitor(CSVVisitor):
     """A CSV Visitor class for processing participant enrollment and transfer
     forms."""
 
-    def __init__(self, form_name: str, error_writer: ErrorWriter,
+    def __init__(self, error_writer: ErrorWriter,
                  transfer_writer: JSONWriter, batch: IdentifierBatch,
                  repo: IdentifierRepository) -> None:
-        self.__form_name = form_name
         self.__error_writer = error_writer
         self.__enrollment_visitor = NewEnrollmentVisitor(error_writer,
                                                          repo=repo,
@@ -272,10 +281,10 @@ class ProvisioningVisitor(CSVVisitor):
           True if a NACCID is provisioned without error, False otherwise
         """
         module_field = 'module'
-        if row[module_field] != self.__form_name:
+        if row[module_field] != 'ptenrlv1':
             self.__error_writer.write(
                 unexpected_value_error(field=module_field,
-                                       value=self.__form_name,
+                                       value=row[module_field],
                                        line=line_num))
             return False
 
@@ -286,7 +295,7 @@ class ProvisioningVisitor(CSVVisitor):
         return self.__transfer_in_visitor.visit_row(row=row, line_num=line_num)
 
 
-def run(*, input_file: TextIO, form_name: str, repo: IdentifierRepository,
+def run(*, input_file: TextIO, repo: IdentifierRepository,
         error_writer: ErrorWriter, transfer_writer: JSONWriter):
     """Runs identifier provisioning process.
 
@@ -299,11 +308,10 @@ def run(*, input_file: TextIO, form_name: str, repo: IdentifierRepository,
     has_error = read_csv(input_file=input_file,
                          error_writer=error_writer,
                          visitor=ProvisioningVisitor(
-                             form_name=form_name,
                              batch=identifier_batch,
                              repo=repo,
                              error_writer=error_writer,
                              transfer_writer=transfer_writer))
-    identifier_list = identifier_batch.commit()
+    identifier_batch.commit()
 
     return has_error
