@@ -1144,4 +1144,4 @@ class ProjectAdaptor:
         Returns:
           the Subject object with the label. None, otherwise
         """
-        session = self.__project.subjects.find_first(f'label={label}')
+        return self.__project.subjects.find_first(f'label={label}')
