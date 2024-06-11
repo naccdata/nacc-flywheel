@@ -152,7 +152,7 @@ class TransferVisitor(CSVVisitor):
         if previously_enrolled(row):
             previous_adcid = row['oldadcid']
             previous_ptid = row['oldptid']
-            if previous_adcid and previous_ptid:
+            if previous_adcid is not None and previous_ptid:
                 ptid_identifier = self.__repo.get(adcid=previous_adcid,
                                                   ptid=previous_ptid)
                 if not ptid_identifier:

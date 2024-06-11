@@ -77,8 +77,9 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
         file_id = self.__file_input.file_id
         group_id = proxy.get_file_group(file_id)
         adcid = admin_group.get_adcid(group_id)
-        if not adcid:
-            raise GearExecutionError('Unable to determine center ID for file')
+        if adcid is None:
+            raise GearExecutionError(
+                f'Group {group_id} does not have an ADCID')
 
         file = proxy.get_file(file_id)
         file_group = proxy.find_group(group_id=group_id)
