@@ -80,14 +80,25 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
         if not adcid:
             raise GearExecutionError('Unable to determine center ID for file')
 
+        file = proxy.get_file(file_id)
+        file_group = proxy.find_group(group_id=group_id)
+        if not file_group:
+            raise GearExecutionError(
+                f'Unable to get center group: {file.parents.group}')
+
+        enrollment_project = file_group.get_project_by_id(file.parents.project)
+        if not enrollment_project:
+            raise GearExecutionError('Unable to get project containing file: '
+                                     f'{file.parents.project}')
+
         transfer_writer = ListJSONWriter()
         input_path = Path(self.__file_input.filepath)
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(container_id=file_id,
-                                           fw_path=proxy.get_lookup_path(
-                                               proxy.get_file(file_id)))
+                                           fw_path=proxy.get_lookup_path(file))
             errors = run(input_file=csv_file,
                          error_writer=error_writer,
+                         enrollment_project=enrollment_project,
                          transfer_writer=transfer_writer,
                          repo=identifiers_repo)
             # TODO: write (?) transfer_writer.object_list()
