@@ -351,4 +351,15 @@ def run(*, input_file: TextIO, repo: IdentifierRepository,
             content_type='application/json')
         acquisition.upload_file(record_file_spec)
 
+        subject.update(
+            info={
+                'enrollment': {
+                    'adcid': record.center_identifier.adcid,
+                    'ptid': record.center_identifier.ptid,
+                    'naccid': record.naccid,
+                    'guid': record.guid,
+                    'update_date': record.start_date
+                }
+            })
+
     return has_error
