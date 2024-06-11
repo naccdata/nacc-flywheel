@@ -1,5 +1,6 @@
 """Singleton class representing NACC with a FW group."""
 
+import logging
 from typing import Dict, Optional
 
 from centers.center_group import CenterGroup
@@ -9,6 +10,8 @@ from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
 from pydantic import BaseModel, ValidationError
 
+
+log = logging.getLogger(__name__)
 
 class CenterInfo(BaseModel):
     """Represents information about a center in nacc/metadata project.
@@ -125,7 +128,8 @@ class NACCGroup(GroupAdaptor):
 
         try:
             center_map = CenterMapInfo.model_validate(info)
-        except ValidationError:
+        except ValidationError as error:
+            log.error('unable to parse center table: %s', str(error))
             center_map = CenterMapInfo(centers={})
 
         return center_map
