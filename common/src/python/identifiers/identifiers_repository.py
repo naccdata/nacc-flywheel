@@ -37,17 +37,17 @@ class IdentifierRepository(abc.ABC):
 
     @abstractmethod
     @overload
-    def get(self, *, naccid: str) -> IdentifierObject:
+    def get(self, *, naccid: str) -> Optional[IdentifierObject]:
         ...
 
     @abstractmethod
     @overload
-    def get(self, *, guid: str) -> IdentifierObject:
+    def get(self, *, guid: str) -> Optional[IdentifierObject]:
         ...
 
     @abstractmethod
     @overload
-    def get(self, *, adcid: int, ptid: str) -> IdentifierObject:
+    def get(self, *, adcid: int, ptid: str) -> Optional[IdentifierObject]:
         ...
 
     @abstractmethod
@@ -56,7 +56,7 @@ class IdentifierRepository(abc.ABC):
             naccid: Optional[str] = None,
             adcid: Optional[int] = None,
             ptid: Optional[str] = None,
-            guid: Optional[str] = None) -> IdentifierObject:
+            guid: Optional[str] = None) -> Optional[IdentifierObject]:
         """Returns Identifier object for the IDs given.
 
         Note: some valid arguments can be falsey.
@@ -97,5 +97,5 @@ class IdentifierRepository(abc.ABC):
         """
 
 
-class NoMatchingIdentifier(Exception):
+class IdentifierRepositoryError(Exception):
     """Exception for case when identifier is not matched."""

@@ -3,7 +3,7 @@
 from typing import List, Literal, Optional, overload
 
 from identifiers.identifiers_repository import (IdentifierRepository,
-                                                NoMatchingIdentifier)
+                                                IdentifierRepositoryError)
 from identifiers.model import CenterIdentifiers, IdentifierObject
 from lambdas.lambda_function import BaseRequest, LambdaClient
 from pydantic import BaseModel, Field
@@ -64,13 +64,15 @@ class IdentifiersLambdaRepository(IdentifierRepository):
           ptid: the participant ID
         Returns:
           The created Identifier
+        Raises:
+          IdentifierRepositoryError if an error occurs creating the identifier
         """
         response = self.__client.invoke(
             name='create-identifier-lambda-function',
             request=IdentifierRequest(mode=self.__mode, adcid=adcid,
                                       ptid=ptid))
-        if response.statusCode != 200 or response.statusCode != 201:
-            raise NoMatchingIdentifier("No identifier created")
+        if response.statusCode != 200 and response.statusCode != 201:
+            raise IdentifierRepositoryError("No identifier created")
 
         return IdentifierObject.model_validate_json(response.body)
 
@@ -83,13 +85,15 @@ class IdentifiersLambdaRepository(IdentifierRepository):
           identifiers: list of identifiers requests
         Returns:
            list of Identifier objects
+        Raises:
+          IdentifierRepositoryError if an error occurs creating the identifier
         """
         response = self.__client.invoke(
             name='create-identifier-list-lambda-function',
             request=IdentifierListRequest(mode=self.__mode,
                                           identifiers=identifiers))
         if response.statusCode != 200:
-            raise NoMatchingIdentifier("No identifier created")
+            raise IdentifierRepositoryError("No identifier created")
 
         return IdentifierList.model_validate_json(response.body).root
 
@@ -112,7 +116,7 @@ class IdentifiersLambdaRepository(IdentifierRepository):
             naccid: Optional[str] = None,
             adcid: Optional[int] = None,
             ptid: Optional[str] = None,
-            guid: Optional[str] = None) -> IdentifierObject:
+            guid: Optional[str] = None) -> Optional[IdentifierObject]:
         """Returns IdentifierObject object for the IDs given.
 
         Note: some valid arguments can be falsey.
@@ -132,10 +136,13 @@ class IdentifiersLambdaRepository(IdentifierRepository):
             response = self.__client.invoke(
                 name='identifier-naccid-lambda-function',
                 request=NACCIDRequest(mode=self.__mode, naccid=naccid))
-            if response.statusCode != 200:
-                raise NoMatchingIdentifier("NACCID not found")
 
-            return IdentifierObject.model_validate_json(response.body)
+            if response.statusCode == 200:
+                return IdentifierObject.model_validate_json(response.body)
+            if response.statusCode == 404:
+                return None
+
+            raise IdentifierRepositoryError(response.body)
 
         if adcid is not None and ptid:
             response = self.__client.invoke(
@@ -143,10 +150,12 @@ class IdentifiersLambdaRepository(IdentifierRepository):
                 request=IdentifierRequest(mode=self.__mode,
                                           adcid=adcid,
                                           ptid=ptid))
-            if response.statusCode != 200:
-                raise NoMatchingIdentifier("NACCID not found")
+            if response.statusCode == 200:
+                return IdentifierObject.model_validate_json(response.body)
+            if response.statusCode == 404:
+                return None
 
-            return IdentifierObject.model_validate_json(response.body)
+            raise IdentifierRepositoryError(response.body)
 
         raise TypeError("Invalid arguments")
 
@@ -185,7 +194,7 @@ class IdentifiersLambdaRepository(IdentifierRepository):
                                      offset=index,
                                      limit=limit))
             if response.statusCode != 200:
-                raise NoMatchingIdentifier("No identifiers for ADCID")
+                raise IdentifierRepositoryError(response.body)
 
             response_object = ListResponseObject.model_validate_json(
                 response.body)
