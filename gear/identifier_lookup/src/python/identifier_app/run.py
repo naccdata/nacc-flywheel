@@ -116,7 +116,7 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
         file_id = self.__file_input.file_id
         group_id = proxy.get_file_group(file_id)
         adcid = admin_group.get_adcid(group_id)
-        if not adcid:
+        if adcid is None:
             raise GearExecutionError('Unable to determine center ID for file')
 
         identifiers = get_identifiers(session_factory=self.__session_factory,
