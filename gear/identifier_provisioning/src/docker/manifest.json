@@ -42,11 +42,6 @@
             "type": "string",
             "default": "dev"
         },
-        "form_name": {
-            "description": "The module name of the form",
-            "type": "string",
-            "default": "ptenrlv1"
-        },
         "dry_run": {
             "description": "Whether to do a dry run",
             "type": "boolean",
