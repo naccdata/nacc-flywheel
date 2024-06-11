@@ -54,10 +54,10 @@ class EnrollmentBatch:
             record.center_identifier for record in self.__records.values()
         ]
         identifiers = self.__repo.create_list(query)
-        log.info(f"created {len(identifiers)} new NACCIDs")
+        log.info("created %s new NACCIDs", len(identifiers))
         if len(query) != len(identifiers):
-            log.warning(
-                f"expected {len(query)} new IDs, got {len(identifiers)}")
+            log.warning("expected %s new IDs, got %s", len(query),
+                        len(identifiers))
 
         for identifier in identifiers:
             record = self.__records.get(identifier.ptid)
