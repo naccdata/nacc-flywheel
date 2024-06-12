@@ -1,4 +1,5 @@
 """Utilities for invoking AWS Lambda functions."""
+import logging
 from typing import Dict, Literal, Optional
 
 import boto3
@@ -6,6 +7,7 @@ from botocore.exceptions import ClientError
 from inputs.environment import get_environment_variable
 from pydantic import BaseModel, ValidationError
 
+log = logging.getLogger(__name__)
 
 def create_lambda_client():
     """Creates a boto3 lambda client if AWS credentials are set.
@@ -33,7 +35,7 @@ class BaseRequest(BaseModel):
 
 class ResponseObject(BaseModel):
     """Base model for response objects."""
-    statusCode: str
+    statusCode: int
     headers: Dict[str, str]
     body: str
 
@@ -71,6 +73,7 @@ class LambdaClient:
             return ResponseObject.model_validate_json(
                 response['Payload'].read())
         except ValidationError as error:
+            log.error("error validating lambda response: %s", str(error))
             raise LambdaInvocationError(str(error)) from error
 
 

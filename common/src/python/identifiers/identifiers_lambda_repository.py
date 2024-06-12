@@ -5,7 +5,7 @@ from typing import List, Literal, Optional, overload
 from identifiers.identifiers_repository import (IdentifierRepository,
                                                 IdentifierRepositoryError)
 from identifiers.model import CenterIdentifiers, IdentifierObject
-from lambdas.lambda_function import BaseRequest, LambdaClient
+from lambdas.lambda_function import BaseRequest, LambdaClient, LambdaInvocationError
 from pydantic import BaseModel, Field
 
 
@@ -133,9 +133,12 @@ class IdentifiersLambdaRepository(IdentifierRepository):
           TypeError: if the arguments are nonsensical
         """
         if naccid is not None:
-            response = self.__client.invoke(
-                name='identifier-naccid-lambda-function',
-                request=NACCIDRequest(mode=self.__mode, naccid=naccid))
+            try:
+                response = self.__client.invoke(
+                    name='identifier-naccid-lambda-function',
+                    request=NACCIDRequest(mode=self.__mode, naccid=naccid))
+            except LambdaInvocationError as error:
+                raise IdentifierRepositoryError(error) from error
 
             if response.statusCode == 200:
                 return IdentifierObject.model_validate_json(response.body)
@@ -145,11 +148,15 @@ class IdentifiersLambdaRepository(IdentifierRepository):
             raise IdentifierRepositoryError(response.body)
 
         if adcid is not None and ptid:
-            response = self.__client.invoke(
-                name='Identifier-ADCID-PTID-Lambda-Function',
-                request=IdentifierRequest(mode=self.__mode,
-                                          adcid=adcid,
-                                          ptid=ptid))
+            try:
+                response = self.__client.invoke(
+                    name='Identifier-ADCID-PTID-Lambda-Function',
+                    request=IdentifierRequest(mode=self.__mode,
+                                            adcid=adcid,
+                                            ptid=ptid))
+            except LambdaInvocationError as error:
+                raise IdentifierRepositoryError(error) from error
+
             if response.statusCode == 200:
                 return IdentifierObject.model_validate_json(response.body)
             if response.statusCode == 404:
@@ -187,12 +194,16 @@ class IdentifiersLambdaRepository(IdentifierRepository):
         limit = 100
         read_length = limit
         while read_length == limit:
-            response = self.__client.invoke(
-                name='identifier-adcid-lambda-function',
-                request=ADCIDRequest(mode=self.__mode,
-                                     adcid=adcid,
-                                     offset=index,
-                                     limit=limit))
+            try:
+                response = self.__client.invoke(
+                    name='identifier-adcid-lambda-function',
+                    request=ADCIDRequest(mode=self.__mode,
+                                        adcid=adcid,
+                                        offset=index,
+                                        limit=limit))
+            except LambdaInvocationError as error:
+                raise IdentifierRepositoryError(error) from error
+
             if response.statusCode != 200:
                 raise IdentifierRepositoryError(response.body)
 
