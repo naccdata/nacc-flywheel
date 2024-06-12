@@ -2,10 +2,10 @@
 
 import abc
 from abc import ABC, abstractmethod
-from csv import DictReader, Sniffer
+from csv import DictReader, Error, Sniffer
 from typing import Any, Dict, List, Optional, TextIO
 
-from outputs.errors import ErrorWriter, empty_file_error, missing_header_error
+from outputs.errors import ErrorWriter, empty_file_error, malformed_file_error, missing_header_error
 
 
 class CSVVisitor(ABC):
@@ -51,7 +51,13 @@ def read_csv(input_file: TextIO, error_writer: ErrorWriter,
         error_writer.write(empty_file_error())
         return True
 
-    if not sniffer.has_header(csv_sample):
+    try:
+        has_header = sniffer.has_header(csv_sample)
+    except Error as error:
+        error_writer.write(malformed_file_error(str(error)))
+        return True
+
+    if not has_header:
         error_writer.write(missing_header_error())
         return True
 

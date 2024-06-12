@@ -79,7 +79,6 @@ def empty_file_error() -> FileError:
                      error_code='empty-file',
                      message='Empty input file')
 
-
 def missing_header_error() -> FileError:
     """Creates a FileError for a missing header."""
     return FileError(error_type='error',
