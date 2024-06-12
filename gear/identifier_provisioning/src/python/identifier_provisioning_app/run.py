@@ -62,6 +62,10 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
         """
 
         assert context, 'Gear context required'
+        if self.__file_input.has_qc_errors():
+            log.error('input file %s has QC errors',
+                      self.__file_input.filename)
+            return
 
         identifiers_repo = IdentifiersLambdaRepository(
             client=LambdaClient(client=create_lambda_client()),
