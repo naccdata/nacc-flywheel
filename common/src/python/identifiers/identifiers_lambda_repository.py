@@ -4,8 +4,10 @@ from typing import List, Literal, Optional, overload
 
 from identifiers.identifiers_repository import (IdentifierRepository,
                                                 IdentifierRepositoryError)
-from identifiers.model import CenterIdentifiers, IdentifierObject
-from lambdas.lambda_function import BaseRequest, LambdaClient, LambdaInvocationError
+from identifiers.model import (CenterIdentifiers, IdentifierList,
+                               IdentifierObject)
+from lambdas.lambda_function import (BaseRequest, LambdaClient,
+                                     LambdaInvocationError)
 from pydantic import BaseModel, Field
 
 
@@ -41,11 +43,6 @@ class ListResponseObject(BaseModel):
     data: List[IdentifierObject]
 
 
-class IdentifierList(BaseModel):
-    """Class to allow serialization of lists of identifiers."""
-    root: List[IdentifierObject]
-
-
 IdentifiersMode = Literal['dev', 'prod']
 
 
@@ -67,18 +64,21 @@ class IdentifiersLambdaRepository(IdentifierRepository):
         Raises:
           IdentifierRepositoryError if an error occurs creating the identifier
         """
-        response = self.__client.invoke(
-            name='create-identifier-lambda-function',
-            request=IdentifierRequest(mode=self.__mode, adcid=adcid,
-                                      ptid=ptid))
+        try:
+            response = self.__client.invoke(
+                name='create-identifier-lambda-function',
+                request=IdentifierRequest(mode=self.__mode,
+                                          adcid=adcid,
+                                          ptid=ptid))
+        except LambdaInvocationError as error:
+            raise IdentifierRepositoryError(error) from error
         if response.statusCode != 200 and response.statusCode != 201:
             raise IdentifierRepositoryError("No identifier created")
 
         return IdentifierObject.model_validate_json(response.body)
 
-    def create_list(
-            self,
-            identifiers: List[CenterIdentifiers]) -> List[IdentifierObject]:
+    def create_list(self,
+                    identifiers: List[CenterIdentifiers]) -> IdentifierList:
         """Creates several Identifiers in the repository.
 
         Args:
@@ -88,14 +88,17 @@ class IdentifiersLambdaRepository(IdentifierRepository):
         Raises:
           IdentifierRepositoryError if an error occurs creating the identifier
         """
-        response = self.__client.invoke(
-            name='create-identifier-list-lambda-function',
-            request=IdentifierListRequest(mode=self.__mode,
-                                          identifiers=identifiers))
+        try:
+            response = self.__client.invoke(
+                name='create-identifier-list-lambda-function',
+                request=IdentifierListRequest(mode=self.__mode,
+                                              identifiers=identifiers))
+        except LambdaInvocationError as error:
+            raise IdentifierRepositoryError(error) from error
         if response.statusCode != 200:
             raise IdentifierRepositoryError("No identifier created")
 
-        return IdentifierList.model_validate_json(response.body).root
+        return IdentifierList.model_validate_json(response.body)
 
     @overload
     def get(self, *, naccid: str) -> IdentifierObject:
@@ -152,8 +155,8 @@ class IdentifiersLambdaRepository(IdentifierRepository):
                 response = self.__client.invoke(
                     name='Identifier-ADCID-PTID-Lambda-Function',
                     request=IdentifierRequest(mode=self.__mode,
-                                            adcid=adcid,
-                                            ptid=ptid))
+                                              adcid=adcid,
+                                              ptid=ptid))
             except LambdaInvocationError as error:
                 raise IdentifierRepositoryError(error) from error
 
@@ -198,9 +201,9 @@ class IdentifiersLambdaRepository(IdentifierRepository):
                 response = self.__client.invoke(
                     name='identifier-adcid-lambda-function',
                     request=ADCIDRequest(mode=self.__mode,
-                                        adcid=adcid,
-                                        offset=index,
-                                        limit=limit))
+                                         adcid=adcid,
+                                         offset=index,
+                                         limit=limit))
             except LambdaInvocationError as error:
                 raise IdentifierRepositoryError(error) from error
 
