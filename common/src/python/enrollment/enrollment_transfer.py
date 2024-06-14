@@ -46,20 +46,25 @@ class Demographics(BaseModel):
         Returns:
           Demographics object built from row
         """
-        return Demographics(years_education=row['enrleduc'],
-                            birth_date=datetime(int(row['enrlbirthmo']),
-                                                int(row['enrlbirthyr']), 1),
-                            gender_identity=GenderIdentity(
-                                man=row['enrlgenman'],
-                                woman=row['enrlgenwoman'],
-                                transgender_man=row['enrlgentrman'],
-                                transgender_woman=row['enrlgentrwoman'],
-                                nonbinary=row['enrlgennonbi'],
-                                two_spirit=row['enrlgentwospir'],
-                                other=row['enrlgenoth'],
-                                other_term=row['enrlgenothx'],
-                                dont_know=row['enrlgendkn'],
-                                no_answer=row['enrlgennoans']))
+        return Demographics(
+            years_education=row['enrleduc'],
+            birth_date=datetime(int(row['enrlbirthmo']),
+                                int(row['enrlbirthyr']), 1),
+            gender_identity=GenderIdentity(
+                man=row['enrlgenman'] if row['enrlgenman'] else None,
+                woman=row['enrlgenwoman'] if row['enrlgenwoman'] else None,
+                transgender_man=row['enrlgentrman']
+                if row['enrlgentrman'] else None,
+                transgender_woman=row['enrlgentrwoman']
+                if row['enrlgentrwoman'] else None,
+                nonbinary=row['enrlgennonbi'] if row['enrlgennonbi'] else None,
+                two_spirit=row['enrlgentwospir']
+                if row['enrlgentwospir'] else None,
+                other=row['enrlgenoth'] if row['enrlgenoth'] else None,
+                other_term=row['enrlgenothx'] if row['enrlgenothx'] else None,
+                dont_know=row['enrlgendkn'] if row['enrlgendkn'] else None,
+                no_answer=row['enrlgennoans']
+                if row['enrlgennoans'] else None))
 
 
 class TransferRecord(BaseModel):
@@ -92,9 +97,13 @@ class EnrollmentRecord(BaseModel):
         Returns:
           EnrollmentRecord for the row.
         """
+        guid = row.get('guid', None)
+        if not guid:
+            guid = None
+
         return EnrollmentRecord(center_identifier=CenterIdentifiers(
             adcid=row['adcid'], ptid=row['ptid']),
-                                guid=row['guid'],
+                                guid=guid,
                                 naccid=None,
                                 start_date=row['frmdate_enrl'])
 
