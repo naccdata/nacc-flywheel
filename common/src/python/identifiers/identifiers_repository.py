@@ -9,7 +9,8 @@ import logging
 from abc import abstractmethod
 from typing import List, Optional, overload
 
-from identifiers.model import CenterIdentifiers, IdentifierObject
+from identifiers.model import (CenterIdentifiers, IdentifierList,
+                               IdentifierObject)
 
 log = logging.getLogger(__name__)
 
@@ -26,9 +27,8 @@ class IdentifierRepository(abc.ABC):
         """
 
     @abstractmethod
-    def create_list(
-            self,
-            identifiers: List[CenterIdentifiers]) -> List[IdentifierObject]:
+    def create_list(self,
+                    identifiers: List[CenterIdentifiers]) -> IdentifierList:
         """Adds a list of identifiers to the repository.
 
         Args:
