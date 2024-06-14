@@ -102,6 +102,7 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
             error_writer = ListErrorWriter(container_id=file_id,
                                            fw_path=proxy.get_lookup_path(file))
             errors = run(input_file=csv_file,
+                         center_id=adcid,
                          error_writer=error_writer,
                          enrollment_project=enrollment_project,
                          transfer_writer=transfer_writer,

@@ -305,6 +305,11 @@ class ProvisioningVisitor(CSVVisitor):
         
         if row['adcid'] != self.__center_id:
             log.error("Center ID for project must match form ADCID")
+            self.__error_writer.write(
+                unexpected_value_error(field='adcid',
+                                       value=row['adcid'],
+                                       line=line_num)
+            )
             return False
 
         if is_new_enrollment(row):
