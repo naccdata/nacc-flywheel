@@ -107,7 +107,9 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
                          enrollment_project=enrollment_project,
                          transfer_writer=transfer_writer,
                          repo=identifiers_repo)
-            # TODO: write (?) transfer_writer.object_list()
+            # TODO: don't clobber previous transfers
+            enrollment_project.update_info(
+                {'transfers': transfer_writer.object_list()})
             context.metadata.add_qc_result(self.__file_input.file_input,
                                            name="validation",
                                            state="FAIL" if errors else "PASS",
