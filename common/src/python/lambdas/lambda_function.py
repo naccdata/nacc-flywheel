@@ -9,6 +9,7 @@ from pydantic import BaseModel, ValidationError
 
 log = logging.getLogger(__name__)
 
+
 def create_lambda_client():
     """Creates a boto3 lambda client if AWS credentials are set.
 

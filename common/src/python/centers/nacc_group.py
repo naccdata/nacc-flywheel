@@ -10,8 +10,8 @@ from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
                                              ProjectAdaptor)
 from pydantic import BaseModel, ValidationError
 
-
 log = logging.getLogger(__name__)
+
 
 class CenterInfo(BaseModel):
     """Represents information about a center in nacc/metadata project.

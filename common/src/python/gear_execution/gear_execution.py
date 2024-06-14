@@ -141,12 +141,12 @@ class InputFileWrapper:
     def file_id(self) -> str:
         """Returns the file ID."""
         return self.file_input['object']['file_id']
-    
+
     @property
     def file_info(self) -> Dict[str, Any]:
         """Returns the file object info (metadata)."""
         return self.file_input['object']['info']
-    
+
     @property
     def file_qc_info(self) -> Dict[str, Any]:
         """Returns the QC object in the file info."""
@@ -191,7 +191,7 @@ class InputFileWrapper:
 
     def get_validation_objects(self) -> List[Dict[str, Any]]:
         """Gets the QC validation objects from the file QC info."""
-        result = []        
+        result = []
         for gear_object in self.file_qc_info.values():
             validation_object = gear_object.get('validation', {})
             if validation_object:
