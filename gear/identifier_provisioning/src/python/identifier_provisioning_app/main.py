@@ -8,7 +8,9 @@ from enrollment.enrollment_transfer import (
     guid_available, has_known_naccid, is_new_enrollment, previously_enrolled)
 from flywheel.file_spec import FileSpec
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
-from identifiers.identifiers_repository import IdentifierRepository
+from gear_execution.gear_execution import GearExecutionError
+from identifiers.identifiers_repository import (IdentifierRepository,
+                                                IdentifierRepositoryError)
 from identifiers.model import CenterIdentifiers
 from inputs.csv_reader import AggregateRowValidator, CSVVisitor, read_csv
 from outputs.errors import (CSVLocation, ErrorWriter, FileError,
@@ -50,6 +52,10 @@ class EnrollmentBatch:
         identifier_repo: the repository for identifiers
         identifiers: the list of identifiers to add
         """
+        if not self.__records:
+            log.warning('No enrollment records found to create')
+            return
+
         query = [
             record.center_identifier for record in self.__records.values()
         ]
@@ -290,7 +296,8 @@ class ProvisioningVisitor(CSVVisitor):
           True if a NACCID is provisioned without error, False otherwise
         """
         module_field = 'module'
-        if row[module_field] != 'ptenrlv1':
+        if row[module_field].lower() != 'ptenrlv1':
+            log.error("Expecting module %s to be ptenrlv1", row[module_field])
             self.__error_writer.write(
                 unexpected_value_error(field=module_field,
                                        value=row[module_field],
@@ -322,7 +329,12 @@ def run(*, input_file: TextIO, repo: IdentifierRepository,
                              repo=repo,
                              error_writer=error_writer,
                              transfer_writer=transfer_writer))
-    enrollment_batch.commit()
+
+    log.info("requesting %s new NACCIDs", len(enrollment_batch))
+    try:
+        enrollment_batch.commit()
+    except IdentifierRepositoryError as error:
+        raise GearExecutionError(error) from error
 
     for record in enrollment_batch:
         if not record.naccid:
@@ -339,11 +351,11 @@ def run(*, input_file: TextIO, repo: IdentifierRepository,
 
         session = subject.sessions.find_first('label=enrollment_transfer')
         if not session:
-            session = subject.add_session("enrollment_transfer")
+            session = subject.add_session(label="enrollment_transfer")
 
         acquisition = session.acquisitions.find_first("label=enrollment")
         if not acquisition:
-            acquisition = session.add_acquisition("enrollment")
+            acquisition = session.add_acquisition(label="enrollment")
 
         record_file_spec = FileSpec(
             name='enrollment.json',
