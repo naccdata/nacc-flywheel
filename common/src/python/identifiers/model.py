@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 
 
 @dataclass(unsafe_hash=True)
@@ -58,6 +58,30 @@ class IdentifierObject(BaseModel):
                                 naccadc=identifier.nacc_adc,
                                 ptid=identifier.ptid,
                                 naccid=identifier.naccid)
+
+
+class IdentifierList(RootModel):
+    """Class to allow serialization of lists of identifiers.
+
+    Otherwise, basically acts like a list.
+    """
+    root: List[IdentifierObject]
+
+    def __bool__(self) -> bool:
+        return bool(self.root)
+
+    def __iter__(self):
+        return iter(self.root)
+
+    def __getitem__(self, item) -> IdentifierObject:
+        return self.root[item]
+
+    def __len__(self):
+        return len(self.root)
+
+    def append(self, identifier: IdentifierObject) -> None:
+        """Appends the identifier to the list."""
+        self.root.append(identifier)
 
 
 class CenterIdentifiers(BaseModel):
