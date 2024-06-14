@@ -1118,8 +1118,7 @@ class ProjectAdaptor:
 
         keys = key_path.split(':')
         index = 0
-        self.__project = self.__project.reload()
-        info: Dict[str, Any] | Any = self.__project.info
+        info: Dict[str, Any] | Any = self.get_info()
         while index < len(keys) and info:
             info = info.get(keys[index])
             index += 1
