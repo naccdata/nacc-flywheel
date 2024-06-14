@@ -197,10 +197,8 @@ class TransferVisitor(CSVVisitor):
             naccid=naccid)
         self.__transfer_writer.write(transfer_record.model_dump())
 
-        self.__error_writer.write(
-            transfer_not_implemented_error(field='enrltype',
-                                           line=line_num,
-                                           message="Transfer not performed"))
+        log.info('Transfer found on line %s', line_num)
+
         return True
 
 
@@ -254,8 +252,9 @@ class ProvisioningVisitor(CSVVisitor):
     """A CSV Visitor class for processing participant enrollment and transfer
     forms."""
 
-    def __init__(self, error_writer: ErrorWriter, transfer_writer: JSONWriter,
-                 batch: EnrollmentBatch, repo: IdentifierRepository) -> None:
+    def __init__(self, *, center_id: int, error_writer: ErrorWriter, 
+                 transfer_writer: JSONWriter, batch: EnrollmentBatch, repo: IdentifierRepository) -> None:
+        self.__center_id = center_id
         self.__error_writer = error_writer
         self.__enrollment_visitor = NewEnrollmentVisitor(error_writer,
                                                          repo=repo,
@@ -303,6 +302,10 @@ class ProvisioningVisitor(CSVVisitor):
                                        value=row[module_field],
                                        line=line_num))
             return False
+        
+        if row['adcid'] != self.__center_id:
+            log.error("Center ID for project must match form ADCID")
+            return False
 
         if is_new_enrollment(row):
             return self.__enrollment_visitor.visit_row(row=row,
@@ -311,7 +314,7 @@ class ProvisioningVisitor(CSVVisitor):
         return self.__transfer_in_visitor.visit_row(row=row, line_num=line_num)
 
 
-def run(*, input_file: TextIO, repo: IdentifierRepository,
+def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
         enrollment_project: ProjectAdaptor, error_writer: ErrorWriter,
         transfer_writer: JSONWriter):
     """Runs identifier provisioning process.
@@ -325,10 +328,13 @@ def run(*, input_file: TextIO, repo: IdentifierRepository,
     has_error = read_csv(input_file=input_file,
                          error_writer=error_writer,
                          visitor=ProvisioningVisitor(
+                             center_id=center_id,
                              batch=enrollment_batch,
                              repo=repo,
                              error_writer=error_writer,
                              transfer_writer=transfer_writer))
+    if has_error:
+        return True
 
     log.info("requesting %s new NACCIDs", len(enrollment_batch))
     try:
