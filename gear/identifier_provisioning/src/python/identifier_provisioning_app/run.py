@@ -96,7 +96,6 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
             raise GearExecutionError('Unable to get project containing file: '
                                      f'{file.parents.project}')
 
-        transfer_writer = ListJSONWriter()
         input_path = Path(self.__file_input.filepath)
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(container_id=file_id,
@@ -105,11 +104,8 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
                          center_id=adcid,
                          error_writer=error_writer,
                          enrollment_project=enrollment_project,
-                         transfer_writer=transfer_writer,
                          repo=identifiers_repo)
-            # TODO: don't clobber previous transfers
-            enrollment_project.update_info(
-                {'transfers': transfer_writer.object_list()})
+
             context.metadata.add_qc_result(self.__file_input.file_input,
                                            name="validation",
                                            state="FAIL" if errors else "PASS",
