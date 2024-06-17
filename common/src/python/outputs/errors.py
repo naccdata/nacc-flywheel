@@ -115,6 +115,7 @@ def malformed_file_error(error: str) -> FileError:
 
 def unexpected_value_error(field: str,
                            value: str,
+                           expected: str,
                            line: int,
                            message: Optional[str] = None) -> FileError:
     """Creates a FileError for an unexpected value.
@@ -128,9 +129,11 @@ def unexpected_value_error(field: str,
       the constructed FileError
     """
     error_message = message if message else (
-        f'Expected {value} for field {field}')
+        f'Expected {expected} for field {field}')
     return FileError(error_type='error',
                      error_code='unexpected-value',
+                     value=value,
+                     expected=expected,
                      location=CSVLocation(line=line, column_name=field),
                      message=error_message)
 
