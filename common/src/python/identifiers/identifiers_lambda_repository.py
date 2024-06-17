@@ -72,7 +72,7 @@ class IdentifiersLambdaRepository(IdentifierRepository):
                                           ptid=ptid))
         except LambdaInvocationError as error:
             raise IdentifierRepositoryError(error) from error
-        if response.statusCode != 200 and response.statusCode != 201:
+        if response.statusCode not in (200, 201):
             raise IdentifierRepositoryError("No identifier created")
 
         return IdentifierObject.model_validate_json(response.body)
