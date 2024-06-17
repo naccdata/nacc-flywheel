@@ -1,7 +1,7 @@
 """Defines Identifier Provisioning."""
 
 import logging
-from typing import Any, Dict, Iterator, List, Optional, TextIO
+from typing import Any, Dict, Iterator, List, TextIO
 
 from enrollment.enrollment_transfer import (
     EnrollmentRecord, NewGUIDRowValidator, NewPTIDRowValidator, TransferRecord,
@@ -16,7 +16,7 @@ from inputs.csv_reader import AggregateRowValidator, CSVVisitor, read_csv
 from outputs.errors import (CSVLocation, ErrorWriter, FileError,
                             identifier_error, missing_header_error,
                             unexpected_value_error)
-from outputs.outputs import JSONWriter
+from outputs.outputs import JSONWriter, ListJSONWriter
 
 log = logging.getLogger(__name__)
 
@@ -69,17 +69,6 @@ class EnrollmentBatch:
             record = self.__records.get(identifier.ptid)
             if record:
                 record.naccid = identifier.naccid
-
-
-def transfer_not_implemented_error(line: int,
-                                   field: str = 'ptxfer',
-                                   message: Optional[str] = None) -> FileError:
-    """Creates a FileError for transfers."""
-    error_message = message if message else 'Transfer not performed'
-    return FileError(error_type='error',
-                     error_code='transfer',
-                     location=CSVLocation(column_name=field, line=line),
-                     message=error_message)
 
 
 class TransferVisitor(CSVVisitor):
@@ -199,7 +188,7 @@ class TransferVisitor(CSVVisitor):
 
         log.info('Transfer found on line %s', line_num)
 
-        return True
+        return False
 
 
 class NewEnrollmentVisitor(CSVVisitor):
@@ -301,16 +290,18 @@ class ProvisioningVisitor(CSVVisitor):
             self.__error_writer.write(
                 unexpected_value_error(field=module_field,
                                        value=row[module_field],
+                                       expected='ptenrlv1',
                                        line=line_num))
-            return False
+            return True
 
-        if row['adcid'] != self.__center_id:
+        if int(row['adcid']) != self.__center_id:
             log.error("Center ID for project must match form ADCID")
             self.__error_writer.write(
                 unexpected_value_error(field='adcid',
                                        value=row['adcid'],
+                                       expected=str(self.__center_id),
                                        line=line_num))
-            return False
+            return True
 
         if is_new_enrollment(row):
             return self.__enrollment_visitor.visit_row(row=row,
@@ -320,8 +311,7 @@ class ProvisioningVisitor(CSVVisitor):
 
 
 def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
-        enrollment_project: ProjectAdaptor, error_writer: ErrorWriter,
-        transfer_writer: JSONWriter):
+        enrollment_project: ProjectAdaptor, error_writer: ErrorWriter):
     """Runs identifier provisioning process.
 
     Args:
@@ -329,6 +319,7 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
       form_name: the module designator for the form
       error_writer: the error output writer
     """
+    transfer_writer = ListJSONWriter()
     enrollment_batch = EnrollmentBatch(repo=repo)
     has_error = read_csv(input_file=input_file,
                          error_writer=error_writer,
@@ -339,6 +330,7 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
                              error_writer=error_writer,
                              transfer_writer=transfer_writer))
     if has_error:
+        log.error("no changes made due to errors in input file")
         return True
 
     log.info("requesting %s new NACCIDs", len(enrollment_batch))
@@ -385,4 +377,8 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
                 }
             })
 
-    return has_error
+        # TODO: don't clobber previous transfers
+        enrollment_project.update_info(
+            {'transfers': transfer_writer.object_list()})
+
+    return False
