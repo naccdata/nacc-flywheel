@@ -12,9 +12,9 @@ from flywheel.models.group_role import GroupRole
 from flywheel.models.project_parents import ProjectParents
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
-from flywheel.models.subject import Subject
 from flywheel.models.user import User
 from flywheel.rest import ApiException
+from flywheel_adaptor.subject_adaptor import SubjectAdaptor
 from fw_client import FWClient
 from fw_utils import AttrDict
 
@@ -771,33 +771,33 @@ class ProjectAdaptor:
 
     def __init__(self, *, project: flywheel.Project,
                  proxy: FlywheelProxy) -> None:
-        self.__project = project
-        self.__fw = proxy
+        self._project = project
+        self._fw = proxy
 
     def __pull_project(self) -> None:
         """Pulls the referenced project from Flywheel instance."""
-        projects = self.__fw.find_projects(group_id=self.group,
-                                           project_label=self.label)
+        projects = self._fw.find_projects(group_id=self.group,
+                                          project_label=self.label)
         if not projects:
             return
 
-        self.__project = projects[0]
+        self._project = projects[0]
 
     # pylint: disable=(invalid-name)
     @property
     def id(self):
         """Returns the ID of the enclosed project."""
-        return self.__project.id
+        return self._project.id
 
     @property
     def label(self):
         """Returns the label of the enclosed project."""
-        return self.__project.label
+        return self._project.label
 
     @property
     def group(self) -> str:
         """Returns the group label of the enclosed project."""
-        return self.__project.group
+        return self._project.group
 
     def add_tag(self, tag: str) -> None:
         """Add tag to the enclosed project.
@@ -805,8 +805,8 @@ class ProjectAdaptor:
         Args:
           tag: the tag
         """
-        if tag not in self.__project.tags:
-            self.__project.add_tag(tag)
+        if tag not in self._project.tags:
+            self._project.add_tag(tag)
 
     def add_tags(self, tags: Iterable[str]) -> None:
         """Adds given tags to the enclosed project.
@@ -823,7 +823,7 @@ class ProjectAdaptor:
         Args:
           state: the copyable state to set
         """
-        self.__project.update(copyable=state)
+        self._project.update(copyable=state)
 
     def set_description(self, description: str) -> None:
         """Sets the description of the project.
@@ -831,7 +831,7 @@ class ProjectAdaptor:
         Args:
           description: the project description
         """
-        self.__project.update(description=description)
+        self._project.update(description=description)
 
     def get_file(self, name: str):
         """Gets the file from the enclosed project.
@@ -841,11 +841,11 @@ class ProjectAdaptor:
         Returns:
           the named file
         """
-        return self.__project.get_file(name)
+        return self._project.get_file(name)
 
     def reload(self):
         """Forces a reload on the project."""
-        self.__project = self.__project.reload()
+        self._project = self._project.reload()
 
     def read_file(self, name: str) -> bytes:
         """Reads file from the named file.
@@ -855,7 +855,7 @@ class ProjectAdaptor:
         Returns:
           the bytes from the file
         """
-        return self.__project.read_file(name)
+        return self._project.read_file(name)
 
     def upload_file(self, file_spec: flywheel.FileSpec) -> None:
         """Uploads the indicated file to enclosed project.
@@ -863,7 +863,7 @@ class ProjectAdaptor:
         Args:
           file_spec: the file specification
         """
-        self.__project.upload_file(file_spec)
+        self._project.upload_file(file_spec)
 
     def get_user_roles(self, user_id: str) -> List[str]:
         """Gets the list of user role ids in this project.
@@ -874,7 +874,7 @@ class ProjectAdaptor:
           list of role ids
         """
         assignments = [
-            assignment for assignment in self.__project.permissions
+            assignment for assignment in self._project.permissions
             if assignment.id == user_id
         ]
         if not assignments:
@@ -900,7 +900,7 @@ class ProjectAdaptor:
         """
         if not roles:
             log.warning('No roles to add to user %s in project %s/%s', user.id,
-                        self.__project.group, self.__project.label)
+                        self._project.group, self._project.label)
             return False
 
         role_ids = [role.id for role in roles]
@@ -920,9 +920,9 @@ class ProjectAdaptor:
         if not user_roles:
             log_message = (f"User {role_assignment.id}"
                            " has no permissions for "
-                           f"project {self.__project.label}"
+                           f"project {self._project.label}"
                            ", adding roles")
-            if self.__fw.dry_run:
+            if self._fw.dry_run:
                 log.info("Dry Run: %s", log_message)
                 return True
 
@@ -930,7 +930,7 @@ class ProjectAdaptor:
             user_role = RolesRoleAssignment(id=role_assignment.id,
                                             role_ids=role_assignment.role_ids)
             try:
-                self.__project.add_permission(user_role)
+                self._project.add_permission(user_role)
             except ApiException as error:
                 log.error('Failed to add user role to project: %s', error)
                 return False
@@ -946,11 +946,11 @@ class ProjectAdaptor:
             return False
 
         log_message = f"Adding roles to user {role_assignment.id}"
-        if self.__fw.dry_run:
+        if self._fw.dry_run:
             log.info("Dry Run: %s", log_message)
             return True
 
-        self.__project.update_permission(
+        self._project.update_permission(
             role_assignment.id,
             RolesRoleAssignment(id=None, role_ids=user_roles))
         self.__pull_project()
@@ -962,7 +962,7 @@ class ProjectAdaptor:
         Args:
           permissions: the group access permissions
         """
-        admin_role = self.__fw.get_admin_role()
+        admin_role = self._fw.get_admin_role()
         assert admin_role
         admin_users = [
             permission.id for permission in permissions
@@ -978,7 +978,7 @@ class ProjectAdaptor:
         Returns:
           the list of gear rules
         """
-        return self.__fw.get_project_gear_rules(project=self.__project)
+        return self._fw.get_project_gear_rules(project=self._project)
 
     def add_gear_rule(self, *, rule_input: GearRuleInput) -> None:
         """Adds the gear rule to the Flywheel project.
@@ -988,29 +988,28 @@ class ProjectAdaptor:
         Args:
           rule_input: the GearRuleInput for the gear
         """
-        project_rules = self.__fw.get_project_gear_rules(self.__project)
+        project_rules = self._fw.get_project_gear_rules(self._project)
         conflict = None
         for rule in project_rules:
             if rule.name == rule_input.name:
                 conflict = rule
                 break
 
-        if self.__fw.dry_run:
+        if self._fw.dry_run:
             if conflict:
                 log.info(
                     'Dry Run: would remove conflicting '
                     'rule %s from project %s', conflict.name,
-                    self.__project.label)
+                    self._project.label)
             log.info('Dry Run: would add gear rule %s to project %s',
-                     rule_input.name, self.__project.label)
+                     rule_input.name, self._project.label)
             return
 
         if conflict:
-            self.__fw.remove_project_gear_rule(project=self.__project,
-                                               rule=conflict)
+            self._fw.remove_project_gear_rule(project=self._project,
+                                              rule=conflict)
 
-        self.__fw.add_project_rule(project=self.__project,
-                                   rule_input=rule_input)
+        self._fw.add_project_rule(project=self._project, rule_input=rule_input)
 
     def remove_gear_rule(self, *, rule: GearRule) -> None:
         """Removes the gear rule from the project.
@@ -1018,7 +1017,7 @@ class ProjectAdaptor:
         Args:
           rule: the rule to remove
         """
-        self.__fw.remove_project_gear_rule(project=self.__project, rule=rule)
+        self._fw.remove_project_gear_rule(project=self._project, rule=rule)
 
     def get_apps(self) -> List[AttrDict]:
         """Returns the list of viewer apps for the project.
@@ -1026,7 +1025,7 @@ class ProjectAdaptor:
         Returns:
           the viewer apps for the project
         """
-        return self.__fw.get_project_apps(self.__project)
+        return self._fw.get_project_apps(self._project)
 
     def set_apps(self, apps: List[AttrDict]) -> None:
         """Sets the viewer apps for the project.
@@ -1034,7 +1033,7 @@ class ProjectAdaptor:
         Args:
           apps: the list of viewer apps to add
         """
-        self.__fw.set_project_apps(project=self.__project, apps=apps)
+        self._fw.set_project_apps(project=self._project, apps=apps)
 
     def get_dataviews(self) -> List[DataView]:
         """Returns the list of dataviews for the project.
@@ -1042,7 +1041,7 @@ class ProjectAdaptor:
         Returns:
           the dataviews in the enclosed project
         """
-        return self.__fw.get_dataviews(self.__project)
+        return self._fw.get_dataviews(self._project)
 
     def get_dataview(self, label: str) -> Optional[DataView]:
         """Returns the dataview in the project with the label.
@@ -1083,8 +1082,8 @@ class ProjectAdaptor:
             missing_data_strategy=dataview.missing_data_strategy,
             sort=dataview.sort,
             id=dataview.id)
-        view_id = self.__fw.add_dataview(project=self.__project,
-                                         viewinput=view_template)
+        view_id = self._fw.add_dataview(project=self._project,
+                                        viewinput=view_template)
         return view_id.id
 
     def get_info(self) -> Dict[str, Any]:
@@ -1093,8 +1092,8 @@ class ProjectAdaptor:
         Returns:
           the dictionary object with info for project
         """
-        self.__project = self.__project.reload()
-        return self.__project.info
+        self._project = self._project.reload()
+        return self._project.info
 
     def update_info(self, info: Dict[str, Any]) -> None:
         """Updates the info object for this project.
@@ -1102,8 +1101,8 @@ class ProjectAdaptor:
         Args:
           info: the info object
         """
-        log.info("updating info for project %s", self.__project.label)
-        self.__project.update_info(info)
+        log.info("updating info for project %s", self._project.label)
+        self._project.update_info(info)
 
     def get_custom_project_info(
             self, key_path: str) -> Optional[Any | Dict[str, Any]]:
@@ -1125,7 +1124,7 @@ class ProjectAdaptor:
 
         return info
 
-    def add_subject(self, label: str) -> Subject:
+    def add_subject(self, label: str) -> SubjectAdaptor:
         """Adds a subject with the given label.
 
         Args:
@@ -1133,9 +1132,9 @@ class ProjectAdaptor:
         Returns:
           the created Subject object
         """
-        return self.__project.add_subject(label=label)
+        return SubjectAdaptor(self._project.add_subject(label=label))
 
-    def find_subject(self, label: str) -> Optional[Subject]:
+    def find_subject(self, label: str) -> Optional[SubjectAdaptor]:
         """Finds the suject with the label.
 
         Args:
@@ -1143,4 +1142,8 @@ class ProjectAdaptor:
         Returns:
           the Subject object with the label. None, otherwise
         """
-        return self.__project.subjects.find_first(f'label={label}')
+        subject = self._project.subjects.find_first(f'label={label}')
+        if subject:
+            return SubjectAdaptor(subject)
+
+        return None
