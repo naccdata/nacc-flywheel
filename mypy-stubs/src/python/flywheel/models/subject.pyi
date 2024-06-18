@@ -15,3 +15,11 @@ class Subject:
 
     def update(self, info: Dict[str, Any]) -> None:
         ...
+
+    @property
+    def info(self) -> Dict[str, Any]:
+        ...
+
+    @property
+    def label(self) -> str:
+        ...
