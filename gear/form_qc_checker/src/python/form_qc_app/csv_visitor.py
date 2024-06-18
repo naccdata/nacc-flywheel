@@ -3,7 +3,6 @@
 from csv import Dialect, DictReader, Error, Sniffer
 from typing import Any, Dict, List, Optional, TextIO
 
-from form_qc_app.parser import Keys
 from inputs.csv_reader import CSVVisitor
 from outputs.errors import (ErrorWriter, empty_field_error, empty_file_error,
                             malformed_file_error, missing_field_error,
@@ -65,7 +64,7 @@ class FormQCCSVVisitor(CSVVisitor):
 
     def visit_header(self, header: List[str]) -> bool:
         """Validates the header fields in file. If the header doesn't have
-        `<primary key>` or `module`, writes an error.
+        `<primary key>`, writes an error.
 
         Args:
           header: the list of header names
@@ -77,10 +76,6 @@ class FormQCCSVVisitor(CSVVisitor):
             self.__error_writer.write(missing_field_error(self.__pk_field))
             return True
 
-        if Keys.MODULE not in header:
-            self.__error_writer.write(missing_field_error(Keys.MODULE))
-            return True
-
         self.__header = header
 
         return False
@@ -88,7 +83,7 @@ class FormQCCSVVisitor(CSVVisitor):
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Validates a row from the CSV file.
 
-        If the row doesn't have `<primary key>` or `module`, writes an error.
+        If the row doesn't have `<primary key>`, writes an error.
 
         Args:
           row: the dictionary from the CSV row (DictReader)
@@ -102,17 +97,13 @@ class FormQCCSVVisitor(CSVVisitor):
                 empty_field_error(self.__pk_field, line_num))
             return True
 
-        if Keys.MODULE not in row or row[Keys.MODULE] == '':
-            self.__error_writer.write(empty_field_error(Keys.MODULE, line_num))
-            return True
-
         return False
 
 
 def read_first_data_row(input_file: TextIO, error_writer: ErrorWriter,
                         visitor: FormQCCSVVisitor) -> Optional[Dict[str, Any]]:
-    """Reads CSV file and applies the visitor to header and first data row.
-    Sets the CSV dialect for the visitor by sniffing a data sample.
+    """Reads CSV file and validates the header. Sets the CSV dialect for the
+    visitor by sniffing a data sample.
 
     Args:
         input_file: the input stream for the CSV file
@@ -143,16 +134,12 @@ def read_first_data_row(input_file: TextIO, error_writer: ErrorWriter,
 
     assert reader.fieldnames, "File has header, reader should have fieldnames"
 
-    # missing required fields in the header
+    # check for required fields in the header
     if visitor.visit_header(list(reader.fieldnames)):
         return None
 
     first_row = next(reader)
-    # missing/empty required fields in the first row
-    if visitor.visit_row(first_row, line_num=1):
-        return None
-
-    input_file.seek(0)
     visitor.dialect = detected_dialect  # type: ignore
+    input_file.seek(0)
 
     return first_row

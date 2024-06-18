@@ -20,10 +20,12 @@ class CenterInfo(BaseModel):
         adcid (int): The ADC ID of the center.
         name (str): The name of the center.
         group (str): The group ID of the center.
+        active (bool): Active or inactive status.
     """
     adcid: int
     name: str
     group: str
+    active: bool
 
 
 class CenterMapInfo(BaseModel):
@@ -98,20 +100,27 @@ class NACCGroup(GroupAdaptor):
         """
         self.add_adcid(adcid=center_group.adcid,
                        group_label=center_group.label,
-                       group_id=center_group.id)
+                       group_id=center_group.id,
+                       active=center_group.is_active())
 
-    def add_adcid(self, adcid: int, group_label: str, group_id: str) -> None:
+    def add_adcid(self, adcid: int, group_label: str, group_id: str,
+                  active: bool) -> None:
         """Adds the adcid-group correspondence.
 
         Args:
           adcid: the ADC ID
           group_label: the label for the center group
           group_id: the ID for the center group
+          active: active or inactive status for the center.
         """
         metadata = self.get_metadata()
         center_map = self.get_center_map()
         center_map.add(
-            adcid, CenterInfo(adcid=adcid, name=group_label, group=group_id))
+            adcid,
+            CenterInfo(adcid=adcid,
+                       name=group_label,
+                       group=group_id,
+                       active=active))
         metadata.update_info(center_map.model_dump())
 
     def get_center_map(self) -> CenterMapInfo:
