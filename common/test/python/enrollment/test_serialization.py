@@ -4,9 +4,11 @@ from enrollment.enrollment_transfer import EnrollmentRecord
 from pydantic import ValidationError
 
 
+# pylint: disable=(too-few-public-methods)
 class TestEnrollmentSerialization:
     """Tests for enrollment serialization."""
 
+    # pylint: disable=(no-self-use)
     def test_create(self):
         """Test create_from method."""
         row = {
