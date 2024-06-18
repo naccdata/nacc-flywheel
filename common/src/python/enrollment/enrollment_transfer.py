@@ -8,7 +8,8 @@ from typing import Any, Dict, Literal, Optional
 from identifiers.identifiers_repository import IdentifierRepository
 from identifiers.model import CenterIdentifiers
 from inputs.csv_reader import RowValidator
-from outputs.errors import CSVLocation, ErrorWriter, FileError
+from outputs.errors import (CSVLocation, ErrorWriter, FileError,
+                            unexpected_value_error)
 from pydantic import BaseModel, Field
 
 log = logging.getLogger(__name__)
@@ -264,3 +265,67 @@ class NewGUIDRowValidator(RowValidator):
 #           True if no existing participant matches, False otherwise
 #         """
 #         return True
+
+
+# pylint: disable=(too-few-public-methods)
+class ModuleValidator(RowValidator):
+    """Row validator to check whether the row has a particular module."""
+
+    def __init__(self, module_name: str, error_writer: ErrorWriter) -> None:
+        self.__module_name = module_name
+        self.__error_writer = error_writer
+
+    def check(self, row: Dict[str, Any], line_number: int) -> bool:
+        """Checks that the row has the expected module.
+
+        Args:
+          row: the dictionary for the row
+          line_num: the line number for the row
+        Returns:
+          True if the module field matches, False otherwise
+        """
+        module_field = 'module'
+        if row[module_field].lower() != self.__module_name:
+            log.error("Expecting module %s to be %s", row[module_field],
+                      self.__module_name)
+            self.__error_writer.write(
+                unexpected_value_error(field=module_field,
+                                       value=row[module_field],
+                                       expected=self.__module_name,
+                                       line=line_number))
+            return True
+
+        return False
+
+
+# pylint: disable=(too-few-public-methods)
+class CenterValidator(RowValidator):
+    """Row validator to check whether the row has the correct ADCID."""
+
+    def __init__(self, center_id: int, error_writer: ErrorWriter) -> None:
+        self.__center_id = center_id
+        self.__error_writer = error_writer
+
+    def check(self, row: Dict[str, Any], line_number: int) -> bool:
+        """Checks that the row has the expected ADCID.
+
+        Args:
+          row: the dictionary for the row
+          line_number: the line number of the row
+        Returns:
+          True if the center ID matches, False otherwise.
+        """
+        if int(row['adcid']) != self.__center_id:
+            log.error("Center ID for project must match form ADCID")
+            self.__error_writer.write(
+                unexpected_value_error(field='adcid',
+                                       value=row['adcid'],
+                                       expected=str(self.__center_id),
+                                       line=line_number))
+            return True
+
+        return False
+
+
+class EnrollmentError(Exception):
+    """Error class for enrollment."""
