@@ -3,20 +3,18 @@
 import logging
 from typing import Any, Dict, Iterator, List, TextIO
 
+from enrollment.enrollment_project import EnrollmentProject, TransferInfo
 from enrollment.enrollment_transfer import (
-    EnrollmentRecord, NewGUIDRowValidator, NewPTIDRowValidator, TransferRecord,
-    guid_available, has_known_naccid, is_new_enrollment, previously_enrolled)
-from flywheel.file_spec import FileSpec
-from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
+    CenterValidator, EnrollmentRecord, ModuleValidator, NewGUIDRowValidator,
+    NewPTIDRowValidator, TransferRecord, guid_available, has_known_naccid,
+    is_new_enrollment, previously_enrolled)
 from gear_execution.gear_execution import GearExecutionError
 from identifiers.identifiers_repository import (IdentifierRepository,
                                                 IdentifierRepositoryError)
 from identifiers.model import CenterIdentifiers
 from inputs.csv_reader import AggregateRowValidator, CSVVisitor, read_csv
 from outputs.errors import (CSVLocation, ErrorWriter, FileError,
-                            identifier_error, missing_header_error,
-                            unexpected_value_error)
-from outputs.outputs import JSONWriter, ListJSONWriter
+                            identifier_error, missing_header_error)
 
 log = logging.getLogger(__name__)
 
@@ -24,9 +22,8 @@ log = logging.getLogger(__name__)
 class EnrollmentBatch:
     """Collects new Identifier objects for commiting to repository."""
 
-    def __init__(self, repo: IdentifierRepository) -> None:
+    def __init__(self) -> None:
         self.__records: Dict[str, EnrollmentRecord] = {}
-        self.__repo = repo
 
     def __iter__(self) -> Iterator[EnrollmentRecord]:
         """Returns an iterator to the the enrollment records in this batch."""
@@ -37,20 +34,21 @@ class EnrollmentBatch:
         return len(self.__records.values())
 
     def add(self, enrollment_record: EnrollmentRecord) -> None:
-        """Adds the Identifier request object to this bacth.
+        """Adds the enrollment object to this bacth.
 
         Args:
-          identifier: the identifier request object
+          enrollment_record: the enrollment object
         """
         identifier = enrollment_record.center_identifier
         self.__records[identifier.ptid] = enrollment_record
 
-    def commit(self) -> None:
-        """Adds identifiers to the repository.
+    def commit(self, repo: IdentifierRepository) -> None:
+        """Adds participants to the repository.
+
+        NACCIDs are added to records after identifiers are created.
 
         Args:
-        identifier_repo: the repository for identifiers
-        identifiers: the list of identifiers to add
+          repo: the repository for identifiers
         """
         if not self.__records:
             log.warning('No enrollment records found to create')
@@ -59,7 +57,7 @@ class EnrollmentBatch:
         query = [
             record.center_identifier for record in self.__records.values()
         ]
-        identifiers = self.__repo.create_list(query)
+        identifiers = repo.create_list(query)
         log.info("created %s new NACCIDs", len(identifiers))
         if len(query) != len(identifiers):
             log.warning("expected %s new IDs, got %s", len(query),
@@ -74,10 +72,10 @@ class EnrollmentBatch:
 class TransferVisitor(CSVVisitor):
     """Visitor for processing transfers into a center."""
 
-    def __init__(self, error_writer: ErrorWriter, transfer_writer: JSONWriter,
+    def __init__(self, error_writer: ErrorWriter, transfer_info: TransferInfo,
                  repo: IdentifierRepository) -> None:
         self.__error_writer = error_writer
-        self.__transfer_writer = transfer_writer
+        self.__transfer_info = transfer_info
         self.__repo = repo
         self.__validator = NewPTIDRowValidator(repo, error_writer)
 
@@ -99,7 +97,14 @@ class TransferVisitor(CSVVisitor):
         return False
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Visits enrollment/transfer data for single form."""
+        """Visits enrollment/transfer data for single form.
+
+        Args:
+          row: the dictionary for the row in the file
+          line_num: the line number of the row
+        Returns:
+          True if there are any errors in the row. False, otherwise.
+        """
         if not self.__validator.check(row, line_num):
             return True
 
@@ -178,13 +183,12 @@ class TransferVisitor(CSVVisitor):
         naccid = None
         if naccid_identifier:
             naccid = naccid_identifier.naccid
-        transfer_record = TransferRecord(
-            date=row['frmdate_enrl'],
-            initials=row['initials_enrl'],
-            center_identifiers=new_identifiers,
-            previous_identifiers=previous_identifiers,
-            naccid=naccid)
-        self.__transfer_writer.write(transfer_record.model_dump())
+        self.__transfer_info.add(
+            TransferRecord(date=row['frmdate_enrl'],
+                           initials=row['initials_enrl'],
+                           center_identifiers=new_identifiers,
+                           previous_identifiers=previous_identifiers,
+                           naccid=naccid))
 
         log.info('Transfer found on line %s', line_num)
 
@@ -219,7 +223,7 @@ class NewEnrollmentVisitor(CSVVisitor):
         return False
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Adds an identifier object to the batch for creating new identifiers.
+        """Adds an enrollment record to the batch for creating new identifiers.
 
         Args:
           row: the dictionary for the row
@@ -242,15 +246,18 @@ class ProvisioningVisitor(CSVVisitor):
     forms."""
 
     def __init__(self, *, center_id: int, error_writer: ErrorWriter,
-                 transfer_writer: JSONWriter, batch: EnrollmentBatch,
+                 transfer_info: TransferInfo, batch: EnrollmentBatch,
                  repo: IdentifierRepository) -> None:
-        self.__center_id = center_id
         self.__error_writer = error_writer
         self.__enrollment_visitor = NewEnrollmentVisitor(error_writer,
                                                          repo=repo,
                                                          batch=batch)
         self.__transfer_in_visitor = TransferVisitor(
-            error_writer, repo=repo, transfer_writer=transfer_writer)
+            error_writer, repo=repo, transfer_info=transfer_info)
+        self.__validator = AggregateRowValidator(validators=[
+            ModuleValidator(module_name='ptenrlv1', error_writer=error_writer),
+            CenterValidator(center_id=center_id, error_writer=error_writer)
+        ])
 
     def visit_header(self, header: List[str]) -> bool:
         """Prepares visitor to work with CSV file with given header.
@@ -275,32 +282,15 @@ class ProvisioningVisitor(CSVVisitor):
         Then checks form to determine processing.
         If form is
         - a new enrollment, then applies the NewEnrollmentVisitor.
-        - a transfer out of the center, then applies the TransferOutVisitor.
-        - a transfer into the center, then applies the TransferInVisitor
+        - a transfer TransferVisitor.
 
         Args:
           row: the dictionary for the CSV row (DictReader)
           line_num: the line number of the row
         Returns:
-          True if a NACCID is provisioned without error, False otherwise
+          True if an error occurs. False, otherwise.
         """
-        module_field = 'module'
-        if row[module_field].lower() != 'ptenrlv1':
-            log.error("Expecting module %s to be ptenrlv1", row[module_field])
-            self.__error_writer.write(
-                unexpected_value_error(field=module_field,
-                                       value=row[module_field],
-                                       expected='ptenrlv1',
-                                       line=line_num))
-            return True
-
-        if int(row['adcid']) != self.__center_id:
-            log.error("Center ID for project must match form ADCID")
-            self.__error_writer.write(
-                unexpected_value_error(field='adcid',
-                                       value=row['adcid'],
-                                       expected=str(self.__center_id),
-                                       line=line_num))
+        if not self.__validator.check(row=row, line_number=line_num):
             return True
 
         if is_new_enrollment(row):
@@ -311,7 +301,7 @@ class ProvisioningVisitor(CSVVisitor):
 
 
 def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
-        enrollment_project: ProjectAdaptor, error_writer: ErrorWriter):
+        enrollment_project: EnrollmentProject, error_writer: ErrorWriter):
     """Runs identifier provisioning process.
 
     Args:
@@ -319,8 +309,8 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
       form_name: the module designator for the form
       error_writer: the error output writer
     """
-    transfer_writer = ListJSONWriter()
-    enrollment_batch = EnrollmentBatch(repo=repo)
+    transfer_info = TransferInfo(transfers=[])
+    enrollment_batch = EnrollmentBatch()
     has_error = read_csv(input_file=input_file,
                          error_writer=error_writer,
                          visitor=ProvisioningVisitor(
@@ -328,14 +318,14 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
                              batch=enrollment_batch,
                              repo=repo,
                              error_writer=error_writer,
-                             transfer_writer=transfer_writer))
+                             transfer_info=transfer_info))
     if has_error:
         log.error("no changes made due to errors in input file")
         return True
 
     log.info("requesting %s new NACCIDs", len(enrollment_batch))
     try:
-        enrollment_batch.commit()
+        enrollment_batch.commit(repo)
     except IdentifierRepositoryError as error:
         raise GearExecutionError(error) from error
 
@@ -351,34 +341,9 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
             continue
 
         subject = enrollment_project.add_subject(record.naccid)
+        subject.add_enrollment(record)
+        # subject.update_demographics_info(demographics)
 
-        session = subject.sessions.find_first('label=enrollment_transfer')
-        if not session:
-            session = subject.add_session(label="enrollment_transfer")
-
-        acquisition = session.acquisitions.find_first("label=enrollment")
-        if not acquisition:
-            acquisition = session.add_acquisition(label="enrollment")
-
-        record_file_spec = FileSpec(
-            name='enrollment.json',
-            contents=record.model_dump_json(exclude_none=True),
-            content_type='application/json')
-        acquisition.upload_file(record_file_spec)
-
-        subject.update(
-            info={
-                'enrollment': {
-                    'adcid': record.center_identifier.adcid,
-                    'ptid': record.center_identifier.ptid,
-                    'naccid': record.naccid,
-                    'guid': record.guid,
-                    'update_date': record.start_date
-                }
-            })
-
-        # TODO: don't clobber previous transfers
-        enrollment_project.update_info(
-            {'transfers': transfer_writer.object_list()})
+    enrollment_project.add_transfers(transfer_info)
 
     return False
