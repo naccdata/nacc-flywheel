@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from centers.nacc_group import NACCGroup
+from enrollment.enrollment_project import EnrollmentProject
 from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
@@ -18,7 +19,6 @@ from identifiers.identifiers_lambda_repository import (
 from inputs.parameter_store import ParameterStore
 from lambdas.lambda_function import LambdaClient, create_lambda_client
 from outputs.errors import ListErrorWriter
-from outputs.outputs import ListJSONWriter
 
 log = logging.getLogger(__name__)
 
@@ -91,7 +91,11 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
             raise GearExecutionError(
                 f'Unable to get center group: {file.parents.group}')
 
-        enrollment_project = file_group.get_project_by_id(file.parents.project)
+        project = file_group.get_project_by_id(file.parents.project)
+        if not project:
+            raise GearExecutionError(
+                f'Unable to get parent project: {file.parents.project}')
+        enrollment_project = EnrollmentProject.create_from(project)
         if not enrollment_project:
             raise GearExecutionError('Unable to get project containing file: '
                                      f'{file.parents.project}')
