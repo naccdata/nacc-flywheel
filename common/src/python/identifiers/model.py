@@ -95,4 +95,4 @@ class ParticipantIdentifiers(BaseModel):
     center_identifiers: CenterIdentifiers
     naccid: str = Field(min_length=10, pattern=r"^NACC\d{6}$")
     aliases: Optional[List[str]]
-    guid: str
+    guid: Optional[str]
