@@ -2,7 +2,8 @@
 
 from typing import List, Literal, Optional, overload
 
-from identifiers.identifiers_repository import (IdentifierRepository,
+from identifiers.identifiers_repository import (IdentifierQueryObject,
+                                                IdentifierRepository,
                                                 IdentifierRepositoryError)
 from identifiers.model import (GUID_PATTERN, CenterIdentifiers, IdentifierList,
                                IdentifierObject)
@@ -29,7 +30,7 @@ class IdentifierRequestObject(CenterIdentifiers):
 
 class IdentifierListRequest(BaseRequest):
     """Model for request to lambda."""
-    identifiers: List[IdentifierRequestObject]
+    identifiers: List[IdentifierQueryObject]
 
 
 class ADCIDRequest(ListRequest):
@@ -91,8 +92,7 @@ class IdentifiersLambdaRepository(IdentifierRepository):
         return IdentifierObject.model_validate_json(response.body)
 
     def create_list(
-            self,
-            identifiers: List[IdentifierRequestObject]) -> IdentifierList:
+            self, identifiers: List[IdentifierQueryObject]) -> IdentifierList:
         """Creates several Identifiers in the repository.
 
         Args:

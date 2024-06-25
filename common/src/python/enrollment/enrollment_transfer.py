@@ -5,7 +5,8 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, Literal, Optional
 
-from identifiers.identifiers_repository import IdentifierRepository
+from identifiers.identifiers_repository import (IdentifierQueryObject,
+                                                IdentifierRepository)
 from identifiers.model import CenterIdentifiers
 from inputs.csv_reader import RowValidator
 from outputs.errors import (CSVLocation, ErrorWriter, FileError,
@@ -107,6 +108,16 @@ class EnrollmentRecord(BaseModel):
                                 guid=guid,
                                 naccid=None,
                                 start_date=row['frmdate_enrl'])
+
+    def query_object(self) -> IdentifierQueryObject:
+        """Creates an object for creating identifiers in the respository.
+
+        Returns:
+          the identifier query object to use in batch identifier creation
+        """
+        return IdentifierQueryObject(adcid=self.center_identifier.adcid,
+                                     ptid=self.center_identifier.ptid,
+                                     guid=self.guid)
 
 
 def has_value(row: Dict[str, Any], variable: str, value: int) -> bool:

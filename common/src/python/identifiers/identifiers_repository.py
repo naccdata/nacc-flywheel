@@ -9,17 +9,24 @@ import logging
 from abc import abstractmethod
 from typing import List, Optional, overload
 
-from identifiers.model import (CenterIdentifiers, IdentifierList,
+from identifiers.model import (GUID_PATTERN, CenterIdentifiers, IdentifierList,
                                IdentifierObject)
+from pydantic import Field
 
 log = logging.getLogger(__name__)
+
+
+class IdentifierQueryObject(CenterIdentifiers):
+    """Query model creating objects."""
+    guid: Optional[str] = Field(None, max_length=13, pattern=GUID_PATTERN)
 
 
 class IdentifierRepository(abc.ABC):
     """Abstract class for identifier repositories."""
 
     @abstractmethod
-    def create(self, adcid: int, ptid: str) -> IdentifierObject:
+    def create(self, adcid: int, ptid: str,
+               guid: Optional[str]) -> IdentifierObject:
         """Creates an Identifier in the repository.
 
         Args:
@@ -27,8 +34,8 @@ class IdentifierRepository(abc.ABC):
         """
 
     @abstractmethod
-    def create_list(self,
-                    identifiers: List[CenterIdentifiers]) -> IdentifierList:
+    def create_list(
+            self, identifiers: List[IdentifierQueryObject]) -> IdentifierList:
         """Adds a list of identifiers to the repository.
 
         Args:
