@@ -267,35 +267,7 @@ class NewGUIDRowValidator(RowValidator):
 #         return True
 
 
-# pylint: disable=(too-few-public-methods)
-class ModuleValidator(RowValidator):
-    """Row validator to check whether the row has a particular module."""
 
-    def __init__(self, module_name: str, error_writer: ErrorWriter) -> None:
-        self.__module_name = module_name
-        self.__error_writer = error_writer
-
-    def check(self, row: Dict[str, Any], line_number: int) -> bool:
-        """Checks that the row has the expected module.
-
-        Args:
-          row: the dictionary for the row
-          line_num: the line number for the row
-        Returns:
-          True if the module field matches, False otherwise
-        """
-        module_field = 'module'
-        if row[module_field].lower() != self.__module_name:
-            log.error("Expecting module %s to be %s", row[module_field],
-                      self.__module_name)
-            self.__error_writer.write(
-                unexpected_value_error(field=module_field,
-                                       value=row[module_field],
-                                       expected=self.__module_name,
-                                       line=line_number))
-            return True
-
-        return False
 
 
 # pylint: disable=(too-few-public-methods)
@@ -315,15 +287,15 @@ class CenterValidator(RowValidator):
         Returns:
           True if the center ID matches, False otherwise.
         """
-        if int(row['adcid']) != self.__center_id:
-            log.error("Center ID for project must match form ADCID")
-            self.__error_writer.write(
-                unexpected_value_error(field='adcid',
-                                       value=row['adcid'],
-                                       expected=str(self.__center_id),
-                                       line=line_number))
+        if int(row['adcid']) == self.__center_id:
             return True
-
+        
+        log.error("Center ID for project must match form ADCID")
+        self.__error_writer.write(
+            unexpected_value_error(field='adcid',
+                                    value=row['adcid'],
+                                    expected=str(self.__center_id),
+                                    line=line_number))
         return False
 
 
