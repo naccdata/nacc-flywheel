@@ -4,7 +4,7 @@ from typing import List, Literal, Optional, overload
 
 from identifiers.identifiers_repository import (IdentifierRepository,
                                                 IdentifierRepositoryError)
-from identifiers.model import (CenterIdentifiers, IdentifierList,
+from identifiers.model import (GUID_PATTERN, CenterIdentifiers, IdentifierList,
                                IdentifierObject)
 from lambdas.lambda_function import (BaseRequest, LambdaClient,
                                      LambdaInvocationError)
@@ -19,16 +19,27 @@ class ListRequest(BaseRequest):
 
 class IdentifierRequest(BaseRequest, CenterIdentifiers):
     """Request model for creating Identifier."""
+    guid: Optional[str] = Field(None, max_length=13, pattern=GUID_PATTERN)
+
+
+class IdentifierRequestObject(CenterIdentifiers):
+    """Mode for individual identifiers within a list."""
+    guid: Optional[str] = Field(None, max_length=13, pattern=GUID_PATTERN)
 
 
 class IdentifierListRequest(BaseRequest):
     """Model for request to lambda."""
-    identifiers: List[CenterIdentifiers]
+    identifiers: List[IdentifierRequestObject]
 
 
 class ADCIDRequest(ListRequest):
     """Model for request object with ADCID, and offset and limit."""
     adcid: int = Field(ge=0)
+
+
+class GUIDRequest(BaseRequest):
+    """Request model for search by GUID."""
+    guid: str = Field(max_length=13, pattern=GUID_PATTERN)
 
 
 class NACCIDRequest(BaseRequest):
@@ -53,7 +64,8 @@ class IdentifiersLambdaRepository(IdentifierRepository):
         self.__client = client
         self.__mode: Literal['dev', 'prod'] = mode
 
-    def create(self, adcid: int, ptid: str) -> IdentifierObject:
+    def create(self, adcid: int, ptid: str,
+               guid: Optional[str]) -> IdentifierObject:
         """Creates an Identifier in the repository.
 
         Args:
@@ -69,7 +81,8 @@ class IdentifiersLambdaRepository(IdentifierRepository):
                 name='create-identifier-lambda-function',
                 request=IdentifierRequest(mode=self.__mode,
                                           adcid=adcid,
-                                          ptid=ptid))
+                                          ptid=ptid,
+                                          guid=guid))
         except LambdaInvocationError as error:
             raise IdentifierRepositoryError(error) from error
         if response.statusCode not in (200, 201):
@@ -77,8 +90,9 @@ class IdentifiersLambdaRepository(IdentifierRepository):
 
         return IdentifierObject.model_validate_json(response.body)
 
-    def create_list(self,
-                    identifiers: List[CenterIdentifiers]) -> IdentifierList:
+    def create_list(
+            self,
+            identifiers: List[IdentifierRequestObject]) -> IdentifierList:
         """Creates several Identifiers in the repository.
 
         Args:
@@ -156,7 +170,23 @@ class IdentifiersLambdaRepository(IdentifierRepository):
                     name='Identifier-ADCID-PTID-Lambda-Function',
                     request=IdentifierRequest(mode=self.__mode,
                                               adcid=adcid,
-                                              ptid=ptid))
+                                              ptid=ptid,
+                                              guid=guid))
+            except LambdaInvocationError as error:
+                raise IdentifierRepositoryError(error) from error
+
+            if response.statusCode == 200:
+                return IdentifierObject.model_validate_json(response.body)
+            if response.statusCode == 404:
+                return None
+
+            raise IdentifierRepositoryError(response.body)
+
+        if guid:
+            try:
+                response = self.__client.invoke(
+                    name='identifier-guid-lambda-function',
+                    request=GUIDRequest(mode=self.__mode, guid=guid))
             except LambdaInvocationError as error:
                 raise IdentifierRepositoryError(error) from error
 
