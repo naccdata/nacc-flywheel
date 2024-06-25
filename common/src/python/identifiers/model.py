@@ -4,6 +4,9 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, RootModel
 
+GUID_PATTERN = r"^NIH[a-zA-Z0-9]{10}$"
+NACCID_PATTERN = r"^NACC\d{6}$"
+
 
 @dataclass(unsafe_hash=True)
 class Identifier:
@@ -29,10 +32,11 @@ class IdentifierObject(BaseModel):
 
     Hides unconventional naming of fields and has NACCID as string.
     """
-    adcid: int
+    adcid: int = Field(ge=0)
     naccadc: int
-    ptid: str
-    naccid: str
+    ptid: str = Field(max_length=10)
+    naccid: str = Field(max_length=10, pattern=NACCID_PATTERN)
+    guid: Optional[str] = Field(None, max_length=13, pattern=GUID_PATTERN)
 
     def as_model(self) -> Identifier:
         """Returns the IdentifierModel for this Identifier.
@@ -57,7 +61,8 @@ class IdentifierObject(BaseModel):
         return IdentifierObject(adcid=identifier.adc_id,
                                 naccadc=identifier.nacc_adc,
                                 ptid=identifier.ptid,
-                                naccid=identifier.naccid)
+                                naccid=identifier.naccid,
+                                guid=None)
 
 
 class IdentifierList(RootModel):
@@ -93,6 +98,6 @@ class CenterIdentifiers(BaseModel):
 class ParticipantIdentifiers(BaseModel):
     """Model for participant identifiers."""
     center_identifiers: CenterIdentifiers
-    naccid: str = Field(min_length=10, pattern=r"^NACC\d{6}$")
+    naccid: str = Field(min_length=10, pattern=NACCID_PATTERN)
     aliases: Optional[List[str]]
     guid: Optional[str]
