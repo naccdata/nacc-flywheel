@@ -1,7 +1,7 @@
 """Defines Identifier Provisioning."""
 
 import logging
-from typing import Any, Dict, Iterator, List, TextIO
+from typing import Any, Dict, Iterator, List, Optional, TextIO
 
 from enrollment.enrollment_project import EnrollmentProject, TransferInfo
 from enrollment.enrollment_transfer import (
@@ -11,10 +11,11 @@ from enrollment.enrollment_transfer import (
 from gear_execution.gear_execution import GearExecutionError
 from identifiers.identifiers_repository import (IdentifierRepository,
                                                 IdentifierRepositoryError)
-from identifiers.model import CenterIdentifiers
+from identifiers.model import CenterIdentifiers, IdentifierObject
 from inputs.csv_reader import AggregateRowValidator, CSVVisitor, read_csv
 from outputs.errors import (CSVLocation, ErrorWriter, FileError,
-                            identifier_error, missing_header_error)
+                            empty_field_error, identifier_error,
+                            missing_header_error)
 
 log = logging.getLogger(__name__)
 
@@ -76,6 +77,9 @@ class TransferVisitor(CSVVisitor):
         self.__transfer_info = transfer_info
         self.__repo = repo
         self.__validator = NewPTIDRowValidator(repo, error_writer)
+        self.__naccid_identifier: Optional[IdentifierObject] = None
+        self.__naccid: Optional[str] = None
+        self.__previous_identifiers: Optional[CenterIdentifiers] = None
 
     def visit_header(self, header: List[str]) -> bool:
         """Checks that the header has expected column headings.
@@ -94,6 +98,130 @@ class TransferVisitor(CSVVisitor):
 
         return False
 
+    def _naccid_visit(self, row: Dict[str, Any], line_num: int) -> bool:
+        """Visits a row to process a known NACCID.
+
+        Pulls the identifer record for a provided NACCID
+
+        Args:
+          row: the dictionary for the input row
+          line_num: the line number of the row
+        Returns:
+          True if the row has an error. False otherwise.
+        """
+        if not has_known_naccid(row):
+            return False
+
+        self.__naccid = row['naccid']
+        if not self.__naccid:
+            self.__error_writer.write(empty_field_error('naccid', line_num))
+            return True
+
+        self.__naccid_identifier = self.__repo.get(naccid=self.__naccid)
+        if self.__naccid_identifier:
+            return False
+
+        self.__error_writer.write(
+            identifier_error(field='naccid',
+                             value=self.__naccid,
+                             line=line_num))
+        return True
+
+    def _match_naccid(self, identifier, source, line_num: int) -> bool:
+        """Checks whether the identifier matches the NACCID in the visitor.
+
+        Args:
+          identifier: the identifier to match
+          line_num: the line number
+        Returns:
+          True if the identifier matches the NACCID. False, otherwise.
+        """
+        if not self.__naccid_identifier:
+            return False
+
+        if identifier == self.__naccid_identifier:
+            return True
+
+        self.__error_writer.write(
+            FileError(error_type='error',
+                      error_code='mismatched-id',
+                      location=CSVLocation(line=line_num,
+                                           column_name='naccid'),
+                      message=("mismatched NACCID for "
+                               f"Guid {source} "
+                               f"and provided NACCID {self.__naccid}")))
+        return False
+
+    def _guid_visit(self, row: Dict[str, Any], line_num: int) -> bool:
+        """Visits the row for an available GUID.
+
+        Args:
+          row: the dictionary for the input row
+          line_num: the line number of the row
+        Returns:
+          True if the row has an error. False otherwise.
+        """
+        if not guid_available(row):
+            return False
+
+        guid_identifier = self.__repo.get(guid=row['guid'])
+        if not guid_identifier:
+            self.__error_writer.write(
+                identifier_error(
+                    field='guid',
+                    value=row['guid'],
+                    line=line_num,
+                    message=f"No NACCID found for GUID {row['guid']}"))
+            return True
+        if not self._match_naccid(guid_identifier, row['guid'], line_num):
+            return True
+
+        self.__naccid_identifier = guid_identifier
+
+        return False
+
+    def _prevenrl_visit(self, row: Dict[str, Any], line_num: int) -> bool:
+        """Visits the row for a previous enrollment.
+
+        Args:
+          row: the dictionary for the input row
+          line_num: the line number of the row
+        Returns:
+          True if the row has an error. False otherwise.
+        """
+        if not previously_enrolled(row):
+            return False
+
+        previous_adcid = row['oldadcid']
+        if previous_adcid is None:
+            self.__error_writer.write(empty_field_error('oldadcid', line_num))
+            return True
+        previous_ptid = row['oldptid']
+        if not previous_ptid:
+            self.__error_writer.write(empty_field_error('oldptid', line_num))
+            return True
+
+        ptid_identifier = self.__repo.get(adcid=previous_adcid,
+                                          ptid=previous_ptid)
+        if not ptid_identifier:
+            self.__error_writer.write(
+                identifier_error(
+                    value=previous_ptid,
+                    line=line_num,
+                    message=(f"No NACCID found for ADCID {previous_adcid}, "
+                             f"PTID {previous_ptid}")))
+            return True
+
+        if not self._match_naccid(ptid_identifier,
+                                  f"{previous_adcid}-{previous_ptid}",
+                                  line_num):
+            return True
+
+        self.__naccid_identifier = ptid_identifier
+        self.__previous_identifiers = CenterIdentifiers(adcid=previous_adcid,
+                                                        ptid=previous_ptid)
+        return False
+
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Visits enrollment/transfer data for single form.
 
@@ -108,84 +236,24 @@ class TransferVisitor(CSVVisitor):
 
         new_identifiers = CenterIdentifiers(adcid=row['adcid'],
                                             ptid=row['ptid'])
-        previous_identifiers = None
-        naccid_identifier = None
-        ptid_identifier = None
-        guid_identifier = None
 
-        if has_known_naccid(row):
-            known_naccid = row['naccid']
-            if known_naccid:
-                naccid_identifier = self.__repo.get(naccid=known_naccid)
-                if not naccid_identifier:
-                    self.__error_writer.write(
-                        identifier_error(field='naccid',
-                                         value=known_naccid,
-                                         line=line_num))
-                    return True
+        if self._naccid_visit(row=row, line_num=line_num):
+            return True
 
-        if guid_available(row):
-            guid_identifier = self.__repo.get(guid=row['guid'])
+        if self._guid_visit(row=row, line_num=line_num):
+            return True
 
-            if not guid_identifier:
-                self.__error_writer.write(
-                    identifier_error(
-                        field='guid',
-                        value=row['guid'],
-                        line=line_num,
-                        message=f"No NACCID found for GUID {row['guid']}"))
-                return True
-            if naccid_identifier and guid_identifier != naccid_identifier:
-                self.__error_writer.write(
-                    FileError(error_type='error',
-                              error_code='mismatched-id',
-                              location=CSVLocation(line=line_num,
-                                                   column_name='naccid'),
-                              message=("mismatched NACCID for "
-                                       f"Guid {row['guid']} "
-                                       f"and provided NACCID {known_naccid}")))
-                return True
-            naccid_identifier = guid_identifier
-
-        if previously_enrolled(row):
-            previous_adcid = row['oldadcid']
-            previous_ptid = row['oldptid']
-            if previous_adcid is not None and previous_ptid:
-                ptid_identifier = self.__repo.get(adcid=previous_adcid,
-                                                  ptid=previous_ptid)
-                if not ptid_identifier:
-                    self.__error_writer.write(
-                        identifier_error(
-                            value=previous_ptid,
-                            line=line_num,
-                            message=(
-                                f"No NACCID found for ADCID {previous_adcid}, "
-                                f"PTID {previous_ptid}")))
-                    return True
-
-                if naccid_identifier and ptid_identifier != naccid_identifier:
-                    self.__error_writer.write(
-                        FileError(error_type='error',
-                                  error_code='mismatched-id',
-                                  location=CSVLocation(line=line_num,
-                                                       column_name='naccid'),
-                                  message=("mismatched NACCID for "
-                                           f"{previous_adcid}-{previous_ptid} "
-                                           f"and {known_naccid}")))
-                    return True
-                naccid_identifier = ptid_identifier
-
-                previous_identifiers = CenterIdentifiers(adcid=previous_adcid,
-                                                         ptid=previous_ptid)
+        if self._prevenrl_visit(row=row, line_num=line_num):
+            return True
 
         naccid = None
-        if naccid_identifier:
-            naccid = naccid_identifier.naccid
+        if self.__naccid_identifier:
+            naccid = self.__naccid_identifier.naccid
         self.__transfer_info.add(
             TransferRecord(date=row['frmdate_enrl'],
                            initials=row['initials_enrl'],
                            center_identifiers=new_identifiers,
-                           previous_identifiers=previous_identifiers,
+                           previous_identifiers=self.__previous_identifiers,
                            naccid=naccid))
 
         log.info('Transfer found on line %s', line_num)
