@@ -54,9 +54,7 @@ class EnrollmentBatch:
             log.warning('No enrollment records found to create')
             return
 
-        query = [
-            record.center_identifier for record in self.__records.values()
-        ]
+        query = [record.query_object() for record in self.__records.values()]
         identifiers = repo.create_list(query)
         log.info("created %s new NACCIDs", len(identifiers))
         if len(query) != len(identifiers):
