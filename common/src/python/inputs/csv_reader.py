@@ -73,7 +73,8 @@ def read_csv(input_file: TextIO, error_writer: ErrorWriter,
 
     error_found = False
     for record in reader:
-        error_found = visitor.visit_row(record, line_num=reader.line_num)
+        error_in_row = visitor.visit_row(record, line_num=reader.line_num)
+        error_found = error_in_row or error_found
 
     return error_found
 
