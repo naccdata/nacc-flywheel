@@ -7,7 +7,7 @@ from typing import Any, Dict, Literal, Optional
 
 from identifiers.identifiers_repository import (IdentifierQueryObject,
                                                 IdentifierRepository)
-from identifiers.model import CenterIdentifiers
+from identifiers.model import GUID_PATTERN, NACCID_PATTERN, CenterIdentifiers
 from inputs.csv_reader import RowValidator
 from outputs.errors import (CSVLocation, ErrorWriter, FileError,
                             unexpected_value_error)
@@ -75,14 +75,14 @@ class TransferRecord(BaseModel):
     initials: str
     center_identifiers: CenterIdentifiers
     previous_identifiers: Optional[CenterIdentifiers]
-    naccid: Optional[str] = Field(min_length=10, pattern=r"^NACC\d{6}$")
+    naccid: Optional[str] = Field(max_length=10, pattern=NACCID_PATTERN)
 
 
 class EnrollmentRecord(BaseModel):
     """Model representing enrollment of participant."""
     center_identifier: CenterIdentifiers
-    naccid: Optional[str] = Field(None, min_length=10, pattern=r"^NACC\d{6}$")
-    guid: Optional[str] = Field(None, min_length=13)
+    naccid: Optional[str] = Field(None, max_length=10, pattern=NACCID_PATTERN)
+    guid: Optional[str] = Field(None, max_length=13, pattern=GUID_PATTERN)
     start_date: datetime
     end_date: Optional[datetime] = None
     transfer_from: Optional[TransferRecord] = None

@@ -7,6 +7,7 @@ from enrollment.enrollment_transfer import (Demographics, EnrollmentError,
                                             EnrollmentRecord)
 from flywheel.file_spec import FileSpec
 from flywheel_adaptor.subject_adaptor import SubjectAdaptor
+from identifiers.model import GUID_PATTERN, NACCID_PATTERN
 from pydantic import BaseModel, Field, ValidationError
 
 
@@ -14,8 +15,8 @@ class IdentifierInfoRecord(BaseModel):
     """Info object for enrollment identifiers object."""
     adcid: int = Field(ge=0)
     ptid: str = Field(max_length=10)
-    naccid: str = Field(min_length=10, pattern=r"^NACC\d{6}$")
-    guid: Optional[str]
+    naccid: str = Field(max_length=10, pattern=NACCID_PATTERN)
+    guid: Optional[str] = Field(max_length=13, pattern=GUID_PATTERN)
     update_date: datetime
 
 

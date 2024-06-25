@@ -99,6 +99,6 @@ class CenterIdentifiers(BaseModel):
 class ParticipantIdentifiers(BaseModel):
     """Model for participant identifiers."""
     center_identifiers: CenterIdentifiers
-    naccid: str = Field(min_length=10, pattern=NACCID_PATTERN)
+    naccid: str = Field(max_length=10, pattern=NACCID_PATTERN)
     aliases: Optional[List[str]]
     guid: Optional[str]

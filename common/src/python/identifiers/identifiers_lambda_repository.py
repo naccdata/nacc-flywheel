@@ -45,7 +45,7 @@ class GUIDRequest(BaseRequest):
 
 class NACCIDRequest(BaseRequest):
     """Request model for search by NACCID."""
-    naccid: str = Field(min_length=10, pattern=r"^NACC\d{6}$")
+    naccid: str = Field(max_length=10, pattern=r"^NACC\d{6}$")
 
 
 class ListResponseObject(BaseModel):
