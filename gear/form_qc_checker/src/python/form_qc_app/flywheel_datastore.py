@@ -3,11 +3,13 @@
 import json
 import logging
 from json.decoder import JSONDecodeError
+from typing import Dict, Optional
 
-from flywheel.client import Client
+from flywheel import Client, Project
 from flywheel.rest import ApiException
 from flywheel.view_builder import ViewBuilder
 from form_qc_app.parser import Keys
+from pandas import DataFrame
 from validator.datastore import Datastore
 
 log = logging.getLogger(__name__)
@@ -37,9 +39,63 @@ class FlywheelDatastore(Datastore):
         except ApiException as error:
             log.error('Failed to retrieve Flywheel container: %s', error)
 
+        #TODO - get legacy project label from params
+        self.__legacy_project = self.get_legacy_project('retrospective-form')
+
+    def get_legacy_project(self, project_lbl: str) -> Optional[Project]:
+        try:
+            return self.__client.lookup(f'{self.__gid}/{project_lbl}')
+        except ApiException as error:
+            log.error('Failed to retrieve legacy project in group %s: %s',
+                      self.__gid, error)
+            return None
+
+    def get_previous_records(self, *, project: Project, subject_lbl: str,
+                             module: str, orderby: str,
+                             cutoff_val: str) -> DataFrame:
+        """Retrieve previous visit records for the specified subject.
+
+        Args:
+            project: Flywheel project to pull the records
+            subject_lbl: Flywheel subject label
+            module: module name
+            orderby: variable name that visits are sorted by
+            cutoff_val: cutoff value on orderby field
+
+        Returns:
+            Optional[DataFrame]: Dataframe of previous visits
+        """
+
+        # Dataview to retrieve the previous visits
+        orderby_col = f'file.info.forms.json.{orderby}'
+        columns = [
+            'file.name', 'file.file_id', "file.parents.acquisition",
+            "file.parents.session", orderby_col
+        ]
+        builder = ViewBuilder(
+            label=
+            (f'Visits for {self.__gid}/{project.label}/{subject_lbl}/{module}'
+             ),
+            columns=columns,
+            container='acquisition',
+            filename='*.json',
+            match='all',
+            process_files=False,
+            filter=(f'subject.label={subject_lbl},'
+                    f'acquisition.label={module},{orderby_col}<{cutoff_val}'),
+            include_ids=False,
+            include_labels=False)
+        view = builder.build()
+
+        dframe = self.__client.read_view_dataframe(view, project.id)
+        if not dframe.empty:
+            dframe = dframe.sort_values(orderby_col, ascending=False)
+
+        return dframe
+
     def get_previous_instance(
             self, orderby: str, pk_field: str,
-            current_ins: dict[str, str]) -> dict[str, str] | None:
+            current_ins: dict[str, str]) -> Optional[Dict[str, str]]:
         """Overriding the abstract method, get the previous visit record for
         the specified subject.
 
@@ -51,9 +107,6 @@ class FlywheelDatastore(Datastore):
         Returns:
             dict[str, str]: Previous visit record. None if no previous visit
         """
-
-        group_lbl = self.__group.label
-        project_lbl = self.__project.label
 
         if pk_field not in current_ins:
             log.error(('Variable %s not set in current visit data, '
@@ -71,37 +124,27 @@ class FlywheelDatastore(Datastore):
             return None
 
         subject_lbl = current_ins[pk_field]
-        curr_ob_col_val = current_ins[orderby]
         module = current_ins[Keys.MODULE]
+        orderby_value = current_ins[orderby]
 
-        # Dataview to retrieve the previous visits
-        orderby_col = f'file.info.forms.json.{orderby}'
-        columns = [
-            'file.name', 'file.file_id', "file.parents.acquisition",
-            "file.parents.session", orderby_col
-        ]
-        builder = ViewBuilder(
-            label=('Previous visits for - '
-                   f'{group_lbl}/{project_lbl}/{subject_lbl}'),
-            columns=columns,
-            container='acquisition',
-            filename='*.json',
-            match='all',
-            process_files=False,
-            filter=(
-                f'subject.label={subject_lbl},'
-                f'acquisition.label={module},{orderby_col}<{curr_ob_col_val}'),
-            include_ids=False,
-            include_labels=False)
-        view = builder.build()
+        dframe = self.get_previous_records(project=self.__project,
+                                           subject_lbl=subject_lbl,
+                                           module=module,
+                                           orderby=orderby,
+                                           cutoff_val=orderby_value)
 
-        dframe = self.__client.read_view_dataframe(view, self.__pid)
+        #TODO get legacy module and orderby column
+        if dframe.empty and self.__legacy_project:
+            self.get_previous_records(project=self.__legacy_project,
+                                      subject_lbl=subject_lbl,
+                                      module='UDSv3',
+                                      orderby='vstdate_a1',
+                                      cutoff_val=orderby_value)
+
         if dframe.empty:
-            log.error('No previous visits found for %s - %s', subject_lbl,
+            log.error('No previous visits found for %s/%s', subject_lbl,
                       module)
             return None
-        dframe = dframe.sort_values(orderby_col, ascending=False)
-        # latest_rec = dframe.head(1)
 
         latest_rec_info = dframe.head(1).to_dict('records')[0]
         return self.get_visit_data(latest_rec_info['file.name'],

@@ -125,3 +125,7 @@ class Client:
 
     def get(self, id: str) -> ContainerOutput:
         ...
+
+    #return type is ResolverOutput
+    def lookup(self, path):
+        ...
