@@ -5,7 +5,7 @@ from typing import Any, Dict, Iterator, List, TextIO
 
 from enrollment.enrollment_project import EnrollmentProject, TransferInfo
 from enrollment.enrollment_transfer import (
-    CenterValidator, EnrollmentRecord, ModuleValidator, NewGUIDRowValidator,
+    CenterValidator, EnrollmentRecord, NewGUIDRowValidator,
     NewPTIDRowValidator, TransferRecord, guid_available, has_known_naccid,
     is_new_enrollment, previously_enrolled)
 from gear_execution.gear_execution import GearExecutionError
@@ -136,7 +136,7 @@ class TransferVisitor(CSVVisitor):
                         value=row['guid'],
                         line=line_num,
                         message=f"No NACCID found for GUID {row['guid']}"))
-
+                return True
             if naccid_identifier and guid_identifier != naccid_identifier:
                 self.__error_writer.write(
                     FileError(error_type='error',
@@ -254,10 +254,7 @@ class ProvisioningVisitor(CSVVisitor):
                                                          batch=batch)
         self.__transfer_in_visitor = TransferVisitor(
             error_writer, repo=repo, transfer_info=transfer_info)
-        self.__validator = AggregateRowValidator(validators=[
-            ModuleValidator(module_name='ptenrlv1', error_writer=error_writer),
-            CenterValidator(center_id=center_id, error_writer=error_writer)
-        ])
+        self.__validator = CenterValidator(center_id=center_id, error_writer=error_writer)
 
     def visit_header(self, header: List[str]) -> bool:
         """Prepares visitor to work with CSV file with given header.
@@ -267,7 +264,7 @@ class ProvisioningVisitor(CSVVisitor):
         Returns:
           True if all of the visitors return True. False otherwise
         """
-        expected_columns = {'module', 'enrltype'}
+        expected_columns = {'enrltype'}
         if not expected_columns.issubset(set(header)):
             self.__error_writer.write(missing_header_error())
             return True
@@ -276,7 +273,7 @@ class ProvisioningVisitor(CSVVisitor):
                 and self.__transfer_in_visitor.visit_header(header))
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Provisions a NACCID for the NACCID and PTID.
+        """Provisions a NACCID for the ADCID and PTID.
 
         First checks that the row has the form name as the module.
         Then checks form to determine processing.
@@ -306,7 +303,9 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
 
     Args:
       input_file: the data input stream
-      form_name: the module designator for the form
+      center_id: the ADCID for the center
+      repo: the identifier repository
+      enrollment_project: the project tracking enrollment
       error_writer: the error output writer
     """
     transfer_info = TransferInfo(transfers=[])
@@ -331,7 +330,7 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
 
     for record in enrollment_batch:
         if not record.naccid:
-            log.error('NACCID should exist for enrollment record %s/%s',
+            log.error('Failed to generate NACCID for enrollment record %s/%s',
                       record.center_identifier.adcid,
                       record.center_identifier.ptid)
             continue
