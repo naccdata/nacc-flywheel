@@ -267,9 +267,6 @@ class NewGUIDRowValidator(RowValidator):
 #         return True
 
 
-
-
-
 # pylint: disable=(too-few-public-methods)
 class CenterValidator(RowValidator):
     """Row validator to check whether the row has the correct ADCID."""
@@ -289,13 +286,13 @@ class CenterValidator(RowValidator):
         """
         if int(row['adcid']) == self.__center_id:
             return True
-        
+
         log.error("Center ID for project must match form ADCID")
         self.__error_writer.write(
             unexpected_value_error(field='adcid',
-                                    value=row['adcid'],
-                                    expected=str(self.__center_id),
-                                    line=line_number))
+                                   value=row['adcid'],
+                                   expected=str(self.__center_id),
+                                   line=line_number))
         return False
 
 

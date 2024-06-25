@@ -254,7 +254,8 @@ class ProvisioningVisitor(CSVVisitor):
                                                          batch=batch)
         self.__transfer_in_visitor = TransferVisitor(
             error_writer, repo=repo, transfer_info=transfer_info)
-        self.__validator = CenterValidator(center_id=center_id, error_writer=error_writer)
+        self.__validator = CenterValidator(center_id=center_id,
+                                           error_writer=error_writer)
 
     def visit_header(self, header: List[str]) -> bool:
         """Prepares visitor to work with CSV file with given header.
