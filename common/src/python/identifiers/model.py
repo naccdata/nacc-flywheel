@@ -38,6 +38,7 @@ class IdentifierObject(BaseModel):
     naccid: str = Field(max_length=10, pattern=NACCID_PATTERN)
     guid: Optional[str] = Field(None, max_length=13, pattern=GUID_PATTERN)
 
+    # pylint: disable=(unsubscriptable-object)
     def as_model(self) -> Identifier:
         """Returns the IdentifierModel for this Identifier.
 
