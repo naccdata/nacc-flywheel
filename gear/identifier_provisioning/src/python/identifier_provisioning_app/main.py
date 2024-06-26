@@ -99,9 +99,11 @@ class TransferVisitor(CSVVisitor):
         return False
 
     def _naccid_visit(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Visits a row to process a known NACCID.
+        """Visits a row to process a known NACCID to gather existing
+        identifiers.
 
-        Pulls the identifer record for a provided NACCID
+        Identifiers are saved in visitor to match with identifiers for other
+        form information.
 
         Args:
           row: the dictionary for the input row
@@ -153,7 +155,9 @@ class TransferVisitor(CSVVisitor):
         return False
 
     def _guid_visit(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Visits the row for an available GUID.
+        """Visits the row for an available GUID to gather existing identifiers.
+
+        Checks whether identifiers match those already found.
 
         Args:
           row: the dictionary for the input row
@@ -181,7 +185,9 @@ class TransferVisitor(CSVVisitor):
         return False
 
     def _prevenrl_visit(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Visits the row for a previous enrollment.
+        """Visits the row for a previous enrollment to gather identifiers.
+
+        Checks that identifiers match those already found.
 
         Args:
           row: the dictionary for the input row
