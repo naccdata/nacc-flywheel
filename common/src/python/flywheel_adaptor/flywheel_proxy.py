@@ -1,7 +1,7 @@
 """Defines project creation functions for calls to Flywheel."""
 import json
 import logging
-from typing import List, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 import flywheel
 from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
@@ -12,10 +12,17 @@ from flywheel.models.group_role import GroupRole
 from flywheel.models.project_parents import ProjectParents
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
+from flywheel.models.user import User
+from flywheel.rest import ApiException
+from flywheel_adaptor.subject_adaptor import SubjectAdaptor
 from fw_client import FWClient
 from fw_utils import AttrDict
 
 log = logging.getLogger(__name__)
+
+
+class FlywheelError(Exception):
+    """Exception class for Flywheel errors."""
 
 
 # pylint: disable=(too-many-public-methods)
@@ -73,7 +80,11 @@ class FlywheelProxy:
         Returns:
             the group (or empty list if not found)
         """
-        return self.__fw.groups.find(f'_id={group_id}')
+        try:
+            return self.__fw.groups.find(f'_id={group_id}')
+        except ApiException as error:
+            raise FlywheelError(
+                f"Cannot get group {group_id}: {error}") from error
 
     def find_group(self, group_id: str) -> Optional['GroupAdaptor']:
         """Returns group for group id.
@@ -153,6 +164,17 @@ class FlywheelProxy:
         """
         return self.__fw.get_file(file_id)
 
+    def get_file_group(self, file_id: str) -> str:
+        """Returns the group ID for the file.
+
+        Args:
+          file_id: the file ID
+        Returns:
+          the group ID for the file
+        """
+        file = self.get_file(file_id)
+        return file.parents.group
+
     def get_group(self, *, group_id: str, group_label: str) -> flywheel.Group:
         """Returns the flywheel group with the given ID and label.
 
@@ -171,6 +193,11 @@ class FlywheelProxy:
         group_list = self.find_groups(group_id)
         if group_list:
             return group_list[0]
+
+        conflict = self.__fw.groups.find_first(f"label={group_label}")
+        if conflict:
+            raise FlywheelError(
+                f"Group with label {group_label} exists: {conflict.id}")
 
         if self.__dry_run:
             log.info('Dry Run: would create group %s', group_id)
@@ -199,20 +226,15 @@ class FlywheelProxy:
         Returns:
             project: the found or created project
         """
-        group_id = group.id
-        assert group_id
-        existing_projects = self.find_projects(group_id=group_id,
-                                               project_label=project_label)
-        if existing_projects and len(existing_projects) == 1:
-            project_ref = f"{group.id}/{project_label}"
-            log.info('Project %s exists', project_ref)
-            return existing_projects[0]
-
         if not group:
-            log.error(('No project named %s and no group id provided.'
-                       '  Please provide a group ID to create the project in'),
+            log.error('Attempted to create a project %s without a group',
                       project_label)
             return None
+
+        project = group.projects.find_first(f"label={project_label}")
+        if project:
+            log.info('Project %s/%s exists', group.id, project_label)
+            return project
 
         project_ref = f"{group.id}/{project_label}"
         if self.__dry_run:
@@ -221,15 +243,29 @@ class FlywheelProxy:
                                     parents=ProjectParents(group=group.id))
 
         log.info('creating project %s', project_ref)
-        project = group.add_project(label=project_label)
+        try:
+            project = group.add_project(label=project_label)
+        except ApiException as exc:
+            log.error('Failed to create project %s: %s', project_ref, exc)
+            return None
         log.info('success')
 
         return project
 
-    def get_roles(self) -> Mapping[str, RoleOutput]:
-        """Gets all roles for the FW instance.
+    def get_project_by_id(self, project_id: str) -> Optional[flywheel.Project]:
+        """Returns a project with the given ID.
 
-        Does not include GroupRoles.
+        Args:
+          project_id: the ID for the project
+        Returns:
+          the project with the ID if exists, None otherwise
+        """
+        return self.__fw.projects.find_first(f"_id={project_id}")
+
+    def get_roles(self) -> Mapping[str, RoleOutput]:
+        """Gets all user roles for the FW instance.
+
+        Does not include access roles for Groups.
         """
         if not self.__project_roles:
             all_roles = self.__fw.get_all_roles()
@@ -237,7 +273,7 @@ class FlywheelProxy:
         return self.__project_roles
 
     def get_role(self, label: str) -> Optional[RoleOutput]:
-        """Gets project role with label.
+        """Gets project role by label.
 
         Args:
           label: the name of the role
@@ -473,26 +509,79 @@ class FlywheelProxy:
         """Returns URL for site of this instance."""
         return self.__fw.get_config()["site"]["redirect_url"]
 
+    def get_lookup_path(self, container) -> str:
+        """Returns the path to the container.
+
+        Args:
+          container: the container
+        Returns:
+          the path to the container
+        """
+        assert container.parents, "expect parents for container"
+
+        path = "fw://"
+        container_name = get_name(container)
+        ancestors = container.parents
+
+        # names of containers of FW hierarchy listed in order minus files
+        levels = [
+            'group', 'project', 'subject', 'session', 'acquisition', 'analysis'
+        ]
+        for level in levels:
+            ancestor_id = ancestors[level]
+            if ancestor_id:
+                # gears invoked by a gear rule does not have access to group
+                if level == 'group':
+                    ancestor_name = ancestor_id
+                else:
+                    ancestor = self.__fw.get(ancestor_id)
+                    ancestor_name = get_name(ancestor)
+                path = f"{path}{ancestor_name}/"
+
+        return f"{path}{container_name}"
+
+
+def get_name(container) -> str:
+    """Returns the name for the container.
+
+    Args:
+        container: the container
+    Returns:
+        ID for a group, name for a file, and label for everything else
+    """
+    if container.container_type == 'file':
+        return container.name
+    if container.container_type == 'group':
+        return container.id
+
+    return container.label
+
 
 class GroupAdaptor:
     """Defines an adaptor for a flywheel group."""
 
     def __init__(self, *, group: flywheel.Group, proxy: FlywheelProxy) -> None:
-        self.__group = group
-        self.__fw = proxy
+        self._group = group
+        self._fw = proxy
+
+    # pylint: disable=invalid-name
+    @property
+    def id(self) -> str:
+        """Return the ID for the group."""
+        return self._group.id
 
     @property
     def label(self) -> str:
         """Return the label of the group."""
-        return self.__group.label
+        return self._group.label
 
     def proxy(self) -> FlywheelProxy:
         """Return the proxy for the flywheel instance."""
-        return self.__fw
+        return self._fw
 
     def projects(self) -> List[flywheel.Project]:
         """Return projects for the group."""
-        return self.__group.projects()
+        return list(self._group.projects.iter())
 
     def get_tags(self) -> List[str]:
         """Return the list of tags for the group.
@@ -500,7 +589,7 @@ class GroupAdaptor:
         Returns:
           list of tags for the group
         """
-        return self.__group.tags
+        return self._group.tags
 
     def add_tag(self, tag: str) -> None:
         """Adds the tag to the group for the center.
@@ -508,7 +597,19 @@ class GroupAdaptor:
         Args:
           tag: the tag to add
         """
-        self.__group.add_tag(tag)
+        if tag in self._group.tags:
+            return
+
+        self._group.add_tag(tag)
+
+    def add_tags(self, tags: Iterable[str]) -> None:
+        """Adds the tags to the group.
+
+        Args:
+          tags: iterable collection of tags
+        """
+        for tag in tags:
+            self.add_tag(tag)
 
     def get_group_users(self,
                         *,
@@ -525,7 +626,7 @@ class GroupAdaptor:
         Returns:
           the list of users for the group
         """
-        permissions = self.__group.permissions
+        permissions = self._group.permissions
         if not permissions:
             return []
 
@@ -540,7 +641,7 @@ class GroupAdaptor:
         ]
         users = []
         for user_id in user_ids:
-            user = self.__fw.find_user(user_id)
+            user = self._fw.find_user(user_id)
             if user:
                 users.append(user)
         return users
@@ -551,7 +652,7 @@ class GroupAdaptor:
         Returns:
           the access permissions for the group
         """
-        return self.__group.permissions
+        return self._group.permissions
 
     def add_user_access(self, new_permission: AccessPermission) -> None:
         """Adds permission for user to access the group of the center.
@@ -561,7 +662,7 @@ class GroupAdaptor:
         """
         if not new_permission.id:
             log.error('new permission has no user ID to add to group %s',
-                      self.__group.label)
+                      self._group.label)
             return
 
         if not new_permission.access:
@@ -569,23 +670,32 @@ class GroupAdaptor:
                         new_permission.id)
             return
 
-        if self.__fw.dry_run:
+        if self._fw.dry_run:
             log.info('Dry Run: would add access %s for user %s to group %s',
                      new_permission.access, new_permission.id,
-                     self.__group.label)
+                     self._group.label)
             return
 
         existing_permissions = [
-            perm for perm in self.__group.permissions
+            perm for perm in self._group.permissions
             if perm.id == new_permission.id
         ]
         if not existing_permissions:
-            self.__group.add_permission(new_permission)
+            self._group.add_permission(new_permission)
             return
 
-        self.__group.update_permission(
+        self._group.update_permission(
             new_permission.id,
             AccessPermission(id=None, access=new_permission.access))
+
+    def add_permissions(self, permissions: List[AccessPermission]) -> None:
+        """Adds the user access permissions to the group.
+
+        Args:
+          permissions: the list of access permissions
+        """
+        for permission in permissions:
+            self.add_user_access(permission)
 
     def add_role(self, new_role: GroupRole) -> None:
         """Add the role to the the group for center.
@@ -593,14 +703,23 @@ class GroupAdaptor:
         Args:
           new_role: the role to add
         """
-        if not self.__fw:
+        if not self._fw:
             log.error('no Flywheel proxy given when adding users to group %s',
-                      self.__group.label)
+                      self._group.label)
             return
 
-        self.__fw.add_group_role(group=self.__group, role=new_role)
+        self._fw.add_group_role(group=self._group, role=new_role)
 
-    def get_project(self, label: str) -> Optional[flywheel.Project]:
+    def add_roles(self, roles: List[GroupRole]) -> None:
+        """Adds the roles in the list to the group.
+
+        Args:
+          roles: the list of roles
+        """
+        for role in roles:
+            self.add_role(role)
+
+    def get_project(self, label: str) -> Optional['ProjectAdaptor']:
         """Returns a project in this group with the given label.
 
         Creates a new project if none exists.
@@ -610,7 +729,26 @@ class GroupAdaptor:
         Returns:
           the project in this group with the label
         """
-        return self.__fw.get_project(group=self.__group, project_label=label)
+        project = self._fw.get_project(group=self._group, project_label=label)
+        if not project:
+            return None
+
+        return ProjectAdaptor(project=project, proxy=self._fw)
+
+    def get_project_by_id(self, project_id: str) -> Optional['ProjectAdaptor']:
+        """Returns a project in this group with the given ID.
+
+        Args:
+          project_id: the ID for the project
+        Returns:
+          the project in this group with the ID
+        """
+        project = self._fw.get_project_by_id(project_id)
+        if not project:
+            log.warning('No project found with ID %s', project_id)
+            return None
+
+        return ProjectAdaptor(project=project, proxy=self._fw)
 
     def find_project(self, label: str) -> Optional['ProjectAdaptor']:
         """Returns the project adaptor in the group with the label.
@@ -620,12 +758,12 @@ class GroupAdaptor:
         Returns:
           Project adaptor for project with label if exists, None otherwise.
         """
-        projects = self.__fw.find_projects(group_id=self.__group.id,
-                                           project_label=label)
+        projects = self._fw.find_projects(group_id=self._group.id,
+                                          project_label=label)
         if not projects:
             return None
 
-        return ProjectAdaptor(project=projects[0], proxy=self.__fw)
+        return ProjectAdaptor(project=projects[0], proxy=self._fw)
 
 
 class ProjectAdaptor:
@@ -633,33 +771,33 @@ class ProjectAdaptor:
 
     def __init__(self, *, project: flywheel.Project,
                  proxy: FlywheelProxy) -> None:
-        self.__project = project
-        self.__fw = proxy
+        self._project = project
+        self._fw = proxy
 
     def __pull_project(self) -> None:
         """Pulls the referenced project from Flywheel instance."""
-        projects = self.__fw.find_projects(group_id=self.group,
-                                           project_label=self.label)
+        projects = self._fw.find_projects(group_id=self.group,
+                                          project_label=self.label)
         if not projects:
             return
 
-        self.__project = projects[0]
+        self._project = projects[0]
 
     # pylint: disable=(invalid-name)
     @property
     def id(self):
         """Returns the ID of the enclosed project."""
-        return self.__project.id
+        return self._project.id
 
     @property
     def label(self):
         """Returns the label of the enclosed project."""
-        return self.__project.label
+        return self._project.label
 
     @property
     def group(self) -> str:
         """Returns the group label of the enclosed project."""
-        return self.__project.group
+        return self._project.group
 
     def add_tag(self, tag: str) -> None:
         """Add tag to the enclosed project.
@@ -667,8 +805,17 @@ class ProjectAdaptor:
         Args:
           tag: the tag
         """
-        if tag not in self.__project.tags:
-            self.__project.add_tag(tag)
+        if tag not in self._project.tags:
+            self._project.add_tag(tag)
+
+    def add_tags(self, tags: Iterable[str]) -> None:
+        """Adds given tags to the enclosed project.
+
+        Args:
+          tags: iterable collection of tags
+        """
+        for tag in tags:
+            self.add_tag(tag)
 
     def set_copyable(self, state: bool) -> None:
         """Sets the copyable state of the project to the value.
@@ -676,7 +823,7 @@ class ProjectAdaptor:
         Args:
           state: the copyable state to set
         """
-        self.__project.update(copyable=state)
+        self._project.update(copyable=state)
 
     def set_description(self, description: str) -> None:
         """Sets the description of the project.
@@ -684,7 +831,7 @@ class ProjectAdaptor:
         Args:
           description: the project description
         """
-        self.__project.update(description=description)
+        self._project.update(description=description)
 
     def get_file(self, name: str):
         """Gets the file from the enclosed project.
@@ -694,7 +841,11 @@ class ProjectAdaptor:
         Returns:
           the named file
         """
-        return self.__project.get_file(name)
+        return self._project.get_file(name)
+
+    def reload(self):
+        """Forces a reload on the project."""
+        self._project = self._project.reload()
 
     def read_file(self, name: str) -> bytes:
         """Reads file from the named file.
@@ -704,7 +855,7 @@ class ProjectAdaptor:
         Returns:
           the bytes from the file
         """
-        return self.__project.read_file(name)
+        return self._project.read_file(name)
 
     def upload_file(self, file_spec: flywheel.FileSpec) -> None:
         """Uploads the indicated file to enclosed project.
@@ -712,7 +863,7 @@ class ProjectAdaptor:
         Args:
           file_spec: the file specification
         """
-        self.__project.upload_file(file_spec)
+        self._project.upload_file(file_spec)
 
     def get_user_roles(self, user_id: str) -> List[str]:
         """Gets the list of user role ids in this project.
@@ -723,7 +874,7 @@ class ProjectAdaptor:
           list of role ids
         """
         assignments = [
-            assignment for assignment in self.__project.permissions
+            assignment for assignment in self._project.permissions
             if assignment.id == user_id
         ]
         if not assignments:
@@ -731,7 +882,33 @@ class ProjectAdaptor:
 
         return assignments[0].role_ids
 
-    def add_user_roles(self, role_assignment: RolesRoleAssignment) -> bool:
+    def add_user_role(self, user: User, role: RoleOutput) -> bool:
+        """Adds the role to the user in the project.
+
+        Args:
+          user_id: the user id
+          role_id: the role id
+        """
+        return self.add_user_roles(user=user, roles=[role])
+
+    def add_user_roles(self, user: User, roles: List[RoleOutput]) -> bool:
+        """Adds the roles to the user in the project.
+
+        Args:
+          user: the user
+          roles: the list of roles
+        """
+        if not roles:
+            log.warning('No roles to add to user %s in project %s/%s', user.id,
+                        self._project.group, self._project.label)
+            return False
+
+        role_ids = [role.id for role in roles]
+        return self.add_user_role_assignments(
+            RolesRoleAssignment(id=user.id, role_ids=role_ids))
+
+    def add_user_role_assignments(
+            self, role_assignment: RolesRoleAssignment) -> bool:
         """Adds role assignment to the project.
 
         Args:
@@ -743,16 +920,20 @@ class ProjectAdaptor:
         if not user_roles:
             log_message = (f"User {role_assignment.id}"
                            " has no permissions for "
-                           f"project {self.__project.label}"
+                           f"project {self._project.label}"
                            ", adding roles")
-            if self.__fw.dry_run:
+            if self._fw.dry_run:
                 log.info("Dry Run: %s", log_message)
                 return True
 
             log.info(log_message)
             user_role = RolesRoleAssignment(id=role_assignment.id,
                                             role_ids=role_assignment.role_ids)
-            self.__project.add_permission(user_role)
+            try:
+                self._project.add_permission(user_role)
+            except ApiException as error:
+                log.error('Failed to add user role to project: %s', error)
+                return False
             self.__pull_project()
             return True
 
@@ -765,11 +946,11 @@ class ProjectAdaptor:
             return False
 
         log_message = f"Adding roles to user {role_assignment.id}"
-        if self.__fw.dry_run:
+        if self._fw.dry_run:
             log.info("Dry Run: %s", log_message)
             return True
 
-        self.__project.update_permission(
+        self._project.update_permission(
             role_assignment.id,
             RolesRoleAssignment(id=None, role_ids=user_roles))
         self.__pull_project()
@@ -781,12 +962,15 @@ class ProjectAdaptor:
         Args:
           permissions: the group access permissions
         """
-        admin_role = self.__fw.get_admin_role()
+        admin_role = self._fw.get_admin_role()
         assert admin_role
-        for permission in permissions:
-            self.add_user_roles(
-                RolesRoleAssignment(id=permission.id,
-                                    role_ids=[admin_role.id]))
+        admin_users = [
+            permission.id for permission in permissions
+            if permission.access == 'admin'
+        ]
+        for user_id in admin_users:
+            self.add_user_role_assignments(
+                RolesRoleAssignment(id=user_id, role_ids=[admin_role.id]))
 
     def get_gear_rules(self) -> List[GearRule]:
         """Gets the gear rules for this project.
@@ -794,7 +978,7 @@ class ProjectAdaptor:
         Returns:
           the list of gear rules
         """
-        return self.__fw.get_project_gear_rules(project=self.__project)
+        return self._fw.get_project_gear_rules(project=self._project)
 
     def add_gear_rule(self, *, rule_input: GearRuleInput) -> None:
         """Adds the gear rule to the Flywheel project.
@@ -804,29 +988,28 @@ class ProjectAdaptor:
         Args:
           rule_input: the GearRuleInput for the gear
         """
-        project_rules = self.__fw.get_project_gear_rules(self.__project)
+        project_rules = self._fw.get_project_gear_rules(self._project)
         conflict = None
         for rule in project_rules:
             if rule.name == rule_input.name:
                 conflict = rule
                 break
 
-        if self.__fw.dry_run:
+        if self._fw.dry_run:
             if conflict:
                 log.info(
                     'Dry Run: would remove conflicting '
                     'rule %s from project %s', conflict.name,
-                    self.__project.label)
+                    self._project.label)
             log.info('Dry Run: would add gear rule %s to project %s',
-                     rule_input.name, self.__project.label)
+                     rule_input.name, self._project.label)
             return
 
         if conflict:
-            self.__fw.remove_project_gear_rule(project=self.__project,
-                                               rule=conflict)
+            self._fw.remove_project_gear_rule(project=self._project,
+                                              rule=conflict)
 
-        self.__fw.add_project_rule(project=self.__project,
-                                   rule_input=rule_input)
+        self._fw.add_project_rule(project=self._project, rule_input=rule_input)
 
     def remove_gear_rule(self, *, rule: GearRule) -> None:
         """Removes the gear rule from the project.
@@ -834,7 +1017,7 @@ class ProjectAdaptor:
         Args:
           rule: the rule to remove
         """
-        self.__fw.remove_project_gear_rule(project=self.__project, rule=rule)
+        self._fw.remove_project_gear_rule(project=self._project, rule=rule)
 
     def get_apps(self) -> List[AttrDict]:
         """Returns the list of viewer apps for the project.
@@ -842,7 +1025,7 @@ class ProjectAdaptor:
         Returns:
           the viewer apps for the project
         """
-        return self.__fw.get_project_apps(self.__project)
+        return self._fw.get_project_apps(self._project)
 
     def set_apps(self, apps: List[AttrDict]) -> None:
         """Sets the viewer apps for the project.
@@ -850,7 +1033,7 @@ class ProjectAdaptor:
         Args:
           apps: the list of viewer apps to add
         """
-        self.__fw.set_project_apps(project=self.__project, apps=apps)
+        self._fw.set_project_apps(project=self._project, apps=apps)
 
     def get_dataviews(self) -> List[DataView]:
         """Returns the list of dataviews for the project.
@@ -858,7 +1041,7 @@ class ProjectAdaptor:
         Returns:
           the dataviews in the enclosed project
         """
-        return self.__fw.get_dataviews(self.__project)
+        return self._fw.get_dataviews(self._project)
 
     def get_dataview(self, label: str) -> Optional[DataView]:
         """Returns the dataview in the project with the label.
@@ -899,6 +1082,68 @@ class ProjectAdaptor:
             missing_data_strategy=dataview.missing_data_strategy,
             sort=dataview.sort,
             id=dataview.id)
-        view_id = self.__fw.add_dataview(project=self.__project,
-                                         viewinput=view_template)
+        view_id = self._fw.add_dataview(project=self._project,
+                                        viewinput=view_template)
         return view_id.id
+
+    def get_info(self) -> Dict[str, Any]:
+        """Returns the info object for this project.
+
+        Returns:
+          the dictionary object with info for project
+        """
+        self._project = self._project.reload()
+        return self._project.info
+
+    def update_info(self, info: Dict[str, Any]) -> None:
+        """Updates the info object for this project.
+
+        Args:
+          info: the info object
+        """
+        log.info("updating info for project %s", self._project.label)
+        self._project.update_info(info)
+
+    def get_custom_project_info(
+            self, key_path: str) -> Optional[Any | Dict[str, Any]]:
+        """Retrieve custom project info metadata value by key path.
+
+        Args:
+            key_path: path to desired field (level1_key:level2_key:....:key)
+
+        Returns:
+            Any: metadata value if exists
+        """
+
+        keys = key_path.split(':')
+        index = 0
+        info: Dict[str, Any] | Any = self.get_info()
+        while index < len(keys) and info:
+            info = info.get(keys[index])
+            index += 1
+
+        return info
+
+    def add_subject(self, label: str) -> SubjectAdaptor:
+        """Adds a subject with the given label.
+
+        Args:
+          label: the subject label
+        Returns:
+          the created Subject object
+        """
+        return SubjectAdaptor(self._project.add_subject(label=label))
+
+    def find_subject(self, label: str) -> Optional[SubjectAdaptor]:
+        """Finds the suject with the label.
+
+        Args:
+          label: the subject label
+        Returns:
+          the Subject object with the label. None, otherwise
+        """
+        subject = self._project.subjects.find_first(f'label={label}')
+        if subject:
+            return SubjectAdaptor(subject)
+
+        return None

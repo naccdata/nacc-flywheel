@@ -23,6 +23,9 @@
         }
     },
     "inputs": {
+        "api-key": {
+            "base": "api-key"
+        }
     },
     "config": {
         "dry_run": {
@@ -33,6 +36,12 @@
         "s3_param_path": {
             "description": "Parameter path for S3 credentials",
             "type": "string"
+        },
+        "apikey_path_prefix": {
+            "description": "The instance specific AWS parameter gearbot path prefix",
+            "type": "string",
+            "default": "/prod/flywheel/gearbot"
+
         },
         "destination_label": {
             "description": "Label of destination project",

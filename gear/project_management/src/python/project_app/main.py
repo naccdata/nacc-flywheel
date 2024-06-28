@@ -3,11 +3,11 @@
 import logging
 from typing import List
 
-from flywheel import AccessPermission
+from centers.nacc_group import NACCGroup
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from projects.project import Project
-from projects.project_mapping import ProjectMappingAdaptor
+from projects.study import Study
+from projects.study_mapping import StudyMappingAdaptor
 
 log = logging.getLogger(__name__)
 
@@ -36,27 +36,26 @@ def get_project_roles(flywheel_proxy,
 
 def run(*,
         proxy: FlywheelProxy,
+        admin_group: NACCGroup,
         project_list,
-        admin_access: List[AccessPermission],
         role_names: List[str],
         new_only: bool = False):
     """Runs project pipeline creation/management.
 
     Args:
       proxy: the proxy for the Flywheel instance
+      admin_group: the administrative group
       project_list: the list of project input
-      admin_access: the list of user access permissions for admin group
       role_names: list of project role names
       new_only: whether to only create centers with new tag
     """
-
     center_roles = get_project_roles(proxy, role_names)
 
-    for project_doc in project_list:
-        project = Project.create(project_doc)
-        project_mapper = ProjectMappingAdaptor(project=project,
-                                               flywheel_proxy=proxy,
-                                               admin_access=admin_access,
-                                               center_roles=center_roles,
-                                               new_only=new_only)
-        project_mapper.create_project_pipelines()
+    for study_doc in project_list:
+        study = Study.create(study_doc)
+        mapper = StudyMappingAdaptor(study=study,
+                                     flywheel_proxy=proxy,
+                                     admin_group=admin_group,
+                                     center_roles=center_roles,
+                                     new_only=new_only)
+        mapper.create_study_pipelines()
