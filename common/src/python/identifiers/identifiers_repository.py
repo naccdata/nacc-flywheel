@@ -30,7 +30,9 @@ class IdentifierRepository(abc.ABC):
         """Creates an Identifier in the repository.
 
         Args:
-          identifier: the Identifier object to add
+          adcid: the center id
+          ptid: the center participant ID
+          guid: the NIA GUID
         """
 
     @abstractmethod
@@ -73,6 +75,7 @@ class IdentifierRepository(abc.ABC):
           naccid: the NACCID
           adcid: the center ID
           ptid: the participant ID assigned by the center
+          guid: the NIA GUID
         Returns:
           the identifier for the naccid or the adcid-ptid pair
         Raises:
