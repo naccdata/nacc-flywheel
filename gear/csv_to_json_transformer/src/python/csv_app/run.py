@@ -33,7 +33,7 @@ def main():
         input_path = Path(gear_context.get_input_path('csv_file'))
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
             with gear_context.open_output(f'{filename}-error.csv') as err_file:
-                run(proxy=flywheel_proxy,
+                success = run(proxy=flywheel_proxy,
                     csv_file=csv_file,
                     error_writer=ErrorWriter(stream=err_file,
                                              container_id=file_id))

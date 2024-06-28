@@ -29,18 +29,18 @@ class JSONWriterVisitor(CSVVisitor):
         """
         if 'module' not in header and 'formver' not in header:
             self.__error_writer.write(missing_header_error())
-            return True
+            return False
 
         # TODO: get transformations for module+formver
 
         # TODO: perhaps these should be determined by template file
         if 'visitnum' not in header and 'visitdate' not in header:
             self.__error_writer.write(missing_header_error())
-            return True
+            return False
 
         if 'naccid' not in header:
             self.__error_writer.write(missing_header_error())
-            return True
+            return False
 
         return False
 
@@ -49,7 +49,7 @@ class JSONWriterVisitor(CSVVisitor):
         # TODO: construct file name
         # TODO: write file (needs context?)
 
-        return False
+        return True
 
 
 def run(*, input_file: TextIO, error_writer: ErrorWriter) -> bool:
