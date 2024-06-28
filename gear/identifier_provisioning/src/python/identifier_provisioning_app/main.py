@@ -126,7 +126,8 @@ class TransferVisitor(CSVVisitor):
         self.__error_writer.write(
             identifier_error(field='naccid',
                              value=self.__naccid,
-                             line=line_num))
+                             line=line_num,
+                             message=f"Did not find participant for NACCID {self.__naccid}"))
         return True
 
     def _match_naccid(self, identifier, source, line_num: int) -> bool:
@@ -134,6 +135,7 @@ class TransferVisitor(CSVVisitor):
 
         Args:
           identifier: the identifier to match
+          source: string describing source column for NACCID
           line_num: the line number
         Returns:
           True if the identifier matches the NACCID. False, otherwise.
@@ -150,7 +152,7 @@ class TransferVisitor(CSVVisitor):
                       location=CSVLocation(line=line_num,
                                            column_name='naccid'),
                       message=("mismatched NACCID for "
-                               f"Guid {source} "
+                               f"{source} "
                                f"and provided NACCID {self.__naccid}")))
         return False
 
@@ -383,20 +385,20 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
     """
     transfer_info = TransferInfo(transfers=[])
     enrollment_batch = EnrollmentBatch()
-    has_error = read_csv(input_file=input_file,
-                         error_writer=error_writer,
-                         visitor=ProvisioningVisitor(
-                             center_id=center_id,
-                             batch=enrollment_batch,
-                             repo=repo,
-                             error_writer=error_writer,
-                             transfer_info=transfer_info))
-    if has_error:
-        log.error("no changes made due to errors in input file")
-        return True
-
-    log.info("requesting %s new NACCIDs", len(enrollment_batch))
     try:
+        has_error = read_csv(input_file=input_file,
+                            error_writer=error_writer,
+                            visitor=ProvisioningVisitor(
+                                center_id=center_id,
+                                batch=enrollment_batch,
+                                repo=repo,
+                                error_writer=error_writer,
+                                transfer_info=transfer_info))
+        if has_error:
+            log.error("no changes made due to errors in input file")
+            return True
+
+        log.info("requesting %s new NACCIDs", len(enrollment_batch))
         enrollment_batch.commit(repo)
     except IdentifierRepositoryError as error:
         raise GearExecutionError(error) from error
