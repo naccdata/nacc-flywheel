@@ -1,19 +1,102 @@
 """Script to pull directory information and convert to file expected by the
 user management gear."""
 import logging
-import sys
+from typing import Dict, List, Optional
 
 from directory_app.main import run
-from flywheel import Client
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.configuration import ConfigurationError, get_group, get_project
-from inputs.context_parser import ConfigParseError, get_config
+from gear_execution.gear_execution import (ClientWrapper, ContextClient,
+                                           GearEngine,
+                                           GearExecutionEnvironment,
+                                           GearExecutionError)
 from inputs.parameter_store import ParameterError, ParameterStore
 from redcap.redcap_connection import (REDCapConnectionError,
                                       REDCapReportConnection)
+from yaml.representer import RepresenterError
 
 log = logging.getLogger(__name__)
+
+
+class DirectoryPullVisitor(GearExecutionEnvironment):
+    """Defines the directory pull gear."""
+
+    def __init__(self, client: ClientWrapper, user_filename: str,
+                 user_report: List[Dict[str, str]]):
+        self.__client = client
+        self.__user_filename = user_filename
+        self.__user_report = user_report
+
+    @classmethod
+    def create(
+            cls, context: GearToolkitContext,
+            parameter_store: Optional[ParameterStore]
+    ) -> 'DirectoryPullVisitor':
+        """Creates directory pull execution visitor.
+
+        Args:
+          context: the gear context
+          parameter_store: the parameter store
+        Returns:
+          the DirectoryPullVisitor
+        Raises:
+          GearExecutionError if the config or parameter path are missing values
+        """
+        assert parameter_store, "Parameter store expected"
+
+        client = ContextClient.create(context)
+        param_path = context.config.get('parameter_path')
+        if not param_path:
+            raise GearExecutionError("No parameter path")
+
+        try:
+            report_parameters = parameter_store.get_redcap_report_parameters(
+                param_path=param_path)
+        except ParameterError as error:
+            raise GearExecutionError(f'Parameter error: {error}') from error
+
+        try:
+            directory_proxy = REDCapReportConnection.create_from(
+                report_parameters)
+            user_report = directory_proxy.get_report_records()
+        except REDCapConnectionError as error:
+            raise GearExecutionError(
+                f'Failed to pull users from directory: {error.message}'
+            ) from error
+
+        user_filename = context.config.get('user_file')
+        if not user_filename:
+            raise GearExecutionError("No user file name provided")
+
+        return DirectoryPullVisitor(client=client,
+                                    user_filename=user_filename,
+                                    user_report=user_report)
+
+    def run(self, context: GearToolkitContext) -> None:
+        """Runs the directory pull gear.
+
+        Args:
+            engine (GearExecutionEngine): The gear execution engine.
+        """
+        assert context, 'Gear context required'
+        assert self.__user_filename, 'User filename required'
+
+        if self.__client.dry_run:
+            log.info('Would write user entries to file %s on %s %s',
+                     self.__user_filename, context.destination['type'],
+                     context.destination['id'])
+            return
+
+        try:
+            yaml_text = run(user_report=self.__user_report)
+        except RepresenterError as error:
+            raise GearExecutionError(
+                "Error: can't create YAML for file"
+                f"{self.__user_filename}: {error}") from error
+
+        with context.open_output(self.__user_filename,
+                                 mode='w',
+                                 encoding='utf-8') as out_file:
+            out_file.write(yaml_text)
 
 
 def main() -> None:
@@ -24,54 +107,8 @@ def main() -> None:
     be given as environment variables.
     """
 
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
-
-        try:
-            parameter_store = ParameterStore.create_from_environment()
-            api_key = parameter_store.get_api_key()
-
-            param_path: str = get_config(gear_context=gear_context,
-                                         key='parameter_path')
-            report_parameters = parameter_store.get_redcap_report_connection(
-                param_path=param_path)
-            directory_proxy = REDCapReportConnection.create_from(
-                report_parameters)
-            user_report = directory_proxy.get_report_records()
-        except ParameterError as error:
-            log.error('Parameter error: %s', error)
-            sys.exit(1)
-        except ConfigParseError as error:
-            log.error('Incomplete configuration: %s', error.message)
-            sys.exit(1)
-        except REDCapConnectionError as error:
-            log.error('Failed to pull users from directory: %s', error.message)
-            sys.exit(1)
-
-        dry_run = gear_context.config.get("dry_run", False)
-        flywheel_proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
-
-        try:
-            admin_group = get_group(context=gear_context,
-                                    proxy=flywheel_proxy,
-                                    key='admin_group',
-                                    default='nacc')
-            destination = get_project(context=gear_context,
-                                      group=admin_group,
-                                      project_key='destination')
-            user_filename: str = get_config(gear_context=gear_context,
-                                            key='user_file')
-        except ConfigParseError as error:
-            log.error('Incomplete configuration: %s', error.message)
-            sys.exit(1)
-        except ConfigurationError as error:
-            log.error('Unable to save directory file: %s', error)
-            sys.exit(1)
-
-        run(user_report=user_report,
-            user_filename=user_filename,
-            project=destination,
-            dry_run=dry_run)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=DirectoryPullVisitor)
 
 
 if __name__ == "__main__":

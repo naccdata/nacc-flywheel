@@ -110,8 +110,8 @@ class TemplateProject:
         self.__clean_up_rules(destination)
 
         for rule in self.__rules:
-            log.info('copying rule %s to project %s', rule.name,
-                     destination.label)
+            log.info('copying rule %s to project %s/%s', rule.name,
+                     destination.group, destination.label)
             fixed_inputs = self.__map_fixed_inputs(inputs=rule.fixed_inputs,
                                                    destination=destination)
             gear_rule_input = self.__create_gear_rule_input(
@@ -126,7 +126,7 @@ class TemplateProject:
         """
         role_assignments = self.__source_project.permissions
         for role_assignment in role_assignments:
-            destination.add_user_roles(role_assignment)
+            destination.add_user_role_assignments(role_assignment)
 
     def copy_description(self, *, destination: ProjectAdaptor,
                          values: Dict[str, str]) -> None:
@@ -210,6 +210,10 @@ class TemplateProject:
                 self.__copy_file(file_object, destination)
 
             destination_file = destination.get_file(fixed_input.name)
+            if not destination_file:
+                log.warning('Could not find file for input %s',
+                            fixed_input.name)
+                continue
 
             dest_inputs.append(
                 FixedInput(id=destination.id,
@@ -228,9 +232,11 @@ class TemplateProject:
           file: the file entry for the file
           destination: the destination project
         """
-        log.info("copying file %s to %s", file.name, destination.label)
+        log.info("copying file %s to %s/%s", file.name, destination.group,
+                 destination.label)
         file_spec = flywheel.FileSpec(file.name, file.read(), file.mimetype)
         destination.upload_file(file_spec)
+        destination.reload()
 
     @staticmethod
     def __same_file_exists(file: FileEntry, project: ProjectAdaptor) -> bool:

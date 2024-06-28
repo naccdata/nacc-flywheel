@@ -1,19 +1,22 @@
 """The run script for the user management gear."""
 
 import logging
-import sys
 from io import StringIO
 from typing import Any, List, Optional
 
-from flywheel import Client
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from centers.nacc_group import NACCGroup
+from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.configuration import (ConfigurationError, get_group, get_project,
-                                  read_file)
-from inputs.context_parser import ConfigParseError
-from inputs.parameter_store import ParameterError, ParameterStore
-from inputs.yaml import YAMLReadError, get_object_lists_from_stream
+from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
+                                           GearEngine,
+                                           GearExecutionEnvironment,
+                                           GearExecutionError)
+from inputs.parameter_store import ParameterStore
+from inputs.yaml import (YAMLReadError, get_object_lists_from_stream,
+                         load_from_stream)
+from pydantic import ValidationError
 from user_app.main import run
+from users.authorizations import AuthMap
 
 log = logging.getLogger(__name__)
 
@@ -22,60 +25,129 @@ def read_yaml_file(file_bytes: bytes) -> Optional[List[Any]]:
     """Reads user objects from YAML user file in the source project.
 
     Args:
-      source: the project where user file is located
-      user_filename: the name of the user file
+      file_bytes: The file input stream
     Returns:
       List of user objects
     """
-    user_docs = get_object_lists_from_stream(
+    entry_docs = get_object_lists_from_stream(
         StringIO(file_bytes.decode('utf-8')))
-    if not user_docs or not user_docs[0]:
+    if not entry_docs or not entry_docs[0]:
         return None
 
-    return user_docs[0]
+    return entry_docs[0]
 
 
+class UserManagementVisitor(GearExecutionEnvironment):
+    """Defines the user management gear."""
+
+    def __init__(self, admin_id: str, client: ClientWrapper,
+                 user_filepath: str, auth_filepath: str):
+        self.__admin_id = admin_id
+        self.__client = client
+        self.__user_filepath = user_filepath
+        self.__auth_filepath = auth_filepath
+
+    @classmethod
+    def create(
+        cls,
+        context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore] = None
+    ) -> 'UserManagementVisitor':
+        """Visits the gear context to gather inputs.
+
+        Args:
+            context (GearToolkitContext): The gear context.
+        """
+        client = GearBotClient.create(context=context,
+                                      parameter_store=parameter_store)
+
+        user_filepath = context.get_input_path('user_file')
+        if not user_filepath:
+            raise GearExecutionError('No user directory file provided')
+        auth_filepath = context.get_input_path('auth_file')
+        if not auth_filepath:
+            raise GearExecutionError('No user role file provided')
+
+        return UserManagementVisitor(admin_id=context.config.get(
+            "admin_group", "nacc"),
+                                     client=client,
+                                     user_filepath=user_filepath,
+                                     auth_filepath=auth_filepath)
+
+    def run(self, context: GearToolkitContext) -> None:
+        """Executes the gear.
+
+        Args:
+            context: the gear execution context
+        """
+        assert self.__user_filepath, 'User directory file required'
+        assert self.__auth_filepath, 'User role file required'
+        assert self.__admin_id, 'Admin group ID required'
+        proxy = self.__client.get_proxy()
+        try:
+            admin_group = NACCGroup.create(proxy=proxy,
+                                           group_id=self.__admin_id)
+        except FlywheelError as error:
+            raise GearExecutionError(str(error)) from error
+        user_list = self.__get_user_list(self.__user_filepath)
+        auth_map = self.__get_auth_map(self.__auth_filepath)
+        admin_users = admin_group.get_group_users(access='admin')
+        admin_set = {user.id for user in admin_users if user.id}
+        run(proxy=proxy,
+            user_list=user_list,
+            admin_group=admin_group,
+            skip_list=admin_set,
+            authorization_map=auth_map)
+
+    # pylint: disable=no-self-use
+    def __get_user_list(self, user_file_path: str) -> List[Any]:
+        """Get the user objects from the user file.
+
+        Args:
+            user_file_path: The path to the user file.
+        Returns:
+            List of user objects
+        """
+        try:
+            with open(user_file_path, 'r', encoding='utf-8') as user_file:
+                user_list = load_from_stream(user_file)
+        except YAMLReadError as error:
+            raise GearExecutionError(
+                f'No users read from user file {user_file_path}: {error}'
+            ) from error
+        if not user_list:
+            raise GearExecutionError('No users found in user file')
+        return user_list
+
+    # pylint: disable=no-self-use
+    def __get_auth_map(self, auth_file_path: str) -> AuthMap:
+        """Get the authorization map from the auth file.
+
+        Args:
+            auth_file_path: The path to the auth file.
+        Returns:
+            The authorization map
+        """
+        try:
+            with open(auth_file_path, 'r', encoding='utf-8') as auth_file:
+                auth_object = load_from_stream(auth_file)
+                auth_map = AuthMap(project_authorizations=auth_object)
+        except YAMLReadError as error:
+            raise GearExecutionError('No authorizations read from auth file'
+                                     f'{auth_file_path}: {error}') from error
+        except ValidationError as error:
+            raise GearExecutionError(
+                f'Unexpected format in auth file {auth_file_path}: {error}'
+            ) from error
+        return auth_map
+
+
+# pylint: disable=too-many-locals
 def main() -> None:
     """Main method to manage users."""
 
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
-
-        try:
-            parameter_store = ParameterStore.create_from_environment()
-            api_key = parameter_store.get_api_key()
-        except ParameterError as error:
-            log.error('Parameter error: %s', error)
-            sys.exit(1)
-
-        dry_run = gear_context.config.get("dry_run", False)
-        flywheel_proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
-        try:
-            admin_group = get_group(context=gear_context,
-                                    proxy=flywheel_proxy,
-                                    key='admin_group',
-                                    default='nacc')
-            source = get_project(context=gear_context,
-                                 group=admin_group,
-                                 project_key='source')
-            file_bytes = read_file(context=gear_context,
-                                   source=source,
-                                   key='user_file')
-            user_list = read_yaml_file(file_bytes)
-        except ConfigurationError as error:
-            log.error('Admin group not found: %s', error)
-            sys.exit(1)
-        except ConfigParseError as error:
-            log.error('Cannot read directory file: %s', error.message)
-            sys.exit(1)
-        except YAMLReadError as error:
-            log.error('No users read from user file: %s', error)
-            sys.exit(1)
-
-        admin_users = admin_group.get_group_users(access='admin')
-        admin_set = {user.id for user in admin_users if user.id}
-
-        run(proxy=flywheel_proxy, user_list=user_list, skip_list=admin_set)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=UserManagementVisitor)
 
 
 if __name__ == "__main__":

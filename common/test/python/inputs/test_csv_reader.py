@@ -96,7 +96,8 @@ class TestCSVReader:
         err_stream = StringIO()
         errors = read_csv(input_file=empty_data_stream,
                           error_writer=StreamErrorWriter(stream=err_stream,
-                                                         container_id='dummy'),
+                                                         container_id='dummy',
+                                                         fw_path='dummy-path'),
                           visitor=DummyVisitor())
         assert errors
         assert not empty(err_stream)
@@ -111,7 +112,8 @@ class TestCSVReader:
         err_stream = StringIO()
         errors = read_csv(input_file=no_header_stream,
                           error_writer=StreamErrorWriter(stream=err_stream,
-                                                         container_id='dummy'),
+                                                         container_id='dummy',
+                                                         fw_path='dummy-path'),
                           visitor=DummyVisitor())
         assert errors
         assert not empty(err_stream)

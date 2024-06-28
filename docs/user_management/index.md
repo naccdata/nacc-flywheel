@@ -8,31 +8,60 @@ The script expects the `FW_API_KEY` environment variables to be set, which shoul
 
 ## Flywheel configuration
 
-The script also expects there is an admin group with a project named `project-admin` that contains a YAML file given as an argument.
-This file should contain a list of user information
+The script expects two YAML files as input: the list of users, and the map from user authorizations to Flywheel role names.
+
+The user file should contain a list of user information
 
 ```yaml
+---
 - authorizations:
-    approve_data: <Boolean>
-    audit_data: <Boolean>
+    approve_data: <Boolean> # whether user can approve data
+    audit_data: <Boolean>   # whether user audits data quality
     submit:
-    - <datatype name>
-    view_reports: <Boolean>
-  center_id: <integer ID>
+    - <datatype name>       # datatypes which user can submit
+    view_reports: <Boolean> # whether user can view reports
+  center_id: <integer ID>   # the ADCID for the center
   credentials:
-    id: <id-value>
-    type: <type-name>
-  email: <email-address>
+    id: <id-value>          # user ID (email or ePPN)
+    type: <type-name>       # type of credential
+  email: <email-address>    # user email
   name:
-    first_name: <user first name>
+    first_name: <user first name> 
     last_name: <user last name>
   org_name: <center name>
   submit_time: <datetime of submission>
   ```
 
-  Users are matched against groups with a tag matching `adcid-\d+` where `center_id` matches the digits.
+The authorization map defines a mapping $project\to (authorization\to role)$
 
-  ## Running from command-line
+```yaml
+---
+<project-id>:
+  approve-data: <rolename>
+  audit-data: <rolename>
+  view-reports: <rolename>
+  submit-form: <rolename>
+  submit-image: <rolename>
+```
+
+Valid project IDs are determined by the project management script.
+These are:
+
+- `accepted` or `accepted-<study-id>`
+- `metadata`
+- `ingest-<datatype>` or `ingest-<datatype>-<study-id>`
+- `sandbox-<datatype>` or `sandbox-<datatype>-<study-id>`
+
+The datatypes and study IDs are determined by the study definition used by project management.
+
+The role names are set in the Flywheel instance.
+Roles used by NACC for center users include `read-only`, `curate` and `upload`.
+
+If an authorization has no access to a project, it should be left off the list.
+For instance, `submit-form` would have no corresponding role for `ingest-dicom`
+
+  
+## Running from command-line
 
   The script can be run with
 

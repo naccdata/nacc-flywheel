@@ -1,4 +1,6 @@
-from typing import List, Optional
+from typing import List
+
+from flywheel.file_spec import FileSpec
 
 
 class Acquisition:
@@ -27,4 +29,7 @@ class Acquisition:
         ...
 
     def read_file(self, name: str) -> bytes:
+        ...
+
+    def upload_file(self, file: FileSpec) -> None:
         ...
