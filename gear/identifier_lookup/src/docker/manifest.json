@@ -47,10 +47,10 @@
             "type": "string",
             "default": "nacc"
         },
-        "rds_parameter_path": {
-            "description": "SSM parameter path for identifiers RDS credentials",
+        "identifier_mode": {
+            "description": "Whether to create identifiers in dev or prod database",
             "type": "string",
-            "default": "/prod/flywheel/gearbot/identifiers"
+            "default": "prod"
         },
         "apikey_path_prefix": {
             "description": "The instance specific AWS parameter gearbot path prefix",
