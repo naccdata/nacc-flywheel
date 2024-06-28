@@ -5,8 +5,8 @@ from typing import List, Literal, Optional, overload
 from identifiers.identifiers_repository import (IdentifierQueryObject,
                                                 IdentifierRepository,
                                                 IdentifierRepositoryError)
-from identifiers.model import (GUID_PATTERN, NACCID_PATTERN, CenterIdentifiers, IdentifierList,
-                               IdentifierObject)
+from identifiers.model import (GUID_PATTERN, NACCID_PATTERN, CenterIdentifiers,
+                               IdentifierList, IdentifierObject)
 from lambdas.lambda_function import (BaseRequest, LambdaClient,
                                      LambdaInvocationError)
 from pydantic import BaseModel, Field

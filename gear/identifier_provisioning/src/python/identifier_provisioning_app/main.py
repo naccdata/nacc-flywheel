@@ -124,10 +124,12 @@ class TransferVisitor(CSVVisitor):
             return False
 
         self.__error_writer.write(
-            identifier_error(field='naccid',
-                             value=self.__naccid,
-                             line=line_num,
-                             message=f"Did not find participant for NACCID {self.__naccid}"))
+            identifier_error(
+                field='naccid',
+                value=self.__naccid,
+                line=line_num,
+                message=f"Did not find participant for NACCID {self.__naccid}")
+        )
         return True
 
     def _match_naccid(self, identifier, source, line_num: int) -> bool:
@@ -387,13 +389,13 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
     enrollment_batch = EnrollmentBatch()
     try:
         has_error = read_csv(input_file=input_file,
-                            error_writer=error_writer,
-                            visitor=ProvisioningVisitor(
-                                center_id=center_id,
-                                batch=enrollment_batch,
-                                repo=repo,
-                                error_writer=error_writer,
-                                transfer_info=transfer_info))
+                             error_writer=error_writer,
+                             visitor=ProvisioningVisitor(
+                                 center_id=center_id,
+                                 batch=enrollment_batch,
+                                 repo=repo,
+                                 error_writer=error_writer,
+                                 transfer_info=transfer_info))
         if has_error:
             log.error("no changes made due to errors in input file")
             return True
