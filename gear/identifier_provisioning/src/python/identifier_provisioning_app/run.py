@@ -67,10 +67,6 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
                       self.__file_input.filename)
             return
 
-        identifiers_repo = IdentifiersLambdaRepository(
-            client=LambdaClient(client=create_lambda_client()),
-            mode=self.__identifiers_mode)
-
         proxy = self.__client.get_proxy()
         try:
             admin_group = NACCGroup.create(proxy=proxy,
@@ -104,11 +100,14 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(container_id=file_id,
                                            fw_path=proxy.get_lookup_path(file))
-            errors = run(input_file=csv_file,
-                         center_id=adcid,
-                         error_writer=error_writer,
-                         enrollment_project=enrollment_project,
-                         repo=identifiers_repo)
+            errors = run(
+                input_file=csv_file,
+                center_id=adcid,
+                error_writer=error_writer,
+                enrollment_project=enrollment_project,
+                repo=IdentifiersLambdaRepository(
+                    client=LambdaClient(client=create_lambda_client()),
+                    mode=self.__identifiers_mode))
 
             context.metadata.add_qc_result(self.__file_input.file_input,
                                            name="validation",
