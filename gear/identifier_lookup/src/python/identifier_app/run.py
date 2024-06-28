@@ -14,16 +14,16 @@ from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            InputFileWrapper)
 from identifier_app.main import run
 from identifiers.database import create_session
-from identifiers.identifiers_repository import IdentifierRepository
+from identifiers.identifiers_repository import SQLAlchemyUnitOfWork
 from identifiers.model import Identifier
-from inputs.parameter_store import (ParameterError, ParameterStore,
-                                    RDSParameters)
+from inputs.parameter_store import ParameterError, ParameterStore
 from outputs.errors import ListErrorWriter
+from sqlalchemy.orm import Session, sessionmaker
 
 log = logging.getLogger(__name__)
 
 
-def get_identifiers(rds_parameters: RDSParameters,
+def get_identifiers(session_factory: sessionmaker[Session],
                     adcid: int) -> Dict[str, Identifier]:
     """Gets all of the Identifier objects from the identifier database using
     the RDSParameters.
@@ -35,9 +35,9 @@ def get_identifiers(rds_parameters: RDSParameters,
       the dictionary mapping from PTID to Identifier object
     """
     identifiers = {}
-    identifiers_session = create_session(rds_parameters)
-    with identifiers_session as session:
-        identifiers_repo = IdentifierRepository(session)
+    with SQLAlchemyUnitOfWork(session_factory=session_factory) as unit_of_work:
+        identifiers_repo = unit_of_work.repository
+        assert identifiers_repo, "repository is defined in context manager"
         center_identifiers = identifiers_repo.list(adc_id=adcid)
         if center_identifiers:
             # pylint: disable=(not-an-iterable)
@@ -53,11 +53,12 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
     """The gear execution visitor for the identifier lookup app."""
 
     def __init__(self, client: ClientWrapper, admin_id: str,
-                 file_input: InputFileWrapper, rds_parameters: RDSParameters):
+                 file_input: InputFileWrapper,
+                 session_factory: sessionmaker[Session]):
         self.__admin_id = admin_id
         self.__client = client
         self.__file_input = file_input
-        self.rds_parameters = rds_parameters
+        self.__session_factory = session_factory
 
     @classmethod
     def create(
@@ -90,10 +91,11 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
             raise GearExecutionError(f'Parameter error: {error}') from error
         admin_id = context.config.get("admin_group", "nacc")
 
-        return IdentifierLookupVisitor(client=client,
-                                       admin_id=admin_id,
-                                       file_input=file_input,
-                                       rds_parameters=rds_parameters)
+        return IdentifierLookupVisitor(
+            client=client,
+            admin_id=admin_id,
+            file_input=file_input,
+            session_factory=create_session(rds_parameters))
 
     def run(self, context: GearToolkitContext):
         """Runs the identifier lookup app.
@@ -114,10 +116,10 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
         file_id = self.__file_input.file_id
         group_id = proxy.get_file_group(file_id)
         adcid = admin_group.get_adcid(group_id)
-        if not adcid:
+        if adcid is None:
             raise GearExecutionError('Unable to determine center ID for file')
 
-        identifiers = get_identifiers(rds_parameters=self.rds_parameters,
+        identifiers = get_identifiers(session_factory=self.__session_factory,
                                       adcid=adcid)
         if not identifiers:
             raise GearExecutionError('Unable to load center participant IDs')

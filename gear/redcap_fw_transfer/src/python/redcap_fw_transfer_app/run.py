@@ -135,7 +135,8 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
         assert parameter_store, "Parameter store expected"
 
         try:
-            param_path = get_config(gear_context=context, key='parameter_path')
+            param_path: str = get_config(gear_context=context,
+                                         key='parameter_path')
         except ConfigParseError as error:
             raise GearExecutionError(
                 f'Incomplete configuration: {error.message}') from error

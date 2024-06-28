@@ -3,7 +3,7 @@
 import logging
 import sys
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from flywheel.client import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
@@ -143,6 +143,16 @@ class InputFileWrapper:
         return self.file_input['object']['file_id']
 
     @property
+    def file_info(self) -> Dict[str, Any]:
+        """Returns the file object info (metadata)."""
+        return self.file_input['object']['info']
+
+    @property
+    def file_qc_info(self) -> Dict[str, Any]:
+        """Returns the QC object in the file info."""
+        return self.file_info.get('qc', {})
+
+    @property
     def filename(self) -> str:
         """Returns the file name."""
         return self.file_input['location']['name']
@@ -178,6 +188,23 @@ class InputFileWrapper:
                 f"The specified input {input_name} is not a file")
 
         return InputFileWrapper(file_input=file_input)
+
+    def get_validation_objects(self) -> List[Dict[str, Any]]:
+        """Gets the QC validation objects from the file QC info."""
+        result = []
+        for gear_object in self.file_qc_info.values():
+            validation_object = gear_object.get('validation', {})
+            if validation_object:
+                result.append(validation_object)
+        return result
+
+    def has_qc_errors(self) -> bool:
+        """Check the QC validation objects in the file QC info for failures."""
+        validation_objects = self.get_validation_objects()
+        for validation_object in validation_objects:
+            if validation_object['state'] == 'FAIL':
+                return True
+        return False
 
 
 # pylint: disable=too-few-public-methods
