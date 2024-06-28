@@ -3,40 +3,55 @@
 import logging
 import sys
 from pathlib import Path
+from typing import Optional
 
 from csv_app.main import run
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from outputs.errors import ErrorWriter
+from gear_execution.gear_execution import ClientWrapper, ContextClient, GearEngine, GearExecutionEnvironment, InputFileWrapper
+from inputs.parameter_store import ParameterStore
+from outputs.errors import ListErrorWriter
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
 
+class CsvToJsonVisitor(GearExecutionEnvironment):
+    def __init__(self, client: ClientWrapper, file_input: InputFileWrapper) -> None:
+        self.__client = client
+        self.__file_input = file_input
+    
+
+    @classmethod
+    def create(cls, context: GearToolkitContext, parameter_store: Optional[ParameterStore]) -> 'CsvToJsonVisitor':
+        client = ContextClient.create(context=context)
+        file_input = InputFileWrapper.create(input_name='input_file', context=context)
+
+        return CsvToJsonVisitor(client=client, file_input=file_input)
+    
+    def run(self, context: GearToolkitContext) -> None:
+        """Runs the CSV to JSON Transformer app.
+        
+        Args:
+          context: the gear execution context
+        """
+        proxy = self.__client.get_proxy()
+        file_id = self.__file_input.file_id
+        file = proxy.get_file(file_id)
+        input_path = Path(self.__file_input.filepath)
+        with open(input_path, mode='r', encoding='utf-8') as csv_file:
+            error_writer = ListErrorWriter(container_id=file_id, fw_path=proxy.get_lookup_path(file))
+            success = run(proxy=proxy, csv_file=csv_file, error_writer=error_writer)
+
+            context.metadata.add_qc_result(self.__file_input.file_input,
+                                           name="transformation",
+                                           state="PASS" if success else "FAIL",
+                                           data=error_writer.errors())
 
 def main():
     """Gear main method to transform CSV where row is participant data to set
     of JSON files, one per participant."""
 
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
+    GearEngine().run(gear_type=CsvToJsonVisitor)
 
-        client = gear_context.client
-        if not client:
-            log.error('No Flywheel connection. Check API key configuration.')
-            sys.exit(1)
-        dry_run = gear_context.config.get("dry_run", False)
-        flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
-
-        file_input = gear_context.get_input('input_file')
-        file_id = file_input['object']['file_id']
-        filename = gear_context.get_input_filename('csv_file')
-        input_path = Path(gear_context.get_input_path('csv_file'))
-        with open(input_path, mode='r', encoding='utf-8') as csv_file:
-            with gear_context.open_output(f'{filename}-error.csv') as err_file:
-                success = run(proxy=flywheel_proxy,
-                    csv_file=csv_file,
-                    error_writer=ErrorWriter(stream=err_file,
-                                             container_id=file_id))
 
     if __name__ == "__main__":
         main()
