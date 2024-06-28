@@ -5,7 +5,7 @@ from typing import List, Literal, Optional, overload
 from identifiers.identifiers_repository import (IdentifierQueryObject,
                                                 IdentifierRepository,
                                                 IdentifierRepositoryError)
-from identifiers.model import (GUID_PATTERN, CenterIdentifiers, IdentifierList,
+from identifiers.model import (GUID_PATTERN, NACCID_PATTERN, CenterIdentifiers, IdentifierList,
                                IdentifierObject)
 from lambdas.lambda_function import (BaseRequest, LambdaClient,
                                      LambdaInvocationError)
@@ -20,11 +20,6 @@ class ListRequest(BaseRequest):
 
 class IdentifierRequest(BaseRequest, CenterIdentifiers):
     """Request model for creating Identifier."""
-    guid: Optional[str] = Field(None, max_length=13, pattern=GUID_PATTERN)
-
-
-class IdentifierRequestObject(CenterIdentifiers):
-    """Mode for individual identifiers within a list."""
     guid: Optional[str] = Field(None, max_length=13, pattern=GUID_PATTERN)
 
 
@@ -45,7 +40,7 @@ class GUIDRequest(BaseRequest):
 
 class NACCIDRequest(BaseRequest):
     """Request model for search by NACCID."""
-    naccid: str = Field(max_length=10, pattern=r"^NACC\d{6}$")
+    naccid: str = Field(max_length=10, pattern=NACCID_PATTERN)
 
 
 class ListResponseObject(BaseModel):
@@ -72,6 +67,7 @@ class IdentifiersLambdaRepository(IdentifierRepository):
         Args:
           adcid: the ADCID
           ptid: the participant ID
+          guid: the NIA GUID
         Returns:
           The created Identifier
         Raises:
@@ -143,10 +139,11 @@ class IdentifiersLambdaRepository(IdentifierRepository):
           naccid: the (integer part of the) NACCID
           adcid: the center ID
           ptid: the participant ID assigned by the center
+          guid: the NIA GUID
         Returns:
           the IdentifierObject for the nacc_id or the adcid-ptid pair
         Raises:
-          NoMatchingIdentifier: if no Identifier record was found
+          IdentifierRespositoryError: if no Identifier record was found
           TypeError: if the arguments are nonsensical
         """
         if naccid is not None:
@@ -217,6 +214,8 @@ class IdentifiersLambdaRepository(IdentifierRepository):
 
         Returns:
           List of all identifiers in the repository
+        Raises:
+          IdentifierRepositoryError if the lambda invocation has an error
         """
         if adcid is None:
             # TODO: this is not implemented by lambda
