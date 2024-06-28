@@ -130,14 +130,14 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                 error_writer = ListErrorWriter(container_id=file_id,
                                                fw_path=proxy.get_lookup_path(
                                                    proxy.get_file(file_id)))
-                errors = run(input_file=csv_file,
+                success = run(input_file=csv_file,
                              identifiers=identifiers,
                              output_file=out_file,
                              error_writer=error_writer)
                 context.metadata.add_qc_result(
                     self.__file_input.file_input,
                     name="validation",
-                    state="FAIL" if errors else "PASS",
+                    state="PASS" if success else "FAIL",
                     data=error_writer.errors())
 
 
