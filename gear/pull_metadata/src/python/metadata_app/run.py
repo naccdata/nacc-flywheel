@@ -4,7 +4,7 @@ import re
 import sys
 from typing import Dict
 
-from centers.center_group import CenterGroup
+from centers.center_group import CenterError, CenterGroup
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
@@ -28,10 +28,15 @@ def build_project_map(*, proxy: FlywheelProxy, center_tag_pattern: str,
     Returns:
       dictionary mapping from adcid to group
     """
-    group_list = [
-        CenterGroup(group=group, proxy=proxy)
-        for group in proxy.find_groups_by_tag(center_tag_pattern)
-    ]
+    try:
+        group_list = [
+            CenterGroup.create_from_group(group=group, proxy=proxy)
+            for group in proxy.find_groups_by_tag(center_tag_pattern)
+        ]
+    except CenterError as error:
+        log.error('failed to create center from group: %s', error.message)
+        return {}
+
     if not group_list:
         log.warning('no centers found matching tag pattern %s',
                     center_tag_pattern)
@@ -56,6 +61,12 @@ def main():
 
     with GearToolkitContext() as gear_context:
         gear_context.init_logging()
+        gear_context.log_config()
+
+        default_client = gear_context.client
+        if not default_client:
+            log.error('Flywheel client required to confirm gearbot access')
+            sys.exit(1)
 
         try:
             s3_param_path = get_config(gear_context=gear_context,
@@ -68,13 +79,23 @@ def main():
             log.error('Incomplete configuration: %s', error.message)
             sys.exit(1)
 
+        apikey_path_prefix = gear_context.config.get("apikey_path_prefix",
+                                                     "/prod/flywheel/gearbot")
+        log.info('Running gearbot with API key from %s/apikey',
+                 apikey_path_prefix)
         try:
             parameter_store = ParameterStore.create_from_environment()
-            api_key = parameter_store.get_api_key()
+            api_key = parameter_store.get_api_key(
+                path_prefix=apikey_path_prefix)
             s3_parameters = parameter_store.get_s3_parameters(
                 param_path=s3_param_path)
         except ParameterError as error:
             log.error('Parameter error: %s', error)
+            sys.exit(1)
+
+        host = gear_context.client.api_client.configuration.host  # type: ignore
+        if api_key.split(':')[0] not in host:
+            log.error('Gearbot API key does not match host')
             sys.exit(1)
 
         dry_run = gear_context.config.get("dry_run", False)

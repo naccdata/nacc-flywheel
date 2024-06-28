@@ -5,8 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 
-def create_session(parameters: RDSParameters) -> Session:
-    """Creates a Session for the identifiers database.
+def create_session(parameters: RDSParameters) -> sessionmaker[Session]:
+    """Creates a session factory for the identifiers database.
 
     Args:
         parameters: the credentials for the database connection
@@ -20,4 +20,4 @@ def create_session(parameters: RDSParameters) -> Session:
                     f"{port}/{database}")
     engine = create_engine(url=database_url)
     metadata.create_all(engine)
-    return sessionmaker(bind=engine)()
+    return sessionmaker(bind=engine)

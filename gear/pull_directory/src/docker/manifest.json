@@ -2,7 +2,7 @@
     "name": "pull-directory",
     "label": "Pull Directory",
     "description": "Pull user information from NACC directory and save to admin project",
-    "version": "0.0.14",
+    "version": "0.0.18",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/pull-directory:0.0.14"
+            "image": "naccdata/pull-directory:0.0.18"
         },
         "flywheel": {
             "suite": "NACC Admin Gears",
@@ -23,6 +23,9 @@
         }
     },
     "inputs": {
+        "api-key": {
+            "base": "api-key"
+        }
     },
     "config": {
         "dry_run": {
@@ -30,20 +33,10 @@
             "type": "boolean",
             "default": false
         },
-        "admin_group": {
-            "description": "Name of the admin group",
-            "type": "string",
-            "default": "nacc"
-        },
         "user_file": {
-            "description": "The name for the directory users",
+            "description": "The name for the directory user file",
             "type": "string",
             "default": "nacc-directory-users.yaml"
-        },
-        "destination": {
-            "description": "Label of the destination project",
-            "type": "string",
-            "default": "project-admin"
         },
         "parameter_path": {
             "description": "Parameter path for NACC directory",

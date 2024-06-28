@@ -51,6 +51,12 @@
             "description": "Only create projects for centers tagged as new",
             "type": "boolean",
             "default": false
+        },
+        "apikey_path_prefix": {
+            "description": "The instance specific AWS parameter path prefix for apikey",
+            "type": "string",
+            "default": "/prod/flywheel/gearbot"
+
         }
     },
     "command": "/bin/run"

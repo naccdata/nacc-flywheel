@@ -25,32 +25,29 @@ def get_template_projects(
       dictionary of template projects indexed by stage and datatype
     """
     template_map: Dict[str, Dict[str, TemplateProject]] = defaultdict(dict)
-    if group:
-        template_matcher = re.compile(r"^((\w+)-)?(\w+)-template$")
-        # match group for pipeline datatype
-        datatype_group = 2
-        # match group for pipeline stage
-        stage_group = 3
+    if not group:
+        return template_map
 
-        for project in group.projects():
-            match = template_matcher.match(project.label)
-            if match:
-                datatype = match.group(datatype_group)
-                if not datatype:
-                    # accepted stage has no datatype, set to 'all'
-                    datatype = 'all'
-                stage = match.group(stage_group)
+    template_matcher = re.compile(r"^((\w+)-)?(\w+)-template$")
+    # match group for pipeline datatype
+    datatype_group = 2
+    # match group for pipeline stage
+    stage_group = 3
 
-                # TODO: stage list needs to come from elsewhere
-                if stage not in ['accepted', 'ingest', 'retrospective']:
-                    log.error(
-                        'unrecognized pipeline stage %s'
-                        ' in template project %s', stage, project.label)
-                    continue
+    for project in group.projects():
+        match = template_matcher.match(project.label)
+        if not match:
+            continue
 
-                stage_map = template_map[datatype]
-                stage_map[stage] = TemplateProject(project=project,
-                                                   proxy=group.proxy())
-                template_map[datatype] = stage_map
+        datatype = match.group(datatype_group)
+        if not datatype:
+            # accepted stage has no datatype, set to 'all'
+            datatype = 'all'
+        stage = match.group(stage_group)
+
+        stage_map = template_map[datatype]
+        stage_map[stage] = TemplateProject(project=project,
+                                           proxy=group.proxy())
+        template_map[datatype] = stage_map
 
     return template_map

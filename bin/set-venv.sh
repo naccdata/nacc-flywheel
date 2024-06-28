@@ -10,4 +10,4 @@ fi
 
 pants export --py-resolve-format=symlinked_immutable_virtualenv --resolve=python-default
 
-ln -snf dist/export/python/virtualenvs/python-default /workspaces/flywheel-gear-extensions/venv
+ln -snf dist/export/python/virtualenvs/python-default ./venv

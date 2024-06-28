@@ -50,20 +50,21 @@ class TestParameterStore:
 
         # TODO: check error message
         with pytest.raises(ParameterError):
-            store.get_api_key()
+            store.get_api_key(path_prefix='/prod/flywheel/gearbot')
 
     def test_api_key(self, ssm):
         """Test getting api key that is present in store."""
         from inputs.parameter_store import ParameterStore
 
-        ssm.put_parameter(Name='/prod/flywheel/gearbot/apikey',
+        prefix = '/prod/flywheel/gearbot'
+        ssm.put_parameter(Name=f'{prefix}/apikey',
                           Type='SecureString',
                           Value='dummy')  # type: ignore
 
         store = ParameterStore.create_from_environment()
         assert store
 
-        value = store.get_api_key()
+        value = store.get_api_key(path_prefix=prefix)
         assert value == 'dummy'
 
     def test_dict_parameters(self, ssm):
