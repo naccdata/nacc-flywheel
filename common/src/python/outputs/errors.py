@@ -51,7 +51,10 @@ class FileError(BaseModel):
         return result
 
 
-def identifier_error(line: int, value: str) -> FileError:
+def identifier_error(line: int,
+                     value: str,
+                     field: str = 'ptid',
+                     message: Optional[str] = None) -> FileError:
     """Creates a FileError for an unrecognized PTID error in a CSV file.
 
     Tags the error type as 'error:identifier'
@@ -62,11 +65,12 @@ def identifier_error(line: int, value: str) -> FileError:
     Returns:
       a FileError object initialized for an identifier error
     """
+    error_message = message if message else 'Unrecognized participant ID'
     return FileError(error_type='error',
                      error_code='identifier',
-                     location=CSVLocation(line=line, column_name='ptid'),
+                     location=CSVLocation(line=line, column_name=field),
                      value=value,
-                     message='Unrecognized participant ID')
+                     message=error_message)
 
 
 def empty_file_error() -> FileError:
@@ -90,13 +94,16 @@ def missing_field_error(field: str) -> FileError:
                      message=f'Missing field {field} in the header')
 
 
-def empty_field_error(field: str, line: Optional[int] = None) -> FileError:
+def empty_field_error(field: str,
+                      line: Optional[int] = None,
+                      message: Optional[str] = None) -> FileError:
     """Creates a FileError for an empty field."""
+    error_message = message if message else f'Field {field} is required'
     return FileError(error_type='error',
                      error_code='empty-field',
                      location=CSVLocation(line=line, column_name=field)
                      if line else JSONLocation(key_path=field),
-                     message=f'Field {field} is required')
+                     message=error_message)
 
 
 def malformed_file_error(error: str) -> FileError:
@@ -104,6 +111,31 @@ def malformed_file_error(error: str) -> FileError:
     return FileError(error_type='error',
                      error_code='malformed-file',
                      message=f'Malformed input file: {error}')
+
+
+def unexpected_value_error(field: str,
+                           value: str,
+                           expected: str,
+                           line: int,
+                           message: Optional[str] = None) -> FileError:
+    """Creates a FileError for an unexpected value.
+
+    Args:
+      field: the field name
+      value: the unexpected value
+      line: the line number
+      message: the error message
+    Returns:
+      the constructed FileError
+    """
+    error_message = message if message else (
+        f'Expected {expected} for field {field}')
+    return FileError(error_type='error',
+                     error_code='unexpected-value',
+                     value=value,
+                     expected=expected,
+                     location=CSVLocation(line=line, column_name=field),
+                     message=error_message)
 
 
 def unknown_field_error(field: str) -> FileError:

@@ -26,7 +26,7 @@ def create_user(user_entry: UserDirectoryEntry) -> User:
     return User(id=user_entry.user_id,
                 firstname=user_entry.first_name,
                 lastname=user_entry.last_name,
-                email=user_entry.email)
+                email=user_entry.user_id)
 
 
 def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
