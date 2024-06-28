@@ -2,49 +2,48 @@
 
 import logging
 import sys
+from typing import Optional
 
 from attribute_app.main import run
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from inputs.context_parser import parse_config
+from gear_execution.gear_execution import (ClientWrapper, ContextClient,
+                                           GearEngine,
+                                           GearExecutionEnvironment,
+                                           InputFileWrapper)
+from inputs.parameter_store import ParameterStore
 from inputs.yaml import get_object_lists
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
+class AttributeCuratorVisitor(GearExecutionEnvironment):
+
+    def __init__(self, client: ClientWrapper,
+                 file_input: InputFileWrapper) -> None:
+        self.__client = client
+        self.__file_input = file_input
+
+    @classmethod
+    def create(
+        cls, context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore]
+    ) -> 'AttributeCuratorVisitor':
+        client = ContextClient.create(context=context)
+        file_input = InputFileWrapper.create(input_name='attribute_file',
+                                             context=context)
+        return AttributeCuratorVisitor(client=client, file_input=file_input)
+
+    def run(self, context: GearToolkitContext):
+        pass
+
+
 def main():
     """Describe gear detail here."""
 
-    filename = 'attribute_file'
-    with GearToolkitContext() as gear_context:
-        gear_context.init_logging()
-        context_args = parse_config(gear_context=gear_context,
-                                    filename=filename)
-        #
-        # get argument values from context_args
-        #
-        dry_run = context_args['dry_run']
-        new_only = context_args['new_only']
-        input_file = context_args[filename]  # gets the file name
+    GearEngine().run(gear_type=AttributeCuratorVisitor)
 
-        # uses api_key passed to gear
-        client = gear_context.client
-        # will need different code if want client using the bot API key
 
-    if not client:
-        log.error('No Flywheel connection. Check API key configuration.')
-        sys.exit(1)
-
-    # assumes input file is a YAML file
-    object_list = get_object_lists(input_file)
-    if not object_list:
-        log.error('No objects read from input')
-        sys.exit(1)
-
-    flywheel_proxy = FlywheelProxy(client=client, dry_run=dry_run)
-
-    run(proxy=flywheel_proxy, object_list=object_list, new_only=new_only)
-
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
