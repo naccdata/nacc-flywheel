@@ -2,10 +2,9 @@
 
 import json
 import logging
-import sys
 from io import StringIO
 from json.decoder import JSONDecodeError
-from typing import Mapping
+from typing import Dict, Mapping
 
 import yaml
 from s3.s3_client import S3BucketReader
@@ -14,15 +13,28 @@ from yaml.loader import SafeLoader
 log = logging.getLogger(__name__)
 
 
-class FormVars:
-    """Class to store frquently accessed form data variable names."""
+# pylint: disable=(too-few-public-methods)
+class Keys:
+    """Class to store frquently accessed keys."""
 
     NACCID = 'naccid'
     MODULE = 'module'
     PACKET = 'packet'
     PTID = 'ptid'
+    VISITNUM = 'visitnum'
+    CODE = 'code'
+    INDEX = 'index'
+    COMPAT = 'compatibility'
+    TEMPORAL = 'temporalrules'
+    NULLABLE = 'nullable'
+    REQUIRED = 'required'
 
 
+class ParserException(Exception):
+    """Raised when an error occurs during loading rule definitions."""
+
+
+# pylint: disable=(too-few-public-methods)
 class Parser:
     """Class to load the validation rules definitions as python objects."""
 
@@ -35,8 +47,7 @@ class Parser:
 
         self.__s3_bucket = s3_bucket
 
-    def download_rule_definitions(
-            self, prefix: str) -> dict[str, Mapping[str, object]]:
+    def download_rule_definitions(self, prefix: str) -> Dict[str, Mapping]:
         """Download rule definition files from a source S3 bucket and generate
         validation schema.
 
@@ -45,9 +56,12 @@ class Parser:
 
         Returns:
             dict[str, Mapping[str, object]: Schema object from rule definitions
+
+        Raises:
+            ParserException: If error occurred while loading rule definitions
         """
 
-        full_schema: dict[str, Mapping[str, object]] = {}
+        full_schema: dict[str, Mapping] = {}
 
         # Handle missing / at end of prefix
         if not prefix.endswith('/'):
@@ -55,15 +69,16 @@ class Parser:
 
         rule_defs = self.__s3_bucket.read_directory(prefix)
         if not rule_defs:
-            log.error(
-                'Failed to load rule definitions from the S3 bucket: %s/%s',
-                self.__s3_bucket.bucket_name, prefix)
-            sys.exit(1)
+            message = ('Failed to load definitions from the S3 bucket: '
+                       f'{self.__s3_bucket.bucket_name}/{prefix}')
+            raise ParserException(message)
 
+        parser_error = False
         for key, file_object in rule_defs.items():
             if 'Body' not in file_object:
                 log.error('Failed to load the rule definition file: %s', key)
-                sys.exit(1)
+                parser_error = True
+                continue
 
             file_data = StringIO(file_object['Body'].read().decode('utf-8'))
             rules_type = 'json'
@@ -78,7 +93,8 @@ class Parser:
                 else:
                     log.error('Unhandled rule definition file type: %s - %s',
                               key, rules_type)
-                    sys.exit(1)
+                    parser_error = True
+                    continue
 
                 # If there are any duplicate keys(i.e. variable names) across
                 # forms, they will be replaced with the latest definitions.
@@ -88,10 +104,14 @@ class Parser:
                     log.info('Parsed rule definition file: %s', key)
                 else:
                     log.error('Empty rule definition file: %s', key)
-                    sys.exit(1)
+                    parser_error = True
             except (JSONDecodeError, yaml.YAMLError, TypeError) as error:
                 log.error('Failed to parse the rule definition file: %s - %s',
                           key, error)
-                sys.exit(1)
+                parser_error = True
+
+        if parser_error:
+            raise ParserException(
+                'Error(s) occurred while loading rule definitions')
 
         return full_schema

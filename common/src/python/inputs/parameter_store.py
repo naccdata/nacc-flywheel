@@ -1,6 +1,7 @@
 """Module for getting proxy object for AWS SSM parameter store object."""
 import logging
 
+from botocore.exceptions import ClientError, ParamValidationError
 from inputs.environment import get_environment_variable
 from pydantic import TypeAdapter, ValidationError
 from ssm_parameter_store import EC2ParameterStore
@@ -67,10 +68,18 @@ class ParameterStore:
             ) from error
 
     # pylint disable=(line-to-long)
-    def get_api_key(self) -> str:
-        """Returns the GearBot API key."""
+    def get_api_key(self, path_prefix: str) -> str:
+        """Returns the GearBot API key.
+
+        Args:
+          path_prefix: the prefix for the parameter path
+        Returns:
+          the GearBot API key
+        Raises:
+          ParameterError: if the API key is not found
+        """
         parameter_name = 'apikey'
-        parameter_path = f'/prod/flywheel/gearbot/{parameter_name}'
+        parameter_path = f'{path_prefix}/{parameter_name}'
         try:
             parameter = self.__store.get_parameter(parameter_path,
                                                    decrypt=True)
@@ -84,12 +93,57 @@ class ParameterStore:
 
         return apikey
 
-    def get_redcap_report_connection(
-            self, param_path: str) -> REDCapReportParameters:
-        """Pulls URL and Token for REDCap project from SSM parameter store.
+    def get_redcap_project_prameters(self, *, base_path: str, pid: int,
+                                     report_id: int) -> REDCapReportParameters:
+        """Pulls URL and Token for the respective REDCap project from SSM
+        parameter store.
 
         Args:
-        store: the parameter store object
+          base_path: base path in the parameter store
+          pid: REDCap project ID
+          report_id: REDCap report ID
+        Returns:
+          the REDCap credentials stored at the parameter path
+        Raises:
+          ParameterError if any of the credentials are missing
+        """
+
+        if not base_path.endswith('/'):
+            base_path += '/'
+
+        param_path = base_path + 'pid_' + str(pid)
+        try:
+            prj_params = self.__store.get_parameters_by_path(param_path,
+                                                             decrypt=True)
+        except (ClientError, ParamValidationError) as error:
+            raise ParameterError(
+                f"Failed to retrieve parameters at {param_path}") from error
+
+        if (not prj_params or 'url' not in prj_params
+                or 'token' not in prj_params):
+            raise ParameterError(f"Incorrect parameters at {param_path}")
+
+        url = prj_params.get('url')
+        token = prj_params.get('token')
+
+        if not url or not token:
+            raise ParameterError(f"Incorrect parameters at {param_path}")
+
+        return REDCapReportParameters(url=url,
+                                      token=token,
+                                      reportid=str(report_id))
+
+    def get_redcap_report_parameters(
+            self, param_path: str) -> REDCapReportParameters:
+        """Pulls URL, Token, and ReportID for REDCap report from SSM parameter
+        store.
+
+        Args:
+          param_path: the path in the parameter store
+        Returns:
+          the REDCap report credentials stored at the parameter path
+        Raises:
+          ParameterError if any of the credentials are missing
         """
         return self.get_parameters(param_type=REDCapReportParameters,
                                    parameter_path=param_path)
@@ -129,6 +183,8 @@ class ParameterStore:
 
         Returns:
             parameter store object if credentials are valid, and None otherwise
+        Raises:
+            ParameterError if any of the environment variables are missing
         """
         secret_key = get_environment_variable('AWS_SECRET_ACCESS_KEY')
         access_id = get_environment_variable('AWS_ACCESS_KEY_ID')

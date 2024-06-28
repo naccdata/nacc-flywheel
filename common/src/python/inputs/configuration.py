@@ -15,6 +15,8 @@ def get_group(*, context: GearToolkitContext, proxy: FlywheelProxy, key: str,
 
     Uses the group default as the group name if the key is not in the context.
 
+    Note: for the admin group use NACCGroup.create() instead
+
     Args:
       context: the gear context
       proxy: the proxy for the flywheel instance

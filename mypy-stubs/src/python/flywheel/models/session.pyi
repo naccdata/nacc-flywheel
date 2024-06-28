@@ -1,4 +1,6 @@
 from typing import Any, Dict
+from flywheel.finder import Finder
+from flywheel.models.acquisition import Acquisition
 
 
 class Session:
@@ -12,4 +14,11 @@ class Session:
         ...
 
     def update(self, map: Dict[str, Any]):
+        ...
+
+    @property
+    def acquisitions(self) -> Finder[Acquisition]:
+        ...
+
+    def add_acquisition(self, label: str) -> Acquisition:
         ...

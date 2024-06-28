@@ -1,5 +1,8 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
+from flywheel import Session
+
+from flywheel.finder import Finder
 
 
 class Subject:
@@ -30,4 +33,11 @@ class Subject:
             date_of_birth: Optional[datetime] = None,
             info: Optional[object] = None,
             type: Optional[str] = None):
+        ...
+
+    def add_session(self, label: str) -> Session:
+        ...
+
+    @property
+    def sessions(self) -> Finder[Session]:
         ...

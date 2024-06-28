@@ -8,4 +8,4 @@ echo "alias fw='fw-beta'" > ${USERHOME}/.bashrc
 chown -R vscode ${USERBIN}
 
 
-# git config --global --add safe.directory $1
+git config --global --add safe.directory $1

@@ -10,6 +10,7 @@ from flywheel.models.viewer_app import ViewerApp
 from .finder import Finder
 from .models.acquisition import Acquisition
 from .models.container_id_view_input import ContainerIdViewInput
+from .models.container_output import ContainerOutput
 from .models.data_view import DataView
 from .models.deleted_result import DeletedResult
 from .models.gear_rule import GearRule
@@ -122,11 +123,15 @@ class Client:
     def get_subject(self, subject_id: str) -> Subject:
         ...
 
-    def read_view_dataframe(self, view: DataView, container_id: str) -> pandas.DataFrame:
+    def read_view_dataframe(self, view: DataView,
+                            container_id: str) -> pandas.DataFrame:
         ...
 
     def get_project(self, id: str) -> Project:
         ...
 
     def get_acquisition(self, id: str) -> Acquisition:
+        ...
+
+    def get(self, id: str) -> ContainerOutput:
         ...

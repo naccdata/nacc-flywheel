@@ -8,6 +8,9 @@ class ContainerParents:
     def group(self) -> str:
         ...
 
-
     def get(self, key: str) -> Any:
+        ...
+
+    @property
+    def project(self) -> str:
         ...
