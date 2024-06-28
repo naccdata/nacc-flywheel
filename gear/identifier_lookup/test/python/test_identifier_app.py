@@ -5,7 +5,7 @@ from typing import Any, List
 
 import pytest
 from identifier_app.main import run
-from identifiers.model import Identifier
+from identifiers.model import IdentifierObject
 from outputs.errors import StreamErrorWriter
 
 
@@ -65,14 +65,16 @@ def data_stream():
 def identifiers_map():
     """Create identifiers map with IDs matching data stream."""
     id_map = {}
-    id_map['1'] = Identifier(nacc_id=1,
-                             adc_id=1,
-                             patient_id='1',
-                             nacc_adc=1111)
-    id_map['2'] = Identifier(nacc_id=2,
-                             adc_id=1,
-                             patient_id='2',
-                             nacc_adc=2222)
+    id_map['1'] = IdentifierObject(naccid='NACC000001',
+                                   adcid=1,
+                                   ptid='1',
+                                   guid=None,
+                                   naccadc=1111)
+    id_map['2'] = IdentifierObject(naccid='NACC000002',
+                                   adcid=1,
+                                   ptid='2',
+                                   guid=None,
+                                   naccadc=2222)
     yield id_map
 
 
@@ -80,14 +82,16 @@ def identifiers_map():
 def mismatched_identifiers_map():
     """Create identifiers map with IDs that don't match data stream."""
     id_map = {}
-    id_map['3'] = Identifier(nacc_id=1,
-                             adc_id=1,
-                             patient_id='3',
-                             nacc_adc=3333)
-    id_map['4'] = Identifier(nacc_id=2,
-                             adc_id=1,
-                             patient_id='4',
-                             nacc_adc=4444)
+    id_map['3'] = IdentifierObject(naccid='NACC000001',
+                                   adcid=1,
+                                   ptid='3',
+                                   guid=None,
+                                   naccadc=3333)
+    id_map['4'] = IdentifierObject(naccid='NACC000002',
+                                   adcid=1,
+                                   ptid='4',
+                                   guid=None,
+                                   naccadc=4444)
     yield id_map
 
 
