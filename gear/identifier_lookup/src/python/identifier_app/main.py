@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict, List, Optional, TextIO
 
-from identifiers.model import Identifier
+from identifiers.model import IdentifierObject
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import ErrorWriter, identifier_error, missing_header_error
 from outputs.outputs import CSVWriter
@@ -21,8 +21,8 @@ class IdentifierVisitor(CSVVisitor):
     data from same ADRC (have the same ADCID).
     """
 
-    def __init__(self, identifiers: Dict[str, Identifier], output_file: TextIO,
-                 error_writer: ErrorWriter) -> None:
+    def __init__(self, identifiers: Dict[str, IdentifierObject],
+                 output_file: TextIO, error_writer: ErrorWriter) -> None:
         """
         Args:
           identifiers: the map from PTID to Identifier object
@@ -94,7 +94,7 @@ class IdentifierVisitor(CSVVisitor):
         return False
 
 
-def run(*, input_file: TextIO, identifiers: Dict[str, Identifier],
+def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
         output_file: TextIO, error_writer: ErrorWriter) -> bool:
     """Reads participant records from the input CSV file, finds the NACCID for
     each row from the ADCID and PTID, and outputs a CSV file with the NACCID
