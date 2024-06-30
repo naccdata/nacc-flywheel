@@ -37,6 +37,8 @@ from .models.roles_backwards_compatible_role_assignment import \
     RolesBackwardsCompatibleRoleAssignment
 from .models.roles_role_assignment import \
     RolesRoleAssignment as RolesRoleAssignment
+from .models.session import Session as Session
+from .models.subject import Subject as Subject
 from .models.user import User as User
 from .models.view_id_output import ViewIdOutput as ViewIdOutput
 from .models.viewer_app import ViewerApp as ViewerApp
