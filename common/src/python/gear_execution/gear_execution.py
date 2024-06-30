@@ -5,8 +5,9 @@ import sys
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
+from centers.nacc_group import NACCGroup
 from flywheel.client import Client
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.flywheel_proxy import FlywheelError, FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from fw_client import FWClient
 from inputs.parameter_store import ParameterError, ParameterStore
@@ -210,6 +211,27 @@ class InputFileWrapper:
 # pylint: disable=too-few-public-methods
 class GearExecutionEnvironment(ABC):
     """Base class for gear execution environments."""
+
+    def __init__(self, client: ClientWrapper) -> None:
+        self.__client = client
+
+    @property
+    def client(self) -> ClientWrapper:
+        """Returns the FW client for this environment."""
+        return self.__client
+
+    def admin_group(self, admin_id: str) -> NACCGroup:
+        """Returns the admin group for this environment."""
+        proxy = self.__client.get_proxy()
+        try:
+            return NACCGroup.create(proxy=proxy, group_id=admin_id)
+        except FlywheelError as error:
+            raise GearExecutionError(str(error)) from error
+
+    @property
+    def proxy(self) -> FlywheelProxy:
+        """Returns the Flywheel proxy object for this environment."""
+        return self.__client.get_proxy()
 
     @abstractmethod
     def run(self, context: GearToolkitContext) -> None:
