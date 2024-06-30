@@ -4,9 +4,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from centers.nacc_group import NACCGroup
 from enrollment.enrollment_project import EnrollmentProject
-from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            GearEngine,
@@ -30,7 +28,7 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
     def __init__(self, client: ClientWrapper, admin_id: str,
                  file_input: InputFileWrapper,
                  identifiers_mode: IdentifiersMode) -> None:
-        self.__client = client
+        super().__init__(client=client)
         self.__admin_id = admin_id
         self.__file_input = file_input
         self.__identifiers_mode: IdentifiersMode = identifiers_mode
@@ -67,22 +65,16 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
                       self.__file_input.filename)
             return
 
-        proxy = self.__client.get_proxy()
-        try:
-            admin_group = NACCGroup.create(proxy=proxy,
-                                           group_id=self.__admin_id)
-        except FlywheelError as error:
-            raise GearExecutionError(str(error)) from error
-
         file_id = self.__file_input.file_id
-        group_id = proxy.get_file_group(file_id)
+        group_id = self.proxy.get_file_group(file_id)
+        admin_group = self.admin_group(admin_id=self.__admin_id)
         adcid = admin_group.get_adcid(group_id)
         if adcid is None:
             raise GearExecutionError(
                 f'Group {group_id} does not have an ADCID')
 
-        file = proxy.get_file(file_id)
-        file_group = proxy.find_group(group_id=group_id)
+        file = self.proxy.get_file(file_id)
+        file_group = self.proxy.find_group(group_id=group_id)
         if not file_group:
             raise GearExecutionError(
                 f'Unable to get center group: {file.parents.group}')
@@ -98,8 +90,8 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
 
         input_path = Path(self.__file_input.filepath)
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
-            error_writer = ListErrorWriter(container_id=file_id,
-                                           fw_path=proxy.get_lookup_path(file))
+            error_writer = ListErrorWriter(
+                container_id=file_id, fw_path=self.proxy.get_lookup_path(file))
             errors = run(
                 input_file=csv_file,
                 center_id=adcid,
