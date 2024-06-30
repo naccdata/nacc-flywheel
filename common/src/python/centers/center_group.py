@@ -8,6 +8,7 @@ import re
 from typing import Dict, List, Optional
 
 import flywheel
+from centers.center_adaptor import CenterAdaptor
 from flywheel.models.group import Group
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.user import User
@@ -22,7 +23,7 @@ from users.nacc_directory import Authorizations
 log = logging.getLogger(__name__)
 
 
-class CenterGroup(GroupAdaptor):
+class CenterGroup(CenterAdaptor):
     """Defines an adaptor for a group representing a center."""
 
     def __init__(self, *, adcid: int, active: bool, group: flywheel.Group,
@@ -33,7 +34,6 @@ class CenterGroup(GroupAdaptor):
         self.__adcid = adcid
         self.__is_active = active
         self.__center_portal: Optional[ProjectAdaptor] = None
-        self.__metadata: Optional[ProjectAdaptor] = None
 
     @classmethod
     def create_from_group(cls, *, proxy: FlywheelProxy,
@@ -162,19 +162,6 @@ class CenterGroup(GroupAdaptor):
             return None
 
         return projects[0]
-
-    def get_metadata(self) -> Optional[ProjectAdaptor]:
-        """Returns the metadata project for this center.
-
-        Returns:
-          the project labeled 'metadata', None if there is none
-        """
-        if not self.__metadata:
-            self.__metadata = self.get_project('metadata')
-            assert self.__metadata, ("Expecting metadata project. "
-                                     "Check user has permissions.")
-
-        return self.__metadata
 
     @classmethod
     def get_datatype(cls, *, stage: str, label: str) -> Optional[str]:
