@@ -4,8 +4,6 @@ import logging
 from typing import List, Optional
 
 from centers.center_group import REDCapProjectInput
-from centers.nacc_group import NACCGroup
-from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearEngine,
@@ -24,8 +22,8 @@ class REDCapProjectInfoVisitor(GearExecutionEnvironment):
 
     def __init__(self, admin_id: str, client: ClientWrapper,
                  input_filepath: str):
-        self.__admin_group_id = admin_id
-        self.__client = client
+        super().__init__(client=client)
+        self.__admin_id = admin_id
         self.__input_file_path = input_filepath
 
     @classmethod
@@ -55,14 +53,9 @@ class REDCapProjectInfoVisitor(GearExecutionEnvironment):
         Args:
             context: the gear execution context
         """
-        proxy = self.__client.get_proxy()
-        try:
-            admin_group = NACCGroup.create(proxy=proxy,
-                                           group_id=self.__admin_group_id)
-        except FlywheelError as error:
-            raise GearExecutionError(str(error)) from error
         project_list = self.__get_project_list(self.__input_file_path)
-        run(project_list=project_list, admin_group=admin_group)
+        run(project_list=project_list,
+            admin_group=self.admin_group(admin_id=self.__admin_id))
 
     # pylint: disable=no-self-use
     def __get_project_list(self,
