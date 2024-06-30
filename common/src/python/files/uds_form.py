@@ -5,17 +5,12 @@ from typing import Any, Dict, Optional
 
 from dates.dates import datetime_from_form_date
 from files.form import Form
-from flywheel.models.file_entry import FileEntry
 
 log = logging.getLogger(__name__)
 
 
 class UDSV3Form(Form):
     """Class for UDSv3 forms."""
-
-    # pylint: disable=useless-super-delegation
-    def __init__(self, file_object: FileEntry) -> None:
-        super().__init__(file_object)
 
     RACE_MAPPING = {
         1: "White",
