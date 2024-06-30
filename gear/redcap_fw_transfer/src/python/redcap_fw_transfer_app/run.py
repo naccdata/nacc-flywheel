@@ -73,7 +73,7 @@ def get_redcap_projects_metadata(
 
     try:
         center_group = CenterGroup.create_from_group_adaptor(
-            proxy=fw_proxy, adaptor=group_adaptor)
+            adaptor=group_adaptor)
         center_metadata = center_group.get_project_info()
     except CenterError as error:
         raise GearExecutionError(
