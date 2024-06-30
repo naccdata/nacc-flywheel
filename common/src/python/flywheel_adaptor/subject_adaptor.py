@@ -45,4 +45,4 @@ class SubjectAdaptor:
         Args:
           info: the info dictionary for update
         """
-        self._subject.update(info)
+        self._subject.update(info=info)
