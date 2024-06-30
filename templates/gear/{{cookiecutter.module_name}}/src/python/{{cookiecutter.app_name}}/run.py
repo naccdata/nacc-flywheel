@@ -19,9 +19,8 @@ class {{cookiecutter.class_name}}(GearExecutionEnvironment):
     """Visitor for the templating gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper, new_only: bool):
-        self.__admin_id = admin_id
+        super().__init__(client=client, admin_id=admin_id)
         self.__client = client
-        self.__new_only = new_only
 
     @classmethod
     def create(

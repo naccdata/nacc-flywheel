@@ -2,14 +2,11 @@
 import logging
 from typing import Optional
 
-from centers.nacc_group import NACCGroup
-from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from fw_client import FWClient
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearEngine,
-                                           GearExecutionEnvironment,
-                                           GearExecutionError)
+                                           GearExecutionEnvironment)
 from inputs.context_parser import get_api_key
 from inputs.parameter_store import ParameterStore
 from inputs.templates import get_template_projects
@@ -22,8 +19,8 @@ class TemplatingVisitor(GearExecutionEnvironment):
     """Visitor for the templating gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper, new_only: bool):
+        super().__init__(client=client)
         self.__admin_id = admin_id
-        self.__client = client
         self.__new_only = new_only
 
     @classmethod
@@ -56,12 +53,8 @@ class TemplatingVisitor(GearExecutionEnvironment):
 
     def run(self, context: GearToolkitContext) -> None:
         proxy = self.__client.get_proxy()
-        try:
-            admin_group = NACCGroup.create(proxy=proxy,
-                                           group_id=self.__admin_id)
-        except FlywheelError as error:
-            raise GearExecutionError(str(error)) from error
-        template_map = get_template_projects(group=admin_group)
+        template_map = get_template_projects(group=self.admin_group(
+            admin_id=self.__admin_id))
         run(proxy=proxy,
             center_tag_pattern=r'adcid-\d+',
             new_only=self.__new_only,

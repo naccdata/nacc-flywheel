@@ -22,7 +22,7 @@ class DirectoryPullVisitor(GearExecutionEnvironment):
 
     def __init__(self, client: ClientWrapper, user_filename: str,
                  user_report: List[Dict[str, str]]):
-        self.__client = client
+        super().__init__(client=client)
         self.__user_filename = user_filename
         self.__user_report = user_report
 

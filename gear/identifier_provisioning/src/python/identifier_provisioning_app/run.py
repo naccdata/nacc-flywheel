@@ -4,9 +4,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from centers.nacc_group import NACCGroup
 from enrollment.enrollment_project import EnrollmentProject
-from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            GearEngine,
@@ -30,7 +28,7 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
     def __init__(self, client: ClientWrapper, admin_id: str,
                  file_input: InputFileWrapper,
                  identifiers_mode: IdentifiersMode) -> None:
-        self.__client = client
+        super().__init__(client=client)
         self.__admin_id = admin_id
         self.__file_input = file_input
         self.__identifiers_mode: IdentifiersMode = identifiers_mode
@@ -68,11 +66,7 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
             return
 
         proxy = self.__client.get_proxy()
-        try:
-            admin_group = NACCGroup.create(proxy=proxy,
-                                           group_id=self.__admin_id)
-        except FlywheelError as error:
-            raise GearExecutionError(str(error)) from error
+        admin_group = self.admin_group(admin_id=self.__admin_id)
 
         file_id = self.__file_input.file_id
         group_id = proxy.get_file_group(file_id)

@@ -114,7 +114,7 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
             parameter_store: AWS parameter store connection
             param_path: AWS parameter path for REDCap credentials
         """
-        self.__client = client
+        super().__init__(client=client)
         self.__param_store = parameter_store
         self.__param_path = param_path
 
