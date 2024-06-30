@@ -55,9 +55,6 @@ class CenterMapInfo(BaseModel):
 class NACCGroup(CenterAdaptor):
     """Manages group for NACC."""
 
-    def __init__(self, *, group: Group, proxy: FlywheelProxy) -> None:
-        super().__init__(group=group, proxy=proxy)
-
     @classmethod
     def create(cls,
                *,
