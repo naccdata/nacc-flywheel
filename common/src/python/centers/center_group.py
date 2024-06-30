@@ -69,7 +69,8 @@ class CenterGroup(CenterAdaptor):
         return center_group
 
     @classmethod
-    def create_from_group_adaptor(cls, adaptor: GroupAdaptor) -> 'CenterGroup':
+    def create_from_group_adaptor(cls, *,
+                                  adaptor: GroupAdaptor) -> 'CenterGroup':
         """Creates a CenterGroup from a GroupAdaptor.
 
         Args:
