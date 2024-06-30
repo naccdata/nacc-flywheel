@@ -1,4 +1,5 @@
-from typing import Any, Dict
+from datetime import datetime
+from typing import Any, Dict, Optional
 from flywheel import Session
 
 from flywheel.finder import Finder
@@ -6,20 +7,37 @@ from flywheel.finder import Finder
 
 class Subject:
 
-    def add_session(self, label: str) -> Session:
-        ...
-
     @property
-    def sessions(self) -> Finder[Session]:
+    def label(self) -> str:
         ...
 
-    def update(self, info: Dict[str, Any]) -> None:
-        ...
-
+    # info is "defined" as object
     @property
     def info(self) -> Dict[str, Any]:
         ...
 
     @property
-    def label(self) -> str:
+    def type(self) -> str:
+        ...
+
+    def update(
+            self,
+            *,
+            firstname: Optional[str] = None,
+            lastname: Optional[str] = None,
+            sex: Optional[str] = None,
+            cohort: Optional[
+                str] = None,  # Cohort is an enum with string value
+            race: Optional[str] = None,
+            ethnicity: Optional[str] = None,
+            date_of_birth: Optional[datetime] = None,
+            info: Optional[object] = None,
+            type: Optional[str] = None):
+        ...
+
+    def add_session(self, label: str) -> Session:
+        ...
+
+    @property
+    def sessions(self) -> Finder[Session]:
         ...
