@@ -52,10 +52,9 @@ class TemplatingVisitor(GearExecutionEnvironment):
             new_only=context.config.get("new_only", False))
 
     def run(self, context: GearToolkitContext) -> None:
-        proxy = self.__client.get_proxy()
         template_map = get_template_projects(group=self.admin_group(
             admin_id=self.__admin_id))
-        run(proxy=proxy,
+        run(proxy=self.proxy,
             center_tag_pattern=r'adcid-\d+',
             new_only=self.__new_only,
             template_map=template_map)

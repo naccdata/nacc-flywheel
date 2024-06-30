@@ -79,9 +79,7 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
         Raises:
             AssertionError: If admin group ID or project list is not provided.
         """
-        proxy = self.__client.get_proxy()
-
-        run(proxy=proxy,
+        run(proxy=self.proxy,
             admin_group=self.admin_group(admin_id=self.__admin_id),
             project_list=self.__project_list,
             role_names=['curate', 'upload', 'gear-bot'],

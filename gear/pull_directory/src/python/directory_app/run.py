@@ -80,7 +80,7 @@ class DirectoryPullVisitor(GearExecutionEnvironment):
         assert context, 'Gear context required'
         assert self.__user_filename, 'User filename required'
 
-        if self.__client.dry_run:
+        if self.client.dry_run:
             log.info('Would write user entries to file %s on %s %s',
                      self.__user_filename, context.destination['type'],
                      context.destination['id'])

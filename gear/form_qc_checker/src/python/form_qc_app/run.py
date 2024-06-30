@@ -96,7 +96,7 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
 
         assert context, 'Gear context required'
 
-        run(client_wrapper=self.__client,
+        run(client_wrapper=self.client,
             input_wrapper=self.__file_input,
             s3_client=self.__s3_client,
             gear_context=context,

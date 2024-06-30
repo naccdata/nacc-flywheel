@@ -81,13 +81,12 @@ class UserManagementVisitor(GearExecutionEnvironment):
         assert self.__user_filepath, 'User directory file required'
         assert self.__auth_filepath, 'User role file required'
         assert self.__admin_id, 'Admin group ID required'
-        proxy = self.__client.get_proxy()
-        admin_group = self.admin_group(admin_id=self.__admin_id)
         user_list = self.__get_user_list(self.__user_filepath)
         auth_map = self.__get_auth_map(self.__auth_filepath)
+        admin_group = self.admin_group(admin_id=self.__admin_id)
         admin_users = admin_group.get_group_users(access='admin')
         admin_set = {user.id for user in admin_users if user.id}
-        run(proxy=proxy,
+        run(proxy=self.proxy,
             user_list=user_list,
             admin_group=admin_group,
             skip_list=admin_set,

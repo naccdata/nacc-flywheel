@@ -94,12 +94,9 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
 
         assert context, 'Gear context required'
 
-        proxy = self.__client.get_proxy()
-        admin_group = self.admin_group(admin_id=self.__admin_id)
-
         file_id = self.__file_input.file_id
-        group_id = proxy.get_file_group(file_id)
-        adcid = admin_group.get_adcid(group_id)
+        admin_group = self.admin_group(admin_id=self.__admin_id)
+        adcid = admin_group.get_adcid(self.proxy.get_file_group(file_id))
         if adcid is None:
             raise GearExecutionError('Unable to determine center ID for file')
 
@@ -121,9 +118,10 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
             with context.open_output(f'{filename}.csv',
                                      mode='w',
                                      encoding='utf-8') as out_file:
-                error_writer = ListErrorWriter(container_id=file_id,
-                                               fw_path=proxy.get_lookup_path(
-                                                   proxy.get_file(file_id)))
+                error_writer = ListErrorWriter(
+                    container_id=file_id,
+                    fw_path=self.proxy.get_lookup_path(
+                        self.proxy.get_file(file_id)))
                 errors = run(input_file=csv_file,
                              identifiers=identifiers,
                              output_file=out_file,

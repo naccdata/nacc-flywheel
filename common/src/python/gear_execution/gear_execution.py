@@ -228,6 +228,11 @@ class GearExecutionEnvironment(ABC):
         except FlywheelError as error:
             raise GearExecutionError(str(error)) from error
 
+    @property
+    def proxy(self) -> FlywheelProxy:
+        """Returns the Flywheel proxy object for this environment."""
+        return self.__client.get_proxy()
+
     @abstractmethod
     def run(self, context: GearToolkitContext) -> None:
         """Run the gear after initialization by visit methods.
