@@ -36,5 +36,8 @@ class GearToolkitContext:
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any):
         ...
 
-    def init_logging(self):
+    def init_logging(self) -> None:
+        ...
+
+    def log_config(self) -> None:
         ...
