@@ -5,7 +5,6 @@ from typing import Dict, Optional
 
 from centers.center_adaptor import CenterAdaptor
 from centers.center_group import CenterGroup
-from flywheel.models.group import Group
 from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from pydantic import BaseModel, ValidationError
