@@ -2,8 +2,6 @@
 import logging
 from typing import Optional
 
-from centers.nacc_group import NACCGroup
-from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from fw_client import FWClient
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
@@ -24,8 +22,8 @@ class TemplatingVisitor(GearExecutionEnvironment):
     # pylint: disable=(too-many-arguments)
     def __init__(self, admin_id: str, client: ClientWrapper,
                  template_group: str, template_label: str, new_only: bool):
+        super().__init__(client=client)
         self.__admin_id = admin_id
-        self.__client = client
         self.__new_only = new_only
         self.__template_group = template_group
         self.__template_label = template_label
@@ -67,23 +65,19 @@ class TemplatingVisitor(GearExecutionEnvironment):
             new_only=context.config.get("new_only", False))
 
     def run(self, context: GearToolkitContext) -> None:
-        proxy = self.__client.get_proxy()
-        try:
-            admin_group = NACCGroup.create(proxy=proxy,
-                                           group_id=self.__admin_id)
-        except FlywheelError as error:
-            raise GearExecutionError(str(error)) from error
-        projects = proxy.find_projects(group_id=self.__template_group,
-                                       project_label=self.__template_label)
+
+        projects = self.proxy.find_projects(
+            group_id=self.__template_group,
+            project_label=self.__template_label)
         if not projects:
             raise GearExecutionError(
                 "Template project "
                 f"{self.__template_group}/{self.__template_label}"
                 " does not exist")
 
-        run(admin_group=admin_group,
+        run(admin_group=self.admin_group(admin_id=self.__admin_id),
             new_only=self.__new_only,
-            template=TemplateProject(project=projects[0], proxy=proxy))
+            template=TemplateProject(project=projects[0], proxy=self.proxy))
 
 
 def main():

@@ -4,8 +4,6 @@ import logging
 from io import StringIO
 from typing import Any, List, Optional
 
-from centers.nacc_group import NACCGroup
-from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            GearEngine,
@@ -42,8 +40,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
 
     def __init__(self, admin_id: str, client: ClientWrapper,
                  user_filepath: str, auth_filepath: str):
+        super().__init__(client=client)
         self.__admin_id = admin_id
-        self.__client = client
         self.__user_filepath = user_filepath
         self.__auth_filepath = auth_filepath
 
@@ -83,17 +81,12 @@ class UserManagementVisitor(GearExecutionEnvironment):
         assert self.__user_filepath, 'User directory file required'
         assert self.__auth_filepath, 'User role file required'
         assert self.__admin_id, 'Admin group ID required'
-        proxy = self.__client.get_proxy()
-        try:
-            admin_group = NACCGroup.create(proxy=proxy,
-                                           group_id=self.__admin_id)
-        except FlywheelError as error:
-            raise GearExecutionError(str(error)) from error
         user_list = self.__get_user_list(self.__user_filepath)
         auth_map = self.__get_auth_map(self.__auth_filepath)
+        admin_group = self.admin_group(admin_id=self.__admin_id)
         admin_users = admin_group.get_group_users(access='admin')
         admin_set = {user.id for user in admin_users if user.id}
-        run(proxy=proxy,
+        run(proxy=self.proxy,
             user_list=user_list,
             admin_group=admin_group,
             skip_list=admin_set,
