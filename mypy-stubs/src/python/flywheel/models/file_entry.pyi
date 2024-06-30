@@ -1,3 +1,6 @@
+from typing import Any, Dict
+from flywheel.models.container_parents import ContainerParents
+
 from flywheel.models.container_parents import ContainerParents
 
 
@@ -11,15 +14,18 @@ class FileEntry:
     def mimetype(self) -> str:
         ...
 
+    def get(self, key, default=None) -> Dict[str, Any]:
+        ...
+
     @property
     def hash(self) -> str:
         ...
 
-    def read(self) -> str:
-        ...
-
     @property
     def parents(self) -> ContainerParents:
+        ...
+
+    def read(self) -> str:
         ...
 
     @property
