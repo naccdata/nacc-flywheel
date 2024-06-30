@@ -14,7 +14,7 @@ class FileEntry:
     def mimetype(self) -> str:
         ...
 
-    def get(self, key, default=None) -> Dict[str,Any]:
+    def get(self, key, default=None) -> Dict[str, Any]:
         ...
 
     @property
