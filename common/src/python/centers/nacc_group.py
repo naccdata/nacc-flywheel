@@ -161,8 +161,7 @@ class NACCGroup(CenterAdaptor):
         if not group:
             return None
 
-        return CenterGroup.create_from_group_adaptor(adaptor=group,
-                                                     proxy=self._fw)
+        return CenterGroup.create_from_group_adaptor(adaptor=group)
 
     def add_center_user(self, user: User) -> None:
         """Authorizes a user to access the metadata project of nacc group.
