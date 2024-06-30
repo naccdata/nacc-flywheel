@@ -69,7 +69,7 @@ class CenterGroup(CenterAdaptor):
         return center_group
 
     @classmethod
-    def create_from_group_adaptor(cls, *, proxy: FlywheelProxy,
+    def create_from_group_adaptor(cls, *,
                                   adaptor: GroupAdaptor) -> 'CenterGroup':
         """Creates a CenterGroup from a GroupAdaptor.
 
@@ -80,7 +80,8 @@ class CenterGroup(CenterAdaptor):
           the CenterGroup for the group
         """
         # pylint: disable=protected-access
-        return CenterGroup.create_from_group(proxy=proxy, group=adaptor._group)
+        return CenterGroup.create_from_group(proxy=adaptor.proxy(),
+                                             group=adaptor._group)
 
     @classmethod
     def create_from_center(cls, *, proxy: FlywheelProxy,
