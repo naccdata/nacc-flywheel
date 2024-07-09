@@ -5,7 +5,7 @@ from typing import Any, List
 
 import pytest
 from identifier_app.main import run
-from identifiers.model import Identifier
+from identifiers.model import IdentifierObject
 from outputs.errors import StreamErrorWriter
 
 
@@ -65,14 +65,16 @@ def data_stream():
 def identifiers_map():
     """Create identifiers map with IDs matching data stream."""
     id_map = {}
-    id_map['1'] = Identifier(nacc_id=1,
-                             adc_id=1,
-                             patient_id='1',
-                             nacc_adc=1111)
-    id_map['2'] = Identifier(nacc_id=2,
-                             adc_id=1,
-                             patient_id='2',
-                             nacc_adc=2222)
+    id_map['1'] = IdentifierObject(naccid='NACC000001',
+                                   adcid=1,
+                                   ptid='1',
+                                   guid=None,
+                                   naccadc=1111)
+    id_map['2'] = IdentifierObject(naccid='NACC000002',
+                                   adcid=1,
+                                   ptid='2',
+                                   guid=None,
+                                   naccadc=2222)
     yield id_map
 
 
@@ -80,14 +82,16 @@ def identifiers_map():
 def mismatched_identifiers_map():
     """Create identifiers map with IDs that don't match data stream."""
     id_map = {}
-    id_map['3'] = Identifier(nacc_id=1,
-                             adc_id=1,
-                             patient_id='3',
-                             nacc_adc=3333)
-    id_map['4'] = Identifier(nacc_id=2,
-                             adc_id=1,
-                             patient_id='4',
-                             nacc_adc=4444)
+    id_map['3'] = IdentifierObject(naccid='NACC000001',
+                                   adcid=1,
+                                   ptid='3',
+                                   guid=None,
+                                   naccadc=3333)
+    id_map['4'] = IdentifierObject(naccid='NACC000002',
+                                   adcid=1,
+                                   ptid='4',
+                                   guid=None,
+                                   naccadc=4444)
     yield id_map
 
 
@@ -109,13 +113,13 @@ class TestIdentifierLookup:
         """Test empty input stream."""
         out_stream = StringIO()
         err_stream = StringIO()
-        errors = run(input_file=empty_data_stream,
+        success = run(input_file=empty_data_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=StreamErrorWriter(stream=err_stream,
                                                     container_id='dummy',
                                                     fw_path='dummy-path'))
-        assert errors
+        assert not success
         assert empty(out_stream)
         assert not empty(err_stream)
 
@@ -124,13 +128,13 @@ class TestIdentifierLookup:
         """Test case with no header."""
         out_stream = StringIO()
         err_stream = StringIO()
-        errors = run(input_file=no_header_stream,
+        success = run(input_file=no_header_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=StreamErrorWriter(stream=err_stream,
                                                     container_id='dummy',
                                                     fw_path='dummy-path'))
-        assert errors
+        assert not success
         assert empty(out_stream)
         assert not empty(err_stream)
 
@@ -139,13 +143,13 @@ class TestIdentifierLookup:
         """Test case where header doesn't have ID columns."""
         out_stream = StringIO()
         err_stream = StringIO()
-        errors = run(input_file=no_ids_stream,
+        success = run(input_file=no_ids_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=StreamErrorWriter(stream=err_stream,
                                                     container_id='dummy',
                                                     fw_path='dummy-path'))
-        assert errors
+        assert not success
         assert empty(out_stream)
         assert not empty(err_stream)
 
@@ -154,13 +158,13 @@ class TestIdentifierLookup:
         """Test case where everything should match."""
         out_stream = StringIO()
         err_stream = StringIO()
-        errors = run(input_file=data_stream,
+        success = run(input_file=data_stream,
                      identifiers=identifiers_map,
                      output_file=out_stream,
                      error_writer=StreamErrorWriter(stream=err_stream,
                                                     container_id='dummy',
                                                     fw_path='dummy-path'))
-        assert not errors
+        assert success
         assert empty(err_stream)
         assert not empty(out_stream)
         out_stream.seek(0)
@@ -178,12 +182,12 @@ class TestIdentifierLookup:
         """Test case where there is no matching identifier."""
         out_stream = StringIO()
         err_stream = StringIO()
-        errors = run(input_file=data_stream,
+        success = run(input_file=data_stream,
                      identifiers=mismatched_identifiers_map,
                      output_file=out_stream,
                      error_writer=StreamErrorWriter(stream=err_stream,
                                                     container_id='dummy',
                                                     fw_path='dummy-path'))
-        assert errors
+        assert not success
         assert empty(out_stream)
         assert not empty(err_stream)

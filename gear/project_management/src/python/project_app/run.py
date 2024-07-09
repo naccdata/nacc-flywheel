@@ -12,8 +12,6 @@ published - boolean indicating whether data is to be published
 import logging
 from typing import Any, List, Optional
 
-from centers.nacc_group import NACCGroup
-from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            GearEngine,
@@ -34,10 +32,10 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
                  client: ClientWrapper,
                  project_list: List[List[Any]],
                  new_only: bool = False):
-        self.__client = client
+        super().__init__(client=client)
+        self.__admin_id = admin_id
         self.__new_only = new_only
         self.__project_list = project_list
-        self.__admin_id = admin_id
 
     @classmethod
     def create(
@@ -81,15 +79,8 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
         Raises:
             AssertionError: If admin group ID or project list is not provided.
         """
-        proxy = self.__client.get_proxy()
-        try:
-            admin_group = NACCGroup.create(proxy=proxy,
-                                           group_id=self.__admin_id)
-        except FlywheelError as error:
-            raise GearExecutionError(str(error)) from error
-
-        run(proxy=proxy,
-            admin_group=admin_group,
+        run(proxy=self.proxy,
+            admin_group=self.admin_group(admin_id=self.__admin_id),
             project_list=self.__project_list,
             role_names=['curate', 'upload', 'gear-bot'],
             new_only=self.__new_only)

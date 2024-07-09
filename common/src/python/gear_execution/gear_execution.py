@@ -3,10 +3,11 @@
 import logging
 import sys
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
+from centers.nacc_group import NACCGroup
 from flywheel.client import Client
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.flywheel_proxy import FlywheelError, FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
 from fw_client import FWClient
 from inputs.parameter_store import ParameterError, ParameterStore
@@ -143,6 +144,16 @@ class InputFileWrapper:
         return self.file_input['object']['file_id']
 
     @property
+    def file_info(self) -> Dict[str, Any]:
+        """Returns the file object info (metadata)."""
+        return self.file_input['object']['info']
+
+    @property
+    def file_qc_info(self) -> Dict[str, Any]:
+        """Returns the QC object in the file info."""
+        return self.file_info.get('qc', {})
+
+    @property
     def filename(self) -> str:
         """Returns the file name."""
         return self.file_input['location']['name']
@@ -179,10 +190,48 @@ class InputFileWrapper:
 
         return InputFileWrapper(file_input=file_input)
 
+    def get_validation_objects(self) -> List[Dict[str, Any]]:
+        """Gets the QC validation objects from the file QC info."""
+        result = []
+        for gear_object in self.file_qc_info.values():
+            validation_object = gear_object.get('validation', {})
+            if validation_object:
+                result.append(validation_object)
+        return result
+
+    def has_qc_errors(self) -> bool:
+        """Check the QC validation objects in the file QC info for failures."""
+        validation_objects = self.get_validation_objects()
+        for validation_object in validation_objects:
+            if validation_object['state'] == 'FAIL':
+                return True
+        return False
+
 
 # pylint: disable=too-few-public-methods
 class GearExecutionEnvironment(ABC):
     """Base class for gear execution environments."""
+
+    def __init__(self, client: ClientWrapper) -> None:
+        self.__client = client
+
+    @property
+    def client(self) -> ClientWrapper:
+        """Returns the FW client for this environment."""
+        return self.__client
+
+    def admin_group(self, admin_id: str) -> NACCGroup:
+        """Returns the admin group for this environment."""
+        proxy = self.__client.get_proxy()
+        try:
+            return NACCGroup.create(proxy=proxy, group_id=admin_id)
+        except FlywheelError as error:
+            raise GearExecutionError(str(error)) from error
+
+    @property
+    def proxy(self) -> FlywheelProxy:
+        """Returns the Flywheel proxy object for this environment."""
+        return self.__client.get_proxy()
 
     @abstractmethod
     def run(self, context: GearToolkitContext) -> None:

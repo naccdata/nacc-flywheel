@@ -4,95 +4,108 @@ Inspired by
 https://github.com/cosmicpython/code/tree/chapter_02_repository_exercise
 """
 
+import abc
+import logging
+from abc import abstractmethod
 from typing import List, Optional, overload
 
-from identifiers.model import Identifier
-from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import Session
+from identifiers.model import (GUID_PATTERN, CenterIdentifiers, IdentifierList,
+                               IdentifierObject)
+from pydantic import Field
+
+log = logging.getLogger(__name__)
 
 
-class IdentifierRepository:
-    """Repository for Identifier records.
+class IdentifierQueryObject(CenterIdentifiers):
+    """Query model creating objects."""
+    guid: Optional[str] = Field(None, max_length=13, pattern=GUID_PATTERN)
 
-    Assumes the Identifier class is mapped to the identifier table.
 
-    Create repository within a resource block for a session to ensure that
-    session lifecycle is correct.
-    """
+class IdentifierRepository(abc.ABC):
+    """Abstract class for identifier repositories."""
 
-    def __init__(self, session: Session) -> None:
-        self.__session = session
+    @abstractmethod
+    def create(self, adcid: int, ptid: str,
+               guid: Optional[str]) -> IdentifierObject:
+        """Creates an Identifier in the repository.
 
+        Args:
+          adcid: the center id
+          ptid: the center participant ID
+          guid: the NIA GUID
+        """
+
+    @abstractmethod
+    def create_list(
+            self, identifiers: List[IdentifierQueryObject]) -> IdentifierList:
+        """Adds a list of identifiers to the repository.
+
+        Args:
+          identifiers: the list of Identifiers
+        """
+
+    @abstractmethod
     @overload
-    def get(self, nacc_id: int) -> Identifier:
+    def get(self, *, naccid: str) -> Optional[IdentifierObject]:
         ...
 
+    @abstractmethod
     @overload
-    def get(self, nacc_id: Optional[int], adc_id: int,
-            ptid: str) -> Identifier:
+    def get(self, *, guid: str) -> Optional[IdentifierObject]:
         ...
 
+    @abstractmethod
+    @overload
+    def get(self, *, adcid: int, ptid: str) -> Optional[IdentifierObject]:
+        ...
+
+    @abstractmethod
     def get(self,
-            nacc_id: Optional[int] = None,
-            adc_id: Optional[int] = None,
-            ptid: Optional[str] = None) -> Identifier:
+            *,
+            naccid: Optional[str] = None,
+            adcid: Optional[int] = None,
+            ptid: Optional[str] = None,
+            guid: Optional[str] = None) -> Optional[IdentifierObject]:
         """Returns Identifier object for the IDs given.
 
         Note: some valid arguments can be falsey.
         These are explicitly checked that they are not None.
 
         Args:
-          nacc_id: the (integer part of the) NACCID
-          adc_id: the center ID
+          naccid: the NACCID
+          adcid: the center ID
           ptid: the participant ID assigned by the center
+          guid: the NIA GUID
         Returns:
-          the identifier for the nacc_id or the adcid-ptid pair
+          the identifier for the naccid or the adcid-ptid pair
         Raises:
           NoMatchingIdentifier: if no Identifier record was found
           TypeError: if the arguments are nonsensical
         """
-        print(f"arguments: {nacc_id}, {adc_id}, {ptid}")
-        if nacc_id is not None:
-            try:
-                return self.__session.query(Identifier).filter_by(
-                    nacc_id=nacc_id).one()
-            except NoResultFound as error:
-                raise NoMatchingIdentifier("NACCID not found") from error
 
-        if adc_id is not None and ptid:
-            try:
-                return self.__session.query(Identifier).filter_by(
-                    adc_id=adc_id, patient_id=ptid).one()
-            except NoResultFound as error:
-                raise NoMatchingIdentifier(
-                    "ADCID-PTID pair not found") from error
-
-        raise TypeError("Invalid arguments")
-
+    @abstractmethod
     @overload
-    def list(self, adc_id: int) -> List[Identifier]:
+    def list(self, adcid: int) -> List[IdentifierObject]:
         ...
 
+    @abstractmethod
     @overload
-    def list(self) -> List[Identifier]:
+    def list(self) -> List[IdentifierObject]:
         ...
 
-    def list(self, adc_id: Optional[int] = None) -> List[Identifier]:
+    @abstractmethod
+    def list(self, adcid: Optional[int] = None) -> List[IdentifierObject]:
         """Returns the list of all identifiers in the repository.
 
         If an ADCID is given filters identifiers by the center.
 
         Args:
-          adc_id: the ADCID used for filtering
+          adcid: the ADCID used for filtering
 
         Returns:
           List of all identifiers in the repository
         """
-        if adc_id is None:
-            return self.__session.query(Identifier).all()
-
-        return self.__session.query(Identifier).filter_by(adc_id=adc_id).all()
 
 
-class NoMatchingIdentifier(Exception):
+class IdentifierRepositoryError(Exception):
     """Exception for case when identifier is not matched."""

@@ -73,7 +73,7 @@ def get_redcap_projects_metadata(
 
     try:
         center_group = CenterGroup.create_from_group_adaptor(
-            proxy=fw_proxy, adaptor=group_adaptor)
+            adaptor=group_adaptor)
         center_metadata = center_group.get_project_info()
     except CenterError as error:
         raise GearExecutionError(
@@ -114,7 +114,7 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
             parameter_store: AWS parameter store connection
             param_path: AWS parameter path for REDCap credentials
         """
-        self.__client = client
+        super().__init__(client=client)
         self.__param_store = parameter_store
         self.__param_path = param_path
 
@@ -135,7 +135,8 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
         assert parameter_store, "Parameter store expected"
 
         try:
-            param_path = get_config(gear_context=context, key='parameter_path')
+            param_path: str = get_config(gear_context=context,
+                                         key='parameter_path')
         except ConfigParseError as error:
             raise GearExecutionError(
                 f'Incomplete configuration: {error.message}') from error
@@ -160,8 +161,6 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
 
         assert context, 'Gear context required'
 
-        fw_proxy = self.__client.get_proxy()
-
         try:
             dest_container = context.get_destination_container()
         except ApiException as error:
@@ -170,16 +169,16 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
 
         group_id, project_id = get_destination_group_and_project(
             dest_container)
-        group = fw_proxy.find_group(group_id)
+        group = self.proxy.find_group(group_id)
         if not group:
             raise GearExecutionError(f'Cannot find Flywheel group {group_id}')
-        project = fw_proxy.get_project_by_id(project_id)
+        project = self.proxy.get_project_by_id(project_id)
         if not project:
             raise GearExecutionError(
                 f'Cannot find Flywheel project {project_id}')
 
         redcap_projects = get_redcap_projects_metadata(
-            fw_proxy=fw_proxy,
+            fw_proxy=self.proxy,
             group_adaptor=group,
             project_label=project.label)
 

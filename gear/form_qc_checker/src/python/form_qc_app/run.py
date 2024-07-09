@@ -33,7 +33,7 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
             redcap_con: REDCap project for NACC QC checks
             s3_client: boto3 client for QC rules S3 bucket
         """
-        self.__client = client
+        super().__init__(client=client)
         self.__file_input = file_input
         self.__redcap_con = redcap_con
         self.__s3_client = s3_client
@@ -96,7 +96,7 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
 
         assert context, 'Gear context required'
 
-        run(client_wrapper=self.__client,
+        run(client_wrapper=self.client,
             input_wrapper=self.__file_input,
             s3_client=self.__s3_client,
             gear_context=context,

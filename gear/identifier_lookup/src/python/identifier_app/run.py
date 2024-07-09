@@ -4,8 +4,6 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional
 
-from centers.nacc_group import NACCGroup
-from flywheel_adaptor.flywheel_proxy import FlywheelError
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            GearEngine,
@@ -13,18 +11,20 @@ from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
                                            GearExecutionError,
                                            InputFileWrapper)
 from identifier_app.main import run
-from identifiers.database import create_session
-from identifiers.identifiers_repository import IdentifierRepository
-from identifiers.model import Identifier
-from inputs.parameter_store import (ParameterError, ParameterStore,
-                                    RDSParameters)
+from identifiers.identifiers_lambda_repository import (
+    IdentifiersLambdaRepository, IdentifiersMode)
+from identifiers.identifiers_repository import (IdentifierRepository,
+                                                IdentifierRepositoryError)
+from identifiers.model import IdentifierObject
+from inputs.parameter_store import ParameterStore
+from lambdas.lambda_function import LambdaClient, create_lambda_client
 from outputs.errors import ListErrorWriter
 
 log = logging.getLogger(__name__)
 
 
-def get_identifiers(rds_parameters: RDSParameters,
-                    adcid: int) -> Dict[str, Identifier]:
+def get_identifiers(identifiers_repo: IdentifierRepository,
+                    adcid: int) -> Dict[str, IdentifierObject]:
     """Gets all of the Identifier objects from the identifier database using
     the RDSParameters.
 
@@ -35,16 +35,13 @@ def get_identifiers(rds_parameters: RDSParameters,
       the dictionary mapping from PTID to Identifier object
     """
     identifiers = {}
-    identifiers_session = create_session(rds_parameters)
-    with identifiers_session as session:
-        identifiers_repo = IdentifierRepository(session)
-        center_identifiers = identifiers_repo.list(adc_id=adcid)
-        if center_identifiers:
-            # pylint: disable=(not-an-iterable)
-            identifiers = {
-                identifier.ptid: identifier
-                for identifier in center_identifiers
-            }
+    center_identifiers = identifiers_repo.list(adcid=adcid)
+    if center_identifiers:
+        # pylint: disable=(not-an-iterable)
+        identifiers = {
+            identifier.ptid: identifier
+            for identifier in center_identifiers
+        }
 
     return identifiers
 
@@ -53,11 +50,12 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
     """The gear execution visitor for the identifier lookup app."""
 
     def __init__(self, client: ClientWrapper, admin_id: str,
-                 file_input: InputFileWrapper, rds_parameters: RDSParameters):
+                 file_input: InputFileWrapper,
+                 identifiers_mode: IdentifiersMode):
+        super().__init__(client=client)
         self.__admin_id = admin_id
-        self.__client = client
         self.__file_input = file_input
-        self.rds_parameters = rds_parameters
+        self.__identifiers_mode: IdentifiersMode = identifiers_mode
 
     @classmethod
     def create(
@@ -79,21 +77,13 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
 
-        rds_param_path = context.config.get('rds_parameter_path')
-        if not rds_param_path:
-            raise GearExecutionError('No value for rds_parameter_path')
-
-        try:
-            rds_parameters = parameter_store.get_rds_parameters(
-                param_path=rds_param_path)
-        except ParameterError as error:
-            raise GearExecutionError(f'Parameter error: {error}') from error
         admin_id = context.config.get("admin_group", "nacc")
+        mode = context.config.get("identifiers_mode", "dev")
 
         return IdentifierLookupVisitor(client=client,
                                        admin_id=admin_id,
                                        file_input=file_input,
-                                       rds_parameters=rds_parameters)
+                                       identifiers_mode=mode)
 
     def run(self, context: GearToolkitContext):
         """Runs the identifier lookup app.
@@ -104,21 +94,21 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
 
         assert context, 'Gear context required'
 
-        proxy = self.__client.get_proxy()
-        try:
-            admin_group = NACCGroup.create(proxy=proxy,
-                                           group_id=self.__admin_id)
-        except FlywheelError as error:
-            raise GearExecutionError(str(error)) from error
-
         file_id = self.__file_input.file_id
-        group_id = proxy.get_file_group(file_id)
-        adcid = admin_group.get_adcid(group_id)
-        if not adcid:
+        admin_group = self.admin_group(admin_id=self.__admin_id)
+        adcid = admin_group.get_adcid(self.proxy.get_file_group(file_id))
+        if adcid is None:
             raise GearExecutionError('Unable to determine center ID for file')
 
-        identifiers = get_identifiers(rds_parameters=self.rds_parameters,
-                                      adcid=adcid)
+        try:
+            identifiers = get_identifiers(
+                identifiers_repo=IdentifiersLambdaRepository(
+                    client=LambdaClient(client=create_lambda_client()),
+                    mode=self.__identifiers_mode),
+                adcid=adcid)
+        except IdentifierRepositoryError as error:
+            raise GearExecutionError(error) from error
+
         if not identifiers:
             raise GearExecutionError('Unable to load center participant IDs')
 
@@ -128,17 +118,18 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
             with context.open_output(f'{filename}.csv',
                                      mode='w',
                                      encoding='utf-8') as out_file:
-                error_writer = ListErrorWriter(container_id=file_id,
-                                               fw_path=proxy.get_lookup_path(
-                                                   proxy.get_file(file_id)))
-                errors = run(input_file=csv_file,
+                error_writer = ListErrorWriter(
+                    container_id=file_id,
+                    fw_path=self.proxy.get_lookup_path(
+                        self.proxy.get_file(file_id)))
+                success = run(input_file=csv_file,
                              identifiers=identifiers,
                              output_file=out_file,
                              error_writer=error_writer)
                 context.metadata.add_qc_result(
                     self.__file_input.file_input,
                     name="validation",
-                    state="FAIL" if errors else "PASS",
+                    state="PASS" if success else "FAIL",
                     data=error_writer.errors())
 
 

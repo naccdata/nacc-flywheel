@@ -1,21 +1,57 @@
 """Defines the Identifier data class."""
-from dataclasses import dataclass
+from typing import List, Optional
+
+from pydantic import BaseModel, Field, RootModel
+
+GUID_PATTERN = r"^NIH[a-zA-Z0-9]{10}$"
+NACCID_PATTERN = r"^NACC\d{6}$"
 
 
-@dataclass(unsafe_hash=True)
-class Identifier:
-    """Record for identifier correspondence."""
-    nacc_id: int
-    nacc_adc: int
-    adc_id: int
-    patient_id: str
+class IdentifierObject(BaseModel):
+    """Response model for identifiers.
 
-    @property
-    def naccid(self) -> str:
-        """The string NACCID for this identifier."""
-        return f"NACC{str(self.nacc_id).zfill(6)}"
+    Hides unconventional naming of fields and has NACCID as string.
+    """
+    adcid: int = Field(ge=0)
+    naccadc: int
+    ptid: str = Field(max_length=10)
+    naccid: str = Field(max_length=10, pattern=NACCID_PATTERN)
+    guid: Optional[str] = Field(None, max_length=13, pattern=GUID_PATTERN)
 
-    @property
-    def ptid(self) -> str:
-        """The center assigned participant ID."""
-        return self.patient_id
+
+class IdentifierList(RootModel):
+    """Class to allow serialization of lists of identifiers.
+
+    Otherwise, basically acts like a list.
+    """
+    root: List[IdentifierObject]
+
+    def __bool__(self) -> bool:
+        return bool(self.root)
+
+    def __iter__(self):
+        return iter(self.root)
+
+    def __getitem__(self, item) -> IdentifierObject:
+        return self.root[item]
+
+    def __len__(self):
+        return len(self.root)
+
+    def append(self, identifier: IdentifierObject) -> None:
+        """Appends the identifier to the list."""
+        self.root.append(identifier)
+
+
+class CenterIdentifiers(BaseModel):
+    """Model for ADCID, PTID pair."""
+    adcid: int = Field(ge=0)
+    ptid: str = Field(max_length=10)
+
+
+class ParticipantIdentifiers(BaseModel):
+    """Model for participant identifiers."""
+    center_identifiers: CenterIdentifiers
+    naccid: str = Field(max_length=10, pattern=NACCID_PATTERN)
+    aliases: Optional[List[str]]
+    guid: Optional[str]

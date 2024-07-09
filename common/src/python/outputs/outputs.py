@@ -1,7 +1,8 @@
 """Defines utilities for writing data files."""
 
+from abc import ABC, abstractmethod
 from csv import DictWriter
-from typing import Dict, List, Optional, TextIO
+from typing import Any, Dict, List, Optional, TextIO
 
 SimpleJSONObject = Dict[str, Optional[int | str | bool | float]]
 
@@ -35,3 +36,39 @@ class CSVWriter:
         """
         self.__write_header()
         self.__writer.writerow(json_object)
+
+
+# pylint: disable=(too-few-public-methods)
+class JSONWriter(ABC):
+    """Abstract base class for writing JSON objects."""
+
+    @abstractmethod
+    def write(self, dict_obj: Dict[str, Any]) -> None:
+        """Writes the dictionary object as JSON.
+
+        Args:
+          object: the dictionary object
+        """
+
+
+class ListJSONWriter(JSONWriter):
+    """Collects objects in a list."""
+
+    def __init__(self) -> None:
+        self.__objects: List[Dict[str, Any]] = []
+
+    def write(self, dict_obj: Dict[str, Any]) -> None:
+        """Captures object for writing to file.
+
+        Args:
+          object: a dictionary object
+        """
+        self.__objects.append(dict_obj)
+
+    def object_list(self) -> List[Dict[str, Any]]:
+        """Returns list of accumulated dict objects.
+
+        Returns:
+          List of dictionary objects
+        """
+        return self.__objects
