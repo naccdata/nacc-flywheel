@@ -32,17 +32,24 @@ class FlywheelDatastore(Datastore):
         self.__gid = group
         self.__pid = project
 
-        # Retrieve Group, Project containers from Flywheel
+        # Retrieve Project container from Flywheel
         try:
-            self.__group = self.__client.get_group(self.__gid)
             self.__project = self.__client.get_project(self.__pid)
         except ApiException as error:
             log.error('Failed to retrieve Flywheel container: %s', error)
 
-        #TODO - get legacy project label from params
+        # TODO - get legacy project label from params
         self.__legacy_project = self.get_legacy_project('retrospective-form')
 
     def get_legacy_project(self, project_lbl: str) -> Optional[Project]:
+        """Get the legacy form project for the given Flywheel ingest project.
+
+        Args:
+            project_lbl: Flywheel project label
+
+        Returns:
+            Optional[Project]: legacy Flywheel project or None
+        """
         try:
             return self.__client.lookup(f'{self.__gid}/{project_lbl}')
         except ApiException as error:
@@ -73,9 +80,8 @@ class FlywheelDatastore(Datastore):
             "file.parents.session", orderby_col
         ]
         builder = ViewBuilder(
-            label=
-            (f'Visits for {self.__gid}/{project.label}/{subject_lbl}/{module}'
-             ),
+            label=('Visits for '
+                   f'{self.__gid}/{project.label}/{subject_lbl}/{module}'),
             columns=columns,
             container='acquisition',
             filename='*.json',
@@ -133,7 +139,7 @@ class FlywheelDatastore(Datastore):
                                            orderby=orderby,
                                            cutoff_val=orderby_value)
 
-        #TODO get legacy module and orderby column
+        # TODO get legacy module and orderby column
         if dframe.empty and self.__legacy_project:
             self.get_previous_records(project=self.__legacy_project,
                                       subject_lbl=subject_lbl,

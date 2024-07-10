@@ -2,7 +2,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from form_qc_app.parser import Keys
 from outputs.errors import (CSVLocation, FileError, JSONLocation,
@@ -319,19 +319,25 @@ class ErrorComposer():
         self.__error_writer.write(qc_error)
 
     def __write_qc_error(self,
+                         *,
                          error_desc: ErrorDescription,
                          value: str,
-                         line_number: Optional[int] = None):
+                         line_number: Optional[int] = None,
+                         other_codes: Optional[str] = None):
         """Write QC error metadata when NACC QC check info available.
 
         Args:
             error_desc: QC check information for the error
             value: variable value
             line_number (optional): line # in CSV file if record is from CSV
+            other_codes (optional): any related error codes if available
         """
 
+        error_codes = error_desc.error_code
+        if other_codes:
+            error_codes += ',' + other_codes
         qc_error = self.__get_qc_error_object(error_type=error_desc.error_type,
-                                              error_code=error_desc.error_code,
+                                              error_code=error_codes,
                                               error_msg=error_desc.full_desc,
                                               value=value,
                                               field=error_desc.var_name,
@@ -357,11 +363,13 @@ class ErrorComposer():
         for error_code in error_info_map:
             error_obj = error_info_map[error_code]['error']
             field = error_info_map[error_code]['field']
+            other_codes = error_info_map[error_code]['other']
             if error_code in qc_check_info:
                 error_desc = qc_check_info[error_code]
-                self.__write_qc_error(error_desc,
-                                      str(error_obj.value),
-                                      line_number=line_number)
+                self.__write_qc_error(error_desc=error_desc,
+                                      value=str(error_obj.value),
+                                      line_number=line_number,
+                                      other_codes=other_codes)
             else:
                 log.warning('NACC QC check code %s not found in the errors DB',
                             error_code)
@@ -410,18 +418,40 @@ class ErrorComposer():
                 checks = code_shema[error.rule]
                 rule_index = error.info[0]
                 for check in checks:
-                    nacc_code = check[Keys.CODE]
                     code_index = check[Keys.INDEX]
-                    if rule_index == code_index:
-                        nacc_error_codes.append(nacc_code)
-                        err_info_map[nacc_code] = {
+                    if rule_index == code_index and check[Keys.CODE]:
+                        first_code, other_codes = self._split_nacc_error_codes(
+                            check[Keys.CODE])
+                        nacc_error_codes.append(first_code)
+                        err_info_map[first_code] = {
                             'error': error,
-                            'field': field
+                            'field': field,
+                            'other': other_codes
                         }
-            else:
-                nacc_code = code_shema[error.rule][Keys.CODE]
-                nacc_error_codes.append(nacc_code)
-                err_info_map[nacc_code] = {'error': error, 'field': field}
+            elif code_shema[error.rule][Keys.CODE]:
+                first_code, other_codes = self._split_nacc_error_codes(
+                    code_shema[error.rule][Keys.CODE])
+                nacc_error_codes.append(first_code)
+                err_info_map[first_code] = {
+                    'error': error,
+                    'field': field,
+                    'other': other_codes
+                }
+
+    # pylint: disable=(no-self-use)
+    def _split_nacc_error_codes(self, codes: str) -> Tuple[str, Optional[str]]:
+        """Splits the NACC error codes list.
+
+        Args:
+            codes: comma separated list of NACC error codes
+
+        Returns:
+            Tuple[str, Optional[str]]: first code, rest of the codes
+        """
+        codes_list = codes.split(",", 1)
+        other = codes_list[1] if len(codes_list) > 1 else None
+
+        return codes_list[0], other
 
     def compose_system_errors_metadata(self,
                                        line_number: Optional[int] = None):
