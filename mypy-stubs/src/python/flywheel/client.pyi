@@ -136,3 +136,7 @@ class Client:
 
     def get(self, id: str, **kwargs: Dict[str, Any]) -> ContainerOutput:
         ...
+
+    #return type is ResolverOutput
+    def lookup(self, path):
+        ...
