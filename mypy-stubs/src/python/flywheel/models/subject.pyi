@@ -41,3 +41,6 @@ class Subject:
     @property
     def sessions(self) -> Finder[Session]:
         ...
+
+    def reload(self) -> Subject:
+        ...

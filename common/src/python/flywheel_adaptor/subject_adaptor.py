@@ -17,6 +17,7 @@ class SubjectAdaptor:
     @property
     def info(self) -> Dict[str, Any]:
         """Returns the info object for this subject."""
+        self._subject = self._subject.reload()
         return self._subject.info
 
     @property
