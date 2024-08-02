@@ -3,7 +3,7 @@
 This is the development guide for the NACC flywheel gear extensions repo.
 
 This document deals with working with existing gears.
-To add new code see the [Adding a New Gear](adding-gears.md)
+To add new code see the [Adding a New Gear](#adding-a-new-gear)
 
 ## Contents
 - [Development Guide](#development-guide)
