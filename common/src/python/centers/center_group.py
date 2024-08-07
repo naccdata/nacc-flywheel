@@ -580,7 +580,7 @@ class REDCapFormProject(BaseModel):
 
     redcap_pid: int
     label: str
-    report_id: int
+    report_id: Optional[int]
 
 
 class FormIngestProjectMetadata(IngestProjectMetadata):
