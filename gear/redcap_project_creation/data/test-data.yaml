@@ -1,8 +1,8 @@
 ---
 study-id: test
 centers:
-  - center-id: sample-center
-  - center-id: example-center
+  - sample-center
+  - example-center
 projects:
   - project-label: ingest-form
     modules:
@@ -10,6 +10,7 @@ projects:
       title: UDSv4
     - label: ftldv4
       title: FTLDv4
+      template: ftld-alt
   - project-label: ingest-enrollment
     modules:
     - label: ptenrlv1

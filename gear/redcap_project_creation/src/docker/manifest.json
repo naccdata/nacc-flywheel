@@ -26,26 +26,23 @@
         "api-key": {
             "base": "api-key"
         },
-        "projects_file": {
-            "description": "YAML file with REDCap project details",
+        "input_file": {
+            "description": "YAML file with REDCap project details for the study",
             "base": "file",
             "type": {
                 "enum": [
                     "source code"
                 ]
-            }
-        },
-        "redcap_template": {
-            "description": "XML file to be used as REDCap project template",
-            "base": "file",
-            "type": {
-                "enum": [
-                    "source code"
-                ]
-            }
+            },
+            "optional": false
         }
     },
     "config": {
+        "apikey_path_prefix": {
+            "description": "The instance specific AWS parameter path prefix for apikey",
+            "type": "string",
+            "default": "/prod/flywheel/gearbot"
+        },
         "super_token_path": {
             "description": "AWS parameter path for REDCap super api token",
             "type": "string",
@@ -56,10 +53,20 @@
             "type": "string",
             "default": "/redcap/aws"
         },
-        "apikey_path_prefix": {
-            "description": "The instance specific AWS parameter path prefix for apikey",
+        "admin_project": {
+            "description": "Flywheel lookup string for the admin project",
             "type": "string",
-            "default": "/prod/flywheel/gearbot"
+            "default": "nacc/project-admin"
+        },
+        "use_xml_template": {
+            "description": "Use XML template to create REDCap projects",
+            "type": "boolean",
+            "default": true
+        },
+        "output_file_prefix": {
+            "description": "Prefix for output file name",
+            "type": "string",
+            "default": "redcap-projects"
         }
     },
     "command": "/bin/run"
