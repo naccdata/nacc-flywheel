@@ -712,7 +712,13 @@ class REDCapProjectInput(BaseModel):
 
 
 class REDCapModule(BaseModel):
-    """Information required to create a REDCap project for a module."""
+    """Information required to create a REDCap project for a module.
+
+    label: module name (udsv4, ftldv4, etc.)
+    title: REDCap project title (this will be prefixed with center name)
+    template[Optional]: XML template filename prefix (if different from label)
+
+    """
     model_config = ConfigDict(populate_by_name=True,
                               alias_generator=AliasGenerator(alias=kebab_case))
     label: str
