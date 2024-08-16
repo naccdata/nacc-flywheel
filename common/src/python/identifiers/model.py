@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, RootModel
 
-GUID_PATTERN = r"^NIH[a-zA-Z0-9]{10}$"
+GUID_PATTERN = r"^[a-zA-Z0-9]+$"
 NACCID_PATTERN = r"^NACC\d{6}$"
 
 
