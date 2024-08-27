@@ -95,10 +95,11 @@ class TestCSVReader:
         """Test empty input stream."""
         err_stream = StringIO()
         success = read_csv(input_file=empty_data_stream,
-                          error_writer=StreamErrorWriter(stream=err_stream,
-                                                         container_id='dummy',
-                                                         fw_path='dummy-path'),
-                          visitor=DummyVisitor())
+                           error_writer=StreamErrorWriter(
+                               stream=err_stream,
+                               container_id='dummy',
+                               fw_path='dummy-path'),
+                           visitor=DummyVisitor())
         assert not success
         assert not empty(err_stream)
         err_stream.seek(0)
@@ -111,10 +112,11 @@ class TestCSVReader:
         """Test stream without header row."""
         err_stream = StringIO()
         success = read_csv(input_file=no_header_stream,
-                          error_writer=StreamErrorWriter(stream=err_stream,
-                                                         container_id='dummy',
-                                                         fw_path='dummy-path'),
-                          visitor=DummyVisitor())
+                           error_writer=StreamErrorWriter(
+                               stream=err_stream,
+                               container_id='dummy',
+                               fw_path='dummy-path'),
+                           visitor=DummyVisitor())
         assert not success
         assert not empty(err_stream)
         err_stream.seek(0)

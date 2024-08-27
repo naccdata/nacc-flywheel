@@ -123,9 +123,9 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                     fw_path=self.proxy.get_lookup_path(
                         self.proxy.get_file(file_id)))
                 success = run(input_file=csv_file,
-                             identifiers=identifiers,
-                             output_file=out_file,
-                             error_writer=error_writer)
+                              identifiers=identifiers,
+                              output_file=out_file,
+                              error_writer=error_writer)
                 context.metadata.add_qc_result(
                     self.__file_input.file_input,
                     name="validation",

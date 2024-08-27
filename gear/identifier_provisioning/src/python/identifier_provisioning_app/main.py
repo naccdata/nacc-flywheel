@@ -389,13 +389,13 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
     enrollment_batch = EnrollmentBatch()
     try:
         success = read_csv(input_file=input_file,
-                             error_writer=error_writer,
-                             visitor=ProvisioningVisitor(
-                                 center_id=center_id,
-                                 batch=enrollment_batch,
-                                 repo=repo,
-                                 error_writer=error_writer,
-                                 transfer_info=transfer_info))
+                           error_writer=error_writer,
+                           visitor=ProvisioningVisitor(
+                               center_id=center_id,
+                               batch=enrollment_batch,
+                               repo=repo,
+                               error_writer=error_writer,
+                               transfer_info=transfer_info))
         if not success:
             log.error("no changes made due to errors in input file")
             return True
