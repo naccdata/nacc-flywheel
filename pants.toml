@@ -45,3 +45,6 @@ search_path = ["<PATH>", "<PYENV>"]
 
 [python-infer]
 use_rust_parser = true
+
+[update-build-files]
+formatter = "yapf"
