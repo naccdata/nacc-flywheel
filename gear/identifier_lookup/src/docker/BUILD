@@ -3,6 +3,8 @@ file(name="manifest", source="manifest.json")
 docker_image(
     name="identifier-lookup",
     source="Dockerfile",
-    dependencies=[":manifest", "gear/identifier_lookup/src/python/identifier_app:bin"],
+    dependencies=[
+        ":manifest", "gear/identifier_lookup/src/python/identifier_app:bin"
+    ],
     image_tags=["0.0.1", "latest"],
 )
