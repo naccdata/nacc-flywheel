@@ -5,6 +5,7 @@ docker_image(
     source="Dockerfile",
     dependencies=[
         ":manifest",
-        "gear/redcap_project_creation/src/python/redcap_project_creation_app:bin"
+        "gear/redcap_project_creation/src/python/redcap_project_creation_app:bin",
     ],
-    image_tags=["0.0.1", "latest"])
+    image_tags=["0.0.1", "latest"],
+)
