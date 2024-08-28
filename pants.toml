@@ -6,9 +6,7 @@ backend_packages = [
     "pants.backend.docker.lint.hadolint",
     "pants.backend.python",
     "pants.backend.python.lint.docformatter",
-    "pants.backend.python.lint.flake8",
-    "pants.backend.python.lint.isort",
-    "pants.backend.python.lint.pylint",
+    "pants.backend.experimental.python.lint.ruff.check",
     "pants.backend.python.lint.yapf",
     "pants.backend.python.typecheck.mypy",
     "pants.backend.docker",
@@ -35,7 +33,7 @@ root_patterns = [
 default_repository = "naccdata/{name}"
 
 [python]
-interpreter_constraints = ["==3.10.*"]
+interpreter_constraints = ["==3.11.*"]
 enable_resolves = true
 resolves = { python-default = "python-default.lock"}
 
