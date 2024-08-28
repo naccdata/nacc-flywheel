@@ -5,17 +5,31 @@ from typing import Any, Dict, Iterator, List, Optional, TextIO
 
 from enrollment.enrollment_project import EnrollmentProject, TransferInfo
 from enrollment.enrollment_transfer import (
-    CenterValidator, EnrollmentRecord, NewGUIDRowValidator,
-    NewPTIDRowValidator, TransferRecord, guid_available, has_known_naccid,
-    is_new_enrollment, previously_enrolled)
+    CenterValidator,
+    EnrollmentRecord,
+    NewGUIDRowValidator,
+    NewPTIDRowValidator,
+    TransferRecord,
+    guid_available,
+    has_known_naccid,
+    is_new_enrollment,
+    previously_enrolled,
+)
 from gear_execution.gear_execution import GearExecutionError
-from identifiers.identifiers_repository import (IdentifierRepository,
-                                                IdentifierRepositoryError)
+from identifiers.identifiers_repository import (
+    IdentifierRepository,
+    IdentifierRepositoryError,
+)
 from identifiers.model import CenterIdentifiers, IdentifierObject
 from inputs.csv_reader import AggregateRowValidator, CSVVisitor, read_csv
-from outputs.errors import (CSVLocation, ErrorWriter, FileError,
-                            empty_field_error, identifier_error,
-                            missing_header_error)
+from outputs.errors import (
+    CSVLocation,
+    ErrorWriter,
+    FileError,
+    empty_field_error,
+    identifier_error,
+    missing_header_error,
+)
 
 log = logging.getLogger(__name__)
 
@@ -109,7 +123,8 @@ class TransferVisitor(CSVVisitor):
           row: the dictionary for the input row
           line_num: the line number of the row
         Returns:
-          True if the rows has no expected NACCID, or the NACCID in the row exists. False otherwise.
+          True if the rows has no expected NACCID, or the NACCID in the row
+          exists. False otherwise.
         """
         if not has_known_naccid(row):
             return True
@@ -167,7 +182,9 @@ class TransferVisitor(CSVVisitor):
           row: the dictionary for the input row
           line_num: the line number of the row
         Returns:
-          True if either the row does not have an expected GUID, or the GUID exists and is for same participant as other identifiers. False otherwise.
+          True if either the row does not have an expected GUID, or the GUID
+          exists and is for same participant as other identifiers.
+          False otherwise.
         """
         if not guid_available(row):
             return True
@@ -197,7 +214,9 @@ class TransferVisitor(CSVVisitor):
           row: the dictionary for the input row
           line_num: the line number of the row
         Returns:
-          True if either the row does not indicate a previous enrollment, or the provided identifiers correspond to the same participant as other identifiers. False otherwise.
+          True if either the row does not indicate a previous enrollment, or
+          the provided identifiers correspond to the same participant as other
+          identifiers. False otherwise.
         """
         if not previously_enrolled(row):
             return True
@@ -362,7 +381,7 @@ class ProvisioningVisitor(CSVVisitor):
           row: the dictionary for the CSV row (DictReader)
           line_num: the line number of the row
         Returns:
-          True if the row represents a valid enrollment or transfer. False, otherwise.
+          True if the row is a valid enrollment or transfer.  False, otherwise.
         """
         if not self.__validator.check(row=row, line_number=line_num):
             return False

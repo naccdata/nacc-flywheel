@@ -5,16 +5,23 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment,
-                                           GearExecutionError,
-                                           InputFileWrapper)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    GearBotClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    GearExecutionError,
+    InputFileWrapper,
+)
 from identifier_app.main import run
 from identifiers.identifiers_lambda_repository import (
-    IdentifiersLambdaRepository, IdentifiersMode)
-from identifiers.identifiers_repository import (IdentifierRepository,
-                                                IdentifierRepositoryError)
+    IdentifiersLambdaRepository,
+    IdentifiersMode,
+)
+from identifiers.identifiers_repository import (
+    IdentifierRepository,
+    IdentifierRepositoryError,
+)
 from identifiers.model import IdentifierObject
 from inputs.parameter_store import ParameterStore
 from lambdas.lambda_function import LambdaClient, create_lambda_client
