@@ -4,12 +4,16 @@ from typing import Optional
 
 from flywheel_gear_toolkit import GearToolkitContext
 from fw_client import FWClient
-from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    ContextClient,
+    GearEngine,
+    GearExecutionEnvironment,
+)
 from inputs.context_parser import get_api_key
 from inputs.parameter_store import ParameterStore
 from inputs.templates import get_template_projects
+
 from template_app.main import run
 
 log = logging.getLogger(__name__)
