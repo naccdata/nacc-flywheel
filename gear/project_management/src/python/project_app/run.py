@@ -13,12 +13,16 @@ import logging
 from typing import Any, List, Optional
 
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment,
-                                           GearExecutionError)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    GearBotClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    GearExecutionError,
+)
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists
+
 from project_app.main import run
 
 log = logging.getLogger(__name__)

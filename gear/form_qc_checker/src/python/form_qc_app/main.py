@@ -15,18 +15,27 @@ from typing import Any, Dict, List, Mapping, Optional
 
 from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    GearExecutionError,
+    InputFileWrapper,
+)
+from outputs.errors import (
+    ListErrorWriter,
+    empty_field_error,
+    empty_file_error,
+    malformed_file_error,
+    missing_header_error,
+    unknown_field_error,
+)
+from redcap.redcap_connection import REDCapReportConnection
+from s3.s3_client import S3BucketReader
+from validator.quality_check import QualityCheck, QualityCheckException
+
 from form_qc_app.csv_visitor import FormQCCSVVisitor, read_first_data_row
 from form_qc_app.error_info import ErrorComposer, ErrorStore, REDCapErrorStore
 from form_qc_app.flywheel_datastore import FlywheelDatastore
 from form_qc_app.parser import Keys, Parser, ParserException
-from gear_execution.gear_execution import (ClientWrapper, GearExecutionError,
-                                           InputFileWrapper)
-from outputs.errors import (ListErrorWriter, empty_field_error,
-                            empty_file_error, malformed_file_error,
-                            missing_header_error, unknown_field_error)
-from redcap.redcap_connection import REDCapReportConnection
-from s3.s3_client import S3BucketReader
-from validator.quality_check import QualityCheck, QualityCheckException
 
 log = logging.getLogger(__name__)
 

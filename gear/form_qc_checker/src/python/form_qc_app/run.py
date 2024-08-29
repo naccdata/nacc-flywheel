@@ -5,16 +5,20 @@ import sys
 from typing import Optional
 
 from flywheel_gear_toolkit import GearToolkitContext
-from form_qc_app.main import run
-from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment,
-                                           GearExecutionError,
-                                           InputFileWrapper)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    GearBotClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    GearExecutionError,
+    InputFileWrapper,
+)
 from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import ParameterError, ParameterStore
 from redcap.redcap_connection import REDCapReportConnection
 from s3.s3_client import S3BucketReader
+
+from form_qc_app.main import run
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)

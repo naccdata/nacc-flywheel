@@ -114,11 +114,11 @@ class TestIdentifierLookup:
         out_stream = StringIO()
         err_stream = StringIO()
         success = run(input_file=empty_data_stream,
-                     identifiers=identifiers_map,
-                     output_file=out_stream,
-                     error_writer=StreamErrorWriter(stream=err_stream,
-                                                    container_id='dummy',
-                                                    fw_path='dummy-path'))
+                      identifiers=identifiers_map,
+                      output_file=out_stream,
+                      error_writer=StreamErrorWriter(stream=err_stream,
+                                                     container_id='dummy',
+                                                     fw_path='dummy-path'))
         assert not success
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -129,11 +129,11 @@ class TestIdentifierLookup:
         out_stream = StringIO()
         err_stream = StringIO()
         success = run(input_file=no_header_stream,
-                     identifiers=identifiers_map,
-                     output_file=out_stream,
-                     error_writer=StreamErrorWriter(stream=err_stream,
-                                                    container_id='dummy',
-                                                    fw_path='dummy-path'))
+                      identifiers=identifiers_map,
+                      output_file=out_stream,
+                      error_writer=StreamErrorWriter(stream=err_stream,
+                                                     container_id='dummy',
+                                                     fw_path='dummy-path'))
         assert not success
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -144,11 +144,11 @@ class TestIdentifierLookup:
         out_stream = StringIO()
         err_stream = StringIO()
         success = run(input_file=no_ids_stream,
-                     identifiers=identifiers_map,
-                     output_file=out_stream,
-                     error_writer=StreamErrorWriter(stream=err_stream,
-                                                    container_id='dummy',
-                                                    fw_path='dummy-path'))
+                      identifiers=identifiers_map,
+                      output_file=out_stream,
+                      error_writer=StreamErrorWriter(stream=err_stream,
+                                                     container_id='dummy',
+                                                     fw_path='dummy-path'))
         assert not success
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -159,11 +159,11 @@ class TestIdentifierLookup:
         out_stream = StringIO()
         err_stream = StringIO()
         success = run(input_file=data_stream,
-                     identifiers=identifiers_map,
-                     output_file=out_stream,
-                     error_writer=StreamErrorWriter(stream=err_stream,
-                                                    container_id='dummy',
-                                                    fw_path='dummy-path'))
+                      identifiers=identifiers_map,
+                      output_file=out_stream,
+                      error_writer=StreamErrorWriter(stream=err_stream,
+                                                     container_id='dummy',
+                                                     fw_path='dummy-path'))
         assert success
         assert empty(err_stream)
         assert not empty(out_stream)
@@ -183,11 +183,11 @@ class TestIdentifierLookup:
         out_stream = StringIO()
         err_stream = StringIO()
         success = run(input_file=data_stream,
-                     identifiers=mismatched_identifiers_map,
-                     output_file=out_stream,
-                     error_writer=StreamErrorWriter(stream=err_stream,
-                                                    container_id='dummy',
-                                                    fw_path='dummy-path'))
+                      identifiers=mismatched_identifiers_map,
+                      output_file=out_stream,
+                      error_writer=StreamErrorWriter(stream=err_stream,
+                                                     container_id='dummy',
+                                                     fw_path='dummy-path'))
         assert not success
         assert empty(out_stream)
         assert not empty(err_stream)

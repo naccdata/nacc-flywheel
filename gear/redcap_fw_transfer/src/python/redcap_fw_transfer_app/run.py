@@ -4,18 +4,26 @@ import logging
 import sys
 from typing import Any, Dict, Optional, Tuple
 
-from centers.center_group import (CenterError, CenterGroup,
-                                  FormIngestProjectMetadata, REDCapFormProject)
+from centers.center_group import (
+    CenterError,
+    CenterGroup,
+    FormIngestProjectMetadata,
+    REDCapFormProject,
+)
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment,
-                                           GearExecutionError)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    GearBotClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    GearExecutionError,
+)
 from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import ParameterError, ParameterStore
 from redcap.redcap_connection import REDCapReportConnection
+
 from redcap_fw_transfer_app.main import run
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
