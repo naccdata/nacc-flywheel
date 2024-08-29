@@ -9,9 +9,14 @@ import logging
 from abc import abstractmethod
 from typing import List, Optional, overload
 
-from identifiers.model import (GUID_PATTERN, CenterIdentifiers, IdentifierList,
-                               IdentifierObject)
 from pydantic import Field
+
+from identifiers.model import (
+    GUID_PATTERN,
+    CenterIdentifiers,
+    IdentifierList,
+    IdentifierObject,
+)
 
 log = logging.getLogger(__name__)
 

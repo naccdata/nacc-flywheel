@@ -8,9 +8,10 @@ from typing import Dict, Optional
 from flywheel import Client, Project
 from flywheel.rest import ApiException
 from flywheel.view_builder import ViewBuilder
-from form_qc_app.parser import Keys
 from pandas import DataFrame
 from validator.datastore import Datastore
+
+from form_qc_app.parser import Keys
 
 log = logging.getLogger(__name__)
 

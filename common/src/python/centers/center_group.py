@@ -8,17 +8,17 @@ import re
 from typing import Dict, List, Optional
 
 import flywheel
-from centers.center_adaptor import CenterAdaptor
 from flywheel.models.group import Group
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.user import User
-from flywheel_adaptor.flywheel_proxy import (FlywheelProxy, GroupAdaptor,
-                                             ProjectAdaptor)
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor, ProjectAdaptor
 from projects.study import Center, Study
 from projects.template_project import TemplateProject
 from pydantic import AliasGenerator, BaseModel, ConfigDict, ValidationError
 from users.authorizations import AuthMap
 from users.nacc_directory import Authorizations
+
+from centers.center_adaptor import CenterAdaptor
 
 log = logging.getLogger(__name__)
 
@@ -599,7 +599,7 @@ class REDCapFormProject(BaseModel):
 
     redcap_pid: int
     label: str
-    report_id: int
+    report_id: Optional[int] = None
 
 
 class FormIngestProjectMetadata(IngestProjectMetadata):
@@ -728,3 +728,34 @@ class REDCapProjectInput(BaseModel):
     study_id: str
     project_label: str
     projects: List[REDCapFormProject]
+
+
+class REDCapModule(BaseModel):
+    """Information required to create a REDCap project for a module.
+
+    label: module name (udsv4, ftldv4, etc.)
+    title: REDCap project title (this will be prefixed with center name)
+    template[Optional]: XML template filename prefix (if different from label)
+    """
+    model_config = ConfigDict(populate_by_name=True,
+                              alias_generator=AliasGenerator(alias=kebab_case))
+    label: str
+    title: str
+    template: Optional[str] = None
+
+
+class REDCapProjectMapping(BaseModel):
+    """List of REDCap projects associated with a Flywheel project."""
+    model_config = ConfigDict(populate_by_name=True,
+                              alias_generator=AliasGenerator(alias=kebab_case))
+    project_label: str
+    modules: List[REDCapModule]
+
+
+class StudyREDCapMetadata(BaseModel):
+    """REDCap project info associated with a study."""
+    model_config = ConfigDict(populate_by_name=True,
+                              alias_generator=AliasGenerator(alias=kebab_case))
+    study_id: str
+    centers: List[str]
+    projects: List[REDCapProjectMapping]
