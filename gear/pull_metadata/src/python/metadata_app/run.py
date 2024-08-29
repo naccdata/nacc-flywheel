@@ -10,8 +10,9 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import ParameterError, ParameterStore
-from metadata_app.main import run
 from s3.s3_client import S3BucketReader
+
+from metadata_app.main import run
 
 log = logging.getLogger(__name__)
 

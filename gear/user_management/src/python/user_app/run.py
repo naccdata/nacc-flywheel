@@ -5,16 +5,19 @@ from io import StringIO
 from typing import Any, List, Optional
 
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment,
-                                           GearExecutionError)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    GearBotClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    GearExecutionError,
+)
 from inputs.parameter_store import ParameterStore
-from inputs.yaml import (YAMLReadError, get_object_lists_from_stream,
-                         load_from_stream)
+from inputs.yaml import YAMLReadError, get_object_lists_from_stream, load_from_stream
 from pydantic import ValidationError
-from user_app.main import run
 from users.authorizations import AuthMap
+
+from user_app.main import run
 
 log = logging.getLogger(__name__)
 

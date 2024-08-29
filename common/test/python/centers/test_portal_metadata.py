@@ -1,11 +1,15 @@
 """Tests for serialization of portal metadata managed by CenterGroup."""
 
 import pytest
-from centers.center_group import (CenterProjectMetadata,
-                                  FormIngestProjectMetadata,
-                                  IngestProjectMetadata, ProjectMetadata,
-                                  REDCapFormProject, REDCapProjectInput,
-                                  StudyMetadata)
+from centers.center_group import (
+    CenterProjectMetadata,
+    FormIngestProjectMetadata,
+    IngestProjectMetadata,
+    ProjectMetadata,
+    REDCapFormProject,
+    REDCapProjectInput,
+    StudyMetadata,
+)
 from pydantic import ValidationError
 
 
