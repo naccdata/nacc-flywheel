@@ -5,13 +5,17 @@ from typing import List, Optional
 
 from centers.center_group import REDCapProjectInput
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment,
-                                           GearExecutionError)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    ContextClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    GearExecutionError,
+)
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, load_from_stream
 from pydantic import ValidationError
+
 from redcap_info_app.main import run
 
 log = logging.getLogger(__name__)

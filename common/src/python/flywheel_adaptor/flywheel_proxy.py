@@ -4,8 +4,14 @@ import logging
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 import flywheel
-from flywheel import (Client, ContainerIdViewInput, DataView, GearRule,
-                      GearRuleInput, ViewIdOutput)
+from flywheel import (
+    Client,
+    ContainerIdViewInput,
+    DataView,
+    GearRule,
+    GearRuleInput,
+    ViewIdOutput,
+)
 from flywheel.models.access_permission import AccessPermission
 from flywheel.models.file_entry import FileEntry
 from flywheel.models.group_role import GroupRole
@@ -14,9 +20,10 @@ from flywheel.models.role_output import RoleOutput
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
 from flywheel.models.user import User
 from flywheel.rest import ApiException
-from flywheel_adaptor.subject_adaptor import SubjectAdaptor
 from fw_client import FWClient
 from fw_utils import AttrDict
+
+from flywheel_adaptor.subject_adaptor import SubjectAdaptor
 
 log = logging.getLogger(__name__)
 

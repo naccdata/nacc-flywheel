@@ -3,8 +3,9 @@ from abc import ABC, abstractmethod
 from datetime import datetime as dt
 from typing import Any, Dict, List, Literal, Optional, TextIO
 
-from outputs.outputs import CSVWriter
 from pydantic import BaseModel, ConfigDict, Field
+
+from outputs.outputs import CSVWriter
 
 
 class CSVLocation(BaseModel):

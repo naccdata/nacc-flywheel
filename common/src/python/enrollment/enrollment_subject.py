@@ -3,12 +3,16 @@
 from datetime import datetime
 from typing import Optional
 
-from enrollment.enrollment_transfer import (Demographics, EnrollmentError,
-                                            EnrollmentRecord)
 from flywheel.file_spec import FileSpec
 from flywheel_adaptor.subject_adaptor import SubjectAdaptor
 from identifiers.model import GUID_PATTERN, NACCID_PATTERN
 from pydantic import BaseModel, Field, ValidationError
+
+from enrollment.enrollment_transfer import (
+    Demographics,
+    EnrollmentError,
+    EnrollmentRecord,
+)
 
 
 class IdentifierInfoRecord(BaseModel):

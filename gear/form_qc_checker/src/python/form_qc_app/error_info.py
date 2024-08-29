@@ -4,12 +4,17 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple
 
-from form_qc_app.parser import Keys
-from outputs.errors import (CSVLocation, FileError, JSONLocation,
-                            ListErrorWriter, system_error)
+from outputs.errors import (
+    CSVLocation,
+    FileError,
+    JSONLocation,
+    ListErrorWriter,
+    system_error,
+)
 from pydantic import BaseModel, ValidationError
-from redcap.redcap_connection import (REDCapConnectionError,
-                                      REDCapReportConnection)
+from redcap.redcap_connection import REDCapConnectionError, REDCapReportConnection
+
+from form_qc_app.parser import Keys
 
 log = logging.getLogger(__name__)
 
