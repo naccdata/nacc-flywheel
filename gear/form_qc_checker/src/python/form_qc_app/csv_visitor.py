@@ -4,9 +4,14 @@ from csv import Dialect, DictReader, Error, Sniffer
 from typing import Any, Dict, List, Optional, TextIO
 
 from inputs.csv_reader import CSVVisitor
-from outputs.errors import (ErrorWriter, empty_field_error, empty_file_error,
-                            malformed_file_error, missing_field_error,
-                            missing_header_error)
+from outputs.errors import (
+    ErrorWriter,
+    empty_field_error,
+    empty_file_error,
+    malformed_file_error,
+    missing_field_error,
+    missing_header_error,
+)
 
 
 class FormQCCSVVisitor(CSVVisitor):

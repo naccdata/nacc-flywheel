@@ -6,17 +6,23 @@ from typing import Optional
 
 from enrollment.enrollment_project import EnrollmentProject
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment,
-                                           GearExecutionError,
-                                           InputFileWrapper)
-from identifier_provisioning_app.main import run
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    GearBotClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    GearExecutionError,
+    InputFileWrapper,
+)
 from identifiers.identifiers_lambda_repository import (
-    IdentifiersLambdaRepository, IdentifiersMode)
+    IdentifiersLambdaRepository,
+    IdentifiersMode,
+)
 from inputs.parameter_store import ParameterStore
 from lambdas.lambda_function import LambdaClient, create_lambda_client
 from outputs.errors import ListErrorWriter
+
+from identifier_provisioning_app.main import run
 
 log = logging.getLogger(__name__)
 

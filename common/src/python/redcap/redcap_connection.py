@@ -52,7 +52,7 @@ class REDCapSuperUserConnection:
 
         Args:
             title: Title of the REDCap project
-            purpose (optional): Project purpose, defaults to 4(Operational Support).
+            purpose (optional): Project purpose, default 4 (Operational Support)
             project_xml (optional): REDCap XML template, defaults to None.
 
         Returns:

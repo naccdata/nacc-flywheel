@@ -11,8 +11,7 @@ from flywheel import Project
 from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import GearExecutionError
-from redcap.redcap_connection import (REDCapConnectionError,
-                                      REDCapReportConnection)
+from redcap.redcap_connection import REDCapConnectionError, REDCapReportConnection
 
 log = logging.getLogger(__name__)
 

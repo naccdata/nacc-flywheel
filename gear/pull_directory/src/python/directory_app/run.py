@@ -3,16 +3,19 @@ user management gear."""
 import logging
 from typing import Dict, List, Optional
 
-from directory_app.main import run
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment,
-                                           GearExecutionError)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    ContextClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    GearExecutionError,
+)
 from inputs.parameter_store import ParameterError, ParameterStore
-from redcap.redcap_connection import (REDCapConnectionError,
-                                      REDCapReportConnection)
+from redcap.redcap_connection import REDCapConnectionError, REDCapReportConnection
 from yaml.representer import RepresenterError
+
+from directory_app.main import run
 
 log = logging.getLogger(__name__)
 

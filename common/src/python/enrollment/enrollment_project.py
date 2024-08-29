@@ -4,11 +4,12 @@ center."""
 import logging
 from typing import List
 
-from enrollment.enrollment_subject import EnrollmentSubject
-from enrollment.enrollment_transfer import EnrollmentError, TransferRecord
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from pydantic import BaseModel, ValidationError
 from typing_extensions import override
+
+from enrollment.enrollment_subject import EnrollmentSubject
+from enrollment.enrollment_transfer import EnrollmentError, TransferRecord
 
 log = logging.getLogger(__name__)
 
