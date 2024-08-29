@@ -25,6 +25,15 @@
     "inputs": {
         "api-key": {
             "base": "api-key"
+        },
+        "input_file": {
+            "description": "YAML file with list of new/updated visits for the module/participant",
+            "base": "file",
+            "type": {
+                "enum": [
+                    "source code"
+                ]
+            }
         }
     },
     "config": {

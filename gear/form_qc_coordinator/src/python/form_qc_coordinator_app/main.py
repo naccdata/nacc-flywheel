@@ -5,7 +5,7 @@ import logging
 from flywheel_gear_toolkit import GearToolkitContext
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.subject_adaptor import SubjectAdaptor
-from gear_execution.gear_execution import ClientWrapper, GearExecutionError
+from gear_execution.gear_execution import ClientWrapper
 
 log = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ def run(*,
     Args:
         gear_context: Flywheel gear context
         client_wrapper: Flywheel SDK client wrapper
+        input_wrapper: Gear input file wrapper
         proxy: Flywheel proxy for the client
         subject: Flywheel subject to run the QC checks
         module: module to be evaluated (eg. UDSv4, LBDv3, ...)

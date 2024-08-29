@@ -16,6 +16,21 @@ from inputs.parameter_store import ParameterStore
 log = logging.getLogger(__name__)
 
 
+def validate_input_data(input_file_path: str):
+    """Validates the input file.
+
+    Args:
+        input_file_path: Gear input file path
+
+    Returns:
+        Optional[StudyREDCapMetadata]: Info on REDCap projects to be created
+    """
+
+    study_info = {}
+
+    return study_info
+
+
 class FormQCCoordinator(GearExecutionEnvironment):
     """The gear execution visitor for the form-qc-coordinator."""
 
@@ -79,9 +94,18 @@ class FormQCCoordinator(GearExecutionEnvironment):
 
         if dest_container.container_type != 'subject':
             raise GearExecutionError(
-                'This gear only applies to subject level - '
+                'This gear must be executed at subject level - '
                 'invalid gear destination type '
                 f'{dest_container.container_type}')
+
+        input_file_path = context.get_input_path('input_file')
+        if not input_file_path:
+            raise GearExecutionError('No input file provided')
+
+        study_info = validate_input_data(input_file_path)
+        if not study_info:
+            raise GearExecutionError(
+                f'Error(s) in reading input file - {input_file_path}')
 
         run(gear_context=context,
             client_wrapper=self.client,
