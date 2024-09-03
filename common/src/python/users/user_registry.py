@@ -72,12 +72,7 @@ class UserRegistry:
             raise RegistryError(f"API call failed: {error}")
 
         coperson_dict = response.to_dict()
-        result = []
-        for person_message in coperson_dict.values():
-            coperson = CoPersonMessage.from_dict(person_message)
-            if coperson:
-                result.append(coperson)
-        return result
+        return UserRegistry.get_person_objects(coperson_dict)
 
     def list(self, email: str) -> List[CoPersonMessage]:
         """Returns the list of CoPersonMessage objects with the email.
@@ -105,16 +100,38 @@ class UserRegistry:
             read_length = len(coperson_dict.keys())
             page_index += 1
 
-            for person_message in coperson_dict.values():
-                coperson = CoPersonMessage.from_dict(person_message)
-                if not coperson:
-                    continue
+            person_list = UserRegistry.get_person_objects(coperson_dict)
+            for coperson in person_list:
                 if not coperson.email_address:
                     continue
 
-                for address in coperson.email_address:
-                    if email == address.mail:
-                        result.append(coperson)
+                email_addresses = [
+                    address for address in coperson.email_address
+                    if email == address.mail
+                ]
+                if not email_addresses:
+                    continue
+
+                result.append(coperson)
+
+        return result
+
+    @classmethod
+    def get_person_objects(cls, coperson_dict) -> List[CoPersonMessage]:
+        """Extracts the CoPersonMessage objects from the response dict.
+        
+        Args:
+          coperson_dict: the dictionary response from get_co_person
+        Returns:
+          the list of CoPersonMessage objects in the dict
+        """
+        result = []
+        for person_message in coperson_dict.values():
+            coperson = CoPersonMessage.from_dict(person_message)
+            if not coperson:
+                continue
+
+            result.append(coperson)
 
         return result
 
