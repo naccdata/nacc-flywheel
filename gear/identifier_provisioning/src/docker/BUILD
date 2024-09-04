@@ -5,6 +5,7 @@ docker_image(
     source="Dockerfile",
     dependencies=[
         ":manifest",
-        "gear/identifier_provisioning/src/python/identifier_provisioning_app:bin"
+        "gear/identifier_provisioning/src/python/identifier_provisioning_app:bin",
     ],
-    image_tags=["0.1.0", "latest"])
+    image_tags=["0.1.1", "latest"],
+)
