@@ -3,8 +3,12 @@ from typing import List
 
 from coreapi_client.api.default_api import DefaultApi
 from coreapi_client.exceptions import ApiException
+from coreapi_client.models.co_person import CoPerson
 from coreapi_client.models.co_person_message import CoPersonMessage
+from coreapi_client.models.co_person_role import CoPersonRole
+from coreapi_client.models.email_address import EmailAddress
 from coreapi_client.models.identifier import Identifier
+from coreapi_client.models.name import Name
 
 
 class UserRegistry:
@@ -26,29 +30,19 @@ class UserRegistry:
         Returns:
           a list of CoManage Identifer objects
         """
-        message = CoPersonMessage.from_dict({
-            "CoPerson": {
-                "co_id": str(self.__coid),
-                "status": "A"
-            },
-            "EmailAddress": [{
-                "mail": email,
-                "type": "official",
-                "verified": True
-            }],
-            "CoPersonRole": [{
-                "cou_id": None,
-                "affiliation": "member",
-                "status": "A"
-            }],
-            "Name": [{
-                "given": firstname,
-                "family": lastname,
-                "type": "official",
-                "primary_name": True
-            }]
-        })
-        assert message, "coperson creation failed"
+        coperson = CoPerson(co_id=str(self.__coid), status="A")
+        email_address = EmailAddress(mail=email,
+                                     type="official",
+                                     verified=True)
+        role = CoPersonRole(cou_id=None, affiliation="member", status="A")
+        name = Name(given=firstname,
+                    family=lastname,
+                    type="official",
+                    primary_name=True)
+        message = CoPersonMessage(CoPerson=coperson,
+                                  EmailAddress=[email_address],
+                                  CoPersonRole=[role],
+                                  Name=[name])
 
         try:
             return self.__api_instance.add_co_person(coid=self.__coid,
@@ -119,7 +113,7 @@ class UserRegistry:
     @classmethod
     def get_person_objects(cls, coperson_dict) -> List[CoPersonMessage]:
         """Extracts the CoPersonMessage objects from the response dict.
-        
+
         Args:
           coperson_dict: the dictionary response from get_co_person
         Returns:
