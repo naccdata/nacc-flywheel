@@ -1,7 +1,7 @@
 {
     "name": "identifier-provisioning",
     "label": "Identifier Provisioning",
-    "description": "Gear for provisioning NACCIDs from PTENRL forms",
+    "description": "Gear for provisioning NACCIDs from Enroll forms",
     "version": "0.1.1",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
@@ -27,7 +27,7 @@
             "base": "api-key"
         },
         "input_file": {
-            "description": "The CSV input file with data from the PTENRL form",
+            "description": "The CSV input file with data from the Enro form",
             "base": "file",
             "type": {
                 "enum": [

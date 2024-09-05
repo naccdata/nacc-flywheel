@@ -42,7 +42,7 @@ class Demographics(BaseModel):
         """Constructs a Demographics object from row of enrollment/transfer
         form.
 
-        Assumes form is PTENRLv1.
+        Assumes form is enrollv1.
 
         Args:
           row: the dictionary for the row of form.
