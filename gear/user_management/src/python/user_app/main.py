@@ -136,7 +136,7 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
 
         claimed: List[CoPersonMessage] = []
         if claimed:
-            # TODO: what to do if more than one claimed person for email?
+            # TODO: what if there is more than one claimed person for an email?
 
 
             # TODO: extract registry ID from claimed
@@ -158,7 +158,7 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
                            center_id=user_entry.adcid,
                            authorizations=user_entry.authorizations,
                            authorization_map=authorization_map)
-            break
+            continue
 
         # not claimed
         # TODO: check time since creation is an even multiple of a week
