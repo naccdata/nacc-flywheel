@@ -2,7 +2,7 @@
 
 import logging
 from io import StringIO
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Set
 
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
@@ -16,6 +16,7 @@ from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists_from_stream, load_from_stream
 from pydantic import ValidationError
 from users.authorizations import AuthMap
+from users.nacc_directory import UserDirectoryEntry, UserFormatError
 
 from user_app.main import run
 
@@ -84,19 +85,22 @@ class UserManagementVisitor(GearExecutionEnvironment):
         assert self.__user_filepath, 'User directory file required'
         assert self.__auth_filepath, 'User role file required'
         assert self.__admin_id, 'Admin group ID required'
-        user_list = self.__get_user_list(self.__user_filepath)
+
         auth_map = self.__get_auth_map(self.__auth_filepath)
         admin_group = self.admin_group(admin_id=self.__admin_id)
         admin_users = admin_group.get_group_users(access='admin')
-        admin_set = {user.id for user in admin_users if user.id}
+        user_list = self.__get_user_list(
+            self.__user_filepath,
+            skip_list={user.id
+                       for user in admin_users if user.id})
         run(proxy=self.proxy,
             user_list=user_list,
             admin_group=admin_group,
-            skip_list=admin_set,
             authorization_map=auth_map)
 
     # pylint: disable=no-self-use
-    def __get_user_list(self, user_file_path: str) -> List[Any]:
+    def __get_user_list(self, user_file_path: str,
+                        skip_list: Set[str]) -> List[UserDirectoryEntry]:
         """Get the user objects from the user file.
 
         Args:
@@ -106,13 +110,27 @@ class UserManagementVisitor(GearExecutionEnvironment):
         """
         try:
             with open(user_file_path, 'r', encoding='utf-8') as user_file:
-                user_list = load_from_stream(user_file)
+                object_list = load_from_stream(user_file)
         except YAMLReadError as error:
             raise GearExecutionError(
                 f'No users read from user file {user_file_path}: {error}'
             ) from error
-        if not user_list:
+        if not object_list:
             raise GearExecutionError('No users found in user file')
+
+        user_list = []
+        for user_doc in object_list:
+            try:
+                user_entry = UserDirectoryEntry.create(user_doc)
+            except UserFormatError as error:
+                log.error('Error creating user entry: %s', error)
+                continue
+            if user_entry.user_id in skip_list:
+                log.info('Skipping user: %s', user_entry.user_id)
+                continue
+
+            user_list.append(user_entry)
+
         return user_list
 
     # pylint: disable=no-self-use
