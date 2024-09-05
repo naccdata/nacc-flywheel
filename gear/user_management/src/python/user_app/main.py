@@ -1,13 +1,15 @@
 """Run method for user management."""
 import logging
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Dict, List
 
 from centers.nacc_group import NACCGroup
+from coreapi_client.models.co_person_message import CoPersonMessage
 from flywheel import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from users.authorizations import AuthMap
-from users.nacc_directory import UserDirectoryEntry, UserFormatError
+from users.authorizations import AuthMap, Authorizations
+from users.nacc_directory import UserDirectoryEntry
+from users.user_registry import UserRegistry
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +53,8 @@ def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
 
 
 def create_user_map(
-        user_list, skip_list: Set[str]) -> Dict[int, List[UserDirectoryEntry]]:
+    user_list: List[UserDirectoryEntry]
+) -> Dict[int, List[UserDirectoryEntry]]:
     """Creates a map from center tags to lists of nacc directory entries.
 
     Args:
@@ -61,16 +64,7 @@ def create_user_map(
       map from adcid to lists of nacc directory entries
     """
     center_map = defaultdict(list)
-    for user_doc in user_list:
-        try:
-            user_entry = UserDirectoryEntry.create(user_doc)
-        except UserFormatError as error:
-            log.error('Error creating user entry: %s', error)
-            continue
-        if user_entry.user_id in skip_list:
-            log.info('Skipping user: %s', user_entry.user_id)
-            continue
-
+    for user_entry in user_list:
         center_map[int(user_entry.adcid)].append(user_entry)
 
     return center_map
@@ -97,8 +91,27 @@ def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
     proxy.set_user_email(user=user, email=email)
 
 
-def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
-        skip_list: Set[str], authorization_map: AuthMap):
+def authorize_user(*, user: User, center_id: int,
+                   authorizations: Authorizations, admin_group: NACCGroup,
+                   authorization_map: AuthMap) -> None:
+    """Adds authorizations to users."""
+    center_group = admin_group.get_center(center_id)
+    if not center_group:
+        log.warning('No center found with ID %s', center_id)
+        return
+
+    # give users access to nacc metadata project
+    admin_group.add_center_user(user=user)
+
+    # give users access to center projects
+    center_group.add_user_roles(user=user,
+                                authorizations=authorizations,
+                                auth_map=authorization_map)
+
+
+def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
+        admin_group: NACCGroup, authorization_map: AuthMap,
+        registry: UserRegistry):
     """Manages users based on user list.
 
     Args:
@@ -107,22 +120,32 @@ def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
       admin_group: the NACCGroup object representing the admin group
       skip_list: the list of user IDs to skip
       authorization_map: the AuthMap object representing the authorization map
+      registry: the user registry
     """
 
-    # gather users by center
-    user_map = create_user_map(user_list=user_list, skip_list=skip_list)
+    for user_entry in user_list:
+        coperson_list = registry.list(email=user_entry.email)
 
-    for center_id, center_users in user_map.items():
-        center_group = admin_group.get_center(int(center_id))
-        if not center_group:
-            log.warning('No center found with ID %s', center_id)
+        if not coperson_list:
+            registry.create(firstname=user_entry.first_name,
+                            lastname=user_entry.last_name,
+                            email=user_entry.email)
+            # TODO: send claim email
+            log.info('Add user %s to registry', user_entry.email)
             continue
 
-        for user_entry in center_users:
-            user = proxy.find_user(user_entry.user_id)
+        claimed: List[CoPersonMessage] = []
+        if claimed:
+            # TODO: what to do if more than one claimed person for email?
+
+
+            # TODO: extract registry ID from claimed
+            registry_id = "SOMEHOW FROM claimed"
+            user = proxy.find_user(registry_id)
             if not user:
                 try:
                     user = add_user(proxy=proxy, user_entry=user_entry)
+                    # TODO: send user creation email
                     log.info('Added user %s', user.id)
                 except AssertionError as error:
                     log.error('Failed to add user %s: %s', user_entry.user_id,
@@ -130,12 +153,13 @@ def run(*, proxy: FlywheelProxy, user_list, admin_group: NACCGroup,
                     continue
 
             update_email(proxy=proxy, user=user, email=user_entry.email)
+            authorize_user(user=user,
+                           admin_group=admin_group,
+                           center_id=user_entry.adcid,
+                           authorizations=user_entry.authorizations,
+                           authorization_map=authorization_map)
+            break
 
-            # give users access to nacc metadata project
-            admin_group.add_center_user(user=user)
-
-            # give users access to center projects
-            center_group.add_user_roles(
-                user=user,
-                authorizations=user_entry.authorizations,
-                auth_map=authorization_map)
+        # not claimed
+        # TODO: check time since creation is an even multiple of a week
+        # TODO: email claim reminder
