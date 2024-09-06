@@ -5,6 +5,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Literal, NewType, Optional, Set
 
+from flywheel.models.user import User
 from pydantic import BaseModel, ValidationError
 
 from users.authorizations import Authorizations
@@ -45,6 +46,14 @@ class UserDirectoryEntry(BaseModel):
         """The user ID for this directory entry."""
         return self.credentials.id
 
+    def set_credentials(self, credentials: Credentials) -> None:
+        """Sets the credentials for the user to the argument.
+
+        Args:
+          credentials: the credential object
+        """
+        self.credentials = credentials
+
     @property
     def first_name(self) -> str:
         """The first name for this directory entry."""
@@ -62,6 +71,22 @@ class UserDirectoryEntry(BaseModel):
           A dictionary with values of this entry
         """
         return self.model_dump()  # type: ignore
+
+    def as_user(self) -> User:
+        """Creates a user object from the directory entry.
+
+        Flywheel constraint (true as of version 17): the user ID and email must be
+        the same even if ID is an ePPN in add_user
+
+        Args:
+        user_entry: the directory entry for the user
+        Returns:
+        the User object for flywheel User created from the directory entry
+        """
+        return User(id=self.user_id,
+                    firstname=self.first_name,
+                    lastname=self.last_name,
+                    email=self.user_id)
 
     @classmethod
     def create(cls, entry: Dict[str, Any]) -> "UserDirectoryEntry":
