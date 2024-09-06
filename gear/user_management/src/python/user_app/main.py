@@ -4,31 +4,13 @@ from collections import defaultdict
 from typing import Dict, List
 
 from centers.nacc_group import NACCGroup
-from coreapi_client.models.co_person_message import CoPersonMessage
 from flywheel import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from users.authorizations import AuthMap, Authorizations
-from users.nacc_directory import UserDirectoryEntry
-from users.user_registry import UserRegistry
+from users.nacc_directory import Credentials, UserDirectoryEntry
+from users.user_registry import RegistryPerson, UserRegistry
 
 log = logging.getLogger(__name__)
-
-
-def create_user(user_entry: UserDirectoryEntry) -> User:
-    """Creates a user object from the directory entry.
-
-    Flywheel constraint (true as of version 17): the user ID and email must be
-    the same even if ID is an ePPN in add_user
-
-    Args:
-      user_entry: the directory entry for the user
-    Returns:
-      the User object for flywheel User created from the directory entry
-    """
-    return User(id=user_entry.user_id,
-                firstname=user_entry.first_name,
-                lastname=user_entry.last_name,
-                email=user_entry.user_id)
 
 
 def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
@@ -46,7 +28,7 @@ def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
     Returns:
       the flywheel User created from the directory entry
     """
-    new_id = proxy.add_user(create_user(user_entry=user_entry))
+    new_id = proxy.add_user(user_entry.as_user())
     user = proxy.find_user(user_entry.user_id)
     assert user, f"Failed to find user {new_id} that was just created"
     return user
@@ -124,32 +106,46 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
     """
 
     for user_entry in user_list:
-        coperson_list = registry.list(email=user_entry.email)
+        person_list = registry.list(email=user_entry.email)
 
-        if not coperson_list:
-            registry.create(firstname=user_entry.first_name,
-                            lastname=user_entry.last_name,
-                            email=user_entry.email)
+        if not person_list:
+            identifier_list = registry.add(
+                RegistryPerson.create(firstname=user_entry.first_name,
+                                      lastname=user_entry.last_name,
+                                      email=user_entry.email,
+                                      coid=str(registry.coid)))
             # TODO: send claim email
+            # TODO: record claim creation for reminders
             log.info('Add user %s to registry', user_entry.email)
             continue
 
-        claimed: List[CoPersonMessage] = []
+        claimed = [person for person in person_list if person.is_claimed()]
         if claimed:
-            # TODO: what if there is more than one claimed person for an email?
+            registered = [
+                person.registry_id() for person in claimed
+                if person.registry_id()
+            ]
+            if not registered:
+                log.error('User %s has no registry ID', user_entry.email)
+                continue
+            if len(registered) > 1:
+                log.error('Email %s has more than one registry ID %s',
+                          user_entry.email, registered)
+                continue
 
-
-            # TODO: extract registry ID from claimed
-            registry_id = "SOMEHOW FROM claimed"
+            registry_id = registered.pop()
+            assert registry_id, 'registry_id should not be None'
             user = proxy.find_user(registry_id)
             if not user:
                 try:
+                    user_entry.set_credentials(credentials=Credentials(
+                        type='registry', id=registry_id))
                     user = add_user(proxy=proxy, user_entry=user_entry)
                     # TODO: send user creation email
                     log.info('Added user %s', user.id)
                 except AssertionError as error:
-                    log.error('Failed to add user %s: %s', user_entry.user_id,
-                              error)
+                    log.error('Failed to add user %s with ID %s: %s',
+                              user_entry.email, registry_id, error)
                     continue
 
             update_email(proxy=proxy, user=user, email=user_entry.email)
