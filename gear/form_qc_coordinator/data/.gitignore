@@ -3,3 +3,4 @@
 # except for
 !.gitignore
 !test-data.yaml
+!qc-gear-configs.json

@@ -2,9 +2,9 @@ from typing import Any, Dict, List, Optional
 
 import pandas
 from flywheel.models.file_entry import FileEntry
+from flywheel.models.job import Job
 from flywheel.models.session import Session
 from flywheel.models.subject import Subject
-
 from flywheel.models.viewer_app import ViewerApp
 
 from .finder import Finder
@@ -45,6 +45,10 @@ class Client:
 
     @property
     def users(self) -> Finder[User]:
+        ...
+
+    @property
+    def jobs(self) -> Finder[Job]:
         ...
 
     # the code says returns FileOutput but has no definition

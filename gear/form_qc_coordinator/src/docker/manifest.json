@@ -26,8 +26,17 @@
         "api-key": {
             "base": "api-key"
         },
-        "input_file": {
+        "visits_file": {
             "description": "YAML file with list of new/updated visits for the module/participant",
+            "base": "file",
+            "type": {
+                "enum": [
+                    "source code"
+                ]
+            }
+        },
+        "qc_configs_file": {
+            "description": "JSON file with QC gear config information",
             "base": "file",
             "type": {
                 "enum": [
@@ -47,13 +56,8 @@
             "type": "string",
             "default": "/prod/flywheel/gearbot"
         },
-        "module": {
-            "description": "Module to be evaluated (eg. UDSv4, LBDv3, ...)",
-            "type": "string",
-            "default": "UDSv4"
-        },
-        "sort_by": {
-            "description": "Field name to sort the participant visits",
+        "date_column": {
+            "description": "Variable name of the visit date field for the module (used to sort the participant visits)",
             "type": "string",
             "default": "visitdate"
         },

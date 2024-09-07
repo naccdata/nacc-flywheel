@@ -31,3 +31,7 @@ class FileEntry:
     @property
     def version(self) -> int:
         ...
+
+    @property
+    def info(self) -> Dict[str, Any]:
+        ...

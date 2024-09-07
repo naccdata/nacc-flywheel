@@ -8,6 +8,10 @@ from flywheel.finder import Finder
 class Subject:
 
     @property
+    def id(self) -> str:
+        ...
+
+    @property
     def label(self) -> str:
         ...
 

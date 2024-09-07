@@ -9,3 +9,10 @@ class Metadata:
 
     def update_file(self, file: Any, tags: List[str]) -> None:
         ...
+
+    def update_file_metadata(self,
+                             file_: Any,
+                             deep: bool = True,
+                             container_type: Optional[str] = None,
+                             **kwargs) -> None:
+        ...
