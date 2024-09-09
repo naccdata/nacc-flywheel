@@ -14,13 +14,13 @@ You cannot replicate this environment for a local run without putting these valu
 
 ## Running
 
-Ideally qc checks for a participant should be triggered by [Form QC Coordinator](https://github.com/naccdata/flywheel-gear-extensions/blob/main/docs/form_qc_coordinator/index.md). Prevent from manually running this gear on individual visit files.
+Ideally, qc checks for a participant should be triggered by [Form QC Coordinator](../form_qc_coordinator/index.md). Prevent from manually running this gear on individual visit files.
 
 ### Inputs
 - form_data_file: The form data JSON file to validate, this is required.
 
 ### Configs
-Gear configs are defined in [manifest.json](https://github.com/naccdata/flywheel-gear-extensions/blob/main/gear/form_qc_coordinator/src/docker/manifest.json)
+Gear configs are defined in [manifest.json](../../gear/form_qc_checker/src/docker/manifest.json)
 
 ### Error Report
 
