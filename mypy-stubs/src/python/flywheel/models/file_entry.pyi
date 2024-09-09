@@ -7,6 +7,10 @@ from flywheel.models.container_parents import ContainerParents
 class FileEntry:
 
     @property
+    def id(self) -> str:
+        ...
+
+    @property
     def name(self) -> str:
         ...
 

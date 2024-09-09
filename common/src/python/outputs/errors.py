@@ -164,6 +164,26 @@ def system_error(
                      message=message)
 
 
+def previous_visit_failed_error(prev_visit: str) -> FileError:
+    """Creates a FileError when participant has failed previous visits."""
+    return FileError(error_type='error',
+                     error_code='failed-previous-visit',
+                     message=(f'Visit file {prev_visit} has to be approved '
+                              'before evaluating any subsequent visits'))
+
+
+def gear_execution_error(gear_name: str,
+                         error_str: Optional[str] = None) -> FileError:
+    """Creates a FileError when gear execution failed."""
+    message = f'Errors occurred while running gear {gear_name} on this file'
+    if error_str:
+        message += f': {error_str}'
+
+    return FileError(error_type='error',
+                     error_code='gear-execution-error',
+                     message=message)
+
+
 class ErrorWriter(ABC):
     """Abstract base class for error writer."""
 

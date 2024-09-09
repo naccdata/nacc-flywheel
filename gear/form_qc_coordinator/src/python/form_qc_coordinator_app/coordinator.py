@@ -3,11 +3,18 @@
 import logging
 import time
 
-from flywheel import Client, FileEntry
+from flywheel import FileEntry
 from flywheel.rest import ApiException
-from flywheel_adaptor.subject_adaptor import SubjectAdaptor
-from flywheel_gear_toolkit.utils.metadata import Metadata
-from gear_execution.gear_execution import GearExecutionError
+from flywheel_adaptor.subject_adaptor import SubjectAdaptor, VisitInfo
+from flywheel_gear_toolkit import GearToolkitContext
+from flywheel_gear_toolkit.utils.metadata import Metadata, create_qc_result_dict
+from gear_execution.gear_execution import ClientWrapper, GearExecutionError
+from outputs.errors import (
+    FileError,
+    ListErrorWriter,
+    gear_execution_error,
+    previous_visit_failed_error,
+)
 from pandas import DataFrame
 from pydantic import BaseModel, ConfigDict
 
@@ -43,18 +50,21 @@ class QCCoordinator():
     """
 
     def __init__(self, *, subject: SubjectAdaptor, module: str,
-                 fw_client: Client) -> None:
+                 client_wrapper: ClientWrapper,
+                 gear_context: GearToolkitContext) -> None:
         """Initialize the QC Cordinator.
 
         Args:
             subject: Flywheel subject to run the QC checks
             module: module label, matched with Flywheel acquisition label
-            fw_client: Flywheel SDK client
+            client_wrapper: Flywheel SDK client wrapper
+            gear_context: Flywheel gear context
         """
         self._subject = subject
         self._module = module
-        self._fwclient = fw_client
-        self._metadata = Metadata()
+        self._fwclient = client_wrapper.client
+        self._proxy = client_wrapper.get_proxy()
+        self._metadata = Metadata(context=gear_context)
 
     def is_job_complete(self, job_id: str) -> bool:
         """Checks the status of given job.
@@ -73,6 +83,7 @@ class QCCoordinator():
 
         # TODO - how to check for retried jobs
 
+        log.info('Job %s finished with status: %s', job_id, job.state)
         return (job.state == 'complete')
 
     def passed_qc_checks(self, visit_file: FileEntry, gear_name: str) -> bool:
@@ -87,23 +98,58 @@ class QCCoordinator():
 
         return True
 
-    def report_errors(self, visit_file: FileEntry):
-        """ errors = {}
-        name='validation'
-        state='FAIL'
-        qc_result = self._metadata.create_qc_result_dict(name, state, **errors)
-        self._metadata.update_file_metadata(visit_file,
-                                            container_type='acquisition',
-                                            info=qc_info) """
-
-    def run_error_checks(self, *, gear_name: str, gear_configs: QCGearConfigs,
-                         visits: DataFrame):
-        """Sequentially trigger the error checks on the provided visits.
+    def update_qc_error_metadata(self, visit_file: FileEntry,
+                                 error: FileError):
+        """Add error metadata to the visits file qc info section
+        Note: This method modifies metadata in a file which is not tracked as gear input
 
         Args:
-            gear_name: QC check gear name (form_qc_checker)
+            visit_file: FileEntry object for the visits file
+            previous_visit: name of the failed previous visit file
+        """
+
+        error_writer = ListErrorWriter(
+            container_id=visit_file.id,
+            fw_path=self._proxy.get_lookup_path(visit_file))
+        error_writer.write(error)
+
+        qc_result = create_qc_result_dict(name='validation',
+                                          state='FAIL',
+                                          data=error_writer.errors())
+        updated_qc_info = self._metadata.add_gear_info('qc', visit_file,
+                                                       **qc_result)
+        self._metadata.update_file_metadata(visit_file,
+                                            container_type='acquisition',
+                                            info=updated_qc_info)
+
+    def update_last_failed_visit(self, file_id: str, filename: str,
+                                 visitdate: str):
+        """Update last failed visit details in subject metadata.
+
+        Args:
+            file_id: Flywheel file id of the failed visit file
+            filename: name of the failed visit file
+            visitdate: visit date of the failed visit
+        """
+        visit_info = VisitInfo(file_id=file_id,
+                               filename=filename,
+                               visitdate=visitdate)
+        self._subject.set_last_failed_visit(self._module, visit_info)
+
+    def run_error_checks(self, *, gear_name: str, gear_configs: QCGearConfigs,
+                         visits: DataFrame, date_col: str):
+        """Sequentially trigger the QC checks gear on the provided visits. If a
+        visit failed QC validation or error occured while running the QC gear,
+        none of the subsequent visits will be evaluated.
+
+        Args:
+            gear_name: QC checks gear name (form_qc_checker)
             gear_configss: QC check gear configs
             visits: set of visits to be evaluated (sorted by visit date)
+            date_col_str: date column name in visits dataframe
+
+        Raises:
+            GearExecutionError if errors occurr while triggering the QC gear
         """
 
         try:
@@ -114,10 +160,14 @@ class QCCoordinator():
         configs = gear_configs.model_dump()
 
         run_checks = True
+        prev_visit = ''
+        date_col_key = f'file.info.forms.json.{date_col}'
         for index, row in visits.iterrows():
             filename = row['file.name']
+            file_id = row['file.file_id']
+            visitdate = row[date_col_key]
             try:
-                visit_file = self._fwclient.get_file(row['file.file_id'])
+                visit_file = self._fwclient.get_file(file_id)
                 destination = self._fwclient.get_acquisition(
                     row['file.parents.acquisition'])
             except ApiException as error:
@@ -135,14 +185,23 @@ class QCCoordinator():
                         f'Failed to trigger gear {gear_name} on file {filename}'
                     )
 
+                # QC gear did not complete, disable evaluating any subsequent visits
                 if not self.is_job_complete(job_id):
-                    self.report_errors(visit_file)
+                    self.update_last_failed_visit(file_id=file_id,
+                                                  filename=filename,
+                                                  visitdate=visitdate)
+                    error = gear_execution_error(gear_name)
+                    self.update_qc_error_metadata(visit_file, error)
                     run_checks = False
+                    prev_visit = visit_file.name
                     continue
 
+                # QC checks failed, disable evaluating any subsequent visits
+                # No need to update failed visit info here, QC gear updates it
                 if not self.passed_qc_checks(visit_file, gear_name):
-                    self.report_errors(visit_file)
                     run_checks = False
+                    prev_visit = visit_file.name
                     continue
             else:
-                self.report_errors(visit_file)
+                error = previous_visit_failed_error(prev_visit)
+                self.update_qc_error_metadata(visit_file, error)

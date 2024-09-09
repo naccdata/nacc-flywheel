@@ -6,11 +6,16 @@ from json.decoder import JSONDecodeError
 from typing import Any, Optional
 
 from flywheel.rest import ApiException
-from flywheel_adaptor.subject_adaptor import SubjectAdaptor, ParticipantVisits
+from flywheel_adaptor.subject_adaptor import ParticipantVisits, SubjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, GearBotClient,
-                                           GearEngine, GearExecutionError,
-                                           GearExecutionEnvironment)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    GearBotClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    GearExecutionError,
+    InputFileWrapper,
+)
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, load_from_stream
 from pydantic import ValidationError
@@ -23,32 +28,33 @@ log = logging.getLogger(__name__)
 
 def validate_input_data(input_file_path: str,
                         subject_lbl: str) -> Optional[ParticipantVisits]:
-    """Validates the input file.
+    """Validate the input file - visits_file.
 
     Args:
-        input_file_path: Gear input file path
+        input_file_path: Gear input 'visits_file' file path
         subject_lbl: Flywheel subject label
 
     Returns:
-        Optional[ParticipantVisits]: Info on set of visits to be validated
+        Optional[ParticipantVisits]: Info on the set of new/updated visits
     """
 
     try:
         with open(input_file_path, 'r', encoding='utf-8 ') as input_file:
             input_data = load_from_stream(input_file)
     except (FileNotFoundError, YAMLReadError) as error:
-        log.error('Failed to read the input file - %s', error)
+        log.error('Failed to read the input file %s - %s', input_file_path,
+                  error)
         return None
 
     try:
         visits_info = ParticipantVisits.model_validate(input_data)
     except ValidationError as error:
-        log.error('Input data not in expected format - %s', error)
+        log.error('Visit information not in expected format - %s', error)
         return None
 
     if visits_info and subject_lbl != visits_info.participant:
         log.error(
-            'Partipant label in input file %s does not match with subject label %s',
+            'Partipant label in visits file %s does not match with subject label %s',
             visits_info.participant, subject_lbl)
         return None
 
@@ -56,19 +62,20 @@ def validate_input_data(input_file_path: str,
 
 
 def get_qc_gear_configs(configs_file_path: str, ) -> Optional[QCGearInfo]:
-    """_summary_
+    """Load the QC gear information from input file - qc_configs_file
 
     Args:
-        config_file_path (str): _description_
+        config_file_path: Gear input qc_configs_file file path
 
     Returns:
-        Dict[str, str]: _description_
+        Optional[QCGearInfo]: QC gear name and configs
     """
     try:
         with open(configs_file_path, mode='r', encoding='utf-8') as file_obj:
             config_data = json.load(file_obj)
     except (FileNotFoundError, JSONDecodeError, TypeError) as error:
-        log.error('Failed to read the qc gear configs file - %s', error)
+        log.error('Failed to read the qc gear configs file %s - %s',
+                  configs_file_path, error)
         return None
 
     try:
@@ -92,7 +99,7 @@ class FormQCCoordinator(GearExecutionEnvironment):
         Args:
             client: Flywheel SDK client wrapper
             date_col: variable name to sort the participant visits
-            check_all: re-evaluate all visits for the module/participant
+            check_all: If True, re-evaluate all visits for the module/participant
         """
         self._date_col = date_col
         self._check_all = check_all
@@ -125,10 +132,13 @@ class FormQCCoordinator(GearExecutionEnvironment):
                                  check_all=check_all)
 
     def run(self, context: GearToolkitContext) -> None:
-        """Runs the form-qc-coordinator app.
+        """Validates input files, runs the form-qc-coordinator app.
 
         Args:
             context: the gear execution context
+
+        Raises:
+          GearExecutionError
         """
         try:
             dest_container: Any = context.get_destination_container()
@@ -142,19 +152,19 @@ class FormQCCoordinator(GearExecutionEnvironment):
                 'invalid gear destination type '
                 f'{dest_container.container_type}')
 
-        visits_file_path = context.get_input_path('visits_file')
-        if not visits_file_path:
-            raise GearExecutionError('visits_file not provided')
-
+        visits_file_input = InputFileWrapper.create(input_name='visits_file',
+                                                    context=context)
+        visits_file_path = visits_file_input.filepath
         visits_info = validate_input_data(visits_file_path,
                                           dest_container.label)
         if not visits_info:
             raise GearExecutionError(
-                f'Error(s) in reading visit info file - {visits_file_path}')
+                f'Error(s) in reading visits info file - {visits_file_path}')
 
         config_file_path = context.get_input_path('qc_configs_file')
         if not config_file_path:
-            raise GearExecutionError('qc_configs_file not provided')
+            raise GearExecutionError(
+                'Required input qc_configs_file not provided')
 
         qc_gear_info = get_qc_gear_configs(config_file_path)
         if not qc_gear_info:
@@ -164,6 +174,7 @@ class FormQCCoordinator(GearExecutionEnvironment):
 
         run(gear_context=context,
             client_wrapper=self.client,
+            visits_file_wrapper=visits_file_input,
             subject=SubjectAdaptor(dest_container),
             date_col=self._date_col,
             visits_info=visits_info,

@@ -113,3 +113,13 @@ class SubjectAdaptor:
         except ValidationError as error:
             raise SubjectError('Incomplete failed visit metadata for subject '
                                f'{self.label}/{module} - {error}')
+
+    def set_last_failed_visit(self, module: str, failed_visit: VisitInfo):
+        """Update last failed visit info for this subject for the given module.
+
+        Args:
+            module: module label (Flywheel aquisition label)
+            failed_visit: failed visit info
+        """
+        qc = {'qc': {module.lower(): {'failed': failed_visit.model_dump()}}}
+        self.update(info=qc)
