@@ -380,6 +380,11 @@ def run(*,
                                                  visitor=csv_visitor)
 
             if input_data:
+                # Note: Optional forms check is not implemented for CSV files
+                # Currently only enrollment module is submitted as a CSV file,
+                # and does not require optional forms check.
+                # Need to change the way we load rule definitions if we
+                # have to support optional forms chek for CSV inputs.
                 schema, codes_map = load_rule_definition_schemas(
                     s3_client=s3_client,
                     input_data=input_data,
