@@ -11,4 +11,7 @@ Home for documentation of Flywheel extensions for the Nationl Alzheimer's Coordi
 - Data
     1. [Pull metadata](pull_metadata/)
     2. [Participant identifier lookup](identifier-lookup/)
+- Data Quality Checks
+    1. [Data quality checks coordinator](form_qc_coordinator/)
+    2. [Form QC checker](form-qc-checker/)
 - [Development Guide](development/)

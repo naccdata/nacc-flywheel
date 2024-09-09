@@ -2,5 +2,5 @@
 *
 # except for
 !.gitignore
-!test-data.yaml
+!example-input.yaml
 !qc-gear-configs.json
