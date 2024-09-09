@@ -22,6 +22,20 @@ from form_qc_coordinator_app.coordinator import QCCoordinator, QCGearInfo
 log = logging.getLogger(__name__)
 
 
+def update_file_tags(gear_context: GearToolkitContext,
+                     input_wrapper: InputFileWrapper):
+    """Add gear tag to file.
+
+    Args:
+        gear_context: Flywheel gear context
+        input_wrapper: gear input file wrapper
+    """
+
+    gear_name = gear_context.manifest.get('name', 'form-qc-coordinator')
+    gear_context.metadata.add_file_tags(input_wrapper.file_input,
+                                        tags=gear_name)
+
+
 def get_matching_visits(
         *,
         fw_client: Client,
@@ -130,3 +144,5 @@ def run(*,
                                    gear_configs=qc_gear_info.configs,
                                    visits=visits_df,
                                    date_col=date_col)
+
+    update_file_tags(gear_context, visits_file_wrapper)

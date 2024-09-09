@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, Iterable, List, Optional, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ..context import GearToolkitContext
@@ -38,4 +38,8 @@ class Metadata:
         cont_: Any,
         **kwargs: Any,
     ) -> Dict:
+        ...
+
+    def add_file_tags(self, file_: Any, tags: Union[str,
+                                                    Iterable[str]]) -> None:
         ...
