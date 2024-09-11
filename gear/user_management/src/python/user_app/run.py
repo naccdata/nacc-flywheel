@@ -14,9 +14,11 @@ from gear_execution.gear_execution import (
 )
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists_from_stream, load_from_stream
+from notifications.email import EmailClient, create_ses_client
 from pydantic import ValidationError
 from users.authorizations import AuthMap
 from users.nacc_directory import UserDirectoryEntry, UserFormatError
+from users.user_registry import UserRegistry
 
 from user_app.main import run
 
@@ -43,11 +45,12 @@ class UserManagementVisitor(GearExecutionEnvironment):
     """Defines the user management gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper,
-                 user_filepath: str, auth_filepath: str):
+                 user_filepath: str, auth_filepath: str, email_source: str):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__user_filepath = user_filepath
         self.__auth_filepath = auth_filepath
+        self.__email_source = email_source
 
     @classmethod
     def create(
@@ -70,11 +73,12 @@ class UserManagementVisitor(GearExecutionEnvironment):
         if not auth_filepath:
             raise GearExecutionError('No user role file provided')
 
-        return UserManagementVisitor(admin_id=context.config.get(
-            "admin_group", "nacc"),
-                                     client=client,
-                                     user_filepath=user_filepath,
-                                     auth_filepath=auth_filepath)
+        return UserManagementVisitor(
+            admin_id=context.config.get("admin_group", "nacc"),
+            client=client,
+            user_filepath=user_filepath,
+            auth_filepath=auth_filepath,
+            email_source=context.config.get('email_source', 'nacchelp@uw.edu'))
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
@@ -85,6 +89,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         assert self.__user_filepath, 'User directory file required'
         assert self.__auth_filepath, 'User role file required'
         assert self.__admin_id, 'Admin group ID required'
+        assert self.__email_source, 'Sender email address required'
 
         auth_map = self.__get_auth_map(self.__auth_filepath)
         admin_group = self.admin_group(admin_id=self.__admin_id)
@@ -96,7 +101,10 @@ class UserManagementVisitor(GearExecutionEnvironment):
         run(proxy=self.proxy,
             user_list=user_list,
             admin_group=admin_group,
-            authorization_map=auth_map)
+            authorization_map=auth_map,
+            email_client=EmailClient(client=create_ses_client(),
+                                     source="nacchelp@uw.edu"),
+            registry=UserRegistry())
 
     # pylint: disable=no-self-use
     def __get_user_list(self, user_file_path: str,
