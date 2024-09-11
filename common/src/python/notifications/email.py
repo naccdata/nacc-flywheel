@@ -56,9 +56,10 @@ class MessageComponent(BaseModel):
     charset: str = Field('utf-8')
 
 
-class MessageContentModel(BaseModel):
+class TemplateDataModel(BaseModel):
     """Defines a model for messages for the boto3 SES client."""
-    email_content: str
+    firstname: str
+    email_address: str
 
 
 class EmailClient:
@@ -72,7 +73,7 @@ class EmailClient:
         self,
         destination: DestinationModel,
         template: str,
-        template_data: MessageContentModel,
+        template_data: TemplateDataModel,
     ) -> str:
         """Sends the message to the destination from the source address.
 
