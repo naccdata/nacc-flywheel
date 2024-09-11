@@ -6,7 +6,7 @@ from typing import Dict, List
 from centers.nacc_group import NACCGroup
 from flywheel import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from notifications.email import DestinationModel, EmailClient, MessageContentModel
+from notifications.email import DestinationModel, EmailClient, TemplateDataModel
 from users.authorizations import AuthMap, Authorizations
 from users.nacc_directory import Credentials, UserDirectoryEntry
 from users.user_registry import RegistryPerson, UserRegistry
@@ -115,12 +115,13 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
                                       lastname=user_entry.last_name,
                                       email=user_entry.email,
                                       coid=str(registry.coid)))
-            # TODO: send claim email
             email_client.send(
                 destination=DestinationModel(to_addresses=[user_entry.email]),
                 template="claim_email",
-                template_data=MessageContentModel(email_content=claim_email_content))
-            # TODO: record claim creation for reminders
+                template_data=TemplateDataModel(
+                    firstname=user_entry.first_name,
+                    email_address=user_entry.email))
+            # TODO: record entry creation in project metadata
             log.info('Add user %s to registry', user_entry.email)
             continue
 
@@ -147,11 +148,12 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
                         type='registry', id=registry_id))
                     user = add_user(proxy=proxy, user_entry=user_entry)
                     # TODO: send user creation email
-                    email_client.send(
-                        destination=DestinationModel(
-                            to_addresses=[user_entry.email]),
-                        template="user_creation_email",
-                        template_data=MessageContentModel(email_content=user_creation_content))
+                    email_client.send(destination=DestinationModel(
+                        to_addresses=[user_entry.email]),
+                                      template="user_creation_email",
+                                      template_data=TemplateDataModel(
+                                          firstname=user_entry.first_name,
+                                          email_address=user_entry.email))
                     log.info('Added user %s', user.id)
                 except AssertionError as error:
                     log.error('Failed to add user %s with ID %s: %s',

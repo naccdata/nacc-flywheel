@@ -90,8 +90,7 @@ class EmailClient:
                 Source=self.__source,
                 Destination=destination.model_dump(by_alias=True),
                 Template=template,
-                TemplateData=template_data.model_dump_json()
-            )
+                TemplateData=template_data.model_dump_json())
         except ClientError as error:
             log.error("Failed to send email")
             raise EmailSendError(error) from error
