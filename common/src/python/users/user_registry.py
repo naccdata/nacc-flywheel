@@ -1,4 +1,5 @@
 """Defines repository as interface to user registry."""
+from datetime import datetime
 from typing import List, Optional
 
 from coreapi_client.api.default_api import DefaultApi
@@ -9,6 +10,7 @@ from coreapi_client.models.co_person_role import CoPersonRole
 from coreapi_client.models.email_address import EmailAddress
 from coreapi_client.models.identifier import Identifier
 from coreapi_client.models.name import Name
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 
 
 class RegistryPerson:
@@ -17,8 +19,10 @@ class RegistryPerson:
     Enables predicates needed for processing.
     """
 
-    def __init__(self, coperson: CoPersonMessage) -> None:
+    def __init__(self, coperson: CoPersonMessage,
+                 create_date: datetime) -> None:
         self.__coperson = coperson
+        self.__create_date = create_date
 
     @classmethod
     def create(cls, *, firstname: str, lastname: str, email: str,
@@ -44,14 +48,19 @@ class RegistryPerson:
                     family=lastname,
                     type="official",
                     primary_name=True)
-        return RegistryPerson(
-            CoPersonMessage(CoPerson=coperson,
-                            EmailAddress=[email_address],
-                            CoPersonRole=[role],
-                            Name=[name]))
+        return RegistryPerson(coperson=CoPersonMessage(
+            CoPerson=coperson,
+            EmailAddress=[email_address],
+            CoPersonRole=[role],
+            Name=[name]),
+                              create_date=datetime.now())
 
     def as_coperson_message(self) -> CoPersonMessage:
         return self.__coperson
+
+    @property
+    def creation_date(self) -> datetime:
+        return self.__create_date
 
     @property
     def email_address(self) -> Optional[List[EmailAddress]]:
@@ -98,8 +107,10 @@ class RegistryPerson:
 class UserRegistry:
     """Repository class for COManage user registry."""
 
-    def __init__(self, api_instance: DefaultApi, coid: int):
+    def __init__(self, api_instance: DefaultApi, admin_project: ProjectAdaptor,
+                 coid: int):
         self.__api_instance = api_instance
+        self.__admin_project = admin_project
         self.__coid = coid
 
     @property
@@ -112,7 +123,7 @@ class UserRegistry:
         Args:
           person: the person to add
         Returns:
-          a list of CoManage Identifer objects
+          a list of CoManage Identifier objects
         """
 
         try:
