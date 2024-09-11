@@ -107,6 +107,10 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
     """
 
     for user_entry in user_list:
+        template_data = TemplateDataModel(firstname=user_entry.first_name,
+                                          email_address=user_entry.email)
+        destination = DestinationModel(to_addresses=[user_entry.email])
+
         person_list = registry.list(email=user_entry.email)
 
         if not person_list:
@@ -115,12 +119,9 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
                                       lastname=user_entry.last_name,
                                       email=user_entry.email,
                                       coid=str(registry.coid)))
-            email_client.send(
-                destination=DestinationModel(to_addresses=[user_entry.email]),
-                template="claim_email",
-                template_data=TemplateDataModel(
-                    firstname=user_entry.first_name,
-                    email_address=user_entry.email))
+            email_client.send(destination=destination,
+                              template="claim_email",
+                              template_data=template_data)
             # TODO: record entry creation in project metadata
             log.info('Add user %s to registry', user_entry.email)
             continue
@@ -147,13 +148,9 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
                     user_entry.set_credentials(credentials=Credentials(
                         type='registry', id=registry_id))
                     user = add_user(proxy=proxy, user_entry=user_entry)
-                    # TODO: send user creation email
-                    email_client.send(destination=DestinationModel(
-                        to_addresses=[user_entry.email]),
+                    email_client.send(destination=destination,
                                       template="user_creation_email",
-                                      template_data=TemplateDataModel(
-                                          firstname=user_entry.first_name,
-                                          email_address=user_entry.email))
+                                      template_data=template_data)
                     log.info('Added user %s', user.id)
                 except AssertionError as error:
                     log.error('Failed to add user %s with ID %s: %s',
@@ -171,3 +168,6 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
         # not claimed
         # TODO: check time since creation is an even multiple of a week
         # TODO: email claim reminder
+        email_client.send(destination=destination,
+                          template="user_claim_reminder",
+                          template_data=template_data)
