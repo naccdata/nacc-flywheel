@@ -5,6 +5,7 @@ import boto3
 from botocore.exceptions import ClientError
 from inputs.environment import get_environment_variable
 from pydantic import AliasGenerator, BaseModel, ConfigDict, Field
+from serialization.case import camel_case
 
 log = logging.getLogger(__name__)
 
@@ -26,17 +27,6 @@ def create_ses_client():
         aws_access_key_id=access_id,
         aws_secret_access_key=secret_key,
         region_name=region)
-
-
-def camel_case(name: str) -> str:
-    """Converts the name to camel case.
-
-    Args:
-      name: the name to convert
-    Returns:
-      the name in camel case
-    """
-    return ''.join([token.title() for token in name.split('_')])
 
 
 class DestinationModel(BaseModel):
