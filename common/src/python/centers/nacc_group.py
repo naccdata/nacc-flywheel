@@ -180,7 +180,7 @@ class NACCGroup(CenterAdaptor):
 
     def get_admin_project(self) -> ProjectAdaptor:
         """Returns the admin project.
-        
+
         Returns:
          the admin project object
         """
@@ -188,5 +188,5 @@ class NACCGroup(CenterAdaptor):
             self.__admin_project = self.get_project('project-admin')
             assert self.__admin_project, ("Expecting project-admin project. "
                                           "Check user has permissions.")
-        
+
         return self.__admin_project
