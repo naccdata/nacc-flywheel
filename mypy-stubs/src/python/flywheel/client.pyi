@@ -131,6 +131,10 @@ class Client:
                             container_id: str) -> pandas.DataFrame:
         ...
 
+    def read_view_data(self, view, container_id, decode=True, **kwargs):
+        """returns a file-like object where the contents can be read"""
+        ...
+
     def get_project(self, id: str) -> Project:
         ...
 
@@ -140,6 +144,6 @@ class Client:
     def get(self, id: str) -> ContainerOutput:
         ...
 
-    #return type is ResolverOutput
+    # return type is ResolverOutput
     def lookup(self, path):
         ...

@@ -1,7 +1,9 @@
 """Defines Form QC Coordinator."""
 
+import json
 import logging
-from typing import Optional
+from json.decoder import JSONDecodeError
+from typing import Dict, List, Optional
 
 from flywheel import Client
 from flywheel.view_builder import ViewBuilder
@@ -15,7 +17,6 @@ from gear_execution.gear_execution import (
     GearExecutionError,
     InputFileWrapper,
 )
-from pandas import DataFrame
 
 from form_qc_coordinator_app.coordinator import QCCoordinator, QCGearInfo
 
@@ -43,7 +44,7 @@ def get_matching_visits(
         subject: str,
         module: str,
         date_col: str,
-        cutoff_date: Optional[str] = None) -> Optional[DataFrame]:
+        cutoff_date: Optional[str] = None) -> Optional[List[Dict[str, str]]]:
     """Get the list of visits for the specified partipant for the specified
     module.
 
@@ -59,7 +60,7 @@ def get_matching_visits(
         cutoff_date (optional): If specified, filter visits on date_col >= cutoff_date
 
     Returns:
-        DataFrame: Dataframe of matching visits sorted in the asc. order of date column
+        List[Dict]: List of matching visits sorted in the asc. order of date column
     """
 
     date_col_key = f'file.info.forms.json.{date_col}'
@@ -84,11 +85,20 @@ def get_matching_visits(
     builder = builder.missing_data_strategy('drop-row')
     view = builder.build()
 
-    dframe = fw_client.read_view_dataframe(view, container_id)
-    if dframe.empty:
+    with fw_client.read_view_data(view, container_id) as resp:
+        try:
+            result = json.load(resp)
+        except JSONDecodeError as error:
+            log.error('Error in loading dataview %s on subject %s - %s',
+                      view.label, subject, error)
+            return None
+
+    if not result or 'data' not in result:
         return None
 
-    return dframe.sort_values(date_col_key, ascending=True)
+    visits = sorted(result['data'], key=lambda d: d[date_col_key])
+
+    return visits
 
 
 def run(*,
@@ -123,26 +133,26 @@ def run(*,
         cutoff = curr_visit.visitdate
 
     module = visits_info.module
-    visits_df = get_matching_visits(fw_client=client_wrapper.client,
-                                    container_id=subject.id,
-                                    subject=subject.label,
-                                    module=module,
-                                    date_col=date_col,
-                                    cutoff_date=cutoff)
-    if not visits_df:
+    visits_list = get_matching_visits(fw_client=client_wrapper.client,
+                                      container_id=subject.id,
+                                      subject=subject.label,
+                                      module=module,
+                                      date_col=date_col,
+                                      cutoff_date=cutoff)
+    if not visits_list:
         # This cannot happen, at least one file should exist with matching cutoff date
         raise GearExecutionError(
             'Cannot find matching visits for subject '
             f'{subject.label}/{module} with {date_col}>={cutoff}')
 
-    qc_cordinator = QCCoordinator(subject=subject,
-                                  module=module,
-                                  client_wrapper=client_wrapper,
-                                  gear_context=gear_context)
+    qc_coordinator = QCCoordinator(subject=subject,
+                                   module=module,
+                                   client_wrapper=client_wrapper,
+                                   gear_context=gear_context)
 
-    qc_cordinator.run_error_checks(gear_name=qc_gear_info.gear_name,
-                                   gear_configs=qc_gear_info.configs,
-                                   visits=visits_df,
-                                   date_col=date_col)
+    qc_coordinator.run_error_checks(gear_name=qc_gear_info.gear_name,
+                                    gear_configs=qc_gear_info.configs,
+                                    visits=visits_list,
+                                    date_col=date_col)
 
     update_file_tags(gear_context, visits_file_wrapper)
