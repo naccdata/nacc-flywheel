@@ -10,7 +10,8 @@ from coreapi_client.models.co_person_role import CoPersonRole
 from coreapi_client.models.email_address import EmailAddress
 from coreapi_client.models.identifier import Identifier
 from coreapi_client.models.name import Name
-from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
+
+from users.user_metadata import PersonInfo, RegistryMetadataManager
 
 
 class RegistryPerson:
@@ -107,14 +108,19 @@ class RegistryPerson:
 class UserRegistry:
     """Repository class for COManage user registry."""
 
-    def __init__(self, api_instance: DefaultApi, admin_project: ProjectAdaptor,
-                 coid: int):
+    def __init__(self, api_instance: DefaultApi,
+                 metadata_manager: RegistryMetadataManager, coid: int):
         self.__api_instance = api_instance
-        self.__admin_project = admin_project
+        self.__metadata_manager = metadata_manager
         self.__coid = coid
 
     @property
     def coid(self) -> int:
+        """Returns the community ID (coid).
+
+        Returns:
+          the coid for the registry
+        """
         return self.__coid
 
     def add(self, person: RegistryPerson) -> List[Identifier]:
@@ -127,29 +133,17 @@ class UserRegistry:
         """
 
         try:
-            return self.__api_instance.add_co_person(
+            identifiers = self.__api_instance.add_co_person(
                 coid=self.__coid,
                 co_person_message=person.as_coperson_message())
         except ApiException as error:
             raise RegistryError(f"API call failed: {error}")
 
-    def get(self, *, identifier: str) -> List[RegistryPerson]:
-        """Returns the CoPersonMessage objects with the identifier.
-
-        Args:
-          the identifer string
-        Returns:
-          the list of CoPersonMessage objects with the identifier
-        """
-        try:
-            response = self.__api_instance.get_co_person(coid=self.__coid,
-                                                         identifier=identifier)
-            assert response, "expecting identity in registry"
-        except ApiException as error:
-            raise RegistryError(f"API call failed: {error}")
-
-        coperson_dict = response.to_dict()
-        return UserRegistry.get_person_objects(coperson_dict)
+        assert person.email_address, "person objects are created with email"
+        self.__metadata_manager.add(
+            PersonInfo(email=person.email_address[0].mail,
+                       creation_date=person.creation_date))
+        return identifiers
 
     def list(self, email: str) -> List[RegistryPerson]:
         """Returns the list of CoPersonMessage objects with the email.
@@ -159,6 +153,11 @@ class UserRegistry:
         Returns:
           the list of CoPersonMessage objects with the email address
         """
+        person_info = self.__metadata_manager.get(email=email)
+        if not person_info:
+            raise RegistryError(
+                f"No creation date for registry person {email}")
+
         limit = 100
         page_index = 0
         read_length = limit
@@ -177,7 +176,8 @@ class UserRegistry:
             read_length = len(coperson_dict.keys())
             page_index += 1
 
-            person_list = UserRegistry.get_person_objects(coperson_dict)
+            person_list = UserRegistry.create_person_objects(
+                coperson_dict, creation_date=person_info.creation_date)
             for person in person_list:
                 if not person.email_address:
                     continue
@@ -194,7 +194,8 @@ class UserRegistry:
         return result
 
     @classmethod
-    def get_person_objects(cls, coperson_dict) -> List[RegistryPerson]:
+    def create_person_objects(cls, coperson_dict,
+                              creation_date: datetime) -> List[RegistryPerson]:
         """Extracts RegistryPerson objects from the response dict.
 
         Args:
@@ -208,7 +209,7 @@ class UserRegistry:
             if not coperson:
                 continue
 
-            result.append(RegistryPerson(coperson))
+            result.append(RegistryPerson(coperson, create_date=creation_date))
 
         return result
 
