@@ -1,6 +1,7 @@
 """Run method for user management."""
 import logging
 from collections import defaultdict
+from datetime import datetime
 from typing import Dict, List
 
 from centers.nacc_group import NACCGroup
@@ -122,7 +123,6 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
             email_client.send(destination=destination,
                               template="claim_email",
                               template_data=template_data)
-            # TODO: record entry creation in project metadata
             log.info('Add user %s to registry', user_entry.email)
             continue
 
@@ -165,9 +165,19 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
                            authorization_map=authorization_map)
             continue
 
-        # not claimed
-        # TODO: check time since creation is an even multiple of a week
-        # TODO: email claim reminder
-        email_client.send(destination=destination,
-                          template="user_claim_reminder",
-                          template_data=template_data)
+        # if not claimed, send an email each week
+        dates = [
+            person.creation_date for person in person_list
+            if person.creation_date
+        ]
+        if not dates:
+            log.warning('person record for %s has no creation date',
+                        user_entry.email)
+            continue
+
+        creation_date = max(dates)
+        time_since_creation = creation_date - datetime.now()
+        if time_since_creation.days % 7 == 0:
+            email_client.send(destination=destination,
+                              template="user_claim_reminder",
+                              template_data=template_data)
