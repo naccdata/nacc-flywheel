@@ -8,6 +8,10 @@ from flywheel.finder import Finder
 class Subject:
 
     @property
+    def id(self) -> str:
+        ...
+
+    @property
     def label(self) -> str:
         ...
 
@@ -40,4 +44,11 @@ class Subject:
 
     @property
     def sessions(self) -> Finder[Session]:
+        ...
+
+    def reload(self) -> Subject:
+        ...
+
+    def update_info(self, *args, **kwargs):
+        """Update the info with the passed in arguments"""
         ...
