@@ -196,7 +196,6 @@ class UserManagementVisitor(GearExecutionEnvironment):
         return auth_map
 
 
-# pylint: disable=too-many-locals
 def main() -> None:
     """Main method to manage users."""
 
