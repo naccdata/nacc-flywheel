@@ -145,7 +145,7 @@ def run(*,
 
     qc_coordinator = QCCoordinator(subject=subject,
                                    module=module,
-                                   client_wrapper=client_wrapper,
+                                   proxy=client_wrapper.get_proxy(),
                                    gear_context=gear_context)
 
     qc_coordinator.run_error_checks(gear_name=qc_gear_info.gear_name,

@@ -8,10 +8,11 @@ from typing import Dict, List
 from flywheel import FileEntry
 from flywheel.models.job import Job
 from flywheel.rest import ApiException
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.subject_adaptor import SubjectAdaptor, VisitInfo
 from flywheel_gear_toolkit import GearToolkitContext
 from flywheel_gear_toolkit.utils.metadata import Metadata, create_qc_result_dict
-from gear_execution.gear_execution import ClientWrapper, GearExecutionError
+from gear_execution.gear_execution import GearExecutionError
 from outputs.errors import (
     FileError,
     ListErrorWriter,
@@ -52,20 +53,19 @@ class QCCoordinator():
     """
 
     def __init__(self, *, subject: SubjectAdaptor, module: str,
-                 client_wrapper: ClientWrapper,
+                 proxy: FlywheelProxy,
                  gear_context: GearToolkitContext) -> None:
         """Initialize the QC Cordinator.
 
         Args:
             subject: Flywheel subject to run the QC checks
             module: module label, matched with Flywheel acquisition label
-            client_wrapper: Flywheel SDK client wrapper
+            proxy: Flywheel proxy object
             gear_context: Flywheel gear context
         """
         self._subject = subject
         self._module = module
-        self._fwclient = client_wrapper.client
-        self._proxy = client_wrapper.get_proxy()
+        self._proxy = proxy
         self._metadata = Metadata(context=gear_context)
 
     def poll_job_status(self, job: Job) -> str:
@@ -100,13 +100,17 @@ class QCCoordinator():
             bool: True if job successfully complete, else False
         """
 
-        job = self._fwclient.jobs.find_first(f'id={job_id}')
+        job = self._proxy.find_job(f'id={job_id}')
+
+        if not job:
+            log.error('Cannot find a job with ID %s', job_id)
+            return False
+
         status = self.poll_job_status(job)
         max_retries = 3  # maximum number of retries in Flywheel
         retries = 1
         while status == 'retried' and retries <= max_retries:
-            new_job = self._fwclient.jobs.find_first(
-                f'previous_job_id={job_id}')
+            new_job = self._proxy.find_job(f'previous_job_id={job_id}')
             if not new_job:
                 log.error('Cannot find a retried job with previous_job_id=%s',
                           job_id)
@@ -196,7 +200,7 @@ class QCCoordinator():
         """
 
         try:
-            gear = self._fwclient.lookup(f'gears/{gear_name}')
+            gear = self._proxy.lookup_gear(gear_name)
         except ApiException as error:
             raise GearExecutionError(error) from error
 
@@ -217,8 +221,8 @@ class QCCoordinator():
             visitdate = visit[date_col_key]
 
             try:
-                visit_file = self._fwclient.get_file(file_id)
-                destination = self._fwclient.get_acquisition(acq_id)
+                visit_file = self._proxy.get_file(file_id)
+                destination = self._proxy.get_acquisition(acq_id)
             except ApiException as error:
                 raise GearExecutionError(
                     f'Failed to retrieve {filename} - {error}')
@@ -263,7 +267,7 @@ class QCCoordinator():
                 visit = visits_queue.popleft()
                 file_id = visit['file.file_id']
                 try:
-                    visit_file = self._fwclient.get_file(file_id)
+                    visit_file = self._proxy.get_file(file_id)
                 except ApiException as error:
                     log.warning('Failed to retrieve file %s - %s',
                                 visit['file.name'], error)
