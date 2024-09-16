@@ -11,8 +11,6 @@ from coreapi_client.models.email_address import EmailAddress
 from coreapi_client.models.identifier import Identifier
 from coreapi_client.models.name import Name
 
-from users.user_metadata import PersonInfo, RegistryMetadataManager
-
 
 class RegistryPerson:
     """Wrapper for COManage CoPersonMessage object.
@@ -20,10 +18,8 @@ class RegistryPerson:
     Enables predicates needed for processing.
     """
 
-    def __init__(self, coperson: CoPersonMessage,
-                 create_date: datetime) -> None:
-        self.__coperson = coperson
-        self.__create_date = create_date
+    def __init__(self, coperson_message: CoPersonMessage) -> None:
+        self.__coperson_message = coperson_message
 
     @classmethod
     def create(cls, *, firstname: str, lastname: str, email: str,
@@ -49,23 +45,34 @@ class RegistryPerson:
                     family=lastname,
                     type="official",
                     primary_name=True)
-        return RegistryPerson(coperson=CoPersonMessage(
-            CoPerson=coperson,
-            EmailAddress=[email_address],
-            CoPersonRole=[role],
-            Name=[name]),
-                              create_date=datetime.now())
+        return RegistryPerson(
+            coperson_message=CoPersonMessage(CoPerson=coperson,
+                                             EmailAddress=[email_address],
+                                             CoPersonRole=[role],
+                                             Name=[name]))
 
     def as_coperson_message(self) -> CoPersonMessage:
-        return self.__coperson
+        return self.__coperson_message
 
     @property
-    def creation_date(self) -> datetime:
-        return self.__create_date
+    def creation_date(self) -> Optional[datetime]:
+        """Returns the creation date for this person in the registry.
+
+        Will be None for person that is created locally.
+
+        Returns:
+          the creation date for this person. None if not set.
+        """
+        if not self.__coperson_message.co_person:
+            return None
+        if not self.__coperson_message.co_person.meta:
+            return None
+
+        return self.__coperson_message.co_person.meta.created
 
     @property
     def email_address(self) -> Optional[List[EmailAddress]]:
-        return self.__coperson.email_address
+        return self.__coperson_message.email_address
 
     def is_claimed(self) -> bool:
         """Indicates whether the CoPerson record is claimed.
@@ -76,10 +83,10 @@ class RegistryPerson:
         Returns:
           True if the record has been claimed. False, otherwise.
         """
-        if not self.__coperson.org_identity:
+        if not self.__coperson_message.org_identity:
             return False
 
-        for org_identity in self.__coperson.org_identity:
+        for org_identity in self.__coperson_message.org_identity:
             if not org_identity.identifier:
                 return False
 
@@ -95,10 +102,10 @@ class RegistryPerson:
         Returns:
           the registry ID for the person
         """
-        if not self.__coperson.identifier:
+        if not self.__coperson_message.identifier:
             return None
 
-        for identifier in self.__coperson.identifier:
+        for identifier in self.__coperson_message.identifier:
             if identifier.type == "naccid" and identifier.status == "A":
                 return identifier.identifier
 
@@ -108,10 +115,8 @@ class RegistryPerson:
 class UserRegistry:
     """Repository class for COManage user registry."""
 
-    def __init__(self, api_instance: DefaultApi,
-                 metadata_manager: RegistryMetadataManager, coid: int):
+    def __init__(self, api_instance: DefaultApi, coid: int):
         self.__api_instance = api_instance
-        self.__metadata_manager = metadata_manager
         self.__coid = coid
 
     @property
@@ -133,17 +138,11 @@ class UserRegistry:
         """
 
         try:
-            identifiers = self.__api_instance.add_co_person(
+            return self.__api_instance.add_co_person(
                 coid=self.__coid,
                 co_person_message=person.as_coperson_message())
         except ApiException as error:
             raise RegistryError(f"API call failed: {error}")
-
-        assert person.email_address, "person objects are created with email"
-        self.__metadata_manager.add(
-            PersonInfo(email=person.email_address[0].mail,
-                       creation_date=person.creation_date))
-        return identifiers
 
     def list(self, email: str) -> List[RegistryPerson]:
         """Returns the list of CoPersonMessage objects with the email.
@@ -153,11 +152,6 @@ class UserRegistry:
         Returns:
           the list of CoPersonMessage objects with the email address
         """
-        person_info = self.__metadata_manager.get(email=email)
-        if not person_info:
-            raise RegistryError(
-                f"No creation date for registry person {email}")
-
         limit = 100
         page_index = 0
         read_length = limit
@@ -172,12 +166,18 @@ class UserRegistry:
             except ApiException as error:
                 raise RegistryError(f"API call failed: {error}")
 
-            coperson_dict = response.to_dict()
-            read_length = len(coperson_dict.keys())
+            person_list: List[RegistryPerson] = []
+            if response.var_0:
+                person_list.append(RegistryPerson(response.var_0))
+            if response.additional_properties:
+                for message_object in response.additional_properties.values():
+                    person_list.append(
+                        RegistryPerson(
+                            CoPersonMessage.model_validate(message_object)))
+
+            read_length = len(person_list)
             page_index += 1
 
-            person_list = UserRegistry.create_person_objects(
-                coperson_dict, creation_date=person_info.creation_date)
             for person in person_list:
                 if not person.email_address:
                     continue
@@ -190,26 +190,6 @@ class UserRegistry:
                     continue
 
                 result.append(person)
-
-        return result
-
-    @classmethod
-    def create_person_objects(cls, coperson_dict,
-                              creation_date: datetime) -> List[RegistryPerson]:
-        """Extracts RegistryPerson objects from the response dict.
-
-        Args:
-          coperson_dict: the dictionary response from get_co_person
-        Returns:
-          the list of RegistryPerson objects in the dict
-        """
-        result = []
-        for person_message in coperson_dict.values():
-            coperson = CoPersonMessage.from_dict(person_message)
-            if not coperson:
-                continue
-
-            result.append(RegistryPerson(coperson, create_date=creation_date))
 
         return result
 
