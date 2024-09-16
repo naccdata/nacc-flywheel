@@ -121,7 +121,7 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
                                       email=user_entry.email,
                                       coid=str(registry.coid)))
             email_client.send(destination=destination,
-                              template="claim_email",
+                              template="claim",
                               template_data=template_data)
             log.info('Add user %s to registry', user_entry.email)
             continue
@@ -149,7 +149,7 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
                         type='registry', id=registry_id))
                     user = add_user(proxy=proxy, user_entry=user_entry)
                     email_client.send(destination=destination,
-                                      template="user_creation_email",
+                                      template="user-creation",
                                       template_data=template_data)
                     log.info('Added user %s', user.id)
                 except AssertionError as error:
@@ -179,5 +179,5 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
         time_since_creation = creation_date - datetime.now()
         if time_since_creation.days % 7 == 0:
             email_client.send(destination=destination,
-                              template="user_claim_reminder",
+                              template="followup-claim",
                               template_data=template_data)
