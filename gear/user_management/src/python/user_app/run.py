@@ -4,6 +4,9 @@ import logging
 from io import StringIO
 from typing import Any, List, Optional, Set
 
+from coreapi_client.api.default_api import DefaultApi
+from coreapi_client.api_client import ApiClient
+from coreapi_client.configuration import Configuration
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
@@ -12,7 +15,7 @@ from gear_execution.gear_execution import (
     GearExecutionEnvironment,
     GearExecutionError,
 )
-from inputs.parameter_store import ParameterStore
+from inputs.parameter_store import ParameterError, ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists_from_stream, load_from_stream
 from notifications.email import EmailClient, create_ses_client
 from pydantic import ValidationError
@@ -45,12 +48,15 @@ class UserManagementVisitor(GearExecutionEnvironment):
     """Defines the user management gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper,
-                 user_filepath: str, auth_filepath: str, email_source: str):
+                 user_filepath: str, auth_filepath: str, email_source: str,
+                 comanage_config: Configuration, comanage_coid: int):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__user_filepath = user_filepath
         self.__auth_filepath = auth_filepath
         self.__email_source = email_source
+        self.__comanage_config = comanage_config
+        self.__comanage_coid = comanage_coid
 
     @classmethod
     def create(
@@ -63,6 +69,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
         Args:
             context (GearToolkitContext): The gear context.
         """
+        assert parameter_store, "Parameter store expected"
+
         client = GearBotClient.create(context=context,
                                       parameter_store=parameter_store)
 
@@ -73,12 +81,32 @@ class UserManagementVisitor(GearExecutionEnvironment):
         if not auth_filepath:
             raise GearExecutionError('No user role file provided')
 
+        comanage_path = context.config.get('comanage_parameter_path')
+        if not comanage_path:
+            raise GearExecutionError("No CoManage parameter path")
+        sender_path = context.config.get('sender_path')
+        if not sender_path:
+            raise GearExecutionError('No email sender parameter path')
+
+        try:
+            comanage_parameters = parameter_store.get_comanage_parameters(
+                comanage_path)
+            sender_parameters = parameter_store.get_notification_parameters(
+                sender_path)
+        except ParameterError as error:
+            raise GearExecutionError(f'Parameter error: {error}') from error
+
         return UserManagementVisitor(
             admin_id=context.config.get("admin_group", "nacc"),
             client=client,
             user_filepath=user_filepath,
             auth_filepath=auth_filepath,
-            email_source=context.config.get('email_source', 'nacchelp@uw.edu'))
+            email_source=sender_parameters['sender'],
+            comanage_coid=int(comanage_parameters['coid']),
+            comanage_config=Configuration(
+                host=comanage_parameters['host'],
+                username=comanage_parameters['username'],
+                password=comanage_parameters['apikey']))
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
@@ -98,13 +126,17 @@ class UserManagementVisitor(GearExecutionEnvironment):
             self.__user_filepath,
             skip_list={user.id
                        for user in admin_users if user.id})
-        run(proxy=self.proxy,
-            user_list=user_list,
-            admin_group=admin_group,
-            authorization_map=auth_map,
-            email_client=EmailClient(client=create_ses_client(),
-                                     source="nacchelp@uw.edu"),
-            registry=UserRegistry())
+        with ApiClient(
+                configuration=self.__comanage_config) as comanage_client:
+            comanage_api = DefaultApi(comanage_client)
+            run(proxy=self.proxy,
+                user_list=user_list,
+                admin_group=admin_group,
+                authorization_map=auth_map,
+                email_client=EmailClient(client=create_ses_client(),
+                                         source=self.__email_source),
+                registry=UserRegistry(api_instance=comanage_api,
+                                      coid=self.__comanage_coid))
 
     # pylint: disable=no-self-use
     def __get_user_list(self, user_file_path: str,
