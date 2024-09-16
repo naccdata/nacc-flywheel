@@ -49,18 +49,18 @@ def get_matching_visits(
     module.
 
     Note: This method assumes visit date in file metadata is notmalized to
-    YYYY-MM_DD format at a previous stage of the submission pipeline.
+    YYYY-MM-DD format at a previous stage of the submission pipeline.
 
     Args:
         fw_client: Flywheel SDK client
         container_id: Flywheel subject container ID
         subject: Flywheel subject label for participant
         module: module label, matched with Flywheel acquisition label
-        date_col: name of the visit date column to sort the visits
+        date_col: name of the visit date field to filter the visits
         cutoff_date (optional): If specified, filter visits on date_col >= cutoff_date
 
     Returns:
-        List[Dict]: List of matching visits sorted in the asc. order of date column
+        List[Dict]: List of visits matching with the specified cutoff date
     """
 
     date_col_key = f'file.info.forms.json.{date_col}'
@@ -96,9 +96,7 @@ def get_matching_visits(
     if not result or 'data' not in result:
         return None
 
-    visits = sorted(result['data'], key=lambda d: d[date_col_key])
-
-    return visits
+    return result['data']
 
 
 def run(*,
@@ -117,7 +115,7 @@ def run(*,
         client_wrapper: Flywheel SDK client wrapper
         visits_file_wrapper: Input file wrapper
         subject: Flywheel subject to run the QC checks
-        date_col: field name to sort the participant visits
+        date_col: name of the visit date field (to filter/sort the visits)
         visits_info: Info on new/updated visits for the participant/module
         qc_gear_info: QC gear name and configs
         check_all: re-evaluate all visits for the participant/module

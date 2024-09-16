@@ -140,6 +140,7 @@ class FormQCCoordinator(GearExecutionEnvironment):
         Raises:
           GearExecutionError
         """
+
         try:
             dest_container: Any = context.get_destination_container()
         except ApiException as error:

@@ -15,8 +15,8 @@ from gear_execution.gear_execution import ClientWrapper, GearExecutionError
 from outputs.errors import (
     FileError,
     ListErrorWriter,
-    gear_execution_error,
     previous_visit_failed_error,
+    system_error,
 )
 from pydantic import BaseModel, ConfigDict
 
@@ -69,7 +69,7 @@ class QCCoordinator():
         self._metadata = Metadata(context=gear_context)
 
     def poll_job_status(self, job: Job) -> str:
-        """Check for the completion status of a gear job
+        """Check for the completion status of a gear job.
 
         Args:
             job: Flywheel Job object
@@ -118,7 +118,8 @@ class QCCoordinator():
         return (status == 'complete')
 
     def passed_qc_checks(self, visit_file: FileEntry, gear_name: str) -> bool:
-        """Check the validation status for the specified visit for the specified gear
+        """Check the validation status for the specified visit for the
+        specified gear.
 
         Args:
             visit_file: visit file object
@@ -177,16 +178,16 @@ class QCCoordinator():
         self._subject.set_last_failed_visit(self._module, visit_info)
 
     def run_error_checks(self, *, gear_name: str, gear_configs: QCGearConfigs,
-                         visits: List[Dict[str, str]], date_col: str):
+                         visits: List[Dict[str, str]], date_col: str) -> None:
         """Sequentially trigger the QC checks gear on the provided visits. If a
         visit failed QC validation or error occured while running the QC gear,
         none of the subsequent visits will be evaluated.
 
         Args:
             gear_name: QC checks gear name (form_qc_checker)
-            gear_configss: QC check gear configs
-            visits: set of visits to be evaluated (sorted by visit date)
-            date_col_str: date column name in visits dataframe
+            gear_configs: QC check gear configs
+            visits: set of visits to be evaluated
+            date_col: name of the visit date field to sort the visits
 
         Raises:
             GearExecutionError if errors occurr while triggering the QC gear
@@ -199,10 +200,12 @@ class QCCoordinator():
 
         configs = gear_configs.model_dump()
 
-        visits_queue = deque(visits)
         date_col_key = f'file.info.forms.json.{date_col}'
-        failed_visit = ''
 
+        sorted_visits = sorted(visits, key=lambda d: d[date_col_key])
+        visits_queue = deque(sorted_visits)
+
+        failed_visit = ''
         while len(visits_queue) > 0:
             visit = visits_queue.popleft()
             filename = visit['file.name']
@@ -232,7 +235,9 @@ class QCCoordinator():
                 self.update_last_failed_visit(file_id=file_id,
                                               filename=filename,
                                               visitdate=visitdate)
-                error = gear_execution_error(gear_name)
+                error = system_error(
+                    f'Errors occurred while running gear {gear_name} on this file'
+                )
                 self.update_qc_error_metadata(visit_file, error)
                 failed_visit = visit_file.name
                 break
