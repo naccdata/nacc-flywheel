@@ -8,6 +8,7 @@ from coreapi_client.models.co_person import CoPerson
 from coreapi_client.models.co_person_message import CoPersonMessage
 from coreapi_client.models.co_person_role import CoPersonRole
 from coreapi_client.models.email_address import EmailAddress
+from coreapi_client.models.get_co_person200_response import GetCoPerson200Response
 from coreapi_client.models.identifier import Identifier
 from coreapi_client.models.name import Name
 
@@ -73,6 +74,25 @@ class RegistryPerson:
     @property
     def email_address(self) -> Optional[List[EmailAddress]]:
         return self.__coperson_message.email_address
+
+    def has_email(self, email: str) -> bool:
+        """Indicates whether this person has the email address.
+
+        Args:
+          email: the email address
+        Returns:
+          True if this person has the email address. False, otherwise.
+        """
+        if not self.email_address:
+            return False
+
+        email_addresses = [
+            address for address in self.email_address if email == address.mail
+        ]
+        if not email_addresses:
+            return False
+
+        return True
 
     def is_claimed(self) -> bool:
         """Indicates whether the CoPerson record is claimed.
@@ -166,32 +186,43 @@ class UserRegistry:
             except ApiException as error:
                 raise RegistryError(f"API call failed: {error}")
 
-            person_list: List[RegistryPerson] = []
-            if response.var_0:
-                person_list.append(RegistryPerson(response.var_0))
-            if response.additional_properties:
-                for message_object in response.additional_properties.values():
-                    person_list.append(
-                        RegistryPerson(
-                            CoPersonMessage.model_validate(message_object)))
+            person_list = self.__parse_response(response)
 
             read_length = len(person_list)
             page_index += 1
 
             for person in person_list:
-                if not person.email_address:
-                    continue
-
-                email_addresses = [
-                    address for address in person.email_address
-                    if email == address.mail
-                ]
-                if not email_addresses:
-                    continue
-
-                result.append(person)
+                if person.has_email(email):
+                    result.append(person)
 
         return result
+
+    def __parse_response(
+            self, response: GetCoPerson200Response) -> List[RegistryPerson]:
+        """Collects the CoPersonMessages from the response object and creates a
+        list of RegistryPerson objects.
+
+        The response object has the first person object in response.var_0 as a
+        CoPersonMessage. If there are more person objects, they are in the
+        additional_properties as dictionary objects and have to be loaded
+        as CoPersonMessage objects using Pydantic model_validate.
+
+        Args:
+          the response object
+        Returns:
+          the list of registry person objects
+        """
+        person_list: List[RegistryPerson] = []
+        if response.var_0:
+            person_list.append(RegistryPerson(response.var_0))
+
+        if response.additional_properties:
+            for message_object in response.additional_properties.values():
+                person_list.append(
+                    RegistryPerson(
+                        CoPersonMessage.model_validate(message_object)))
+
+        return person_list
 
 
 class RegistryError(Exception):
