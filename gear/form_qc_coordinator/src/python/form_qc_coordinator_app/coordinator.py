@@ -242,10 +242,10 @@ class QCCoordinator():
                 self.update_last_failed_visit(file_id=file_id,
                                               filename=filename,
                                               visitdate=visitdate)
-                error = system_error(
+                error_obj = system_error(
                     f'Errors occurred while running gear {gear_name} on this file'
                 )
-                self.update_qc_error_metadata(visit_file, error)
+                self.update_qc_error_metadata(visit_file, error_obj)
                 failed_visit = visit_file.name
                 break
 
@@ -274,5 +274,5 @@ class QCCoordinator():
                     log.warning('Error metadata not updated for visit %s',
                                 visit['file.name'])
                     continue
-                error = previous_visit_failed_error(failed_visit)
-                self.update_qc_error_metadata(visit_file, error)
+                error_obj = previous_visit_failed_error(failed_visit)
+                self.update_qc_error_metadata(visit_file, error_obj)
