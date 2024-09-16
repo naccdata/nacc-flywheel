@@ -91,10 +91,10 @@ class QCCoordinator():
         return job.state
 
     def is_job_complete(self, job_id: str) -> bool:
-        """Checks the status of given job.
+        """Checks the status of the given job.
 
         Args:
-            job_id (str): Flywheel job ID
+            job_id: Flywheel job ID
 
         Returns:
             bool: True if job successfully complete, else False
@@ -104,7 +104,7 @@ class QCCoordinator():
         status = self.poll_job_status(job)
         max_retries = 3  # maximum number of retries in Flywheel
         retries = 1
-        while status == 'retired' or retries <= max_retries:
+        while status == 'retried' and retries <= max_retries:
             new_job = self._fwclient.jobs.find_first(
                 f'previous_job_id={job_id}')
             if not new_job:
@@ -128,6 +128,7 @@ class QCCoordinator():
         Returns:
             bool: True if the visit passed validation
         """
+        visit_file = visit_file.reload()
         if not visit_file.info:
             return False
 
@@ -146,7 +147,7 @@ class QCCoordinator():
 
         Args:
             visit_file: FileEntry object for the visits file
-            previous_visit: name of the failed previous visit file
+            error: FileError object with failure info
         """
 
         error_writer = ListErrorWriter(
@@ -157,6 +158,7 @@ class QCCoordinator():
         qc_result = create_qc_result_dict(name='validation',
                                           state='FAIL',
                                           data=error_writer.errors())
+        # add qc-coordinator gear info to visit file metadata
         updated_qc_info = self._metadata.add_gear_info('qc', visit_file,
                                                        **qc_result)
         self._metadata.update_file_metadata(visit_file,
@@ -202,6 +204,7 @@ class QCCoordinator():
 
         date_col_key = f'file.info.forms.json.{date_col}'
 
+        # sort the visits in the ascending order of visit date
         sorted_visits = sorted(visits, key=lambda d: d[date_col_key])
         visits_queue = deque(sorted_visits)
 
@@ -230,7 +233,7 @@ class QCCoordinator():
                 raise GearExecutionError(
                     f'Failed to trigger gear {gear_name} on file {filename}')
 
-            # QC gear did not complete, stop evaluating any subsequent visits
+            # If QC gear did not complete, stop evaluating any subsequent visits
             if not self.is_job_complete(job_id):
                 self.update_last_failed_visit(file_id=file_id,
                                               filename=filename,
@@ -242,19 +245,20 @@ class QCCoordinator():
                 failed_visit = visit_file.name
                 break
 
-            # QC checks failed, stop evaluating any subsequent visits
-            # No need to update failed visit info here, QC gear updates it
+            # If QC checks failed, stop evaluating any subsequent visits
+            # If it gets to this point, that means QC gear completed,
+            # no need to update failed visit info or error metadata, QC gear handles it
             if not self.passed_qc_checks(visit_file, gear_name):
                 failed_visit = visit_file.name
                 break
 
-        # If there are any visits left, update error metadata in the visit file
+        # If there are any visits left, update error metadata in the respective file
         if len(visits_queue) > 0:
             log.info(
                 'Visit %s failed, '
                 'there are %s subsequent visits for this participant.',
                 failed_visit, len(visits_queue))
-            log.info('Updating error metadata for remaining visits')
+            log.info('Adding error metadata to respective visit files')
             while len(visits_queue) > 0:
                 visit = visits_queue.popleft()
                 file_id = visit['file.file_id']

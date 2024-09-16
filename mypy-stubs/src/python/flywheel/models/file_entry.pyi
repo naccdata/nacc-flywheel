@@ -38,3 +38,6 @@ class FileEntry:
     @property
     def info(self) -> Dict[str, Any]:
         ...
+
+    def reload(self) -> FileEntry:
+        ...

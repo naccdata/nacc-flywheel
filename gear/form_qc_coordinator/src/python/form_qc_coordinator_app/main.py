@@ -130,7 +130,7 @@ def run(*,
         curr_visit = sorted(visits_info.visits, key=lambda d: d.visitdate)[0]
         cutoff = curr_visit.visitdate
 
-    module = visits_info.module
+    module = visits_info.module.upper()
     visits_list = get_matching_visits(fw_client=client_wrapper.client,
                                       container_id=subject.id,
                                       subject=subject.label,

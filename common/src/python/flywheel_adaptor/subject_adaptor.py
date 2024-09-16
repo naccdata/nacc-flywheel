@@ -96,20 +96,14 @@ class SubjectAdaptor:
          Raises:
           SubjectError if required metadata is missing
         """
-        qc_info = self.info.get('qc', None)
-        if not qc_info:
-            return None
 
-        module_info = qc_info.get(module.lower(), None)
-        if not module_info:
-            return None
-
-        last_approved = qc_info.get('failed', None)
-        if not last_approved:
+        module_info = self.info.get(module, {})
+        last_failed = module_info.get('failed', None)
+        if not last_failed:
             return None
 
         try:
-            return VisitInfo.model_validate(last_approved)
+            return VisitInfo.model_validate(last_failed)
         except ValidationError as error:
             raise SubjectError('Incomplete failed visit metadata for subject '
                                f'{self.label}/{module} - {error}')
@@ -121,5 +115,26 @@ class SubjectAdaptor:
             module: module label (Flywheel aquisition label)
             failed_visit: failed visit info
         """
-        qc = {'qc': {module.lower(): {'failed': failed_visit.model_dump()}}}
-        self.update(info=qc)
+
+        # make sure to load the existing metadata first and then modify
+        # update_info() will replace everything under the top-level key
+        module_info = self.info.get(module, {})
+        module_info['failed'] = failed_visit.model_dump()
+        updates = {module: module_info}
+        self._subject.update_info(updates)
+
+    def reset_last_failed_visit(self, module: str):
+        """Reset last failed visit info for this subject for the given module.
+
+        Args:
+            module: module label (Flywheel aquisition label)
+        """
+
+        # make sure to load the existing metadata first and then modify
+        # update_info() will replace everything under the top-level key
+        module_info = self.info.get(module, {})
+        module_info['failed'] = {}
+        updates = {module: module_info}
+        # Note: have to use update_info() here for reset to take effect
+        # Using update() will not delete any exsisting data
+        self._subject.update_info(updates)
