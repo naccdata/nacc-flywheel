@@ -1,8 +1,7 @@
 """Run method for user management."""
 import logging
-from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List
+from typing import List, Optional
 
 from centers.nacc_group import NACCGroup
 from coreapi_client.models.identifier import Identifier
@@ -16,43 +15,26 @@ from users.user_registry import RegistryPerson, UserRegistry
 log = logging.getLogger(__name__)
 
 
-def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry) -> User:
-    """Creates a user object from the directory entry.
+def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry,
+             registry_id: str) -> User:
+    """Creates a user object from the directory entry using the registry ID.
 
-    Flywheel constraint (true as of version 17): the user ID and email must be
-    the same even if ID is an ePPN in add_user
-
-    Case can be an issue for IDs both with ORCID and ePPNs.
-    Best we can do is assume ID from directory is correct.
+    The user ID and email must be the same when the user is created.
+    So, email must be reset after the user is in Flywheel.
 
     Args:
       proxy: the proxy object for the FW instance
       user_entry: the directory entry for the user
+      registry_id: the registry ID
     Returns:
       the flywheel User created from the directory entry
     """
+    user_entry.set_credentials(
+        credentials=Credentials(type='registry', id=registry_id))
     new_id = proxy.add_user(user_entry.as_user())
     user = proxy.find_user(user_entry.user_id)
     assert user, f"Failed to find user {new_id} that was just created"
     return user
-
-
-def create_user_map(
-    user_list: List[UserDirectoryEntry]
-) -> Dict[int, List[UserDirectoryEntry]]:
-    """Creates a map from center tags to lists of nacc directory entries.
-
-    Args:
-      user_list: the list of user objects from directory yaml file
-      skip_list: the list of user IDs to skip
-    Returns:
-      map from adcid to lists of nacc directory entries
-    """
-    center_map = defaultdict(list)
-    for user_entry in user_list:
-        center_map[int(user_entry.adcid)].append(user_entry)
-
-    return center_map
 
 
 def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
@@ -79,7 +61,15 @@ def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
 def authorize_user(*, user: User, center_id: int,
                    authorizations: Authorizations, admin_group: NACCGroup,
                    authorization_map: AuthMap) -> None:
-    """Adds authorizations to users."""
+    """Adds authorizations to the user.
+
+    Args:
+      user: the user
+      center_id: the center of the user
+      authorizations: the user authorizations
+      authorization_map: the map from authorization to FW role
+      admin_group: the admin group
+    """
     center_group = admin_group.get_center(center_id)
     if not center_group:
         log.warning('No center found with ID %s', center_id)
@@ -94,26 +84,73 @@ def authorize_user(*, user: User, center_id: int,
                                 auth_map=authorization_map)
 
 
-def add_to_registry(*, user_entry: UserDirectoryEntry, registry: UserRegistry,
-                    destination: DestinationModel, email_client: EmailClient,
-                    template_data: TemplateDataModel) -> List[Identifier]:
+def add_to_registry(*, user_entry: UserDirectoryEntry,
+                    registry: UserRegistry) -> List[Identifier]:
+    """Adds a user to the registry using the user entry data.
+
+    Note: the comanage API was not returning any identifers last checked
+
+    Args:
+      user_entry: the user directory entry
+      registry: the comanage registry
+    Returns:
+      the list of identifiers for the new registry record
+    """
     identifier_list = registry.add(
         RegistryPerson.create(firstname=user_entry.first_name,
                               lastname=user_entry.last_name,
                               email=user_entry.email,
                               coid=str(registry.coid)))
-    email_client.send(destination=destination,
-                      template="claim",
-                      template_data=template_data)
-    log.info('Add user %s to registry', user_entry.email)
 
     return identifier_list
+
+
+def get_registry_id(claimed_list: List[RegistryPerson]) -> Optional[str]:
+    """Gets the registry ID for the person in the list.
+
+    Args:
+      claimed_list: person objects that are claimed
+    Returns:
+      registry ID from person object. None if none is found.
+    """
+    registered = [
+        person.registry_id() for person in claimed_list
+        if person.registry_id()
+    ]
+    if not registered:
+        return None
+    if len(registered) > 1:
+        log.error('More than one registry ID found')
+        return None
+
+    return registered.pop()
+
+
+def get_creation_date(person_list: List[RegistryPerson]) -> Optional[datetime]:
+    """Gets the most recent creation date from the person objects in the list.
+
+    A person object will not have a creation date if was created locally.
+
+    Args:
+      person_list: the list of person objects
+    Return:
+      the max creation date if there is one. None, otherwise.
+    """
+    dates = [
+        person.creation_date for person in person_list if person.creation_date
+    ]
+    if not dates:
+        return None
+
+    return max(dates)
 
 
 def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
         admin_group: NACCGroup, authorization_map: AuthMap,
         registry: UserRegistry, email_client: EmailClient):
     """Manages users based on user list.
+
+    Uses AWS SES email templates: 'claim', 'followup-claim' and 'user-creation'
 
     Args:
       proxy: Flywheel proxy object
@@ -130,37 +167,27 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
         destination = DestinationModel(to_addresses=[user_entry.email])
 
         person_list = registry.list(email=user_entry.email)
-
         if not person_list:
-            identifier_list = add_to_registry(user_entry=user_entry,
-                                              registry=registry,
-                                              destination=destination,
-                                              email_client=email_client,
-                                              template_data=template_data)
+            add_to_registry(user_entry=user_entry, registry=registry)
+            email_client.send(destination=destination,
+                              template="claim",
+                              template_data=template_data)
+            log.info('Added user %s to registry', user_entry.email)
             continue
 
         claimed = [person for person in person_list if person.is_claimed()]
         if claimed:
-            registered = [
-                person.registry_id() for person in claimed
-                if person.registry_id()
-            ]
-            if not registered:
+            registry_id = get_registry_id(claimed)
+            if not registry_id:
                 log.error('User %s has no registry ID', user_entry.email)
                 continue
-            if len(registered) > 1:
-                log.error('Email %s has more than one registry ID %s',
-                          user_entry.email, registered)
-                continue
 
-            registry_id = registered.pop()
-            assert registry_id, 'registry_id should not be None'
             user = proxy.find_user(registry_id)
             if not user:
                 try:
-                    user_entry.set_credentials(credentials=Credentials(
-                        type='registry', id=registry_id))
-                    user = add_user(proxy=proxy, user_entry=user_entry)
+                    user = add_user(proxy=proxy,
+                                    user_entry=user_entry,
+                                    registry_id=registry_id)
                     email_client.send(destination=destination,
                                       template="user-creation",
                                       template_data=template_data)
@@ -179,16 +206,12 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
             continue
 
         # if not claimed, send an email each week
-        dates = [
-            person.creation_date for person in person_list
-            if person.creation_date
-        ]
-        if not dates:
+        creation_date = get_creation_date(person_list)
+        if not creation_date:
             log.warning('person record for %s has no creation date',
                         user_entry.email)
             continue
 
-        creation_date = max(dates)
         time_since_creation = creation_date - datetime.now()
         if time_since_creation.days % 7 == 0:
             email_client.send(destination=destination,
