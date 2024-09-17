@@ -237,14 +237,16 @@ def process_data_record(*,
 
 
 def load_rule_definition_schemas(
-        s3_client: S3BucketReader, input_data: dict[str, Any],
-        filename: str) -> tuple[Dict[str, Mapping], Optional[Dict[str, Dict]]]:
+    s3_client: S3BucketReader, input_data: dict[str, Any], filename: str,
+    error_writer: ListErrorWriter
+) -> tuple[Dict[str, Mapping], Optional[Dict[str, Dict]]]:
     """Download QC rule definitions and error code mappings from S3 bucket.
 
     Args:
         s3_client: S3 client
         input_data: input data record
-        filename: input file name
+        filename: input file name,
+        error_writer: error writer object to output error metadata
 
     Raises:
         GearExecutionError: if error occurred while loading schemas
@@ -255,7 +257,7 @@ def load_rule_definition_schemas(
 
     # For CSV input, assumes all the records belong to the same module
     if Keys.MODULE in input_data and input_data[Keys.MODULE]:
-        module = str(input_data[Keys.MODULE])
+        module = str(input_data[Keys.MODULE]).upper()
     else:
         module = get_module_name_from_file_suffix(filename)
 
@@ -263,21 +265,29 @@ def load_rule_definition_schemas(
         raise GearExecutionError(
             f'Failed to extract module information from file {filename}')
 
-    s3_prefix = module.upper()
+    s3_prefix = module
     if Keys.PACKET in input_data and input_data[Keys.PACKET]:
-        s3_prefix = f'{s3_prefix}/{str(input_data[Keys.PACKET]).upper()}'
+        packet = str(input_data[Keys.PACKET]).upper()
+        s3_prefix = f'{s3_prefix}/{packet}'
 
     parser = Parser(s3_client)
     try:
-        schema = parser.download_rule_definitions(f'{s3_prefix}/rules/')
+        optional_forms = parser.get_optional_forms_submission_status(
+            input_data=input_data,
+            module=module,
+            packet=packet,
+            error_writer=error_writer)
+        schema = parser.download_rule_definitions(f'{s3_prefix}/rules/',
+                                                  optional_forms)
     except ParserException as error:
         raise GearExecutionError(error) from error
 
     try:
         codes_map: Optional[Dict[str,
                                  Dict]] = parser.download_rule_definitions(
-                                     f'{s3_prefix}/codes/')  # type: ignore
-    # TODO - validate code mapping schema
+                                     f'{s3_prefix}/codes/',
+                                     optional_forms)  # type: ignore
+        # TODO - validate code mapping schema
     except ParserException as error:
         log.warning(error)
         codes_map = None
@@ -303,7 +313,7 @@ def get_module_name_from_file_suffix(filename: str) -> Optional[str]:
     module = None
     pattern = '^.*-([a-z]+v[0-9])\\.csv$'
     if match := re.search(pattern, filename, re.IGNORECASE):
-        module = match.group(1)
+        module = match.group(1).upper()
 
     return module
 
@@ -370,10 +380,16 @@ def run(*,
                                                  visitor=csv_visitor)
 
             if input_data:
+                # Note: Optional forms check is not implemented for CSV files
+                # Currently only enrollment module is submitted as a CSV file,
+                # and does not require optional forms check.
+                # Need to change the way we load rule definitions if we
+                # have to support optional forms chek for CSV inputs.
                 schema, codes_map = load_rule_definition_schemas(
                     s3_client=s3_client,
                     input_data=input_data,
-                    filename=input_wrapper.filename)
+                    filename=input_wrapper.filename,
+                    error_writer=error_writer)
 
                 datastore = FlywheelDatastore(client_wrapper.client,
                                               file.parents.group,
