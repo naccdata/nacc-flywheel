@@ -5,7 +5,7 @@
         "parameter_path": "/prod/flywheel/gearbot/qcrules",
         "qc_checks_db_path": "/redcap/aws/qcchecks",
         "primary_key": "naccid",
-        "strict_mode": false,
+        "strict_mode": true,
         "tag": "form-qc-checker"
     }
 }
