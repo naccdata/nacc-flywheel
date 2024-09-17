@@ -1,79 +1,14 @@
 # User management
 
-The user management utility reads a user file from the admin project and updates the listed users.
+The user management utility reads user information from the user directory file and authorizations file, and for each user may
 
-## Environment
+1. register the user in the CoManage registry, and email instructions to claim the registry record;
+2. if the user registry record is claimed
+   1. add the user to Flywheel,
+   2. add authorized users to REDCap projects, and
+   3. add user roles (from authorization file) to Flywheel projects.
+3. remind the user if their record has not been claimed
 
-The script expects the `FW_API_KEY` environment variables to be set, which should be an API key for the FW instance.
-
-## Flywheel configuration
-
-The script expects two YAML files as input: the list of users, and the map from user authorizations to Flywheel role names.
-
-The user file should contain a list of user information
-
-```yaml
----
-- authorizations:
-    approve_data: <Boolean> # whether user can approve data
-    audit_data: <Boolean>   # whether user audits data quality
-    submit:
-    - <datatype name>       # datatypes which user can submit
-    view_reports: <Boolean> # whether user can view reports
-  center_id: <integer ID>   # the ADCID for the center
-  credentials:
-    id: <id-value>          # user ID (email or ePPN)
-    type: <type-name>       # type of credential
-  email: <email-address>    # user email
-  name:
-    first_name: <user first name> 
-    last_name: <user last name>
-  org_name: <center name>
-  submit_time: <datetime of submission>
-  ```
-
-The authorization map defines a mapping $project\to (authorization\to role)$
-
-```yaml
----
-<project-id>:
-  approve-data: <rolename>
-  audit-data: <rolename>
-  view-reports: <rolename>
-  submit-form: <rolename>
-  submit-image: <rolename>
-```
-
-Valid project IDs are determined by the project management script.
-These are:
-
-- `accepted` or `accepted-<study-id>`
-- `metadata`
-- `ingest-<datatype>` or `ingest-<datatype>-<study-id>`
-- `sandbox-<datatype>` or `sandbox-<datatype>-<study-id>`
-
-The datatypes and study IDs are determined by the study definition used by project management.
-
-The role names are set in the Flywheel instance.
-Roles used by NACC for center users include `read-only`, `curate` and `upload`.
-
-If an authorization has no access to a project, it should be left off the list.
-For instance, `submit-form` would have no corresponding role for `ingest-dicom`
-
-  
-## Running from command-line
-
-  The script can be run with
-
-  ```bash
-  pants run user_management/src/python/user_app:bin -- <filename>
-  ```
-
-  which will update users listed in the named file.
-
-  Additional command line arguments are `--dry_run` to run the script without making changes, and `--admin_group` to indicate the group in which the file is found.
-  The default admin group is `nacc`.
-  
 ## User Enrollment Process
 
 ### Center member authorization
@@ -138,3 +73,73 @@ sequenceDiagram
         end
     end
 ```
+
+## Environment
+
+The gear should be run in an environment with environment variables `AWS_SECRET_ACCESS_KEY`, `AWS_ACCESS_KEY_ID`, and `AWS_DEFAULT_REGION` set.
+These are used to access parameters in the AWS parameter store.
+
+Parameters must be set for 
+
+- CoManage API calls, and
+- sender address for sending email notifications.
+
+The gear also sends emails using AWS SES templating and needs templates for
+ 
+- claiming registry record
+- reminder for claiming registry record, and
+- user creation. 
+
+## Flywheel configuration
+
+The script expects two YAML files as input: the list of users, and the map from user authorizations to Flywheel role names.
+
+The user file should contain a list of user information
+
+```yaml
+---
+- authorizations:
+    approve_data: <Boolean> # whether user can approve data
+    audit_data: <Boolean>   # whether user audits data quality
+    submit:
+    - <datatype name>       # datatypes which user can submit
+    view_reports: <Boolean> # whether user can view reports
+  center_id: <integer ID>   # the ADCID for the center
+  credentials:
+    id: <id-value>          # user ID (email or ePPN)
+    type: <type-name>       # type of credential
+  email: <email-address>    # user email
+  name:
+    first_name: <user first name> 
+    last_name: <user last name>
+  org_name: <center name>
+  submit_time: <datetime of submission>
+  ```
+
+The authorization map defines a mapping $project\to (authorization\to role)$
+
+```yaml
+---
+<project-id>:
+  approve-data: <rolename>
+  audit-data: <rolename>
+  view-reports: <rolename>
+  submit-form: <rolename>
+  submit-image: <rolename>
+```
+
+Valid project IDs are determined by the project management script.
+These are:
+
+- `accepted` or `accepted-<study-id>`
+- `metadata`
+- `ingest-<datatype>` or `ingest-<datatype>-<study-id>`
+- `sandbox-<datatype>` or `sandbox-<datatype>-<study-id>`
+
+The datatypes and study IDs are determined by the study definition used by project management.
+
+The role names are set in the Flywheel instance.
+Roles used by NACC for center users include `read-only`, `curate` and `upload`.
+
+If an authorization has no access to a project, it should be left off the list.
+For instance, `submit-form` would have no corresponding role for `ingest-dicom`
