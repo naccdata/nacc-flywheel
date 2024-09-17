@@ -162,7 +162,7 @@ class UserRegistry:
                 coid=self.__coid,
                 co_person_message=person.as_coperson_message())
         except ApiException as error:
-            raise RegistryError(f"API call failed: {error}")
+            raise RegistryError(f"API call failed: {error}") from error
 
     def list(self, email: str) -> List[RegistryPerson]:
         """Returns the list of CoPersonMessage objects with the email.
@@ -184,7 +184,7 @@ class UserRegistry:
                                                              limit=limit,
                                                              page=page_index)
             except ApiException as error:
-                raise RegistryError(f"API call failed: {error}")
+                raise RegistryError(f"API call failed: {error}") from error
 
             person_list = self.__parse_response(response)
 
