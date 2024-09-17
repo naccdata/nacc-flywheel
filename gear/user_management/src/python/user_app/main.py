@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Dict, List
 
 from centers.nacc_group import NACCGroup
+from coreapi_client.models.identifier import Identifier
 from flywheel import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from notifications.email import DestinationModel, EmailClient, TemplateDataModel
@@ -93,6 +94,22 @@ def authorize_user(*, user: User, center_id: int,
                                 auth_map=authorization_map)
 
 
+def add_to_registry(*, user_entry: UserDirectoryEntry, registry: UserRegistry,
+                    destination: DestinationModel, email_client: EmailClient,
+                    template_data: TemplateDataModel) -> List[Identifier]:
+    identifier_list = registry.add(
+        RegistryPerson.create(firstname=user_entry.first_name,
+                              lastname=user_entry.last_name,
+                              email=user_entry.email,
+                              coid=str(registry.coid)))
+    email_client.send(destination=destination,
+                      template="claim",
+                      template_data=template_data)
+    log.info('Add user %s to registry', user_entry.email)
+
+    return identifier_list
+
+
 def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
         admin_group: NACCGroup, authorization_map: AuthMap,
         registry: UserRegistry, email_client: EmailClient):
@@ -115,15 +132,11 @@ def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
         person_list = registry.list(email=user_entry.email)
 
         if not person_list:
-            identifier_list = registry.add(
-                RegistryPerson.create(firstname=user_entry.first_name,
-                                      lastname=user_entry.last_name,
-                                      email=user_entry.email,
-                                      coid=str(registry.coid)))
-            email_client.send(destination=destination,
-                              template="claim",
-                              template_data=template_data)
-            log.info('Add user %s to registry', user_entry.email)
+            identifier_list = add_to_registry(user_entry=user_entry,
+                                              registry=registry,
+                                              destination=destination,
+                                              email_client=email_client,
+                                              template_data=template_data)
             continue
 
         claimed = [person for person in person_list if person.is_claimed()]
