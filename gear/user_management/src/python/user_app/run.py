@@ -1,8 +1,7 @@
 """The run script for the user management gear."""
 
 import logging
-from io import StringIO
-from typing import Any, List, Optional, Set
+from typing import List, Optional, Set
 
 from coreapi_client.api.default_api import DefaultApi
 from coreapi_client.api_client import ApiClient
@@ -16,7 +15,7 @@ from gear_execution.gear_execution import (
     GearExecutionError,
 )
 from inputs.parameter_store import ParameterError, ParameterStore
-from inputs.yaml import YAMLReadError, get_object_lists_from_stream, load_from_stream
+from inputs.yaml import YAMLReadError, load_from_stream
 from notifications.email import EmailClient, create_ses_client
 from pydantic import ValidationError
 from users.authorizations import AuthMap
@@ -26,22 +25,6 @@ from users.user_registry import UserRegistry
 from user_app.main import run
 
 log = logging.getLogger(__name__)
-
-
-def read_yaml_file(file_bytes: bytes) -> Optional[List[Any]]:
-    """Reads user objects from YAML user file in the source project.
-
-    Args:
-      file_bytes: The file input stream
-    Returns:
-      List of user objects
-    """
-    entry_docs = get_object_lists_from_stream(
-        StringIO(file_bytes.decode('utf-8')))
-    if not entry_docs or not entry_docs[0]:
-        return None
-
-    return entry_docs[0]
 
 
 class UserManagementVisitor(GearExecutionEnvironment):
@@ -122,7 +105,6 @@ class UserManagementVisitor(GearExecutionEnvironment):
         auth_map = self.__get_auth_map(self.__auth_filepath)
         admin_group = self.admin_group(admin_id=self.__admin_id)
         admin_users = admin_group.get_group_users(access='admin')
-        # TODO: decide if skip list for admin users makes sense with registry
         user_list = self.__get_user_list(
             self.__user_filepath,
             skip_list={user.id
