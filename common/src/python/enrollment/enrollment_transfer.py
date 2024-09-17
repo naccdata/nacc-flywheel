@@ -93,7 +93,7 @@ class EnrollmentRecord(BaseModel):
     def create_from(cls, row: Dict[str, Any]) -> 'EnrollmentRecord':
         """Creates an enrollment record from row of enrollment/transfer form.
 
-        Assumes form is PTERNLv1.
+        Assumes form is enrollv1.
 
         Args:
           row: the dictionary for the row of form data
