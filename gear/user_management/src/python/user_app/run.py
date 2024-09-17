@@ -122,6 +122,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         auth_map = self.__get_auth_map(self.__auth_filepath)
         admin_group = self.admin_group(admin_id=self.__admin_id)
         admin_users = admin_group.get_group_users(access='admin')
+        # TODO: decide if skip list for admin users makes sense with registry
         user_list = self.__get_user_list(
             self.__user_filepath,
             skip_list={user.id
@@ -138,7 +139,6 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 registry=UserRegistry(api_instance=comanage_api,
                                       coid=self.__comanage_coid))
 
-    # pylint: disable=no-self-use
     def __get_user_list(self, user_file_path: str,
                         skip_list: Set[str]) -> List[UserDirectoryEntry]:
         """Get the user objects from the user file.
@@ -173,7 +173,6 @@ class UserManagementVisitor(GearExecutionEnvironment):
 
         return user_list
 
-    # pylint: disable=no-self-use
     def __get_auth_map(self, auth_file_path: str) -> AuthMap:
         """Get the authorization map from the auth file.
 
