@@ -3,6 +3,7 @@
 import logging
 from typing import Dict, Optional
 
+from flywheel.models.group import Group
 from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from pydantic import BaseModel, ValidationError
@@ -54,6 +55,10 @@ class CenterMapInfo(BaseModel):
 
 class NACCGroup(CenterAdaptor):
     """Manages group for NACC."""
+
+    def __init__(self, *, group: Group, proxy: FlywheelProxy) -> None:
+        super().__init__(group=group, proxy=proxy)
+        self.__admin_project: Optional[ProjectAdaptor] = None
 
     @classmethod
     def create(cls,
