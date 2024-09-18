@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Literal, NewType, Optional
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
+from flywheel.models.user import User
 from users.authorizations import Authorizations
 
 log = logging.getLogger(__name__)
@@ -46,6 +47,39 @@ class UserEntry(BaseModel):
           A dictionary with values of this entry
         """
         return self.model_dump(serialize_as_any=True)  # type: ignore
+
+    def as_user(self) -> User:
+        """Creates a user object from the directory entry.
+
+        Flywheel constraint (true as of version 17): the user ID and email must be
+        the same even if ID is an ePPN in add_user
+
+        Args:
+        user_entry: the directory entry for the user
+        Returns:
+        the User object for flywheel User created from the directory entry
+        """
+        return User(id=self.user_id,
+                    firstname=self.first_name,
+                    lastname=self.last_name,
+                    email=self.user_id)
+    
+
+    def as_user(self) -> User:
+        """Creates a user object from the directory entry.
+
+        Flywheel constraint (true as of version 17): the user ID and email must be
+        the same even if ID is an ePPN in add_user
+
+        Args:
+        user_entry: the directory entry for the user
+        Returns:
+        the User object for flywheel User created from the directory entry
+        """
+        return User(id=self.user_id,
+                    firstname=self.first_name,
+                    lastname=self.last_name,
+                    email=self.user_id)
 
     @classmethod
     def create(cls, entry: Dict[str, Any]) -> "UserEntry":

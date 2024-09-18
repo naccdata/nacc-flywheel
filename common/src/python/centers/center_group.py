@@ -15,6 +15,7 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor, Project
 from projects.study import Center, Study
 from projects.template_project import TemplateProject
 from pydantic import AliasGenerator, BaseModel, ConfigDict, ValidationError
+from serialization.case import kebab_case
 from users.authorizations import AuthMap
 from users.nacc_directory import Authorizations
 
@@ -541,17 +542,6 @@ class CenterError(Exception):
           the message
         """
         return self.__message
-
-
-def kebab_case(name: str) -> str:
-    """Converts the name to kebab case.
-
-    Args:
-      name: the name to convert
-    Returns:
-      the name in kebab case
-    """
-    return name.lower().replace('_', '-')
 
 
 class ProjectMetadata(BaseModel):
