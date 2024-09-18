@@ -587,8 +587,8 @@ class FormIngestProjectMetadata(IngestProjectMetadata):
     """Metadata for a form ingest project.
 
     This class represents the metadata for a form ingest project within
-    a center. It inherits from the FormIngestProjectMetadata class and
-    adds additional attributes specific to form ingest projects.
+    a center. It inherits from the IngestProjectMetadata class and adds
+    additional attributes specific to form ingest projects.
     """
     redcap_projects: Dict[str, REDCapFormProject] = {}
 
