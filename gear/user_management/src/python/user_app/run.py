@@ -1,7 +1,7 @@
 """The run script for the user management gear."""
 
 import logging
-from typing import List, Optional, Set
+from typing import List, Optional
 
 from coreapi_client.api.default_api import DefaultApi
 from coreapi_client.api_client import ApiClient
@@ -19,7 +19,7 @@ from inputs.yaml import YAMLReadError, load_from_stream
 from notifications.email import EmailClient, create_ses_client
 from pydantic import ValidationError
 from users.authorizations import AuthMap
-from users.nacc_directory import UserDirectoryEntry, UserFormatError
+from users.nacc_directory import ActiveUserEntry, UserFormatError
 from users.user_registry import UserRegistry
 
 from user_app.main import run
@@ -104,11 +104,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
 
         auth_map = self.__get_auth_map(self.__auth_filepath)
         admin_group = self.admin_group(admin_id=self.__admin_id)
-        admin_users = admin_group.get_group_users(access='admin')
-        user_list = self.__get_user_list(
-            self.__user_filepath,
-            skip_list={user.id
-                       for user in admin_users if user.id})
+        user_list = self.__get_user_list(self.__user_filepath)
         with ApiClient(
                 configuration=self.__comanage_config) as comanage_client:
             comanage_api = DefaultApi(comanage_client)
@@ -121,9 +117,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 registry=UserRegistry(api_instance=comanage_api,
                                       coid=self.__comanage_coid))
 
-    def __get_user_list(self, user_file_path: str,
-                        skip_list: Set[str]) -> List[UserDirectoryEntry]:
-        """Get the user objects from the user file.
+    def __get_user_list(self, user_file_path: str) -> List[ActiveUserEntry]:
+        """Get the active user objects from the user file.
 
         Args:
             user_file_path: The path to the user file.
@@ -142,16 +137,15 @@ class UserManagementVisitor(GearExecutionEnvironment):
 
         user_list = []
         for user_doc in object_list:
+            if not user_doc.get('active'):
+                continue
+
             try:
-                user_entry = UserDirectoryEntry.create(user_doc)
+                user_entry = ActiveUserEntry.create(user_doc)
+                user_list.append(user_entry)
             except UserFormatError as error:
                 log.error('Error creating user entry: %s', error)
                 continue
-            if user_entry.user_id in skip_list:
-                log.info('Skipping user: %s', user_entry.user_id)
-                continue
-
-            user_list.append(user_entry)
 
         return user_list
 
