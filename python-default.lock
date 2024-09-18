@@ -1041,13 +1041,13 @@
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "f34d8908fa6a29d3dec57a373160d2defca3e2250d689864b23c9fea95669f97",
-              "url": "https://files.pythonhosted.org/packages/29/1d/9776890c7c4f070edb8d35ee986d9cde951e1f4187439f73f47922a6c6e9/botocore_stubs-1.35.20-py3-none-any.whl"
+              "hash": "ae3a0810110e831bf29f73772fbd137f37444e12b0945583cd18e0a12d809e6f",
+              "url": "https://files.pythonhosted.org/packages/d9/04/3c65ac86e40c9fa5c6915d7a290e8a7bae5e738135114c4b93fd1e3cc93d/botocore_stubs-1.35.21-py3-none-any.whl"
             },
             {
               "algorithm": "sha256",
-              "hash": "f5f6e2e846fa924d26a6c9c07d44ab0572db6d841f7be83591b60241cecd031f",
-              "url": "https://files.pythonhosted.org/packages/a3/13/adb4f9ed4ac203bda67028a671d33330392494cef8bdd94462d8df3660e4/botocore_stubs-1.35.20.tar.gz"
+              "hash": "4859206b5766907ecfeff42c25d6596ffaa0b0528b0b41d7eaa081f59dc591fc",
+              "url": "https://files.pythonhosted.org/packages/42/18/66ff3d159ff06f6d78a63a480f40e11ae2b4a5f6557a61d1c68528c4e3bc/botocore_stubs-1.35.21.tar.gz"
             }
           ],
           "project_name": "botocore-stubs",
@@ -1057,7 +1057,7 @@
             "typing-extensions>=4.1.0; python_version < \"3.9\""
           ],
           "requires_python": ">=3.8",
-          "version": "1.35.20"
+          "version": "1.35.21"
         },
         {
           "artifacts": [
@@ -1354,43 +1354,6 @@
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "5ef3b9680161f6fa89daf8ad451b5f1a33b18ae8a1c6778cdf4b43f08c0a6e50",
-              "url": "https://files.pythonhosted.org/packages/87/a1/8c5287991ddb8d3e4662f71356d9656d91ab3a36618c3dd11b280df0d255/dnspython-2.6.1-py3-none-any.whl"
-            },
-            {
-              "algorithm": "sha256",
-              "hash": "e8f0f9c23a7b7cb99ded64e6c3a6f3e701d78f50c55e002b839dea7225cff7cc",
-              "url": "https://files.pythonhosted.org/packages/37/7d/c871f55054e403fdfd6b8f65fd6d1c4e147ed100d3e9f9ba1fe695403939/dnspython-2.6.1.tar.gz"
-            }
-          ],
-          "project_name": "dnspython",
-          "requires_dists": [
-            "aioquic>=0.9.25; extra == \"doq\"",
-            "black>=23.1.0; extra == \"dev\"",
-            "coverage>=7.0; extra == \"dev\"",
-            "cryptography>=41; extra == \"dnssec\"",
-            "flake8>=7; extra == \"dev\"",
-            "h2>=4.1.0; extra == \"doh\"",
-            "httpcore>=1.0.0; extra == \"doh\"",
-            "httpx>=0.26.0; extra == \"doh\"",
-            "idna>=3.6; extra == \"idna\"",
-            "mypy>=1.8; extra == \"dev\"",
-            "pylint>=3; extra == \"dev\"",
-            "pytest-cov>=4.1.0; extra == \"dev\"",
-            "pytest>=7.4; extra == \"dev\"",
-            "sphinx>=7.2.0; extra == \"dev\"",
-            "trio>=0.23; extra == \"trio\"",
-            "twine>=4.0.0; extra == \"dev\"",
-            "wheel>=0.42.0; extra == \"dev\"",
-            "wmi>=1.5.1; extra == \"wmi\""
-          ],
-          "requires_python": ">=3.8",
-          "version": "2.6.1"
-        },
-        {
-          "artifacts": [
-            {
-              "algorithm": "sha256",
               "hash": "5022d234d9922f13aa711b4950372a06a6d64cb6d6db9ba43d0ba133ebfce31f",
               "url": "https://files.pythonhosted.org/packages/1a/91/e0d457ee03ec33d79ee2cd8d212debb1bc21dfb99728ae35efdb5832dc22/dotty_dict-1.3.1-py3-none-any.whl"
             },
@@ -1508,19 +1471,19 @@
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "4bb6c9d9b4d7be9e0f1e251143a78cac99eded7c9287573081636b6d405a8d50",
-              "url": "https://files.pythonhosted.org/packages/2c/68/c19d958f5ef2e5afe6964861d2c782a432d5349c54342d01c96dac214f56/fw_utils-5.0.2-py3-none-any.whl"
+              "hash": "0c7fae1e97bb92052a47f24c83edf294dbcd695d96547f44345d824d08336b46",
+              "url": "https://files.pythonhosted.org/packages/0a/18/e87cdae8f8821a5f9684facf7e6ad116d826cac673700d0edc112778dae2/fw_utils-5.0.3-py3-none-any.whl"
             }
           ],
           "project_name": "fw-utils",
           "requires_dists": [
-            "pymongo<5.0.0,>=4.8.0",
+            "pymongo<5.0.0,>=4.8.0; extra == \"all\"",
             "python-dateutil<3.0.0,>=2.8.2",
             "tzdata>=2022",
             "tzlocal>=4.1"
           ],
           "requires_python": "<4.0,>=3.8",
-          "version": "5.0.2"
+          "version": "5.0.3"
         },
         {
           "artifacts": [
@@ -2373,75 +2336,6 @@
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "3b5802151fc2b51cd45492c80ed22b441d20090fb76d1fd53cd7760b340ff554",
-              "url": "https://files.pythonhosted.org/packages/af/81/4074148396415ac19074a1a144e1cd6b2ff000f5ef253ed24a4e3e9ff340/pymongo-4.8.0-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl"
-            },
-            {
-              "algorithm": "sha256",
-              "hash": "454f2295875744dc70f1881e4b2eb99cdad008a33574bc8aaf120530f66c0cde",
-              "url": "https://files.pythonhosted.org/packages/05/2c/ad0896cb94668c3cad1eb702ab60ae17036b051f54cfe547f11a0322f1d3/pymongo-4.8.0.tar.gz"
-            },
-            {
-              "algorithm": "sha256",
-              "hash": "6b50040d9767197b77ed420ada29b3bf18a638f9552d80f2da817b7c4a4c9c68",
-              "url": "https://files.pythonhosted.org/packages/0a/3d/bba2845c76dddcd8c34d5014da80346851df048eefa826acb13265affba2/pymongo-4.8.0-cp311-cp311-macosx_10_9_x86_64.whl"
-            },
-            {
-              "algorithm": "sha256",
-              "hash": "cc8b8582f4209c2459b04b049ac03c72c618e011d3caa5391ff86d1bda0cc486",
-              "url": "https://files.pythonhosted.org/packages/37/ed/5258d22a91ea6e0b9d72e0aa7674f5a9951fea0c036d1063f29bc45a35d2/pymongo-4.8.0-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl"
-            },
-            {
-              "algorithm": "sha256",
-              "hash": "9365166aa801c63dff1a3cb96e650be270da06e3464ab106727223123405510f",
-              "url": "https://files.pythonhosted.org/packages/57/64/281c9c8efb98ab6c6fcf44bf7cc33e17bcb163cb9c9260c9d78d2318d013/pymongo-4.8.0-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl"
-            },
-            {
-              "algorithm": "sha256",
-              "hash": "bf821bd3befb993a6db17229a2c60c1550e957de02a6ff4dd0af9476637b2e4d",
-              "url": "https://files.pythonhosted.org/packages/be/1a/3d9b9fb3f9de9da46919fef900fe88090f5865a09ae9e0e19496a603a819/pymongo-4.8.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
-            },
-            {
-              "algorithm": "sha256",
-              "hash": "417369ce39af2b7c2a9c7152c1ed2393edfd1cbaf2a356ba31eb8bcbd5c98dd7",
-              "url": "https://files.pythonhosted.org/packages/c2/ca/d177c3ad846bad631b548b27c261821d25a08d608dca134aedb1b00b98fe/pymongo-4.8.0-cp311-cp311-macosx_11_0_arm64.whl"
-            },
-            {
-              "algorithm": "sha256",
-              "hash": "16e5019f75f6827bb5354b6fef8dfc9d6c7446894a27346e03134d290eb9e758",
-              "url": "https://files.pythonhosted.org/packages/f3/7f/6d231046d9caf43395f9406dbef885f122edbee172ec6a3a6ea330e07848/pymongo-4.8.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
-            }
-          ],
-          "project_name": "pymongo",
-          "requires_dists": [
-            "certifi; (os_name == \"nt\" or sys_platform == \"darwin\") and extra == \"encryption\"",
-            "certifi; (os_name == \"nt\" or sys_platform == \"darwin\") and extra == \"ocsp\"",
-            "cryptography>=2.5; extra == \"ocsp\"",
-            "dnspython<3.0.0,>=1.16.0",
-            "furo==2023.9.10; extra == \"docs\"",
-            "pykerberos; os_name != \"nt\" and extra == \"gssapi\"",
-            "pymongo-auth-aws<2.0.0,>=1.1.0; extra == \"aws\"",
-            "pymongo-auth-aws<2.0.0,>=1.1.0; extra == \"encryption\"",
-            "pymongocrypt<2.0.0,>=1.6.0; extra == \"encryption\"",
-            "pyopenssl>=17.2.0; extra == \"ocsp\"",
-            "pytest>=7; extra == \"test\"",
-            "python-snappy; extra == \"snappy\"",
-            "readthedocs-sphinx-search~=0.3; extra == \"docs\"",
-            "requests<3.0.0; extra == \"ocsp\"",
-            "service-identity>=18.1.0; extra == \"ocsp\"",
-            "sphinx-rtd-theme<3,>=2; extra == \"docs\"",
-            "sphinx<8,>=5.3; extra == \"docs\"",
-            "sphinxcontrib-shellcheck<2,>=1; extra == \"docs\"",
-            "winkerberos>=0.5.0; os_name == \"nt\" and extra == \"gssapi\"",
-            "zstandard; extra == \"zstd\""
-          ],
-          "requires_python": ">=3.8",
-          "version": "4.8.0"
-        },
-        {
-          "artifacts": [
-            {
-              "algorithm": "sha256",
               "hash": "a6853c7375b2663155079443d2e45de913a911a11d669df02a50814944db57b2",
               "url": "https://files.pythonhosted.org/packages/6b/77/7440a06a8ead44c7757a64362dd22df5760f9b12dc5f11b6188cd2fc27a0/pytest-8.3.3-py3-none-any.whl"
             },
@@ -2959,24 +2853,6 @@
           "requires_dists": [],
           "requires_python": null,
           "version": "1.1.10"
-        },
-        {
-          "artifacts": [
-            {
-              "algorithm": "sha256",
-              "hash": "27c8cc2d058ccb14946eebcaaa503088f4f6dbc4fb6093d3d456a49aef2753f6",
-              "url": "https://files.pythonhosted.org/packages/aa/4c/5c684b333135a6fb085bb5a5bdfd962937f80bec06745a88fd551e29f4d9/types_python_dateutil-2.9.0.20240906-py3-none-any.whl"
-            },
-            {
-              "algorithm": "sha256",
-              "hash": "9706c3b68284c25adffc47319ecc7947e5bb86b3773f843c73906fd598bc176e",
-              "url": "https://files.pythonhosted.org/packages/3e/d9/9c9ec2d870af7aa9b722ce4fd5890bb55b1d18898df7f1d069cab194bb2a/types-python-dateutil-2.9.0.20240906.tar.gz"
-            }
-          ],
-          "project_name": "types-python-dateutil",
-          "requires_dists": [],
-          "requires_python": ">=3.8",
-          "version": "2.9.0.20240906"
         },
         {
           "artifacts": [

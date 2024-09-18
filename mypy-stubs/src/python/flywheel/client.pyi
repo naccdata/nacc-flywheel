@@ -132,7 +132,7 @@ class Client:
         ...
 
     def read_view_data(self, view, container_id, decode=True, **kwargs):
-        """returns a file-like object where the contents can be read"""
+        """returns a file-like object where the contents can be read."""
         ...
 
     def get_project(self, id: str) -> Project:
