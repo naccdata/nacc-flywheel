@@ -1,7 +1,7 @@
 """Classes for NACC directory user credentials."""
 
 import logging
-from typing import Any, Dict, Iterable, List, Literal, NewType, Optional
+from typing import Any, Dict, List, Literal, NewType, Optional
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 

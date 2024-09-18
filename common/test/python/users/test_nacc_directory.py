@@ -1,6 +1,5 @@
 """Tests for UserDirectory class."""
 
-from datetime import datetime
 from typing import List, Optional
 
 from users.authorizations import DatatypeNameType
@@ -40,7 +39,6 @@ def user_entry(email: str,
                                     audit_data=audit_data,
                                     approve_data=approve_data,
                                     view_reports=view_reports)
-    dummytime = datetime(2023, 1, 1)
     return ActiveUserEntry(org_name='dummy',
                            adcid=0,
                            name=name,
