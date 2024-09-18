@@ -221,6 +221,16 @@ class UserDirectory:
         """
         return list(self.__email_map.values())
 
+    def get(self, email) -> Optional[UserEntry]:
+        """Returns the entry for the email.
+
+        Args:
+          email: the email
+        Returns:
+          the UserEntry with the email
+        """
+        return self.__email_map.get(email)
+
     def has_entry_email(self, email):
         """Determines whether directory has an entry for the email address.
 
