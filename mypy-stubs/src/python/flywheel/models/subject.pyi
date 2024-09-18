@@ -50,5 +50,5 @@ class Subject:
         ...
 
     def update_info(self, *args, **kwargs):
-        """Update the info with the passed in arguments"""
+        """Update the info with the passed in arguments."""
         ...
