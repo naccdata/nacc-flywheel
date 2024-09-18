@@ -152,14 +152,14 @@ class RegisteredUserEntry(ActiveUserEntry):
     def as_user(self) -> User:
         """Creates a user object from the directory entry.
 
-            Flywheel constraint (true as of version 17): the user ID and email must be
-            the same even if ID is an ePPN in add_user
+        Flywheel constraint (true as of version 17): the user ID and email must be
+        the same even if ID is an ePPN in add_user
 
-            Args:
-            user_entry: the directory entry for the user
-            Returns:
-            the User object for flywheel User created from the directory entry
-            """
+        Args:
+        user_entry: the directory entry for the user
+        Returns:
+        the User object for flywheel User created from the directory entry
+        """
         return User(id=self.user_id,
                     firstname=self.first_name,
                     lastname=self.last_name,
