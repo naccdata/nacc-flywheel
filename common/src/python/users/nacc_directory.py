@@ -60,7 +60,7 @@ class UserEntry(BaseModel):
         """
         try:
             if entry.get('active'):
-                return ActiveUserEntry.model_validate(entry)
+                return ActiveUserEntry.create(entry)
 
             return UserEntry.model_validate(entry)
         except ValidationError as error:
@@ -139,6 +139,23 @@ class ActiveUserEntry(UserEntry):
                                    adcid=self.adcid,
                                    authorizations=self.authorizations,
                                    registry_id=registry_id)
+
+    @classmethod
+    def create(cls, entry: Dict[str, Any]) -> "ActiveUserEntry":
+        """Creates an object from a dictionary. Expects dictionary to match
+        output of `as_dict`
+
+        Args:
+          entry: the dictionary for entry
+        Returns:
+          The dictionary object
+        """
+        try:
+            return ActiveUserEntry.model_validate(entry)
+        except ValidationError as error:
+            log.error("Error creating user entry from %s: %s", entry, error)
+            raise UserFormatError(
+                f"Error creating user entry: {error}") from error
 
 
 class RegisteredUserEntry(ActiveUserEntry):
