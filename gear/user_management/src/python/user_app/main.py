@@ -9,13 +9,13 @@ from flywheel import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from notifications.email import DestinationModel, EmailClient, TemplateDataModel
 from users.authorizations import AuthMap, Authorizations
-from users.nacc_directory import Credentials, UserDirectoryEntry
+from users.nacc_directory import ActiveUserEntry, UserEntry
 from users.user_registry import RegistryPerson, UserRegistry
 
 log = logging.getLogger(__name__)
 
 
-def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry,
+def add_user(proxy: FlywheelProxy, user_entry: ActiveUserEntry,
              registry_id: str) -> User:
     """Creates a user object from the directory entry using the registry ID.
 
@@ -29,8 +29,7 @@ def add_user(proxy: FlywheelProxy, user_entry: UserDirectoryEntry,
     Returns:
       the flywheel User created from the directory entry
     """
-    user_entry.set_credentials(
-        credentials=Credentials(type='registry', id=registry_id))
+    user_entry = user_entry.register(registry_id)
     new_id = proxy.add_user(user_entry.as_user())
     user = proxy.find_user(user_entry.user_id)
     assert user, f"Failed to find user {new_id} that was just created"
@@ -84,7 +83,7 @@ def authorize_user(*, user: User, center_id: int,
                                 auth_map=authorization_map)
 
 
-def add_to_registry(*, user_entry: UserDirectoryEntry,
+def add_to_registry(*, user_entry: UserEntry,
                     registry: UserRegistry) -> List[Identifier]:
     """Adds a user to the registry using the user entry data.
 
@@ -145,7 +144,7 @@ def get_creation_date(person_list: List[RegistryPerson]) -> Optional[datetime]:
     return max(dates)
 
 
-def run(*, proxy: FlywheelProxy, user_list: List[UserDirectoryEntry],
+def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
         admin_group: NACCGroup, authorization_map: AuthMap,
         registry: UserRegistry, email_client: EmailClient):
     """Manages users based on user list.
