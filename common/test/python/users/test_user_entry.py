@@ -2,7 +2,7 @@
 
 import yaml
 from users.authorizations import Authorizations
-from users.nacc_directory import ActiveUserEntry, PersonName, UserEntry
+from users.nacc_directory import ActiveUserEntry, PersonName, UserEntry, UserEntryList
 
 
 # pylint: disable=(no-self-use,too-few-public-methods)
@@ -87,3 +87,30 @@ class TestUserEntry:
         print(entry_object)
         entry3 = UserEntry.create(entry_object)
         assert entry == entry3
+
+    def test_list_serialization(self):
+        user_list = UserEntryList([])
+
+        entry1 = UserEntry(name=PersonName(first_name='ooly',
+                                           last_name='puppy'),
+                           email='ools@that.org',
+                           auth_email='ools@that.org',
+                           active=False)
+        user_list.append(entry1)
+        entry2 = ActiveUserEntry(org_name='the center',
+                                 adcid=0,
+                                 name=PersonName(first_name='chip',
+                                                 last_name='puppy'),
+                                 email='chip@theorg.org',
+                                 authorizations=Authorizations(
+                                     submit=['form', 'enrollment'],
+                                     audit_data=True,
+                                     approve_data=True,
+                                     view_reports=True),
+                                 active=True,
+                                 auth_email='chip_auth@theorg.org')
+        user_list.append(entry2)
+        assert user_list.model_dump(serialize_as_any=True) == [
+            entry1.model_dump(serialize_as_any=True),
+            entry2.model_dump(serialize_as_any=True)
+        ]
