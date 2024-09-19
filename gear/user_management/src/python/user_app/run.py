@@ -142,7 +142,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
 
             try:
                 user_entry = ActiveUserEntry.create(user_doc)
-                user_list.append(user_entry)
+                if user_entry.auth_email:
+                    user_list.append(user_entry)
             except UserFormatError as error:
                 log.error('Error creating user entry: %s', error)
                 continue
