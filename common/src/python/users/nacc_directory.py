@@ -1,10 +1,10 @@
 """Classes for NACC directory user credentials."""
 
 import logging
-from typing import Any, Dict, List, Literal, NewType, Optional
+from typing import Any, Dict, List, NewType, Optional
 
 from flywheel.models.user import User
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, RootModel, ValidationError
 
 from users.authorizations import Authorizations
 
@@ -159,6 +159,7 @@ class ActiveUserEntry(UserEntry):
 
 
 class RegisteredUserEntry(ActiveUserEntry):
+    """User directory entry extended with a registry ID."""
     registry_id: str
 
     @property
@@ -187,56 +188,23 @@ class UserFormatError(Exception):
     """Exception class for user format errors."""
 
 
-class DirectoryConflict(BaseModel):
-    """Entries with conflicting user_id and/or emails."""
-    user_id: str
-    conflict_type: Literal['email', 'identifier']
-    entries: List[EntryDictType]
+class UserEntryList(RootModel):
+    """Class to support serialization of directory entry list.
 
-
-class UserDirectory:
-    """Collection of UserEntry objects.
-
-    NACC directory identifies entries by name and email.
+    Use model_dump(serialize_as_any=True)
     """
 
-    def __init__(self) -> None:
-        """Initializes a user directory."""
-        self.__email_map: Dict[str, UserEntry] = {}
+    root: List[UserEntry]
 
-    def add(self, entry: UserEntry) -> None:
-        """Adds a directory entry to the user directory.
+    def __iter__(self):
+        return iter(self.root)
 
-        Args:
-          entry: the directory entry
-        """
-        self.__email_map[entry.email] = entry
+    def __getitem__(self, item) -> UserEntry:
+        return self.root[item]
 
-    def get_entries(self) -> List[UserEntry]:
-        """Returns the list of entries with no conflicts between email address
-        and user IDs.
+    def __len__(self):
+        return len(self.root)
 
-        Returns:
-          List of UserEntry with no email/ID conflicts
-        """
-        return list(self.__email_map.values())
-
-    def get(self, email) -> Optional[UserEntry]:
-        """Returns the entry for the email.
-
-        Args:
-          email: the email
-        Returns:
-          the UserEntry with the email
-        """
-        return self.__email_map.get(email)
-
-    def has_entry_email(self, email):
-        """Determines whether directory has an entry for the email address.
-
-        Args:
-          email: the email address
-        Returns:
-          True if there is an entry with this address. False otherwise
-        """
-        return email in self.__email_map
+    def append(self, entry: UserEntry) -> None:
+        """Appends the user entry to the list."""
+        self.root.append(entry)
