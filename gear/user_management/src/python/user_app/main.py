@@ -15,27 +15,6 @@ from users.user_registry import RegistryPerson, UserRegistry
 log = logging.getLogger(__name__)
 
 
-def add_user(proxy: FlywheelProxy, user_entry: ActiveUserEntry,
-             registry_id: str) -> User:
-    """Creates a user object from the directory entry using the registry ID.
-
-    The user ID and email must be the same when the user is created.
-    So, email must be reset after the user is in Flywheel.
-
-    Args:
-      proxy: the proxy object for the FW instance
-      user_entry: the directory entry for the user
-      registry_id: the registry ID
-    Returns:
-      the flywheel User created from the directory entry
-    """
-    user_entry = user_entry.register(registry_id)
-    new_id = proxy.add_user(user_entry.as_user())
-    user = proxy.find_user(user_entry.user_id)
-    assert user, f"Failed to find user {new_id} that was just created"
-    return user
-
-
 def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
     """Updates user email on FW instance if email is different.
 
@@ -61,6 +40,8 @@ def authorize_user(*, user: User, center_id: int,
                    authorizations: Authorizations, admin_group: NACCGroup,
                    authorization_map: AuthMap) -> None:
     """Adds authorizations to the user.
+
+    Users are granted access to nacc/metadata and projects per authorizations.
 
     Args:
       user: the user
@@ -95,10 +76,11 @@ def add_to_registry(*, user_entry: UserEntry,
     Returns:
       the list of identifiers for the new registry record
     """
+    assert user_entry.auth_email, "user entry must have auth email"
     identifier_list = registry.add(
         RegistryPerson.create(firstname=user_entry.first_name,
                               lastname=user_entry.last_name,
-                              email=user_entry.email,
+                              email=user_entry.auth_email,
                               coid=str(registry.coid)))
 
     return identifier_list
@@ -144,6 +126,81 @@ def get_creation_date(person_list: List[RegistryPerson]) -> Optional[datetime]:
     return max(dates)
 
 
+class NotificationClient:
+    """Wrapper for the email client to send email notifications for the user
+    enrollment flow."""
+
+    def __init__(self, email_client: EmailClient) -> None:
+        self.__client = email_client
+
+    def __claim_template(self,
+                         user_entry: ActiveUserEntry) -> TemplateDataModel:
+        """Creates the email data template from the user entry for a registry
+        claim email.
+
+        The user entry must have the auth email address set.
+
+        Args:
+          user_entry: the user entry
+        Returns:
+          the template model with first name and auth email address
+        """
+        assert user_entry.auth_email, "user entry must have auth email"
+        return TemplateDataModel(firstname=user_entry.first_name,
+                                 email_address=user_entry.auth_email)
+
+    def __claim_destination(self,
+                            user_entry: ActiveUserEntry) -> DestinationModel:
+        """Creates the email destination from the user entry for a registry
+        claim email.
+
+        The user entry must have the auth email address set.
+
+        Args:
+          user_entry: the user entry
+        Returns:
+          the destination model with auth email address.
+        """
+        assert user_entry.auth_email, "user entry must have auth email"
+        return DestinationModel(to_addresses=[user_entry.auth_email])
+
+    def send_claim_email(self, user_entry: ActiveUserEntry) -> None:
+        """Sends the initial claim email to the auth email of the user.
+
+        The user entry must have the auth email address set.
+
+        Args:
+          user_entry: the user entry for the user
+        """
+        self.__client.send(destination=self.__claim_destination(user_entry),
+                           template="claim",
+                           template_data=self.__claim_template(user_entry))
+
+    def send_followup_claim_email(self, user_entry: ActiveUserEntry) -> None:
+        """Sends the followup claim email to the auth email of the user.
+
+        The user entry must have the auth email address set.
+
+        Args:
+          user_entry: the user entry for the user
+        """
+        self.__client.send(destination=self.__claim_destination(user_entry),
+                           template="followup-claim",
+                           template_data=self.__claim_template(user_entry))
+
+    def send_creation_email(self, user_entry: ActiveUserEntry) -> None:
+        """Sends the user creation email to the email of the user.
+
+        Args:
+          user_entry: the user entry for the user
+        """
+        self.__client.send(
+            destination=DestinationModel(to_addresses=[user_entry.email]),
+            template="user-creation",
+            template_data=TemplateDataModel(firstname=user_entry.first_name,
+                                            email_address=user_entry.email))
+
+
 def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
         admin_group: NACCGroup, authorization_map: AuthMap,
         registry: UserRegistry, email_client: EmailClient):
@@ -159,18 +216,13 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
       authorization_map: the AuthMap object representing the authorization map
       registry: the user registry
     """
-
+    notification_client = NotificationClient(email_client)
     for user_entry in user_list:
-        template_data = TemplateDataModel(firstname=user_entry.first_name,
-                                          email_address=user_entry.email)
-        destination = DestinationModel(to_addresses=[user_entry.email])
-
-        person_list = registry.list(email=user_entry.email)
+        assert user_entry.auth_email, "user entry must have auth email"
+        person_list = registry.list(email=user_entry.auth_email)
         if not person_list:
             add_to_registry(user_entry=user_entry, registry=registry)
-            email_client.send(destination=destination,
-                              template="claim",
-                              template_data=template_data)
+            notification_client.send_claim_email(user_entry)
             log.info('Added user %s to registry', user_entry.email)
             continue
 
@@ -183,18 +235,15 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
 
             user = proxy.find_user(registry_id)
             if not user:
-                try:
-                    user = add_user(proxy=proxy,
-                                    user_entry=user_entry,
-                                    registry_id=registry_id)
-                    email_client.send(destination=destination,
-                                      template="user-creation",
-                                      template_data=template_data)
-                    log.info('Added user %s', user.id)
-                except AssertionError as error:
-                    log.error('Failed to add user %s with ID %s: %s',
-                              user_entry.email, registry_id, error)
+                proxy.add_user(user_entry.register(registry_id).as_user())
+                user = proxy.find_user(registry_id)
+                if not user:
+                    log.error('Failed to add user %s with ID %s',
+                              user_entry.email, registry_id)
                     continue
+
+                notification_client.send_creation_email(user_entry)
+                log.info('Added user %s', user.id)
 
             update_email(proxy=proxy, user=user, email=user_entry.email)
             authorize_user(user=user,
@@ -213,6 +262,4 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
 
         time_since_creation = creation_date - datetime.now()
         if time_since_creation.days % 7 == 0:
-            email_client.send(destination=destination,
-                              template="followup-claim",
-                              template_data=template_data)
+            notification_client.send_followup_claim_email(user_entry)
