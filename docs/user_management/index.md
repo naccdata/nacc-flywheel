@@ -98,23 +98,28 @@ The user file should contain a list of user information
 
 ```yaml
 ---
-- authorizations:
+- active: <Boolean>         # whether the user is active at a center
+  adcid: <integer ID>       # the ADCID for the center
+  auth_email: <email-address> # email address for authentication (registry)
+  authorizations:           
     approve_data: <Boolean> # whether user can approve data
     audit_data: <Boolean>   # whether user audits data quality
+    study_id: <study ID>    # string ID for study
     submit:
     - <datatype name>       # datatypes which user can submit
     view_reports: <Boolean> # whether user can view reports
-  center_id: <integer ID>   # the ADCID for the center
-  credentials:
-    id: <id-value>          # user ID (email or ePPN)
-    type: <type-name>       # type of credential
   email: <email-address>    # user email
   name:
     first_name: <user first name> 
     last_name: <user last name>
   org_name: <center name>
-  submit_time: <datetime of submission>
-  ```
+```
+
+The fields `active`, `name`, `email` and `auth_email` are required.
+The `auth_email` field may be `null`.
+The remaining fields can only be given if `active` is `true`.
+
+The `email` field indicates the user's primary email address, while `auth_email` is the email address either through an InCommon identity provider or ORCiD.
 
 The authorization map defines a mapping $project\to (authorization\to role)$
 

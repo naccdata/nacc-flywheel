@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, List, NewType, Optional
 
 from flywheel.models.user import User
-from pydantic import BaseModel, ConfigDict, RootModel, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 
 from users.authorizations import Authorizations
 
@@ -27,7 +27,7 @@ class UserEntry(BaseModel):
 
     name: PersonName
     email: str
-    auth_email: Optional[str]
+    auth_email: Optional[str] = Field(default=None)
     active: bool
 
     @property

@@ -212,9 +212,9 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
       proxy: Flywheel proxy object
       user_list: the list of user objects from directory yaml file
       admin_group: the NACCGroup object representing the admin group
-      skip_list: the list of user IDs to skip
       authorization_map: the AuthMap object representing the authorization map
       registry: the user registry
+      email_client: email client for notifications
     """
     notification_client = NotificationClient(email_client)
     for user_entry in user_list:
@@ -223,7 +223,8 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
         if not person_list:
             add_to_registry(user_entry=user_entry, registry=registry)
             notification_client.send_claim_email(user_entry)
-            log.info('Added user %s to registry', user_entry.email)
+            log.info('Added user %s to registry using email %s',
+                     user_entry.email, user_entry.auth_email)
             continue
 
         claimed = [person for person in person_list if person.is_claimed()]
