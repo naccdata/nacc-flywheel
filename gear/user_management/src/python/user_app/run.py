@@ -138,6 +138,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         user_list = []
         for user_doc in object_list:
             if not user_doc.get('active'):
+                # TODO: disable inactive users
                 continue
 
             try:
