@@ -15,6 +15,7 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor, Project
 from projects.study import Center, Study
 from projects.template_project import TemplateProject
 from pydantic import AliasGenerator, BaseModel, ConfigDict, ValidationError
+from serialization.case import kebab_case
 from users.authorizations import AuthMap
 from users.nacc_directory import Authorizations
 
@@ -543,17 +544,6 @@ class CenterError(Exception):
         return self.__message
 
 
-def kebab_case(name: str) -> str:
-    """Converts the name to kebab case.
-
-    Args:
-      name: the name to convert
-    Returns:
-      the name in kebab case
-    """
-    return name.lower().replace('_', '-')
-
-
 class ProjectMetadata(BaseModel):
     """Metadata for a center project. Set datatype for ingest projects.
 
@@ -587,8 +577,8 @@ class FormIngestProjectMetadata(IngestProjectMetadata):
     """Metadata for a form ingest project.
 
     This class represents the metadata for a form ingest project within
-    a center. It inherits from the FormIngestProjectMetadata class and
-    adds additional attributes specific to form ingest projects.
+    a center. It inherits from the IngestProjectMetadata class and adds
+    additional attributes specific to form ingest projects.
     """
     redcap_projects: Dict[str, REDCapFormProject] = {}
 

@@ -206,7 +206,7 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                 continue
 
             try:
-                redcap_params = self.__param_store.get_redcap_project_prameters(
+                redcap_params = self.__param_store.get_redcap_project_parameters(
                     base_path=self.__param_path,
                     pid=redcap_project.redcap_pid,
                     report_id=redcap_project.report_id)

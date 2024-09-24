@@ -39,6 +39,19 @@ class RDSParameters(TypedDict):
     password: str
 
 
+class CoManageParameters(TypedDict):
+    """Dictionary type for parameters to access CoManage registry."""
+    host: str
+    username: str
+    apikey: str
+    coid: str
+
+
+class NotificationParameters(TypedDict):
+    """Dictionary type for email sender."""
+    sender: str
+
+
 class ParameterError(Exception):
     """Error class for errors that occur when reading parameters."""
 
@@ -123,8 +136,9 @@ class ParameterStore:
 
         return apikey
 
-    def get_redcap_project_prameters(self, *, base_path: str, pid: int,
-                                     report_id: int) -> REDCapReportParameters:
+    def get_redcap_project_parameters(
+            self, *, base_path: str, pid: int,
+            report_id: int) -> REDCapReportParameters:
         """Pulls URL and Token for the respective REDCap project from SSM
         parameter store.
 
@@ -205,8 +219,8 @@ class ParameterStore:
         return self.get_parameters(param_type=RDSParameters,
                                    parameter_path=param_path)
 
-    def set_redcap_project_prameters(self, *, base_path: str, pid: int,
-                                     url: str, token: str):
+    def set_redcap_project_parameters(self, *, base_path: str, pid: int,
+                                      url: str, token: str):
         """Store API URL and token for the respective REDCap project in AWS
         parameter store.
 
@@ -238,3 +252,32 @@ class ParameterStore:
         except Exception as error:
             raise ParameterError(
                 f"Failed to store parameters at {param_path}") from error
+
+    def get_comanage_parameters(self, param_path: str) -> CoManageParameters:
+        """Pulls comanage parameters from the SSM parameter store at the given
+        path.
+
+        Args:
+          param_path: the path in the parameter store
+        Returns:
+          the comanage parameters stored at the path
+        Raises:
+          ParameterError if any of the parameters are missing
+        """
+        return self.get_parameters(param_type=CoManageParameters,
+                                   parameter_path=param_path)
+
+    def get_notification_parameters(self,
+                                    param_path: str) -> NotificationParameters:
+        """Pulls notification email parameters from the SSM parameter store at
+        the given path.
+
+        Args:
+          param_path: the path in the parameter store
+        Returns:
+          the notification parameters stored at the path
+        Raises:
+          ParameterError if any of the parameters are missing
+        """
+        return self.get_parameters(param_type=NotificationParameters,
+                                   parameter_path=param_path)
