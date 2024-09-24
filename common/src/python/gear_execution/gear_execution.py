@@ -1,6 +1,7 @@
 """Module defining utilities for gear execution."""
 
 import logging
+import re
 import sys
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Type, TypeVar
@@ -206,6 +207,19 @@ class InputFileWrapper:
             if validation_object['state'] == 'FAIL':
                 return True
         return False
+
+    def get_module_name_from_file_suffix(self) -> Optional[str]:
+        """Get the module name from file suffix.
+
+        Returns:
+            str(optional): module name if a match found, else None
+        """
+        module = None
+        pattern = '^.*-([a-z]+v[0-9])\\.(\\bcsv\\b|\\bjson\\b)$'
+        if match := re.search(pattern, self.filename, re.IGNORECASE):
+            module = match.group(1)
+
+        return module
 
 
 # pylint: disable=too-few-public-methods

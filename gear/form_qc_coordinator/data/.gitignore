@@ -1,0 +1,6 @@
+# ignore everything
+*
+# except for
+!.gitignore
+!example-input.yaml
+!qc-gear-configs.json

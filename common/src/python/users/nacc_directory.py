@@ -1,21 +1,14 @@
 """Classes for NACC directory user credentials."""
 
 import logging
-from collections import defaultdict
-from datetime import datetime
-from typing import Any, Dict, Iterable, List, Literal, NewType, Optional, Set
+from typing import Any, Dict, List, NewType, Optional
 
-from pydantic import BaseModel, ValidationError
+from flywheel.models.user import User
+from pydantic import BaseModel, ConfigDict, Field, RootModel, ValidationError
 
 from users.authorizations import Authorizations
 
 log = logging.getLogger(__name__)
-
-
-class Credentials(BaseModel):
-    """Type class for credentials."""
-    type: str
-    id: str
 
 
 class PersonName(BaseModel):
@@ -24,26 +17,18 @@ class PersonName(BaseModel):
     last_name: str
 
 
-EntryDictType = NewType(
-    'EntryDictType',
-    Dict[str,
-         str | int | PersonName | Authorizations | Credentials | datetime])
+EntryDictType = NewType('EntryDictType',
+                        Dict[str, str | int | PersonName | Authorizations])
 
 
-class UserDirectoryEntry(BaseModel):
-    """A user entry from Flywheel access report of the NACC directory."""
-    org_name: str
-    adcid: int
+class UserEntry(BaseModel):
+    """A base directory user entry."""
+    model_config = ConfigDict(populate_by_name=True, extra='forbid')
+
     name: PersonName
     email: str
-    authorizations: Authorizations
-    credentials: Credentials
-    submit_time: datetime
-
-    @property
-    def user_id(self) -> str:
-        """The user ID for this directory entry."""
-        return self.credentials.id
+    auth_email: Optional[str] = Field(default=None)
+    active: bool
 
     @property
     def first_name(self) -> str:
@@ -61,10 +46,10 @@ class UserDirectoryEntry(BaseModel):
         Returns:
           A dictionary with values of this entry
         """
-        return self.model_dump()  # type: ignore
+        return self.model_dump(serialize_as_any=True)  # type: ignore
 
     @classmethod
-    def create(cls, entry: Dict[str, Any]) -> "UserDirectoryEntry":
+    def create(cls, entry: Dict[str, Any]) -> "UserEntry":
         """Creates an object from a dictionary. Expects dictionary to match
         output of `as_dict`
 
@@ -74,34 +59,47 @@ class UserDirectoryEntry(BaseModel):
           The dictionary object
         """
         try:
-            return UserDirectoryEntry.model_validate(entry)
+            if entry.get('active'):
+                return ActiveUserEntry.create(entry)
+
+            return UserEntry.model_validate(entry)
         except ValidationError as error:
             log.error("Error creating user entry from %s: %s", entry, error)
             raise UserFormatError(
                 f"Error creating user entry: {error}") from error
 
     @classmethod
-    def create_from_record(
-            cls, record: Dict[str, Any]) -> Optional['UserDirectoryEntry']:
-        """Creates a DirectoryEntry from a Flywheel Access report record from
-        the NACC Directory in REDCap.
+    def create_from_record(cls, record: Dict[str,
+                                             Any]) -> Optional['UserEntry']:
+        """Creates a UserEntry from a data platform authorization report record
+        from the NACC Directory in REDCap.
 
-        Ignores records that are incomplete or unverified
+        Creates a UserEntry object if the record is marked as archived.
+        Otherwise, creates an ActiveUserEntry.
+        Ignores records that have incomplete or unverified authorization emails.
 
         Args:
           record: a dictionary containing report record for user
         Returns:
           the dictionary entry for the record. None, if record is incomplete
         """
-        if int(record["flywheel_access_information_complete"]) != 2:
+
+        name = PersonName(first_name=record['firstname'],
+                          last_name=record['lastname'])
+        email = record['email'].lower()
+        auth_email = record['fw_email'] if record['fw_email'] else None
+
+        if record['archive_contact'] == "1":
+            return UserEntry(name=name,
+                             email=email,
+                             auth_email=auth_email,
+                             active=False)
+
+        if int(record["nacc_data_platform_access_information_complete"]) != 2:
             return None
 
         authorizations = Authorizations.create_from_record(
             record["flywheel_access_activities"])
-        credentials = Credentials(type=record['fw_credential_type'],
-                                  id=record['fw_credential_id'])
-        name = PersonName(first_name=record['firstname'],
-                          last_name=record['lastname'])
 
         org_name = record['contact_company_name']
         center_id = record['adresearchctr']
@@ -110,153 +108,103 @@ class UserDirectoryEntry(BaseModel):
             if org_name.lower() == 'nacc':
                 center_id = '0'
 
-        return UserDirectoryEntry(org_name=org_name,
-                                  adcid=int(center_id),
-                                  name=name,
-                                  email=record['email'].lower(),
-                                  credentials=credentials,
-                                  submit_time=datetime.strptime(
-                                      record['fw_cred_sub_time'],
-                                      "%Y-%m-%d %H:%M"),
-                                  authorizations=authorizations)
+        return ActiveUserEntry(org_name=org_name,
+                               adcid=int(center_id),
+                               name=name,
+                               email=email,
+                               auth_email=auth_email,
+                               authorizations=authorizations,
+                               active=True)
+
+
+class ActiveUserEntry(UserEntry):
+    """A user entry from Flywheel access report of the NACC directory."""
+    org_name: str
+    adcid: int
+    authorizations: Authorizations
+
+    def register(self, registry_id: str) -> 'RegisteredUserEntry':
+        """Adds the registry id to this user entry.
+
+        Args:
+          registry_id: the registry ID
+        Returns:
+          this object with the registry ID added
+        """
+        return RegisteredUserEntry(name=self.name,
+                                   email=self.email,
+                                   auth_email=self.auth_email,
+                                   active=self.active,
+                                   org_name=self.org_name,
+                                   adcid=self.adcid,
+                                   authorizations=self.authorizations,
+                                   registry_id=registry_id)
+
+    @classmethod
+    def create(cls, entry: Dict[str, Any]) -> "ActiveUserEntry":
+        """Creates an object from a dictionary. Expects dictionary to match
+        output of `as_dict`
+
+        Args:
+          entry: the dictionary for entry
+        Returns:
+          The dictionary object
+        """
+        try:
+            return ActiveUserEntry.model_validate(entry)
+        except ValidationError as error:
+            log.error("Error creating user entry from %s: %s", entry, error)
+            raise UserFormatError(
+                f"Error creating user entry: {error}") from error
+
+
+class RegisteredUserEntry(ActiveUserEntry):
+    """User directory entry extended with a registry ID."""
+    registry_id: str
+
+    @property
+    def user_id(self) -> str:
+        """The user ID for this directory entry."""
+        return self.registry_id
+
+    def as_user(self) -> User:
+        """Creates a user object from the directory entry.
+
+        Flywheel constraint (true as of version 17): the user ID and email must be
+        the same even if ID is an ePPN in add_user
+
+        Args:
+        user_entry: the directory entry for the user
+        Returns:
+        the User object for flywheel User created from the directory entry
+        """
+        return User(id=self.user_id,
+                    firstname=self.first_name,
+                    lastname=self.last_name,
+                    email=self.user_id)
 
 
 class UserFormatError(Exception):
     """Exception class for user format errors."""
 
 
-class DirectoryConflict(BaseModel):
-    """Entries with conflicting user_id and/or emails."""
-    user_id: str
-    conflict_type: Literal['email', 'identifier']
-    entries: List[EntryDictType]
+class UserEntryList(RootModel):
+    """Class to support serialization of directory entry list.
 
-
-class UserDirectory:
-    """Collection of UserDirectoryEntry objects.
-
-    NACC directory identifies entries by name and email.
+    Use model_dump(serialize_as_any=True)
     """
 
-    def __init__(self) -> None:
-        """Initializes a user directory."""
-        self.__email_map: Dict[str, UserDirectoryEntry] = {}
-        self.__conflict_set: Set[str] = set()
-        self.__id_map: Dict[str, List[str]] = defaultdict(list)
+    root: List[UserEntry]
 
-    def add(self, entry: UserDirectoryEntry) -> None:
-        """Adds a directory entry to the user directory.
+    def __iter__(self):
+        return iter(self.root)
 
-        Ignores the entry if it has no ID, or another entry already has the
-        email address.
+    def __getitem__(self, item) -> UserEntry:
+        return self.root[item]
 
-        Args:
-          entry: the directory entry
-        """
-        # check that entry has an ID
-        if not entry.user_id:
-            return
+    def __len__(self):
+        return len(self.root)
 
-        # check that doesn't have duplicate email
-        # (REDCap directory uses email as key)
-        if self.has_entry_email(entry.email):
-            return
-
-        self.__email_map[entry.email] = entry
-
-        # check that someone else's ID is not this entry's email
-        if entry.email in self.__id_map:
-            # other entry is in conflict
-            for other_email in self.__id_map[entry.email]:
-                self.__conflict_set.add(other_email)
-            return
-
-        if entry.email == entry.user_id:
-            return
-
-        # check that ID is not someone else's email
-        if self.has_entry_email(entry.user_id):
-            # new entry is in conflict
-            self.__conflict_set.add(entry.email)
-            return
-
-        self.__id_map[entry.user_id].append(entry.email)
-
-    def get_entries(self) -> List[UserDirectoryEntry]:
-        """Returns the list of entries with no conflicts between email address
-        and user IDs.
-
-        Returns:
-          List of UserDirectoryEntry with no email/ID conflicts
-        """
-        id_conflicts = set()
-        for email_list in self.__id_map.values():
-            if len(email_list) > 1:
-                for email in email_list:
-                    id_conflicts.add(email)
-
-        non_conflicts = {
-            email
-            for email in self.__email_map
-            if email not in self.__conflict_set and email not in id_conflicts
-        }
-
-        entries = self.__get_entry_list(non_conflicts)
-        return entries
-
-    def __get_entry_list(
-            self, email_list: Iterable[str]) -> List[UserDirectoryEntry]:
-        """Returns the list of entries for the emails in the email list.
-
-        Args:
-          email_list: list of email addresses
-        Returns:
-          Directory entries for the email addresses
-        """
-        return [
-            entry
-            for entry in [self.__email_map.get(email) for email in email_list]
-            if entry
-        ]
-
-    def get_conflicts(self) -> List[Dict[str, Any]]:
-        """Returns the list of conflicting directory entries.
-
-        Conflicts occur
-        - if two entries have the same ID, or
-        - if an entry has an ID that is the email of another entry.
-
-        Return:
-          List of DirectoryConflict objects for entries with conflicting IDs
-        """
-        conflicts = []
-        for user_id, email_list in self.__id_map.items():
-            if len(email_list) > 1:
-                log.warning("Conflict for user id %s", user_id)
-                conflicts.append(
-                    DirectoryConflict(
-                        user_id=user_id,
-                        entries=[
-                            entry.as_dict()
-                            for entry in self.__get_entry_list(email_list)
-                        ],
-                        conflict_type='identifier').model_dump())
-        for entry in self.__email_map.values():
-            if entry.email in self.__conflict_set:
-                log.warning("Conflict for email %s", entry.email)
-                conflicts.append(
-                    DirectoryConflict(user_id=entry.credentials.id,
-                                      entries=[entry.as_dict()],
-                                      conflict_type='email').model_dump())
-
-        return conflicts
-
-    def has_entry_email(self, email):
-        """Determines whether directory has an entry for the email address.
-
-        Args:
-          email: the email address
-        Returns:
-          True if there is an entry with this address, False otherwise
-        """
-        return email in self.__email_map
+    def append(self, entry: UserEntry) -> None:
+        """Appends the user entry to the list."""
+        self.root.append(entry)

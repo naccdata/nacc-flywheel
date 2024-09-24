@@ -13,5 +13,5 @@ projects:
       template: ftld-alt
   - project-label: ingest-enrollment
     modules:
-    - label: ptenrlv1
+    - label: enrollv1
       title: Participant Enrollment/Transfer

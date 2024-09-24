@@ -62,6 +62,16 @@
             "description": "The instance specific AWS parameter gearbot path prefix",
             "type": "string",
             "default": "/prod/flywheel/gearbot"
+        },
+        "comanage_parameter_path": {
+            "description": "Parameter path for CoManage API",
+            "type": "string",
+            "default": "/prod/comanage-api"
+        },
+        "sender_path": {
+            "description": "Parameter path for sender of email notifications",
+            "type": "string",
+            "default": "/prod/notifications"
         }
     },
     "command": "/bin/run"
