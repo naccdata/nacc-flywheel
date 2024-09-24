@@ -63,3 +63,7 @@ class GearToolkitContext:
     @property
     def metadata(self) -> Metadata:
         ...
+
+    @property
+    def manifest(self) -> Dict[str, Any]:
+        ...

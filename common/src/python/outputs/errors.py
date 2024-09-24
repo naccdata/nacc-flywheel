@@ -148,7 +148,7 @@ def unknown_field_error(field: str) -> FileError:
 
 def system_error(
     message: str,
-    error_location: Optional[CSVLocation | JSONLocation],
+    error_location: Optional[CSVLocation | JSONLocation] = None,
 ) -> FileError:
     """Creates a FileError object for a system error.
 
@@ -162,6 +162,14 @@ def system_error(
                      error_code='system-error',
                      location=error_location,
                      message=message)
+
+
+def previous_visit_failed_error(prev_visit: str) -> FileError:
+    """Creates a FileError when participant has failed previous visits."""
+    return FileError(error_type='error',
+                     error_code='failed-previous-visit',
+                     message=(f'Visit file {prev_visit} has to be approved '
+                              'before evaluating any subsequent visits'))
 
 
 class ErrorWriter(ABC):

@@ -66,6 +66,15 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
         """
 
         assert context, 'Gear context required'
+
+        file_module = self.__file_input.get_module_name_from_file_suffix()
+        enroll_module: str = context.config.get("enrollment_module",
+                                                "enrollv1")
+        if not file_module or (file_module.lower() != enroll_module.lower()):
+            raise GearExecutionError(
+                f'Input file name {self.__file_input.filename} '
+                f'expected to have {enroll_module} suffix.')
+
         if self.__file_input.has_qc_errors():
             log.error('input file %s has QC errors',
                       self.__file_input.filename)

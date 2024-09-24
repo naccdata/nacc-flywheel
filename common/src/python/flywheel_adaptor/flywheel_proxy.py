@@ -14,8 +14,10 @@ from flywheel import (
     ViewIdOutput,
 )
 from flywheel.models.access_permission import AccessPermission
+from flywheel.models.acquisition import Acquisition
 from flywheel.models.file_entry import FileEntry
 from flywheel.models.group_role import GroupRole
+from flywheel.models.job import Job
 from flywheel.models.project_parents import ProjectParents
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
@@ -547,6 +549,39 @@ class FlywheelProxy:
                 path = f"{path}{ancestor_name}/"
 
         return f"{path}{container_name}"
+
+    def get_acquisition(self, acq_id: str) -> Acquisition:
+        """Returns acquisition object for the acq_id.
+
+        Args:
+          acq_id: the ID of the acquisition
+
+        Returns:
+          Acquisition object for the given ID
+        """
+        return self.__fw.get_acquisition(acq_id)
+
+    def lookup_gear(self, gear_name: str) -> Any:
+        """Lookup the specified Flywheel gear.
+
+        Args:
+            gear_name: gear name
+
+        Returns:
+            Any: Flywheel gear object
+        """
+        return self.__fw.lookup(f'gears/{gear_name}')
+
+    def find_job(self, search_str: str) -> Optional[Job]:
+        """Find the first Job matching the search string.
+
+        Args:
+            search_str: paramets to search (e.g. 'id={job_id}')
+
+        Returns:
+            Job: Flywheel Job object if found, else None
+        """
+        return self.__fw.jobs.find_first(search_str)
 
 
 def get_name(container) -> str:

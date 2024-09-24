@@ -3,8 +3,9 @@
 import logging
 from typing import Dict, List, Optional
 
+from flywheel.models.group import Group
 from flywheel.models.user import User
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from pydantic import BaseModel, ValidationError
 
 from centers.center_adaptor import CenterAdaptor
@@ -54,6 +55,10 @@ class CenterMapInfo(BaseModel):
 
 class NACCGroup(CenterAdaptor):
     """Manages group for NACC."""
+
+    def __init__(self, *, group: Group, proxy: FlywheelProxy) -> None:
+        super().__init__(group=group, proxy=proxy)
+        self.__admin_project: Optional[ProjectAdaptor] = None
 
     @classmethod
     def create(cls,
@@ -194,3 +199,16 @@ class NACCGroup(CenterAdaptor):
         assert read_only_role, "Expecting read-only role to exist"
 
         metadata_project.add_user_role(user=user, role=read_only_role)
+
+    def get_admin_project(self) -> ProjectAdaptor:
+        """Returns the admin project.
+
+        Returns:
+         the admin project object
+        """
+        if not self.__admin_project:
+            self.__admin_project = self.get_project('project-admin')
+            assert self.__admin_project, ("Expecting project-admin project. "
+                                          "Check user has permissions.")
+
+        return self.__admin_project
