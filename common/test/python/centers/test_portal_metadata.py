@@ -200,7 +200,7 @@ class TestREDCapUpdate:
                                           projects=[
                                               REDCapFormProject(
                                                   redcap_pid=12345,
-                                                  label="ptenrlv1",
+                                                  label="enrollv1",
                                                   report_id=22)
                                           ])
         study_info = portal_metadata.studies.get(input_object.study_id)
@@ -217,11 +217,11 @@ class TestREDCapUpdate:
         assert ingest_project.redcap_projects, (
             "expect non-null redcap projects after update")
         assert ingest_project.redcap_projects.get(
-            "ptenrlv1"), "expect non-null redcap project after update"
+            "enrollv1"), "expect non-null redcap project after update"
 
         study_info.add_ingest(ingest_project)
         portal_metadata.add(study_info)
 
         assert portal_metadata.studies["test"].ingest_projects[
             "ingest-form-test"].redcap_projects[
-                "ptenrlv1"], "expect non-null redcap project after update"
+                "enrollv1"], "expect non-null redcap project after update"

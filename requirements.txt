@@ -11,6 +11,8 @@ pandas>=2.1.1
 pandas-stubs>=2.0.3
 pydantic>=2.5.2
 pyyaml==6.0
+python_dateutil >= 2.5.3
+types-python-dateutil >= 2.9.0
 pytest>=7.2.0
 pytz >= 2023.3
 requests>=2.18.4
@@ -19,5 +21,6 @@ setuptools>=68.2.2
 ssm-parameter-store>=19.11.0
 typing-extensions>=4.8.0 # only needed for python < 3.12
 types-PyYAML>=6.0.12
+urllib3 >= 1.25.3, < 2.1.0
 types-pytz >= 2023.3
 validator@ git+https://github.com/naccdata/nacc-form-validator.git

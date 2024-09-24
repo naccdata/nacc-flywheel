@@ -13,3 +13,6 @@ class ViewBuilder:
 
     def build(self) -> DataView:
         ...
+
+    def missing_data_strategy(self, value) -> 'ViewBuilder':
+        ...

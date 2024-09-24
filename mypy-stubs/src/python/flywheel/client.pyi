@@ -2,9 +2,9 @@ from typing import Any, Dict, List, Optional
 
 import pandas
 from flywheel.models.file_entry import FileEntry
+from flywheel.models.job import Job
 from flywheel.models.session import Session
 from flywheel.models.subject import Subject
-
 from flywheel.models.viewer_app import ViewerApp
 
 from .finder import Finder
@@ -45,6 +45,10 @@ class Client:
 
     @property
     def users(self) -> Finder[User]:
+        ...
+
+    @property
+    def jobs(self) -> Finder[Job]:
         ...
 
     # the code says returns FileOutput but has no definition
@@ -127,6 +131,10 @@ class Client:
                             container_id: str) -> pandas.DataFrame:
         ...
 
+    def read_view_data(self, view, container_id, decode=True, **kwargs):
+        """returns a file-like object where the contents can be read."""
+        ...
+
     def get_project(self, id: str) -> Project:
         ...
 
@@ -136,6 +144,6 @@ class Client:
     def get(self, id: str) -> ContainerOutput:
         ...
 
-    #return type is ResolverOutput
+    # return type is ResolverOutput
     def lookup(self, path):
         ...
