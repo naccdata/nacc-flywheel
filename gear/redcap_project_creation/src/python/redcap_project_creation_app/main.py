@@ -42,10 +42,10 @@ def save_project_api_token(parameter_store: ParameterStore, base_path: str,
         return None
 
     try:
-        parameter_store.set_redcap_project_prameters(base_path=base_path,
-                                                     pid=redcap_con.pid,
-                                                     url=url,
-                                                     token=token)
+        parameter_store.set_redcap_project_parameters(base_path=base_path,
+                                                      pid=redcap_con.pid,
+                                                      url=url,
+                                                      token=token)
     except ParameterError as error:
         log.error(error)
         return None
