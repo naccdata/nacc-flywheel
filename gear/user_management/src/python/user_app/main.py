@@ -221,6 +221,7 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
         assert user_entry.auth_email, "user entry must have auth email"
         person_list = registry.list(email=user_entry.auth_email)
         if not person_list:
+            log.info('User %s not in registry', user_entry.email)
             add_to_registry(user_entry=user_entry, registry=registry)
             notification_client.send_claim_email(user_entry)
             log.info('Added user %s to registry using email %s',
@@ -229,6 +230,7 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
 
         claimed = [person for person in person_list if person.is_claimed()]
         if claimed:
+            log.info('User %s claimed in registry', user_entry.email)
             registry_id = get_registry_id(claimed)
             if not registry_id:
                 log.error('User %s has no registry ID', user_entry.email)
@@ -236,6 +238,8 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
 
             user = proxy.find_user(registry_id)
             if not user:
+                log.info('User %s has flywheel user with ID: %s', 
+                         user_entry.email, registry_id)
                 proxy.add_user(user_entry.register(registry_id).as_user())
                 user = proxy.find_user(registry_id)
                 if not user:
@@ -246,6 +250,7 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
                 notification_client.send_creation_email(user_entry)
                 log.info('Added user %s', user.id)
 
+            log.info('Changing user %s email to %s', registry_id, user_entry.email)
             update_email(proxy=proxy, user=user, email=user_entry.email)
             authorize_user(user=user,
                            admin_group=admin_group,
@@ -255,6 +260,7 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
             continue
 
         # if not claimed, send an email each week
+        log.info('User %s not claimed in registry', user_entry.email)
         creation_date = get_creation_date(person_list)
         if not creation_date:
             log.warning('person record for %s has no creation date',
