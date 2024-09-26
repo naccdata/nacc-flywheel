@@ -219,6 +219,7 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
     notification_client = NotificationClient(email_client)
     for user_entry in user_list:
         assert user_entry.auth_email, "user entry must have auth email"
+
         person_list = registry.list(email=user_entry.auth_email)
         if not person_list:
             log.info('User %s not in registry', user_entry.email)
@@ -238,7 +239,7 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
 
             user = proxy.find_user(registry_id)
             if not user:
-                log.info('User %s has flywheel user with ID: %s', 
+                log.info('User %s has flywheel user with ID: %s',
                          user_entry.email, registry_id)
                 proxy.add_user(user_entry.register(registry_id).as_user())
                 user = proxy.find_user(registry_id)
@@ -250,7 +251,8 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
                 notification_client.send_creation_email(user_entry)
                 log.info('Added user %s', user.id)
 
-            log.info('Changing user %s email to %s', registry_id, user_entry.email)
+            log.info('Changing user %s email to %s', registry_id,
+                     user_entry.email)
             update_email(proxy=proxy, user=user, email=user_entry.email)
             authorize_user(user=user,
                            admin_group=admin_group,
