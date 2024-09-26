@@ -323,6 +323,79 @@ class REDCapConnection:
 
         return self.request_json_value(data=data, message=message)
 
+    def export_instruments(self) -> List[Dict[str, str]]:
+        """Export the list of instruments in the project.
+
+        Returns:
+            List containing the name and label for each instrument
+
+        Raises:
+          REDCapConnectionError if the response has an error
+        """
+
+        message = "exporting list of forms"
+        data = {'content': 'instrument'}
+
+        return self.request_json_value(data=data, message=message)
+
+    def export_user_roles(self) -> List[Dict[str, Any]]:
+        """Export user roles defined in the project.
+
+        Returns:
+            List of user role dicts specifying permissions for each role
+
+        Raises:
+          REDCapConnectionError if the response has an error
+        """
+        message = "exporting user roles"
+        data = {'content': 'userRole'}
+
+        return self.request_json_value(data=data, message=message)
+
+    def assign_user_role(self, username: str, role: str) -> int:
+        """Assign given user to a user role in REDCap project.
+
+        Args:
+            username: REDCap username
+            role: Unique REDCap generated role name (not role label)
+
+        Returns:
+            Number of User-Role assignments added or updated
+
+        Raises:
+          REDCapConnectionError if the response has an error
+        """
+
+        message = f"assigning user {username} to role {role}"
+        info = {"username": username, "unique_role_name": role}
+        data = json.dumps([info])
+        data = {'content': 'userRoleMapping', 'action': 'import', 'data': data}
+
+        return self.request_json_value(data=data, message=message)
+
+    def add_user(self, user_info: Dict[str, Any]) -> int:
+        """Import a new user into a project and set user privileges, or update
+        the privileges of an existing user in the project.
+
+        Args:
+            user_info: User permissions for the project
+
+        Returns:
+            int: Number of users added or updated
+
+        Raises:
+          REDCapConnectionError if the response has an error
+        """
+
+        message = f"adding user {user_info['username']}"
+        info = json.dumps([user_info])
+        data = {
+            'content': 'user',
+            'data': info,
+        }
+
+        return self.request_json_value(data=data, message=message)
+
 
 class REDCapReportConnection(REDCapConnection):
     """Defines a REDCap connection meant for reading a particular report."""
