@@ -72,6 +72,11 @@
             "description": "Parameter path for sender of email notifications",
             "type": "string",
             "default": "/prod/notifications"
+        },
+        "force_unclaimed_notification": {
+            "description": "Whether to ignore date restrictions on notifications for unclaimed user records",
+            "type": "boolean",
+            "default": false
         }
     },
     "command": "/bin/run"

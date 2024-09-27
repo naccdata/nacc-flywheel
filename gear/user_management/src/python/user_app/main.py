@@ -7,10 +7,11 @@ from centers.nacc_group import NACCGroup
 from coreapi_client.models.identifier import Identifier
 from flywheel import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from notifications.email import DestinationModel, EmailClient, TemplateDataModel
 from users.authorizations import AuthMap, Authorizations
 from users.nacc_directory import ActiveUserEntry, UserEntry
 from users.user_registry import RegistryPerson, UserRegistry
+
+from user_app.notification_client import NotificationClient
 
 log = logging.getLogger(__name__)
 
@@ -126,84 +127,10 @@ def get_creation_date(person_list: List[RegistryPerson]) -> Optional[datetime]:
     return max(dates)
 
 
-class NotificationClient:
-    """Wrapper for the email client to send email notifications for the user
-    enrollment flow."""
-
-    def __init__(self, email_client: EmailClient) -> None:
-        self.__client = email_client
-
-    def __claim_template(self,
-                         user_entry: ActiveUserEntry) -> TemplateDataModel:
-        """Creates the email data template from the user entry for a registry
-        claim email.
-
-        The user entry must have the auth email address set.
-
-        Args:
-          user_entry: the user entry
-        Returns:
-          the template model with first name and auth email address
-        """
-        assert user_entry.auth_email, "user entry must have auth email"
-        return TemplateDataModel(firstname=user_entry.first_name,
-                                 email_address=user_entry.auth_email)
-
-    def __claim_destination(self,
-                            user_entry: ActiveUserEntry) -> DestinationModel:
-        """Creates the email destination from the user entry for a registry
-        claim email.
-
-        The user entry must have the auth email address set.
-
-        Args:
-          user_entry: the user entry
-        Returns:
-          the destination model with auth email address.
-        """
-        assert user_entry.auth_email, "user entry must have auth email"
-        return DestinationModel(to_addresses=[user_entry.auth_email])
-
-    def send_claim_email(self, user_entry: ActiveUserEntry) -> None:
-        """Sends the initial claim email to the auth email of the user.
-
-        The user entry must have the auth email address set.
-
-        Args:
-          user_entry: the user entry for the user
-        """
-        self.__client.send(destination=self.__claim_destination(user_entry),
-                           template="claim",
-                           template_data=self.__claim_template(user_entry))
-
-    def send_followup_claim_email(self, user_entry: ActiveUserEntry) -> None:
-        """Sends the followup claim email to the auth email of the user.
-
-        The user entry must have the auth email address set.
-
-        Args:
-          user_entry: the user entry for the user
-        """
-        self.__client.send(destination=self.__claim_destination(user_entry),
-                           template="followup-claim",
-                           template_data=self.__claim_template(user_entry))
-
-    def send_creation_email(self, user_entry: ActiveUserEntry) -> None:
-        """Sends the user creation email to the email of the user.
-
-        Args:
-          user_entry: the user entry for the user
-        """
-        self.__client.send(
-            destination=DestinationModel(to_addresses=[user_entry.email]),
-            template="user-creation",
-            template_data=TemplateDataModel(firstname=user_entry.first_name,
-                                            email_address=user_entry.email))
-
-
 def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
         admin_group: NACCGroup, authorization_map: AuthMap,
-        registry: UserRegistry, email_client: EmailClient):
+        registry: UserRegistry, notification_client: NotificationClient,
+        force_notifications: bool):
     """Manages users based on user list.
 
     Uses AWS SES email templates: 'claim', 'followup-claim' and 'user-creation'
@@ -216,7 +143,6 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
       registry: the user registry
       email_client: email client for notifications
     """
-    notification_client = NotificationClient(email_client)
     for user_entry in user_list:
         assert user_entry.auth_email, "user entry must have auth email"
 
@@ -261,14 +187,36 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
                            authorization_map=authorization_map)
             continue
 
-        # if not claimed, send an email each week
+        # registry record is not claimed
         log.info('User %s not claimed in registry', user_entry.email)
-        creation_date = get_creation_date(person_list)
-        if not creation_date:
-            log.warning('person record for %s has no creation date',
-                        user_entry.email)
-            continue
 
-        time_since_creation = creation_date - datetime.now()
-        if time_since_creation.days % 7 == 0:
+        if force_notifications:
+            # At least initially, we need to force notifications on users
+            # whose comanage records were created independently of this gear
+            # So, sending the claim email instead of followup
+            # TODO: change to send followup once backlog of users is cleared
+            notification_client.send_claim_email(user_entry)
+
+        if send_notification(user_entry=user_entry, person_list=person_list):
             notification_client.send_followup_claim_email(user_entry)
+
+
+def send_notification(*, user_entry: ActiveUserEntry,
+                      person_list: List[RegistryPerson]) -> bool:
+    """Determines whether to send a notification based on time since date of
+    registry record creation.
+
+    Args:
+      user_entry: the directory entry for user
+      person_list: the registry person objects for user email
+    Returns:
+      True if number of days since creation is a multiple of 7. False, otherwise.
+    """
+    creation_date = get_creation_date(person_list)
+    if not creation_date:
+        log.warning('person record for %s has no creation date',
+                    user_entry.email)
+        return False
+
+    time_since_creation = creation_date - datetime.now()
+    return time_since_creation.days % 7 == 0
