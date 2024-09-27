@@ -23,6 +23,7 @@ from users.nacc_directory import ActiveUserEntry, UserFormatError
 from users.user_registry import UserRegistry
 
 from user_app.main import run
+from user_app.notification_client import NotificationClient
 
 log = logging.getLogger(__name__)
 
@@ -30,9 +31,15 @@ log = logging.getLogger(__name__)
 class UserManagementVisitor(GearExecutionEnvironment):
     """Defines the user management gear."""
 
-    def __init__(self, admin_id: str, client: ClientWrapper,
-                 user_filepath: str, auth_filepath: str, email_source: str,
-                 comanage_config: Configuration, comanage_coid: int):
+    def __init__(self,
+                 admin_id: str,
+                 client: ClientWrapper,
+                 user_filepath: str,
+                 auth_filepath: str,
+                 email_source: str,
+                 comanage_config: Configuration,
+                 comanage_coid: int,
+                 force_notifications: bool = False):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__user_filepath = user_filepath
@@ -40,6 +47,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         self.__email_source = email_source
         self.__comanage_config = comanage_config
         self.__comanage_coid = comanage_coid
+        self.__force_notifications = force_notifications
 
     @classmethod
     def create(
@@ -89,7 +97,9 @@ class UserManagementVisitor(GearExecutionEnvironment):
             comanage_config=Configuration(
                 host=comanage_parameters['host'],
                 username=comanage_parameters['username'],
-                password=comanage_parameters['apikey']))
+                password=comanage_parameters['apikey']),
+            force_notifications=context.config.get(
+                'force_unclaimed_notifications', False))
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
@@ -102,20 +112,20 @@ class UserManagementVisitor(GearExecutionEnvironment):
         assert self.__admin_id, 'Admin group ID required'
         assert self.__email_source, 'Sender email address required'
 
-        auth_map = self.__get_auth_map(self.__auth_filepath)
-        admin_group = self.admin_group(admin_id=self.__admin_id)
-        user_list = self.__get_user_list(self.__user_filepath)
         with ApiClient(
                 configuration=self.__comanage_config) as comanage_client:
-            comanage_api = DefaultApi(comanage_client)
+
             run(proxy=self.proxy,
-                user_list=user_list,
-                admin_group=admin_group,
-                authorization_map=auth_map,
-                email_client=EmailClient(client=create_ses_client(),
-                                         source=self.__email_source),
-                registry=UserRegistry(api_instance=comanage_api,
-                                      coid=self.__comanage_coid))
+                user_list=self.__get_user_list(self.__user_filepath),
+                admin_group=self.admin_group(admin_id=self.__admin_id),
+                authorization_map=self.__get_auth_map(self.__auth_filepath),
+                notification_client=NotificationClient(
+                    configuration_set_name="user-creation-claims",
+                    email_client=EmailClient(client=create_ses_client(),
+                                             source=self.__email_source)),
+                registry=UserRegistry(api_instance=DefaultApi(comanage_client),
+                                      coid=self.__comanage_coid),
+                force_notifications=self.__force_notifications)
 
     def __get_user_list(self, user_file_path: str) -> List[ActiveUserEntry]:
         """Get the active user objects from the user file.
@@ -139,6 +149,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         for user_doc in object_list:
             if not user_doc.get('active'):
                 # TODO: disable inactive users
+                log.info('Ignoring inactive user %s', user_doc.get('email'))
                 continue
 
             try:

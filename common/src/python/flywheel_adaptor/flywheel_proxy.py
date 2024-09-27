@@ -203,7 +203,8 @@ class FlywheelProxy:
         if group_list:
             return group_list[0]
 
-        conflict = self.__fw.groups.find_first(f"label={group_label}")
+        conflict = self.__fw.groups.find_first(
+            f"label=~^{group_label.replace(',','.')}$")
         if conflict:
             raise FlywheelError(
                 f"Group with label {group_label} exists: {conflict.id}")

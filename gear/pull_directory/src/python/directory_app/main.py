@@ -30,6 +30,7 @@ def run(*, user_report: List[Dict[str, Any]]) -> str:
         user_list.append(entry)
         user_emails.add(entry.email)
 
+    log.info('Creating directory file with %s entries', len(user_list))
     return yaml.safe_dump(data=user_list.model_dump(serialize_as_any=True),
                           allow_unicode=True,
                           default_flow_style=False)
