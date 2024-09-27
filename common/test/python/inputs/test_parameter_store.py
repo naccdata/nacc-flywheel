@@ -9,7 +9,7 @@ import os
 
 import boto3
 import pytest
-from moto import mock_ssm
+from moto import mock_aws
 from typing_extensions import TypedDict
 
 
@@ -25,7 +25,7 @@ def aws_credentials():
 @pytest.fixture(scope="function")
 def ssm(aws_credentials):
     """Fixture for mocking SSM service."""
-    with mock_ssm():
+    with mock_aws():
         yield boto3.client('ssm', region_name="us-east-1")
 
 
@@ -36,7 +36,7 @@ class TestParameters(TypedDict):
 
 
 # pylint: disable=(no-self-use)
-@mock_ssm
+@mock_aws
 class TestParameterStore:
     """Tests for parameter store class."""
 
