@@ -79,7 +79,7 @@ class EmailClient:
         Raises:
         """
         try:
-            response = self.__client.send_bulk_templated_email(
+            response = self.__client.send_templated_email(
                 Source=self.__source,
                 ConfigurationSetName=configuration_set_name,
                 Destination=destination.model_dump(by_alias=True,
