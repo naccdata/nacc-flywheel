@@ -31,7 +31,8 @@ def create_ses_client():
 
 class DestinationModel(BaseModel):
     """Defines a destination object for the boto3 SES client."""
-    model_config = ConfigDict(alias_generator=AliasGenerator(alias=camel_case))
+    model_config = ConfigDict(populate_by_name=True,
+                              alias_generator=AliasGenerator(alias=camel_case))
 
     to_addresses: List[str]
     cc_addresses: Optional[List[str]] = None
@@ -40,7 +41,8 @@ class DestinationModel(BaseModel):
 
 class MessageComponent(BaseModel):
     """Defines a model for message components for the boto3 SES client."""
-    model_config = ConfigDict(alias_generator=AliasGenerator(alias=camel_case))
+    model_config = ConfigDict(populate_by_name=True,
+                              alias_generator=AliasGenerator(alias=camel_case))
 
     data: str
     charset: str = Field('utf-8')
@@ -61,6 +63,7 @@ class EmailClient:
 
     def send(
         self,
+        configuration_set_name: str,
         destination: DestinationModel,
         template: str,
         template_data: TemplateDataModel,
@@ -76,9 +79,11 @@ class EmailClient:
         Raises:
         """
         try:
-            response = self.__client.send_bulk_templated_email(
+            response = self.__client.send_templated_email(
                 Source=self.__source,
-                Destination=destination.model_dump(by_alias=True),
+                ConfigurationSetName=configuration_set_name,
+                Destination=destination.model_dump(by_alias=True,
+                                                   exclude_none=True),
                 Template=template,
                 TemplateData=template_data.model_dump_json())
             log.info("Sent %s email to %s", template,

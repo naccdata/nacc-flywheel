@@ -120,8 +120,9 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 admin_group=self.admin_group(admin_id=self.__admin_id),
                 authorization_map=self.__get_auth_map(self.__auth_filepath),
                 notification_client=NotificationClient(
-                    EmailClient(client=create_ses_client(),
-                                source=self.__email_source)),
+                    configuration_set_name="user-creation-claims",
+                    email_client=EmailClient(client=create_ses_client(),
+                                             source=self.__email_source)),
                 registry=UserRegistry(api_instance=DefaultApi(comanage_client),
                                       coid=self.__comanage_coid),
                 force_notifications=self.__force_notifications)

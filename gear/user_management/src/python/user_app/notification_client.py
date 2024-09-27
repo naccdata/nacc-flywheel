@@ -6,8 +6,10 @@ class NotificationClient:
     """Wrapper for the email client to send email notifications for the user
     enrollment flow."""
 
-    def __init__(self, email_client: EmailClient) -> None:
+    def __init__(self, email_client: EmailClient,
+                 configuration_set_name: str) -> None:
         self.__client = email_client
+        self.__configuration_set_name = configuration_set_name
 
     def __claim_template(self,
                          user_entry: ActiveUserEntry) -> TemplateDataModel:
@@ -48,9 +50,11 @@ class NotificationClient:
         Args:
           user_entry: the user entry for the user
         """
-        self.__client.send(destination=self.__claim_destination(user_entry),
-                           template="claim",
-                           template_data=self.__claim_template(user_entry))
+        self.__client.send(
+            configuration_set_name=self.__configuration_set_name,
+            destination=self.__claim_destination(user_entry),
+            template="claim",
+            template_data=self.__claim_template(user_entry))
 
     def send_followup_claim_email(self, user_entry: ActiveUserEntry) -> None:
         """Sends the followup claim email to the auth email of the user.
@@ -60,9 +64,11 @@ class NotificationClient:
         Args:
           user_entry: the user entry for the user
         """
-        self.__client.send(destination=self.__claim_destination(user_entry),
-                           template="followup-claim",
-                           template_data=self.__claim_template(user_entry))
+        self.__client.send(
+            configuration_set_name=self.__configuration_set_name,
+            destination=self.__claim_destination(user_entry),
+            template="followup-claim",
+            template_data=self.__claim_template(user_entry))
 
     def send_creation_email(self, user_entry: ActiveUserEntry) -> None:
         """Sends the user creation email to the email of the user.
@@ -71,6 +77,7 @@ class NotificationClient:
           user_entry: the user entry for the user
         """
         self.__client.send(
+            configuration_set_name=self.__configuration_set_name,
             destination=DestinationModel(to_addresses=[user_entry.email]),
             template="user-creation",
             template_data=TemplateDataModel(firstname=user_entry.first_name,
