@@ -72,6 +72,11 @@
             "description": "Parameter path for sender of email notifications",
             "type": "string",
             "default": "/prod/notifications"
+        },
+        "redcap_parameter_path": {
+            "description": "Parameter path prefix for REDCap project credentials",
+            "type": "string",
+            "default": "/redcap/aws"
         }
     },
     "command": "/bin/run"

@@ -1,10 +1,17 @@
-"""Methods to define user permissions in REDCap projects."""
+"""Methods to define/set user permissions in REDCap projects."""
 
+import logging
 from typing import Any, Dict, List, Optional
 
+from redcap.redcap_connection import REDCapConnection, REDCapConnectionError
+
+ENROLLMENT_MODULE = 'ENROLLV1'
 NACC_TECH_ROLE = 'NACC-TECH-ROLE'
 NACC_STAFF_ROLE = 'NACC-STAFF-ROLE'
 CENTER_USER_ROLE = 'CENTER-USER-ROLE'
+GEARBOT_USER_ID = 'nacc-flywheel-gear@uw.edu'
+
+log = logging.getLogger()
 
 
 def get_nacc_developer_permissions(
@@ -61,3 +68,36 @@ def get_nacc_developer_permissions(
     }
 
     return permissions
+
+
+def assign_update_user_role_in_redcap(username: str, role_label: str,
+                                      redcap_con: REDCapConnection) -> bool:
+    """Assign or update user permissions in the REDCap project.
+
+    Args:
+        username: REDCap user name
+        role_label: REDCap user role to be assigned to the user
+        redcap_con: API connection for the REDCap project
+    """
+
+    try:
+        roles = redcap_con.export_user_roles()
+        role_name = None
+        for role in roles:
+            if role['role_label'] == role_label:
+                role_name = role['unique_role_name']
+                break
+
+        if not role_name:
+            log.error('User role %s does not exist in REDCap project %s',
+                      role_label, redcap_con.title)
+            return False
+
+        redcap_con.assign_user_role(username, role_name)
+    except REDCapConnectionError as error:
+        log.error(
+            'Failed to assign/update permissions for user %s in REDCap project %s - %s',
+            username, redcap_con.title, error)
+        return False
+
+    return True

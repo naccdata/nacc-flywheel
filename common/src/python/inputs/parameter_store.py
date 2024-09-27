@@ -136,6 +136,30 @@ class ParameterStore:
 
         return apikey
 
+    def get_redcap_parameters(self, *, base_path: str,
+                              pid: int) -> REDCapParameters:
+        """Pulls URL and Token for the respective REDCap project from SSM
+        parameter store.
+
+        Args:
+            base_path: base path in the parameter store
+            pid: REDCap project ID
+
+        Returns:
+          the REDCap credentials stored at the parameter path
+
+        Raises:
+          ParameterError if any of the parameters are missing
+        """
+
+        if not base_path.endswith('/'):
+            base_path += '/'
+
+        param_path = base_path + 'pid_' + str(pid)
+
+        return self.get_parameters(param_type=REDCapParameters,
+                                   parameter_path=param_path)
+
     def get_redcap_project_parameters(
             self, *, base_path: str, pid: int,
             report_id: int) -> REDCapReportParameters:

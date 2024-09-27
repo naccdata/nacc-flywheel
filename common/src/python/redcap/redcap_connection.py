@@ -106,6 +106,29 @@ class REDCapConnection:
         self.__url = url
         self.__set_project_info()
 
+    @classmethod
+    def create_from(cls, parameters: REDCapParameters) -> 'REDCapConnection':
+        """Creates a REDCap connection with given parameters.
+
+        Args:
+          parameters: REDCap parameters object with token and url
+
+        Returns:
+          the connection using the parameters
+        """
+        return REDCapConnection(token=parameters['token'],
+                                url=parameters['url'])
+
+    @property
+    def pid(self) -> str:
+        """Returns REDCap project ID."""
+        return self.__pid
+
+    @property
+    def title(self) -> str:
+        """Returns REDCap project title."""
+        return self.__title
+
     @property
     def primary_key_field(self) -> str:
         """Returns primary key field for the project."""
@@ -115,8 +138,8 @@ class REDCapConnection:
         """Set project attributes and primary key field."""
 
         project_info = self.export_project_info()
-        self.pid = project_info['project_id']
-        self.title = project_info['project_title']
+        self.__pid = project_info['project_id']
+        self.__title = project_info['project_title']
         self.__longitudinal = (project_info['is_longitudinal'] == 1)
         self.__repeating_ins = (
             project_info['has_repeating_instruments_or_events'] == 1)
@@ -202,8 +225,8 @@ class REDCapConnection:
         """Import records to the REDCap project.
 
         Args:
-            records (str): List of records to be imported as a csv/json string
-            data_format (str, optional): Import formart, defaults to 'json'.
+            records: List of records to be imported as a csv/json string
+            data_format (optional): Import formart, defaults to 'json'.
 
         Raises:
           REDCapConnectionError if the response has an error.

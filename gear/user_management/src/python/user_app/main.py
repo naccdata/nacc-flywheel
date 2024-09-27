@@ -7,6 +7,7 @@ from centers.nacc_group import NACCGroup
 from coreapi_client.models.identifier import Identifier
 from flywheel import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from inputs.parameter_store import ParameterStore
 from notifications.email import DestinationModel, EmailClient, TemplateDataModel
 from users.authorizations import AuthMap, Authorizations
 from users.nacc_directory import ActiveUserEntry, UserEntry
@@ -38,7 +39,8 @@ def update_email(*, proxy: FlywheelProxy, user: User, email: str) -> None:
 
 def authorize_user(*, user: User, center_id: int,
                    authorizations: Authorizations, admin_group: NACCGroup,
-                   authorization_map: AuthMap) -> None:
+                   authorization_map: AuthMap, parameter_store: ParameterStore,
+                   redcap_path: str) -> None:
     """Adds authorizations to the user.
 
     Users are granted access to nacc/metadata and projects per authorizations.
@@ -47,8 +49,10 @@ def authorize_user(*, user: User, center_id: int,
       user: the user
       center_id: the center of the user
       authorizations: the user authorizations
-      authorization_map: the map from authorization to FW role
       admin_group: the admin group
+      authorization_map: the map from authorization to FW role
+      parameter_store: AWS parameter store connection
+      redcap_path: Parameter path prefix for REDCap API credentials
     """
     center_group = admin_group.get_center(center_id)
     if not center_group:
@@ -61,7 +65,9 @@ def authorize_user(*, user: User, center_id: int,
     # give users access to center projects
     center_group.add_user_roles(user=user,
                                 authorizations=authorizations,
-                                auth_map=authorization_map)
+                                auth_map=authorization_map,
+                                parameter_store=parameter_store,
+                                redcap_path=redcap_path)
 
 
 def add_to_registry(*, user_entry: UserEntry,
@@ -203,7 +209,8 @@ class NotificationClient:
 
 def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
         admin_group: NACCGroup, authorization_map: AuthMap,
-        registry: UserRegistry, email_client: EmailClient):
+        registry: UserRegistry, email_client: EmailClient,
+        parameter_store: ParameterStore, redcap_path: str):
     """Manages users based on user list.
 
     Uses AWS SES email templates: 'claim', 'followup-claim' and 'user-creation'
@@ -215,6 +222,8 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
       authorization_map: the AuthMap object representing the authorization map
       registry: the user registry
       email_client: email client for notifications
+      parameter_store: AWS parameter store connection
+      redcap_path: Parameter path prefix for REDCap API credentials
     """
     notification_client = NotificationClient(email_client)
     for user_entry in user_list:
@@ -251,7 +260,9 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
                            admin_group=admin_group,
                            center_id=user_entry.adcid,
                            authorizations=user_entry.authorizations,
-                           authorization_map=authorization_map)
+                           authorization_map=authorization_map,
+                           parameter_store=parameter_store,
+                           redcap_path=redcap_path)
             continue
 
         # if not claimed, send an email each week

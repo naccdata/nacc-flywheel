@@ -32,7 +32,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
 
     def __init__(self, admin_id: str, client: ClientWrapper,
                  user_filepath: str, auth_filepath: str, email_source: str,
-                 comanage_config: Configuration, comanage_coid: int):
+                 comanage_config: Configuration, comanage_coid: int,
+                 parameter_store: ParameterStore, redcap_path: str):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__user_filepath = user_filepath
@@ -40,6 +41,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
         self.__email_source = email_source
         self.__comanage_config = comanage_config
         self.__comanage_coid = comanage_coid
+        self.__parameter_store = parameter_store
+        self.__redcap_path = redcap_path
 
     @classmethod
     def create(
@@ -70,6 +73,9 @@ class UserManagementVisitor(GearExecutionEnvironment):
         sender_path = context.config.get('sender_path')
         if not sender_path:
             raise GearExecutionError('No email sender parameter path')
+        redcap_path = context.config.get('redcap_parameter_path')
+        if not redcap_path:
+            raise GearExecutionError("No REDCap parameter path")
 
         try:
             comanage_parameters = parameter_store.get_comanage_parameters(
@@ -89,7 +95,9 @@ class UserManagementVisitor(GearExecutionEnvironment):
             comanage_config=Configuration(
                 host=comanage_parameters['host'],
                 username=comanage_parameters['username'],
-                password=comanage_parameters['apikey']))
+                password=comanage_parameters['apikey']),
+            parameter_store=parameter_store,
+            redcap_path=redcap_path)
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
@@ -115,7 +123,9 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 email_client=EmailClient(client=create_ses_client(),
                                          source=self.__email_source),
                 registry=UserRegistry(api_instance=comanage_api,
-                                      coid=self.__comanage_coid))
+                                      coid=self.__comanage_coid),
+                parameter_store=self.__parameter_store,
+                redcap_path=self.__redcap_path)
 
     def __get_user_list(self, user_file_path: str) -> List[ActiveUserEntry]:
         """Get the active user objects from the user file.
