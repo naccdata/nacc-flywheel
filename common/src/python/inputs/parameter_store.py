@@ -101,6 +101,9 @@ class ParameterStore:
         Raises:
           ParameterError if the parameters don't match the type
         """
+        parameter_path = (parameter_path if parameter_path.endswith('/') else
+                          parameter_path + '/')
+
         parameters = self.__store.get_parameters_by_path(path=parameter_path)
         type_adapter = TypeAdapter(param_type)
         try:
@@ -122,6 +125,8 @@ class ParameterStore:
           ParameterError: if the API key is not found
         """
         parameter_name = 'apikey'
+        path_prefix = (path_prefix[:-1]
+                       if path_prefix.endswith('/') else path_prefix)
         parameter_path = f'{path_prefix}/{parameter_name}'
         try:
             parameter = self.__store.get_parameter(parameter_path,
