@@ -378,8 +378,12 @@ class CenterGroup(CenterAdaptor):
                         redcap_project.study_id, self.label)
             return
 
-        form_ingest_project = FormIngestProjectMetadata.create_from_ingest(
-            ingest_project)
+        if isinstance(ingest_project, FormIngestProjectMetadata):
+            form_ingest_project = ingest_project  # get any existing redcap metadata
+        else:
+            form_ingest_project = FormIngestProjectMetadata.create_from_ingest(
+                ingest_project)
+
         for form_project in redcap_project.projects:
             form_ingest_project.add(form_project)
 
@@ -731,8 +735,9 @@ class StudyMetadata(BaseModel):
         """
         self.ingest_projects[project.project_label] = project
 
-    def get_ingest(self,
-                   project_label: str) -> Optional[IngestProjectMetadata]:
+    def get_ingest(
+        self, project_label: str
+    ) -> Optional[IngestProjectMetadata | FormIngestProjectMetadata]:
         """Gets the ingest project metadata for the project label.
 
         Args:
