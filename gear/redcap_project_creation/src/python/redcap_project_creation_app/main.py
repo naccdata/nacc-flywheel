@@ -16,14 +16,19 @@ from redcap.redcap_connection import (
     REDCapConnectionError,
     REDCapSuperUserConnection,
 )
+from redcap.redcap_permissions import add_gearbot_user_to_project
 
 log = logging.getLogger(__name__)
 
 
-def save_project_api_token(parameter_store: ParameterStore, base_path: str,
-                           token: str, url: str) -> Optional[int]:
-    """Retrieve the newly created REDCap PID using the project api token. Save
-    the project api token for the new project in AWS parameter store.
+def setup_new_project_elelments(parameter_store: ParameterStore,
+                                base_path: str, token: str,
+                                url: str) -> Optional[int]:
+    """Set up elements required to access the new REDCap project.
+
+        - Retrieve the newly created REDCap PID using the project api token.
+        - Save the project api token for the new project in AWS parameter store.
+        - Add nacc gearbot user to the project
 
     Args:
         parameter_store: AWS parameter store connection
@@ -37,6 +42,7 @@ def save_project_api_token(parameter_store: ParameterStore, base_path: str,
 
     try:
         redcap_con = REDCapConnection(token=token, url=url)
+        add_gearbot_user_to_project(redcap_con)
     except REDCapConnectionError as error:
         log.error(error)
         return None
@@ -120,9 +126,8 @@ def run(
                     errors = True
                     continue
 
-                redcap_pid = save_project_api_token(parameter_store, base_path,
-                                                    api_key,
-                                                    redcap_super_con.url)
+                redcap_pid = setup_new_project_elelments(
+                    parameter_store, base_path, api_key, redcap_super_con.url)
                 if redcap_pid:
                     module_obj = REDCapFormProject(redcap_pid=redcap_pid,
                                                    label=module.label,

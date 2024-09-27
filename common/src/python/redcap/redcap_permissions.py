@@ -101,3 +101,21 @@ def assign_update_user_role_in_redcap(username: str, role_label: str,
         return False
 
     return True
+
+
+def add_gearbot_user_to_project(redcap_con: REDCapConnection):
+    """Add nacc gearbot user to the specified project.
+
+    Args:
+        redcap_con: API connection for the REDCap project
+
+    Raises:
+        REDCapConnectionError if the response has an error.
+    """
+
+    if not assign_update_user_role_in_redcap(GEARBOT_USER_ID, NACC_TECH_ROLE,
+                                             redcap_con):
+        forms = redcap_con.export_instruments()
+        gearbot_user = get_nacc_developer_permissions(username=GEARBOT_USER_ID,
+                                                      forms_list=forms)
+        redcap_con.add_user(gearbot_user)

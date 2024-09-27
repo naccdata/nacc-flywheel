@@ -120,7 +120,7 @@ class REDCapConnection:
                                 url=parameters['url'])
 
     @property
-    def pid(self) -> str:
+    def pid(self) -> int:
         """Returns REDCap project ID."""
         return self.__pid
 
@@ -138,7 +138,7 @@ class REDCapConnection:
         """Set project attributes and primary key field."""
 
         project_info = self.export_project_info()
-        self.__pid = project_info['project_id']
+        self.__pid = int(project_info['project_id'])
         self.__title = project_info['project_title']
         self.__longitudinal = (project_info['is_longitudinal'] == 1)
         self.__repeating_ins = (
