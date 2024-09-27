@@ -97,7 +97,8 @@ class UserEntry(BaseModel):
                              active=False)
 
         if int(record["nacc_data_platform_access_information_complete"]) != 2:
-            log.warning("Ignoring user %s: incomplete data platform access", email)
+            log.warning("Ignoring user %s: incomplete data platform access",
+                        email)
             return None
 
         authorizations = Authorizations.create_from_record(

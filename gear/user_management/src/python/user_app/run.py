@@ -23,6 +23,7 @@ from users.nacc_directory import ActiveUserEntry, UserFormatError
 from users.user_registry import UserRegistry
 
 from user_app.main import run
+from user_app.notification_client import NotificationClient
 
 log = logging.getLogger(__name__)
 
@@ -30,10 +31,19 @@ log = logging.getLogger(__name__)
 class UserManagementVisitor(GearExecutionEnvironment):
     """Defines the user management gear."""
 
-    def __init__(self, admin_id: str, client: ClientWrapper,
-                 user_filepath: str, auth_filepath: str, email_source: str,
-                 comanage_config: Configuration, comanage_coid: int,
-                 parameter_store: ParameterStore, redcap_path: str):
+    def __init__(
+        self,
+        admin_id: str,
+        client: ClientWrapper,
+        user_filepath: str,
+        auth_filepath: str,
+        email_source: str,
+        comanage_config: Configuration,
+        comanage_coid: int,
+        parameter_store: ParameterStore,
+        redcap_path: str,
+        force_notifications: bool = False,
+    ):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__user_filepath = user_filepath
@@ -43,6 +53,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         self.__comanage_coid = comanage_coid
         self.__parameter_store = parameter_store
         self.__redcap_path = redcap_path
+        self.__force_notifications = force_notifications
 
     @classmethod
     def create(
@@ -73,9 +84,6 @@ class UserManagementVisitor(GearExecutionEnvironment):
         sender_path = context.config.get('sender_path')
         if not sender_path:
             raise GearExecutionError('No email sender parameter path')
-        redcap_path = context.config.get('redcap_parameter_path')
-        if not redcap_path:
-            raise GearExecutionError("No REDCap parameter path")
 
         try:
             comanage_parameters = parameter_store.get_comanage_parameters(
@@ -97,7 +105,10 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 username=comanage_parameters['username'],
                 password=comanage_parameters['apikey']),
             parameter_store=parameter_store,
-            redcap_path=redcap_path)
+            redcap_path=context.config.get('redcap_parameter_path',
+                                           '/redcap/aws'),
+            force_notifications=context.config.get(
+                'force_unclaimed_notifications', False))
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
@@ -110,20 +121,19 @@ class UserManagementVisitor(GearExecutionEnvironment):
         assert self.__admin_id, 'Admin group ID required'
         assert self.__email_source, 'Sender email address required'
 
-        auth_map = self.__get_auth_map(self.__auth_filepath)
-        admin_group = self.admin_group(admin_id=self.__admin_id)
-        user_list = self.__get_user_list(self.__user_filepath)
         with ApiClient(
                 configuration=self.__comanage_config) as comanage_client:
-            comanage_api = DefaultApi(comanage_client)
+
             run(proxy=self.proxy,
-                user_list=user_list,
-                admin_group=admin_group,
-                authorization_map=auth_map,
-                email_client=EmailClient(client=create_ses_client(),
-                                         source=self.__email_source),
-                registry=UserRegistry(api_instance=comanage_api,
+                user_list=self.__get_user_list(self.__user_filepath),
+                admin_group=self.admin_group(admin_id=self.__admin_id),
+                authorization_map=self.__get_auth_map(self.__auth_filepath),
+                notification_client=NotificationClient(
+                    EmailClient(client=create_ses_client(),
+                                source=self.__email_source)),
+                registry=UserRegistry(api_instance=DefaultApi(comanage_client),
                                       coid=self.__comanage_coid),
+                force_notifications=self.__force_notifications,
                 parameter_store=self.__parameter_store,
                 redcap_path=self.__redcap_path)
 
@@ -149,6 +159,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         for user_doc in object_list:
             if not user_doc.get('active'):
                 # TODO: disable inactive users
+                log.info('Ignoring inactive user %s', user_doc.get('email'))
                 continue
 
             try:
