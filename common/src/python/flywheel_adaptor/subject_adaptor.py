@@ -4,11 +4,11 @@ specialized subject wrappers."""
 import logging
 from typing import Any, Dict, List, Optional
 
-from centers.center_group import kebab_case
 from flywheel.finder import Finder
 from flywheel.models.session import Session
 from flywheel.models.subject import Subject
 from pydantic import AliasGenerator, BaseModel, ConfigDict, Field, ValidationError
+from serialization.case import kebab_case
 
 log = logging.getLogger(__name__)
 

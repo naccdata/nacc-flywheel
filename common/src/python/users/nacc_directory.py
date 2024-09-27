@@ -87,15 +87,18 @@ class UserEntry(BaseModel):
         name = PersonName(first_name=record['firstname'],
                           last_name=record['lastname'])
         email = record['email'].lower()
-        auth_email = record['fw_email'] if record['fw_email'] else None
+        auth_email = record.get('fw_email', None)
 
         if record['archive_contact'] == "1":
+            log.info("Creating inactive user record for %s", email)
             return UserEntry(name=name,
                              email=email,
                              auth_email=auth_email,
                              active=False)
 
         if int(record["nacc_data_platform_access_information_complete"]) != 2:
+            log.warning("Ignoring user %s: incomplete data platform access",
+                        email)
             return None
 
         authorizations = Authorizations.create_from_record(
@@ -108,6 +111,7 @@ class UserEntry(BaseModel):
             if org_name.lower() == 'nacc':
                 center_id = '0'
 
+        log.info("Creating active user record for %s", email)
         return ActiveUserEntry(org_name=org_name,
                                adcid=int(center_id),
                                name=name,
