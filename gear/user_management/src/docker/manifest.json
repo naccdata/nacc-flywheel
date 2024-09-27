@@ -2,7 +2,7 @@
     "name": "user-management",
     "label": "User Management",
     "description": "Creates and updates user and user roles",
-    "version": "0.0.31",
+    "version": "1.1.0",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/user-management:0.0.31"
+            "image": "naccdata/user-management:1.1.0"
         },
         "flywheel": {
             "suite": "NACC Admin Gears",
@@ -66,12 +66,17 @@
         "comanage_parameter_path": {
             "description": "Parameter path for CoManage API",
             "type": "string",
-            "default": "/prod/comanage-api"
+            "default": "/prod/comanage/api"
         },
         "sender_path": {
             "description": "Parameter path for sender of email notifications",
             "type": "string",
             "default": "/prod/notifications"
+        },
+        "force_unclaimed_notification": {
+            "description": "Whether to ignore date restrictions on notifications for unclaimed user records",
+            "type": "boolean",
+            "default": false
         }
     },
     "command": "/bin/run"
