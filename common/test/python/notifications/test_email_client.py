@@ -22,7 +22,7 @@ def aws_credentials():
 def ses(aws_credentials):
     """Fixture for mocking SES service."""
     with mock_aws():
-        yield boto3.client('ses', region_name="us-east-1")
+        yield boto3.client('ses', region_name="us-east-1") # types: ignore
 
 @mock_aws
 class TestEmailClient:
