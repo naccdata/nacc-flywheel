@@ -2,6 +2,7 @@
 from typing import Optional
 
 import pytest
+import yaml
 from projects.study import Center, Study, StudyVisitor
 
 
@@ -65,6 +66,19 @@ class TestCenter:
                         adcid=1)
         center.apply(visitor)
         assert visitor.center_name == "Dummy Center"
+
+    def test_create_from_yaml(self):
+        center_yaml = ("adcid: 16\n"
+                       "name: University of California, Davis\n"
+                       "center-id: ucdavis\n"
+                       "is-active: True")
+        center_gen = yaml.safe_load_all(center_yaml)
+        center = Center.create([*center_gen][0])
+        center2 = Center(tags=['adcid-16'],
+                         name="University of California, Davis",
+                         center_id='ucdavis',
+                         adcid=16)
+        assert center == center2
 
 
 class TestStudy:
