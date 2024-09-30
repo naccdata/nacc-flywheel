@@ -20,6 +20,10 @@ from gear_execution.gear_execution import (
     GearExecutionError,
     InputFileWrapper,
 )
+from nacc_form_validator.quality_check import (
+    QualityCheck,
+    QualityCheckException,
+)
 from outputs.errors import (
     ListErrorWriter,
     empty_field_error,
@@ -30,7 +34,6 @@ from outputs.errors import (
 )
 from redcap.redcap_connection import REDCapReportConnection
 from s3.s3_client import S3BucketReader
-from validator.quality_check import QualityCheck, QualityCheckException
 
 from form_qc_app.csv_visitor import FormQCCSVVisitor, read_first_data_row
 from form_qc_app.error_info import ErrorComposer, ErrorStore, REDCapErrorStore
