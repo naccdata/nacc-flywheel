@@ -8,8 +8,8 @@ from typing import Dict, Optional
 from flywheel import Client, Project
 from flywheel.rest import ApiException
 from flywheel.view_builder import ViewBuilder
+from nacc_form_validator.datastore import Datastore
 from pandas import DataFrame
-from validator.datastore import Datastore
 
 from form_qc_app.parser import Keys
 
