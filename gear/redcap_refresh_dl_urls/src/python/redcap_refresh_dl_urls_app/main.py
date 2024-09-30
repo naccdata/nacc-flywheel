@@ -7,11 +7,13 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 log = logging.getLogger(__name__)
 
 def run(*,
-        proxy: FlywheelProxy,
-        new_only: bool = False):
+        proxy: FlywheelProxy):
     """Runs ADD DETAIL process.
     
     Args:
       proxy: the proxy for the Flywheel instance
     """
+
+    print('hello world')
+
     pass

@@ -4,22 +4,20 @@ import logging
 
 from typing import Optional
 
-from centers.nacc_group import NACCGroup
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearEngine,
                                            GearExecutionEnvironment)
 from redcap_refresh_dl_urls_app.main import run
 from inputs.parameter_store import ParameterStore
-from inputs.yaml import YAMLReadError, get_object_lists
 
 log = logging.getLogger(__name__)
 
 class REDCapRefreshDownloadURLs(GearExecutionEnvironment):
     """Visitor for the templating gear."""
 
-    def __init__(self, admin_id: str, client: ClientWrapper, new_only: bool):
-        super().__init__(client=client, admin_id=admin_id)
+    def __init__(self, client: ClientWrapper):
+        super().__init__(client=client)
 
     @classmethod
     def create(
@@ -39,14 +37,10 @@ class REDCapRefreshDownloadURLs(GearExecutionEnvironment):
         """
         client = ContextClient.create(context=context)
 
-        return REDCapRefreshDownloadURLs(
-            admin_id=context.config.get("admin_group", "nacc"),
-            client=client,
-            new_only=context.config.get("new_only", False))
+        return REDCapRefreshDownloadURLs(client=client)
 
     def run(self, context: GearToolkitContext) -> None:
-        run(proxy=self.proxy,
-            new_only=.self.__new_only)
+        run(proxy=self.proxy)
         
 def main():
     """Main method for Refresh REDCap Download URLs."""
