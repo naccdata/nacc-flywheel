@@ -21,4 +21,4 @@ ssm-parameter-store>=19.11.0
 typing-extensions>=4.8.0 # only needed for python < 3.12
 types-PyYAML>=6.0.12
 urllib3 >= 2.2.1
-#validator@ git+https://github.com/naccdata/nacc-form-validator.git
+nacc_form_validator@ https://github.com/naccdata/nacc-form-validator/releases/download/v0.2.0/nacc_form_validator-0.2.0-py3-none-any.whl
