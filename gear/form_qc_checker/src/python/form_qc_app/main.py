@@ -363,6 +363,11 @@ def run(*,
         raise GearExecutionError(
             f'Failed to find the input file: {error}') from error
 
+    project = proxy.get_project_by_id(file.parents.project)
+    if not project:
+        raise GearExecutionError(
+            f'Failed to find the project with ID {file.parents.project}')
+
     legacy_label = gear_context.config.get('legacy_project_label',
                                            Keys.LEGACY_PRJ_LABEL)
     pk_field = (gear_context.config.get('primary_key', Keys.NACCID)).lower()
@@ -404,9 +409,10 @@ def run(*,
                     error_writer=error_writer,
                     strict=strict)
 
-                datastore = FlywheelDatastore(proxy, file.parents.group,
-                                              file.parents.project,
-                                              legacy_label)
+                datastore = FlywheelDatastore(proxy=proxy,
+                                              group_id=file.parents.group,
+                                              project=project,
+                                              legacy_label=legacy_label)
 
                 error_store = REDCapErrorStore(redcap_con=redcap_connection)
 

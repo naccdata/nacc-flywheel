@@ -19,24 +19,22 @@ class FlywheelDatastore(Datastore):
     """This class defines functions to retrieve previous visits from
     Flywheel."""
 
-    def __init__(self, proxy: FlywheelProxy, group: str, project: str,
+    def __init__(self, proxy: FlywheelProxy, group_id: str, project: Project,
                  legacy_label: str):
         """
 
         Args:
             proxy: Flywheel proxy object
             group: Flywheel group id
-            project: Flywheel project id
+            project: Flywheel project container
             legacy_label: legacy project label
         """
 
         self.__proxy = proxy
-        self.__gid = group
-        self.__pid = project
+        self.__gid = group_id
+        self.__project = project
         self.__legacy_label = legacy_label
 
-        # Retrieve necessary containers from Flywheel
-        self.__project = self.__proxy.get_project_by_id(self.__pid)
         self.__legacy_project = self.get_legacy_project()
         self.__legacy_info = self.get_legacy_modules_info()
 
@@ -142,11 +140,6 @@ class FlywheelDatastore(Datastore):
         subject_lbl = current_ins[pk_field]
         module = current_ins[Keys.MODULE]
         orderby_value = current_ins[orderby]
-
-        if not self.__project:
-            log.error(('Failed to find the Flywheel project with ID %s,'
-                       'cannot retrieve the previous visits'), self.__pid)
-            return None
 
         prev_visits = self.get_previous_records(project=self.__project,
                                                 subject_lbl=subject_lbl,
