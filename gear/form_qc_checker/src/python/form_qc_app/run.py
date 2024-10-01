@@ -13,9 +13,9 @@ from gear_execution.gear_execution import (
     GearExecutionError,
     InputFileWrapper,
 )
-from inputs.context_parser import ConfigParseError, get_config
+from inputs.context_parser import get_config
 from inputs.parameter_store import ParameterError, ParameterStore
-from redcap.redcap_connection import REDCapReportConnection
+from redcap.redcap_connection import REDCapReportConnection, REDCapConnectionError
 from s3.s3_client import S3BucketReader
 
 from form_qc_app.main import run
@@ -62,29 +62,27 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
         file_input = InputFileWrapper.create(input_name='form_data_file',
                                              context=context)
 
-        try:
-            s3_param_path: str = get_config(gear_context=context,
-                                            key='parameter_path')
-            qc_checks_db_path: str = get_config(gear_context=context,
-                                                key='qc_checks_db_path')
-        except ConfigParseError as error:
-            raise GearExecutionError(
-                f'Incomplete configuration: {error.message}') from error
+        rules_s3_bucket: str = get_config(gear_context=context,
+                                          key='rules_s3_bucket',
+                                          default='nacc-qc-rules')
+        qc_checks_db_path: str = get_config(gear_context=context,
+                                            key='qc_checks_db_path',
+                                            default='/redcap/aws/qcchecks')
 
         try:
-            s3_parameters = parameter_store.get_s3_parameters(
-                param_path=s3_param_path)
-
             redcap_params = parameter_store.get_redcap_report_parameters(
                 param_path=qc_checks_db_path)
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
 
-        s3_client = S3BucketReader.create_from(s3_parameters)
+        s3_client = S3BucketReader.create_from_environment(rules_s3_bucket)
         if not s3_client:
-            raise GearExecutionError('Unable to connect to S3')
+            raise GearExecutionError(f'Unable to access S3 bucket {rules_s3_bucket}')
 
-        redcap_con = REDCapReportConnection.create_from(redcap_params)
+        try:
+            redcap_con = REDCapReportConnection.create_from(redcap_params)
+        except REDCapConnectionError as error:
+            raise GearExecutionError(error)
 
         return FormQCCheckerVisitor(client=client,
                                     file_input=file_input,
