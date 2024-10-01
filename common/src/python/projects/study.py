@@ -140,7 +140,7 @@ class Study:
                  *,
                  name: str,
                  study_id: str,
-                 centers: List[Center],
+                 centers: List[str],
                  datatypes: List[str],
                  published: bool = False,
                  primary: bool = False) -> None:
@@ -149,7 +149,7 @@ class Study:
         Args:
           name: the name of the study
           study_id: the symbolic ID of study
-          centers: the list of centers in the study
+          centers: the list of ids for centers in the study
           published: whether the data for the study is to be released
           primary: whether this is the primary study of the coordinating center
         """
@@ -189,7 +189,7 @@ class Study:
         return self.__name
 
     @property
-    def centers(self) -> List[Center]:
+    def centers(self) -> List[str]:
         """Study centers property."""
         return self.__centers
 
@@ -218,10 +218,9 @@ class Study:
         if 'primary' in study:
             primary_study = study['primary']
 
-        return Study(
-            name=study['study'],
-            study_id=study['study-id'],
-            centers=[Center.create(center) for center in study['centers']],
-            datatypes=study['datatypes'],
-            published=study['published'],
-            primary=primary_study)
+        return Study(name=study['study'],
+                     study_id=study['study-id'],
+                     centers=study['centers'],
+                     datatypes=study['datatypes'],
+                     published=study['published'],
+                     primary=primary_study)
