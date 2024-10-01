@@ -77,7 +77,8 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
 
         s3_client = S3BucketReader.create_from_environment(rules_s3_bucket)
         if not s3_client:
-            raise GearExecutionError(f'Unable to access S3 bucket {rules_s3_bucket}')
+            raise GearExecutionError(
+                f'Unable to access S3 bucket {rules_s3_bucket}')
 
         try:
             redcap_con = REDCapReportConnection.create_from(redcap_params)
