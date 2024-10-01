@@ -62,10 +62,15 @@
             "type": "boolean",
             "default": false
         },
+        "legacy_project_label": {
+            "description": "The label of the Flywheel project where legacy data stored.",
+            "type": "string",
+            "default": "retrospective-form"
+        },
         "tag": {
-            "default": "form-qc-checker",
             "description": "The tag to be added on input file upon job completion.",
-            "type": "string"
+            "type": "string",
+            "default": "form-qc-checker"
         }
     },
     "command": "/bin/run"

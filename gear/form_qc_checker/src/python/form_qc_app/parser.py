@@ -30,6 +30,7 @@ class Keys:
     REQUIRED = 'required'
     MODE = 'mode'
     NOTFILLED = '0'
+    LEGACY_PRJ_LABEL = 'retrospective-form'
 
 
 class ParserException(Exception):
