@@ -240,8 +240,12 @@ def process_data_record(*,
 
 
 def load_rule_definition_schemas(
-    s3_client: S3BucketReader, input_data: dict[str, Any], filename: str,
-    error_writer: ListErrorWriter
+    *,
+    s3_client: S3BucketReader,
+    input_data: dict[str, Any],
+    filename: str,
+    error_writer: ListErrorWriter,
+    strict: bool = True
 ) -> tuple[Dict[str, Mapping], Optional[Dict[str, Dict]]]:
     """Download QC rule definitions and error code mappings from S3 bucket.
 
@@ -250,6 +254,7 @@ def load_rule_definition_schemas(
         input_data: input data record
         filename: input file name,
         error_writer: error writer object to output error metadata
+        strict (optional): Validation mode, defaults to True.
 
     Raises:
         GearExecutionError: if error occurred while loading schemas
@@ -273,7 +278,7 @@ def load_rule_definition_schemas(
         packet = str(input_data[Keys.PACKET]).upper()
         s3_prefix = f'{s3_prefix}/{packet}'
 
-    parser = Parser(s3_client)
+    parser = Parser(s3_client, strict=strict)
     try:
         optional_forms = parser.get_optional_forms_submission_status(
             input_data=input_data,
@@ -383,6 +388,8 @@ def run(*,
                                                  visitor=csv_visitor)
 
             if input_data:
+                strict = gear_context.config.get("strict_mode", True)
+
                 # Note: Optional forms check is not implemented for CSV files
                 # Currently only enrollment module is submitted as a CSV file,
                 # and does not require optional forms check.
@@ -392,7 +399,8 @@ def run(*,
                     s3_client=s3_client,
                     input_data=input_data,
                     filename=input_wrapper.filename,
-                    error_writer=error_writer)
+                    error_writer=error_writer,
+                    strict=strict)
 
                 datastore = FlywheelDatastore(client_wrapper.client,
                                               file.parents.group,
@@ -400,7 +408,6 @@ def run(*,
 
                 error_store = REDCapErrorStore(redcap_con=redcap_connection)
 
-                strict = gear_context.config.get("strict_mode", True)
                 try:
                     qual_check = QualityCheck(pk_field, schema, strict,
                                               datastore)

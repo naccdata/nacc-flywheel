@@ -29,7 +29,7 @@ class Keys:
     NULLABLE = 'nullable'
     REQUIRED = 'required'
     MODE = 'mode'
-    NOTFILLED = '3'
+    NOTFILLED = '0'
 
 
 class ParserException(Exception):
@@ -40,14 +40,16 @@ class ParserException(Exception):
 class Parser:
     """Class to load the validation rules definitions as python objects."""
 
-    def __init__(self, s3_bucket: S3BucketReader):
+    def __init__(self, s3_bucket: S3BucketReader, strict: bool = True):
         """
 
         Args:
             s3_bucket (S3BucketReader): S3 bucket to load rule definitions
+            strict (optional): Validation mode, defaults to True.
         """
 
         self.__s3_bucket = s3_bucket
+        self.__strict = strict
         # optional forms file in S3 bucket
         self.__opfname = 'optional_forms.json'
 
@@ -203,8 +205,11 @@ class Parser:
         for form in packet_info:
             mode_var = f'{Keys.MODE}{form}'
             if mode_var not in input_data or input_data[mode_var] == '':
-                error_writer.write(empty_field_error(mode_var))
-                missing.append(mode_var)
+                if self.__strict:
+                    error_writer.write(empty_field_error(mode_var))
+                    missing.append(mode_var)
+                else:
+                    submission_status[form] = False
                 continue
 
             submission_status[form] = False if input_data[

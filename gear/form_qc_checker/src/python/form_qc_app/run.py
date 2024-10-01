@@ -15,7 +15,10 @@ from gear_execution.gear_execution import (
 )
 from inputs.context_parser import get_config
 from inputs.parameter_store import ParameterError, ParameterStore
-from redcap.redcap_connection import REDCapReportConnection, REDCapConnectionError
+from redcap.redcap_connection import (
+    REDCapConnectionError,
+    REDCapReportConnection,
+)
 from s3.s3_client import S3BucketReader
 
 from form_qc_app.main import run
