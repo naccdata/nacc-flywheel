@@ -35,20 +35,12 @@ The file format is
 study: <study-name>
 study-id: <string-identifier>
 primary: <whether is primary study>
-centers: <list of center information>
+centers: <list of center identifiers>
 datatypes: <list of datatype identifiers>
 published: <whether the data is published>
 ```
 
-A center is described using the following fields
-
-```yaml
-name: <center name>
-center-id: <string identifier>
-adcid: <int>
-is-active: <whether the center is active>
-tags: <list of strings for tagging study>
-```
+Center identifiers are Flywheel group IDs created by the [center management](../center_management/index.md) gear.
 
 Running on the file will create a group for each center that does not already exist, and add new projects:
 
@@ -57,8 +49,8 @@ Running on the file will create a group for each center that does not already ex
    For instance, `ingest-form-leads`.
    For the primary study, the study-id is dropped like `ingest-form`.
 2. An `accepted` pipeline project, where data that has passed QC is accessible.
-2. a `metadata` project where center-specific metadata can be stored using the project info object.
-3. a `center-portal` project where center-level UI extensions for the ADRC portal can be attached.
+3. a `metadata` project where center-specific metadata can be stored using the project info object.
+4. a `center-portal` project where center-level UI extensions for the ADRC portal can be attached.
 
 Notes:
 1. Only one study should have `primary` set to `True`.
