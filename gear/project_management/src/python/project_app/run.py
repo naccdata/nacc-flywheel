@@ -88,7 +88,7 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
         """
         run(proxy=self.proxy,
             admin_group=self.admin_group(admin_id=self.__admin_id),
-            project_list=self.__get_study_list(self.__project_filepath))
+            study_list=self.__get_study_list(self.__project_filepath))
 
 
 def main():
