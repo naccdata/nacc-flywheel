@@ -44,7 +44,12 @@ def run(*, proxy: FlywheelProxy, admin_group: NACCGroup,
       study_list: the list of input study objects
     """
     for study in study_list:
-        mapper = StudyMappingAdaptor(study=study,
-                                     flywheel_proxy=proxy,
-                                     admin_group=admin_group)
-        mapper.create_study_pipelines()
+        if study.mode == 'aggregation':
+            mapper = StudyMappingAdaptor(study=study,
+                                         flywheel_proxy=proxy,
+                                         admin_group=admin_group)
+            mapper.create_study_pipelines()
+            continue
+
+        if study.mode == 'distribution':
+            log.info('ignoring distribution study %s', study.name)
