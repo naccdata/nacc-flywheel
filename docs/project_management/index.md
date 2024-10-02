@@ -84,6 +84,7 @@ centers:
 datatypes:
   - form
   - dicom
+mode: aggregation  
 published: True
 ---
 study: "Project Zeta"
@@ -93,6 +94,7 @@ centers:
   - gamma-adrc
 datatypes:
   - form
+mode: aggregation
 published: False
 ```
 
