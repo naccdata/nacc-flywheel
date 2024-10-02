@@ -1,7 +1,7 @@
 """Classes for representing NACC studies (or, if you must, projects)."""
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, List, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Literal, Mapping, Optional
 
 
 def convert_to_slug(name: str) -> str:
@@ -132,6 +132,7 @@ class Center:
                       active=center['is-active'],
                       tags=tags)
 
+StudyMode = Literal['aggregation', 'distribution']
 
 class Study:
     """Represents a study with data managed at NACC."""
@@ -142,6 +143,7 @@ class Study:
                  study_id: str,
                  centers: List[str],
                  datatypes: List[str],
+                 mode: StudyMode,
                  published: bool = False,
                  primary: bool = False) -> None:
         """Initializes a study object.
@@ -150,12 +152,14 @@ class Study:
           name: the name of the study
           study_id: the symbolic ID of study
           centers: the list of ids for centers in the study
+          mode: whether the study aggregates or distributes data
           published: whether the data for the study is to be released
           primary: whether this is the primary study of the coordinating center
         """
         self.__name = name
         self.__centers = centers
         self.__datatypes = datatypes
+        self.__mode: StudyMode = mode
         self.__published = published
         self.__primary = primary
         self.__study_id = study_id
@@ -165,6 +169,7 @@ class Study:
             return False
         return (__o.name == self.__name and __o.centers == self.centers
                 and __o.datatypes == self.datatypes
+                and __o.__mode == self.__mode
                 and __o.is_published() == self.is_published()
                 and __o.is_primary() == self.is_primary())
 
@@ -174,6 +179,7 @@ class Study:
                 f"study_id={self.__study_id},"
                 f"centers={self.__centers},"
                 f"datatypes={self.__datatypes},"
+                f"mode={self.__mode},"
                 f"published={self.__published},"
                 f"primary={self.__primary}"
                 ")")
@@ -197,6 +203,11 @@ class Study:
     def datatypes(self) -> List[str]:
         """Study datatypes property."""
         return self.__datatypes
+    
+    @property
+    def mode(self) -> StudyMode:
+        """Study mode property."""
+        return self.__mode
 
     def is_published(self) -> bool:
         """Study published predicate."""
@@ -222,5 +233,6 @@ class Study:
                      study_id=study['study-id'],
                      centers=study['centers'],
                      datatypes=study['datatypes'],
+                     mode=study['mode'],
                      published=study['published'],
                      primary=primary_study)
