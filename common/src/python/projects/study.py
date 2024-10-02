@@ -231,10 +231,11 @@ class Study:
         if 'primary' in study:
             primary_study = study['primary']
 
+        study_mode: StudyMode = study.get('mode', 'aggregation')
         return Study(name=study['study'],
                      study_id=study['study-id'],
                      centers=study['centers'],
                      datatypes=study['datatypes'],
-                     mode=study['mode'],
+                     mode=study_mode,
                      published=study['published'],
                      primary=primary_study)
