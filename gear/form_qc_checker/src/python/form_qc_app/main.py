@@ -11,7 +11,7 @@ import re
 from csv import DictReader
 from json.decoder import JSONDecodeError
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, Literal, Mapping, Optional
 
 from flywheel import Project
 from flywheel.rest import ApiException
@@ -50,6 +50,8 @@ from form_qc_app.flywheel_datastore import FlywheelDatastore
 from form_qc_app.parser import Keys, Parser, ParserException
 
 log = logging.getLogger(__name__)
+
+FailedStatus = Literal['NONE', 'SAME', 'DIFFERENT']
 
 
 def update_file_metadata(*, gear_context: GearToolkitContext,
@@ -186,7 +188,7 @@ def compose_error_metadata(*, sys_failure: bool, error_composer: ErrorComposer,
 
 def has_failed_visits(*, module: str, visitdate: str, file_id: str,
                       filename: str, subject: SubjectAdaptor,
-                      error_writer: ListErrorWriter) -> bool:
+                      error_writer: ListErrorWriter) -> FailedStatus:
     """Check whether the participant has any failed previous visits.
 
     Args:
@@ -201,7 +203,7 @@ def has_failed_visits(*, module: str, visitdate: str, file_id: str,
         GearExecutionError: If any error occurs while checking for previous visits
 
     Returns:
-        bool: True if there's a failed previous visit
+        FailedStatus: Literal['NONE', 'SAME', 'DIFFERENT']
     """
     try:
         failed_visit = subject.get_last_failed_visit(module)
@@ -209,21 +211,33 @@ def has_failed_visits(*, module: str, visitdate: str, file_id: str,
         raise GearExecutionError from error
 
     if failed_visit:
-        if failed_visit.visitdate < visitdate:
-            error_writer.write(
-                previous_visit_failed_error(failed_visit.filename))
-            return True
-        # if failed visit date is same as current visit
-        elif failed_visit.visitdate == visitdate:
+        same_file = (failed_visit.file_id and failed_visit.file_id
+                     == file_id) or (failed_visit.filename == filename)
+        # if failed visit date is same as current visit date
+        if failed_visit.visitdate == visitdate:
             # check whether it is the same file
-            if (failed_visit.file_id and failed_visit.file_id
-                    != file_id) or (failed_visit.filename != filename):
+            if same_file:
+                return 'SAME'
+            else:
                 raise GearExecutionError(
                     'Two different files exists with same visit date '
                     f'{visitdate} for subject {subject.label} module {module} - '
                     f'{failed_visit.filename} and {filename}')
 
-    return False
+        # same file but the visit date is different from previously recorded value
+        if same_file:
+            log.warning(
+                'In {subject.label}/{module}, visit date updated from %s to %s',
+                failed_visit.visitdate, visitdate)
+            return 'SAME'
+
+        # has a failed previous visit
+        if failed_visit.visitdate < visitdate:
+            error_writer.write(
+                previous_visit_failed_error(failed_visit.filename))
+            return 'DIFFERENT'
+
+    return 'NONE'
 
 
 def process_json_file(
@@ -254,24 +268,30 @@ def process_json_file(
     """
     valid = False
     # check whether there are any pending visits for this participant/module
-    if not has_failed_visits(module=input_data[Keys.MODULE],
-                             visitdate=input_data[date_field],
-                             file_id=input_wrapper.file_id,
-                             filename=input_wrapper.filename,
-                             subject=subject_adaptor,
-                             error_writer=error_writer):
+    failed_visit = has_failed_visits(module=input_data[Keys.MODULE],
+                                     visitdate=input_data[date_field],
+                                     file_id=input_wrapper.file_id,
+                                     filename=input_wrapper.filename,
+                                     subject=subject_adaptor,
+                                     error_writer=error_writer)
+    # if there are no failed visits or last failed visit is the current visit
+    # run error checks on visit file
+    if failed_visit in ['NONE', 'SAME']:
         valid = process_data_record(record=input_data,
                                     qual_check=qual_check,
                                     error_store=error_store,
                                     error_writer=error_writer,
                                     codes_map=codes_map)
 
+        module = input_data[Keys.MODULE]
         if not valid:
             visit_info = VisitInfo(filename=input_wrapper.filename,
                                    file_id=input_wrapper.file_id,
                                    visitdate=input_data[date_field])
-            subject_adaptor.set_last_failed_visit(input_data[Keys.MODULE],
-                                                  visit_info)
+            subject_adaptor.set_last_failed_visit(module, visit_info)
+        # reset failed visit metadta in Flyhweel
+        elif failed_visit == 'SAME':
+            subject_adaptor.reset_last_failed_visit(module)
 
     return valid
 
