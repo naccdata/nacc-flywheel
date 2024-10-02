@@ -64,19 +64,12 @@ Notes:
 1. Only one study should have `primary` set to `True`.
 
 2. Like with any YAML file, you can include several study definitions separated by a line with `---`.
-   However, it is more pragmatic to have one file per study for large studys.
+   However, it is more pragmatic to have one file per study for large studies.
 
-2. The `tags` are strings that will be permissible as tags within the group for the center. 
+3. The `tags` are strings that will be permissible as tags within the group for the center. 
    Each tag will also be added to ingest studys within the center's pipeline(s).
 
-3. Choose `center-id` values to be mnemonic for the coordinating center staff.
-   The choice will be visible to centers, but they will not need to type the value in regular interactions. 
-   Staff, on the other hand, will need to use the strings in filters.
-
-4. The `adcid` is an assigned code used to identify the center within submited data.
-   Each center has a unique ADC ID.
-
-5. Datatypes are strings used for creating ingest containers, and matching to sets of gear rules needed for handling ingest.
+4. Datatypes are strings used for creating ingest containers, and matching to sets of gear rules needed for handling ingest.
 
 
 ### Example
@@ -86,18 +79,8 @@ Notes:
 study: "Project Tau"
 study-id: tau
 centers:
-  - name: "Alpha Center"
-    center-id: alpha
-    adcid: 1
-    is-active: True
-    tags:
-      - 'center-code-1006'
-  - name: "Beta Center"
-    center-id: beta-inactive
-    adcid: 2
-    is-active: False
-    tags:
-      - 'center-code-2006'
+  - alpha
+  - beta-inactive
 datatypes:
   - form
   - dicom
@@ -106,18 +89,8 @@ published: True
 study: "Project Zeta"
 study-id: zeta
 centers:
-  - name: "Alpha Center"
-    center-id: alpha
-    adcid: 1
-    is-active: True
-    tags:
-      - 'center-code-1006'
-  - name: "Gamma ADRC"
-    center-id: gamma-adrc
-    adcid: 3
-    is-active: True
-    tags:
-      - 'center-code-5006'
+  - alpha
+  - gamma-adrc
 datatypes:
   - form
 published: False
