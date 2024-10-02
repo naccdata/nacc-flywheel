@@ -88,45 +88,23 @@ class TestStudy:
         """Tests for object creation."""
         project = Study(name="Project Alpha",
                         study_id='project-alpha',
-                        centers=[
-                            Center(tags=['adcid-1'],
-                                   name='A Center',
-                                   center_id='ac',
-                                   adcid=1,
-                                   active=True)
-                        ],
+                        centers=['ac'],
                         datatypes=['dicom'],
                         published=True,
                         primary=True)
         assert project.study_id == "project-alpha"
-        assert project.centers == [
-            Center(tags=['adcid-1'],
-                   name='A Center',
-                   center_id='ac',
-                   adcid=1,
-                   active=True)
-        ]
+        assert project.centers == ['ac']
         assert project.datatypes == ['dicom']
         assert project.is_published()
         assert project.is_primary()
 
         project2 = Study.create({
-            'study':
-            'Project Alpha',
-            'study-id':
-            'project-alpha',
-            'centers': [{
-                'tags': ['adcid-1'],
-                'name': 'A Center',
-                'center-id': 'ac',
-                'adcid': 1,
-                'is-active': True
-            }],
+            'study': 'Project Alpha',
+            'study-id': 'project-alpha',
+            'centers': ['ac'],
             'datatypes': ['dicom'],
-            'published':
-            True,
-            'primary':
-            True
+            'published': True,
+            'primary': True
         })
         assert project == project2
 
