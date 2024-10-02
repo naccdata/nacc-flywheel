@@ -304,6 +304,59 @@ class CenterGroup(CenterAdaptor):
 
         return self.__center_portal
 
+    def add_aggregating_study(self, study: Study,
+                              study_info: 'StudyMetadata') -> None:
+        """Adds the projects for an aggregating study to this center.
+
+        Args:
+          study: the aggregating study
+          study_info: the center metadata object for the study
+        """
+        accepted_label = f"accepted{study.project_suffix()}"
+        accepted_project = self.__add_project(accepted_label)
+        study_info.add_accepted(
+            ProjectMetadata(study_id=study.study_id,
+                            project_id=accepted_project.id,
+                            project_label=accepted_label))
+        accepted_project.add_admin_users(self.get_user_access())
+
+        if self.__is_active:
+            for pipeline in ['ingest', 'sandbox']:
+                for datatype in study.datatypes:
+                    project_label = f"{pipeline}-{datatype.lower()}{study.project_suffix()}"
+                    project = self.__add_project(project_label)
+                    study_info.add_ingest(
+                        IngestProjectMetadata(study_id=study.study_id,
+                                              project_id=project.id,
+                                              project_label=project_label,
+                                              datatype=datatype))
+                    project.add_admin_users(self.get_user_access())
+
+        labels = [
+            f"retrospective-{datatype.lower()}" for datatype in study.datatypes
+        ]
+        for label in labels:
+            project = self.__add_project(label)
+            project.add_admin_users(self.get_user_access())
+
+    def add_distribution_study(self, study: Study,
+                               study_info: 'StudyMetadata') -> None:
+        """Adds the projects for a distributing study to this center.
+
+        Args:
+          study: the distributing study
+          study_info: the center metadata for this study
+        """
+        for datatype in study.datatypes:
+            project_label = f'distribution-{datatype.lower()}{study.project_suffix()}'
+            project = self.__add_project(project_label)
+            study_info.add_distribution(
+                DistributionProjectMetadata(study_id=study.study_id,
+                                            project_id=project.id,
+                                            project_label=project_label,
+                                            datatype=datatype))
+            project.add_admin_users(self.get_user_access())
+
     def add_study(self, study: Study) -> None:
         """Adds pipeline details for study.
 
@@ -318,39 +371,18 @@ class CenterGroup(CenterAdaptor):
         if study.is_primary():
             suffix = ""
 
-        admin_access = self.get_user_access()
+        if study.mode == 'aggregation':
+            self.add_aggregating_study(study=study, study_info=study_info)
 
-        accepted_label = f"accepted{suffix}"
-        accepted_project = self.__add_project(accepted_label)
-        study_info.add_accepted(
-            ProjectMetadata(study_id=study.study_id,
-                            project_id=accepted_project.id,
-                            project_label=accepted_label))
-        accepted_project.add_admin_users(admin_access)
+        if study.mode == 'distribution':
+            self.add_distribution_study(study=study, study_info=study_info)
 
-        if self.__is_active:
-            for pipeline in ['ingest', 'sandbox']:
-                for datatype in study.datatypes:
-                    project_label = f"{pipeline}-{datatype.lower()}{suffix}"
-                    project = self.__add_project(project_label)
-                    study_info.add_ingest(
-                        IngestProjectMetadata(study_id=study.study_id,
-                                              project_id=project.id,
-                                              project_label=project_label,
-                                              datatype=datatype))
-                    project.add_admin_users(admin_access)
-
+        # general
         portal_project = self.__add_project('center-portal')
+        admin_access = self.get_user_access()
         portal_project.add_admin_users(admin_access)
 
         self.update_project_info(portal_info)
-
-        labels = [
-            f"retrospective-{datatype.lower()}" for datatype in study.datatypes
-        ]
-        for label in labels:
-            project = self.__add_project(label)
-            project.add_admin_users(admin_access)
 
     def add_redcap_project(self, redcap_project: 'REDCapProjectInput') -> None:
         """Adds the REDCap project to the center group.
@@ -558,6 +590,11 @@ class ProjectMetadata(BaseModel):
     project_label: str
 
 
+class DistributionProjectMetadata(ProjectMetadata):
+    """Metadata for a distribution project of a center."""
+    datatype: str
+
+
 class IngestProjectMetadata(ProjectMetadata):
     """Metadata for an ingest project of a center."""
     datatype: str
@@ -626,6 +663,7 @@ class StudyMetadata(BaseModel):
     ingest_projects: Dict[str, (IngestProjectMetadata
                                 | FormIngestProjectMetadata)] = {}
     accepted_project: Optional[ProjectMetadata] = None
+    distribution_projects: Dict[str, DistributionProjectMetadata] = {}
 
     def add_accepted(self, project: ProjectMetadata) -> None:
         """Adds the accepted project to the study metadata.
@@ -653,6 +691,26 @@ class StudyMetadata(BaseModel):
             the ingest project metadata for the project label
         """
         return self.ingest_projects.get(project_label, None)
+
+    def add_distribution(self, project: DistributionProjectMetadata) -> None:
+        """Adds the distribution project to the study metadata.
+
+        Args:
+          project: the distribution project metadata.
+        """
+        self.distribution_projects[project.project_label] = project
+
+    def get_distribution(
+            self, project_label: str) -> Optional[DistributionProjectMetadata]:
+        """Gets the distribution project metadata for the project label.
+
+        Args:
+          project_label: the project label
+
+        Returns:
+          the distribution project metadata for the project label
+        """
+        return self.distribution_projects.get(project_label, None)
 
 
 class CenterProjectMetadata(BaseModel):
