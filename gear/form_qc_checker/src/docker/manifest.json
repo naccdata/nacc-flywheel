@@ -67,6 +67,11 @@
             "type": "string",
             "default": "retrospective-form"
         },
+        "date_field": {
+            "description": "Variable name of the visit date field for the module (used to sort the participant visits)",
+            "type": "string",
+            "default": "visitdate"
+        },
         "tag": {
             "description": "The tag to be added on input file upon job completion.",
             "type": "string",

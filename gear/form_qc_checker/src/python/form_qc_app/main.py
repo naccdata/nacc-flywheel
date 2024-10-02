@@ -11,9 +11,15 @@ import re
 from csv import DictReader
 from json.decoder import JSONDecodeError
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, Mapping, Optional
 
+from flywheel import Project
 from flywheel.rest import ApiException
+from flywheel_adaptor.subject_adaptor import (
+    SubjectAdaptor,
+    SubjectError,
+    VisitInfo,
+)
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
@@ -25,11 +31,14 @@ from nacc_form_validator.quality_check import (
     QualityCheckException,
 )
 from outputs.errors import (
+    JSONLocation,
     ListErrorWriter,
     empty_field_error,
     empty_file_error,
     malformed_file_error,
     missing_header_error,
+    previous_visit_failed_error,
+    system_error,
     unknown_field_error,
 )
 from redcap.redcap_connection import REDCapReportConnection
@@ -104,30 +113,52 @@ def validate_input_file_type(mimetype: str) -> Optional[str]:
     return None
 
 
-def validate_required_keys(*, keys: List[str], data: Dict[str, str],
-                           error_writer: ListErrorWriter) -> bool:
-    """Check whether all required keys are present in the input file.
+def validate_json_input(
+        *, input_data: Dict[str, str], pk_field: str, module_field: str,
+        date_field: str, project: Project,
+        error_writer: ListErrorWriter) -> Optional[SubjectAdaptor]:
+    """Validate the JSON input file for a visit. Check whether all required
+    fields are present in the input data. Check whether primary key matches
+    with the Flywheel subject label in the project.
 
     Args:
-        keys: list of keys to validate
-        data: input data to validate
+        input_data: visit data to validate
+        pk_field: variable name of the primary key field
+        module_field: variable name of the module field
+        date_field: variable name of the visit date field
+        project: Flywheel project container
         error_writer: error writer object to output error metadata
 
     Returns:
-        bool: returns True if all keys are present in data
+        SubjectAdaptor(optional): returns SubjectAdaptor for this visit or None
     """
 
-    if not data:
+    if not input_data:
         error_writer.write(empty_file_error())
-        return False
+        return None
 
-    present = True
-    for key in keys:
-        if key not in data or data[key] == '':
-            error_writer.write(empty_field_error(key))
-            present = False
+    if pk_field not in input_data or input_data[pk_field] == '':
+        error_writer.write(empty_field_error(pk_field))
+        return None
 
-    return present
+    if module_field not in input_data or input_data[module_field] == '':
+        error_writer.write(empty_field_error(module_field))
+        return None
+
+    if date_field not in input_data or input_data[date_field] == '':
+        error_writer.write(empty_field_error(date_field))
+        return None
+
+    subject_lbl = input_data[pk_field]
+    subject = project.subjects.find_first(f'label={subject_lbl}')
+    if not subject:
+        message = f'Failed to retrieve subject {subject_lbl} in project {project.label}'
+        log.error(message)
+        error_writer.write(
+            system_error(message, JSONLocation(key_path=pk_field)))
+        return None
+
+    return SubjectAdaptor(subject)
 
 
 def compose_error_metadata(*, sys_failure: bool, error_composer: ErrorComposer,
@@ -151,6 +182,98 @@ def compose_error_metadata(*, sys_failure: bool, error_composer: ErrorComposer,
                                                        line_number=line_number)
     else:
         error_composer.compose_minimal_error_metadata(line_number)
+
+
+def has_failed_visits(*, module: str, visitdate: str, file_id: str,
+                      filename: str, subject: SubjectAdaptor,
+                      error_writer: ListErrorWriter) -> bool:
+    """Check whether the participant has any failed previous visits.
+
+    Args:
+        module: module name (Flywheel acqusition label)
+        visitdate: visit date for the current visit
+        file_id: Flywheel file id
+        filename: visit file name
+        subject: Flywheel subject adaptor for the participant
+        error_writer: error writer object to output error metadata
+
+    Raises:
+        GearExecutionError: If any error occurs while checking for previous visits
+
+    Returns:
+        bool: True if there's a failed previous visit
+    """
+    try:
+        failed_visit = subject.get_last_failed_visit(module)
+    except SubjectError as error:
+        raise GearExecutionError from error
+
+    if failed_visit:
+        if failed_visit.visitdate < visitdate:
+            error_writer.write(
+                previous_visit_failed_error(failed_visit.filename))
+            return True
+        # if failed visit date is same as current visit
+        elif failed_visit.visitdate == visitdate:
+            # check whether it is the same file
+            if (failed_visit.file_id and failed_visit.file_id
+                    != file_id) or (failed_visit.filename != filename):
+                raise GearExecutionError(
+                    'Two different files exists with same visit date '
+                    f'{visitdate} for subject {subject.label} module {module} - '
+                    f'{failed_visit.filename} and {filename}')
+
+    return False
+
+
+def process_json_file(
+    *,
+    input_data: Dict[str, str],
+    date_field: str,
+    input_wrapper: InputFileWrapper,
+    subject_adaptor: SubjectAdaptor,
+    qual_check: QualityCheck,
+    error_store: ErrorStore,
+    error_writer: ListErrorWriter,
+    codes_map: Optional[Dict[str, Dict]] = None,
+) -> bool:
+    """Process input JSON file for a participant visit.
+
+    Args:
+        input_data: input data record for the visit
+        date_field: variable name for visit date field
+        input_wrapper: input file wrapper
+        subject_adaptor: Flywheel subject adaptor for participant
+        qual_check: NACC data quality checker object
+        error_store: database connection to retrieve NACC QC chek info
+        error_writer: error writer object to output error metadata
+        codes_map(optional): schema to map NACC QC checks to validation errors
+
+    Returns:
+        bool: True if the file passed validation
+    """
+    valid = False
+    # check whether there are any pending visits for this participant/module
+    if not has_failed_visits(module=input_data[Keys.MODULE],
+                             visitdate=input_data[date_field],
+                             file_id=input_wrapper.file_id,
+                             filename=input_wrapper.filename,
+                             subject=subject_adaptor,
+                             error_writer=error_writer):
+        valid = process_data_record(record=input_data,
+                                    qual_check=qual_check,
+                                    error_store=error_store,
+                                    error_writer=error_writer,
+                                    codes_map=codes_map)
+
+        if not valid:
+            visit_info = VisitInfo(filename=input_wrapper.filename,
+                                   file_id=input_wrapper.file_id,
+                                   visitdate=input_data[date_field])
+            subject_adaptor.set_last_failed_visit(input_data[Keys.MODULE],
+                                                  visit_info)
+
+    return valid
 
 
 def process_csv_file(*, csv_reader: DictReader, qual_check: QualityCheck,
@@ -327,6 +450,8 @@ def get_module_name_from_file_suffix(filename: str) -> Optional[str]:
 
 
 # pylint: disable=(too-many-locals)
+
+
 def run(*,
         client_wrapper: ClientWrapper,
         input_wrapper: InputFileWrapper,
@@ -371,6 +496,8 @@ def run(*,
     legacy_label = gear_context.config.get('legacy_project_label',
                                            Keys.LEGACY_PRJ_LABEL)
     pk_field = (gear_context.config.get('primary_key', Keys.NACCID)).lower()
+    date_field = (gear_context.config.get('date_field',
+                                          Keys.DATE_COLUMN)).lower()
     error_writer = ListErrorWriter(container_id=file_id,
                                    fw_path=proxy.get_lookup_path(file))
     input_path = Path(input_wrapper.filepath)
@@ -380,9 +507,14 @@ def run(*,
             if file_type == 'json':
                 try:
                     input_data = json.load(file_obj)
-                    if not validate_required_keys(keys=[pk_field, Keys.MODULE],
-                                                  data=input_data,
-                                                  error_writer=error_writer):
+                    subject_adaptor = validate_json_input(
+                        input_data=input_data,
+                        pk_field=pk_field,
+                        module_field=Keys.MODULE,
+                        date_field=date_field,
+                        project=project,
+                        error_writer=error_writer)
+                    if not subject_adaptor:
                         input_data = None
                 except (JSONDecodeError, TypeError) as error:
                     error_writer.write(malformed_file_error(str(error)))
@@ -424,11 +556,15 @@ def run(*,
                         f'Failed to initialize QC module: {error}') from error
 
                 if file_type == 'json':
-                    valid = process_data_record(record=input_data,
-                                                qual_check=qual_check,
-                                                error_store=error_store,
-                                                error_writer=error_writer,
-                                                codes_map=codes_map)
+                    valid = process_json_file(
+                        input_data=input_data,
+                        date_field=date_field,
+                        input_wrapper=input_wrapper,
+                        subject_adaptor=subject_adaptor,  # type: ignore
+                        qual_check=qual_check,
+                        error_store=error_store,
+                        error_writer=error_writer,
+                        codes_map=codes_map)
                 else:
                     csv_reader = DictReader(
                         file_obj, dialect=csv_visitor.dialect)  # type: ignore

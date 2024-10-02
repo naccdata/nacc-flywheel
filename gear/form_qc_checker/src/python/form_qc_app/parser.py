@@ -31,6 +31,7 @@ class Keys:
     MODE = 'mode'
     NOTFILLED = '0'
     LEGACY_PRJ_LABEL = 'retrospective-form'
+    DATE_COLUMN = 'visitdate'
 
 
 class ParserException(Exception):
