@@ -34,16 +34,16 @@ def get_project_roles(flywheel_proxy,
     return role_list
 
 
-def run(*, proxy: FlywheelProxy, admin_group: NACCGroup, project_list):
+def run(*, proxy: FlywheelProxy, admin_group: NACCGroup,
+        study_list: List[Study]):
     """Runs project pipeline creation/management.
 
     Args:
       proxy: the proxy for the Flywheel instance
       admin_group: the administrative group
-      project_list: the list of project input
+      study_list: the list of input study objects
     """
-    for study_doc in project_list:
-        study = Study.create(study_doc)
+    for study in study_list:
         mapper = StudyMappingAdaptor(study=study,
                                      flywheel_proxy=proxy,
                                      admin_group=admin_group)
