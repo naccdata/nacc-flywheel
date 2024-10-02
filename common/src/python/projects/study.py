@@ -224,6 +224,13 @@ class Study:
         """Apply visitor to this Study."""
         visitor.visit_study(self)
 
+    def project_suffix(self) -> str:
+        """Creates the suffix that should be added to study pipelines."""
+        if self.is_primary():
+            return ''
+
+        return f"-{self.study_id}"
+
     @classmethod
     def create(cls, study: Mapping[str, Any]) -> "Study":
         """Create study from given mapping."""
