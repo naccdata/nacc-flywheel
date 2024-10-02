@@ -7,7 +7,7 @@ from centers.nacc_group import NACCGroup
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from projects.study import Study
-from projects.study_mapping import StudyMappingAdaptor
+from projects.study_mapping import AggregationStudyMapping, DistributionStudyMapping, StudyMappingAdaptor
 
 log = logging.getLogger(__name__)
 
@@ -44,12 +44,14 @@ def run(*, proxy: FlywheelProxy, admin_group: NACCGroup,
       study_list: the list of input study objects
     """
     for study in study_list:
+        mapper: StudyMappingAdaptor
         if study.mode == 'aggregation':
-            mapper = StudyMappingAdaptor(study=study,
-                                         flywheel_proxy=proxy,
-                                         admin_group=admin_group)
-            mapper.create_study_pipelines()
-            continue
+            mapper = AggregationStudyMapping(study=study,
+                                             flywheel_proxy=proxy,
+                                             admin_group=admin_group)
 
         if study.mode == 'distribution':
-            log.info('ignoring distribution study %s', study.name)
+            mapper = DistributionStudyMapping(study=study,
+                                              flywheel_proxy=proxy)
+
+        mapper.create_study_pipelines()
