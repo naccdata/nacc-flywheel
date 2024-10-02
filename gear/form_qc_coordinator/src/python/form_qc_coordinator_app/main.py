@@ -1,12 +1,9 @@
 """Defines Form QC Coordinator."""
 
-import json
 import logging
-from json.decoder import JSONDecodeError
 from typing import Dict, List, Optional
 
-from flywheel import Client
-from flywheel.view_builder import ViewBuilder
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_adaptor.subject_adaptor import (
     ParticipantVisits,
     SubjectAdaptor,
@@ -39,7 +36,7 @@ def update_file_tags(gear_context: GearToolkitContext,
 
 def get_matching_visits(
         *,
-        fw_client: Client,
+        proxy: FlywheelProxy,
         container_id: str,
         subject: str,
         module: str,
@@ -52,7 +49,7 @@ def get_matching_visits(
     YYYY-MM-DD format at a previous stage of the submission pipeline.
 
     Args:
-        fw_client: Flywheel SDK client
+        proxy: Flywheel proxy
         container_id: Flywheel subject container ID
         subject: Flywheel subject label for participant
         module: module label, matched with Flywheel acquisition label
@@ -62,6 +59,8 @@ def get_matching_visits(
     Returns:
         List[Dict]: List of visits matching with the specified cutoff date
     """
+
+    title = f'{module} visits for participant {subject}'
 
     date_col_key = f'file.info.forms.json.{date_col}'
     columns = [
@@ -73,30 +72,10 @@ def get_matching_visits(
     if cutoff_date:
         filters += f',{date_col_key}>={cutoff_date}'
 
-    builder = ViewBuilder(label=f'{module} visits for participant {subject}',
-                          columns=columns,
-                          container='acquisition',
-                          filename='*.json',
-                          match='all',
-                          process_files=False,
-                          filter=filters,
-                          include_ids=False,
-                          include_labels=False)
-    builder = builder.missing_data_strategy('drop-row')
-    view = builder.build()
-
-    with fw_client.read_view_data(view, container_id) as resp:
-        try:
-            result = json.load(resp)
-        except JSONDecodeError as error:
-            log.error('Error in loading dataview %s on subject %s - %s',
-                      view.label, subject, error)
-            return None
-
-    if not result or 'data' not in result:
-        return None
-
-    return result['data']
+    return proxy.get_matching_aquisition_files_info(container_id=container_id,
+                                                    dv_title=title,
+                                                    columns=columns,
+                                                    filters=filters)
 
 
 def run(*,
@@ -131,7 +110,8 @@ def run(*,
         cutoff = curr_visit.visitdate
 
     module = visits_info.module.upper()
-    visits_list = get_matching_visits(fw_client=client_wrapper.client,
+    proxy = client_wrapper.get_proxy()
+    visits_list = get_matching_visits(proxy=proxy,
                                       container_id=subject.id,
                                       subject=subject.label,
                                       module=module,
@@ -145,7 +125,7 @@ def run(*,
 
     qc_coordinator = QCCoordinator(subject=subject,
                                    module=module,
-                                   proxy=client_wrapper.get_proxy(),
+                                   proxy=proxy,
                                    gear_context=gear_context)
 
     qc_coordinator.run_error_checks(gear_name=qc_gear_info.gear_name,

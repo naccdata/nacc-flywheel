@@ -2,7 +2,7 @@
     "name": "form-qc-checker",
     "label": "Form QC Checker",
     "description": "Gear to check form data as JSON with QC rule set",
-    "version": "0.0.31",
+    "version": "0.0.32",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/form-qc-checker:0.0.31"
+            "image": "naccdata/form-qc-checker:0.0.32"
         },
         "flywheel": {
             "suite": "Curation",
@@ -42,10 +42,10 @@
             "type": "string",
             "default": "/prod/flywheel/gearbot"
         },
-        "parameter_path": {
-            "description": "Parameter path for QC rules on S3",
+        "rules_s3_bucket": {
+            "description": "QC rule definitions S3 bucket name",
             "type": "string",
-            "default": "/prod/flywheel/gearbot/qcrules"
+            "default": "nacc-qc-rules"
         },
         "qc_checks_db_path": {
             "description": "Parameter path for NACC QC checks database credentials",
@@ -62,10 +62,20 @@
             "type": "boolean",
             "default": false
         },
+        "legacy_project_label": {
+            "description": "The label of the Flywheel project where legacy data stored.",
+            "type": "string",
+            "default": "retrospective-form"
+        },
+        "date_field": {
+            "description": "Variable name of the visit date field for the module (used to sort the participant visits)",
+            "type": "string",
+            "default": "visitdate"
+        },
         "tag": {
-            "default": "form-qc-checker",
             "description": "The tag to be added on input file upon job completion.",
-            "type": "string"
+            "type": "string",
+            "default": "form-qc-checker"
         }
     },
     "command": "/bin/run"
