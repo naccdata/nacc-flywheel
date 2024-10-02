@@ -132,7 +132,9 @@ class Center:
                       active=center['is-active'],
                       tags=tags)
 
+
 StudyMode = Literal['aggregation', 'distribution']
+
 
 class Study:
     """Represents a study with data managed at NACC."""
@@ -203,7 +205,7 @@ class Study:
     def datatypes(self) -> List[str]:
         """Study datatypes property."""
         return self.__datatypes
-    
+
     @property
     def mode(self) -> StudyMode:
         """Study mode property."""
