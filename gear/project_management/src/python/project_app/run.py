@@ -7,6 +7,7 @@ centers - array of centers
     name - name of center
     is-active - whether center is active, has users if True
 datatypes - array of datatype names (form, dicom)
+mode - string indicating 'aggregation' or 'distribution'
 published - boolean indicating whether data is to be published
 """
 import logging
