@@ -29,7 +29,6 @@ from typing import List, Optional
 
 from centers.center_group import CenterError, CenterGroup
 from centers.nacc_group import NACCGroup
-from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import (
     FlywheelProxy,
     GroupAdaptor,
