@@ -1,7 +1,7 @@
 """Classes for representing NACC studies (or, if you must, projects)."""
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, List, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 
 def convert_to_slug(name: str) -> str:
@@ -119,7 +119,7 @@ class Center:
         visitor.visit_center(self)
 
     @classmethod
-    def create(cls, center: dict) -> "Center":
+    def create(cls, center: Dict[str, Any]) -> "Center":
         """Creates a Center from the given dictionary."""
 
         tags: List[str] = []
