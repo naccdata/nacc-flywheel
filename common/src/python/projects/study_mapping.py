@@ -29,9 +29,7 @@ from typing import List, Optional
 
 from centers.center_group import CenterError, CenterGroup
 from centers.nacc_group import NACCGroup
-from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import (
-    FlywheelError,
     FlywheelProxy,
     GroupAdaptor,
     ProjectAdaptor,
@@ -47,25 +45,20 @@ class StudyMappingAdaptor:
     mapping to a data pipeline using Flywheel groups and projects."""
 
     def __init__(self, *, study: Study, admin_group: NACCGroup,
-                 flywheel_proxy: FlywheelProxy, center_roles: List[GroupRole],
-                 new_only: bool) -> None:
+                 flywheel_proxy: FlywheelProxy) -> None:
         """Creates an adaptor mapping the given study to the corresponding
         objects in the flywheel instance linked by the proxy.
 
         Args:
             study: the study
             flywheel_proxy: the proxy for the flywheel instance
-            center_roles: the roles for center users
             admin_group: the admin group for managing centers
             new_only: whether to only process new centers
         """
         self.__fw = flywheel_proxy
         self.__study = study
-        self.__admin_group = admin_group
         self.__release_group: Optional[GroupAdaptor] = None
         self.__admin_access = admin_group.get_user_access()
-        self.__center_roles = center_roles
-        self.__new_centers_only = new_only
 
     def has_datatype(self, datatype: str) -> bool:
         """Indicates whether this study has the datatype.
@@ -129,28 +122,20 @@ class StudyMappingAdaptor:
                 self.__study.name)
             return
 
-        for center in self.__study.centers:
-            if self.__new_centers_only and 'new-center' not in center.tags:
+        for center_id in self.__study.centers:
+            group_adaptor = self.__fw.find_group(center_id)
+            if not group_adaptor:
+                log.warning("No group found with center ID %s", center_id)
                 continue
 
-            try:
-                center_group = CenterGroup.create_from_center(center=center,
-                                                              proxy=self.__fw)
-            except FlywheelError as error:
-                log.warning("Unable to create center: %s", str(error))
-                continue
-
-            center_group.add_roles(self.__center_roles)
-            self.__admin_group.add_center(center_group)
-
-            if self.__admin_access:
-                center_group.add_permissions(self.__admin_access)
+            center_group = CenterGroup.create_from_group_adaptor(
+                adaptor=group_adaptor)
 
             try:
                 center_group.add_study(self.__study)
             except CenterError as error:
                 log.error("Error adding study %s to center %s: %s",
-                          self.__study.name, center.name, error)
+                          self.__study.name, center_group.label, error)
 
     def create_release_pipeline(self) -> None:
         """Creates the release pipeline for this study if the study is

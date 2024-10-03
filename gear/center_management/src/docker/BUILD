@@ -1,10 +1,10 @@
 file(name="manifest", source="manifest.json")
 
 docker_image(
-    name="project-management",
+    name="center-management",
     source="Dockerfile",
     dependencies=[
-        ":manifest", "gear/project_management/src/python/project_app:bin"
+        ":manifest", "gear/center_management/src/python/center_app:bin"
     ],
     image_tags=["1.0.0", "latest"],
 )

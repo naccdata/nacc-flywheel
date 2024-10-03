@@ -82,7 +82,7 @@ def add_to_registry(*, user_entry: UserEntry,
         RegistryPerson.create(firstname=user_entry.first_name,
                               lastname=user_entry.last_name,
                               email=user_entry.auth_email,
-                              coid=str(registry.coid)))
+                              coid=registry.coid))
 
     return identifier_list
 

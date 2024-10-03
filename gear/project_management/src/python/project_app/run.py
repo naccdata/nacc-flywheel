@@ -85,9 +85,7 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
         """
         run(proxy=self.proxy,
             admin_group=self.admin_group(admin_id=self.__admin_id),
-            project_list=self.__project_list,
-            role_names=['curate', 'upload', 'gear-bot'],
-            new_only=self.__new_only)
+            project_list=self.__project_list)
 
 
 def main():

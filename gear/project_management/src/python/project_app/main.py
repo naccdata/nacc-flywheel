@@ -34,28 +34,17 @@ def get_project_roles(flywheel_proxy,
     return role_list
 
 
-def run(*,
-        proxy: FlywheelProxy,
-        admin_group: NACCGroup,
-        project_list,
-        role_names: List[str],
-        new_only: bool = False):
+def run(*, proxy: FlywheelProxy, admin_group: NACCGroup, project_list):
     """Runs project pipeline creation/management.
 
     Args:
       proxy: the proxy for the Flywheel instance
       admin_group: the administrative group
       project_list: the list of project input
-      role_names: list of project role names
-      new_only: whether to only create centers with new tag
     """
-    center_roles = get_project_roles(proxy, role_names)
-
     for study_doc in project_list:
         study = Study.create(study_doc)
         mapper = StudyMappingAdaptor(study=study,
                                      flywheel_proxy=proxy,
-                                     admin_group=admin_group,
-                                     center_roles=center_roles,
-                                     new_only=new_only)
+                                     admin_group=admin_group)
         mapper.create_study_pipelines()
