@@ -1,10 +1,7 @@
 """Tests for handling of YAML documents."""
 from io import StringIO
 
-from io import StringIO
-
 import yaml
-from inputs.yaml import get_object_lists_from_stream, load_from_stream
 from inputs.yaml import get_object_lists_from_stream, load_from_stream
 
 

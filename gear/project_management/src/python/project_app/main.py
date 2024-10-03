@@ -7,7 +7,11 @@ from centers.nacc_group import NACCGroup
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from projects.study import Study
-from projects.study_mapping import AggregationStudyMapping, DistributionStudyMapping, StudyMappingAdaptor
+from projects.study_mapping import (
+    AggregationStudyMapping,
+    DistributionStudyMapping,
+    StudyMappingAdaptor,
+)
 
 log = logging.getLogger(__name__)
 

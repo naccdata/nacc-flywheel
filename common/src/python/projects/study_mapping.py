@@ -199,7 +199,8 @@ class AggregationStudyMapping(StudyMappingAdaptor):
 
 
 class DistributionStudyMapping(StudyMappingAdaptor):
-    """Study mapping adaptor that implements creation of distribution studies"""
+    """Study mapping adaptor that implements creation of distribution
+    studies."""
 
     def __init__(self, *, study: Study, flywheel_proxy: FlywheelProxy) -> None:
         super().__init__(study=study, flywheel_proxy=flywheel_proxy)
