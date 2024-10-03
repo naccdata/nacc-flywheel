@@ -151,6 +151,29 @@ class AggregationStudyMapping(StudyMappingAdaptor):
         assert release_group
         return release_group.get_project(label='master-project')
 
+    def create_center_pipelines(self) -> None:
+        """Creates data pipelines for centers in this project."""
+        if not self.__study.centers:
+            log.warning(
+                "Not creating center groups for project %s: no centers given",
+                self.__study.name)
+            return
+
+        for center_id in self.__study.centers:
+            group_adaptor = self.__fw.find_group(center_id)
+            if not group_adaptor:
+                log.warning("No group found with center ID %s", center_id)
+                continue
+
+            center_group = CenterGroup.create_from_group_adaptor(
+                adaptor=group_adaptor)
+
+            try:
+                center_group.add_study(self.__study)
+            except CenterError as error:
+                log.error("Error adding study %s to center %s: %s",
+                          self.__study.name, center_group.label, error)
+
     def create_release_pipeline(self) -> None:
         """Creates the release pipeline for this study if the study is
         published."""
