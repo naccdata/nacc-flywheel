@@ -7,7 +7,11 @@ from centers.nacc_group import NACCGroup
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from projects.study import Study
-from projects.study_mapping import StudyMappingAdaptor
+from projects.study_mapping import (
+    AggregationStudyMapping,
+    DistributionStudyMapping,
+    StudyMappingAdaptor,
+)
 
 log = logging.getLogger(__name__)
 
@@ -34,17 +38,24 @@ def get_project_roles(flywheel_proxy,
     return role_list
 
 
-def run(*, proxy: FlywheelProxy, admin_group: NACCGroup, project_list):
+def run(*, proxy: FlywheelProxy, admin_group: NACCGroup,
+        study_list: List[Study]):
     """Runs project pipeline creation/management.
 
     Args:
       proxy: the proxy for the Flywheel instance
       admin_group: the administrative group
-      project_list: the list of project input
+      study_list: the list of input study objects
     """
-    for study_doc in project_list:
-        study = Study.create(study_doc)
-        mapper = StudyMappingAdaptor(study=study,
-                                     flywheel_proxy=proxy,
-                                     admin_group=admin_group)
+    for study in study_list:
+        mapper: StudyMappingAdaptor
+        if study.mode == 'aggregation':
+            mapper = AggregationStudyMapping(study=study,
+                                             flywheel_proxy=proxy,
+                                             admin_group=admin_group)
+
+        if study.mode == 'distribution':
+            mapper = DistributionStudyMapping(study=study,
+                                              flywheel_proxy=proxy)
+
         mapper.create_study_pipelines()

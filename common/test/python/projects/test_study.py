@@ -90,11 +90,13 @@ class TestStudy:
                         study_id='project-alpha',
                         centers=['ac'],
                         datatypes=['dicom'],
+                        mode='aggregation',
                         published=True,
                         primary=True)
         assert project.study_id == "project-alpha"
         assert project.centers == ['ac']
         assert project.datatypes == ['dicom']
+        assert project.mode == 'aggregation'
         assert project.is_published()
         assert project.is_primary()
 
@@ -103,6 +105,7 @@ class TestStudy:
             'study-id': 'project-alpha',
             'centers': ['ac'],
             'datatypes': ['dicom'],
+            'mode': 'aggregation',
             'published': True,
             'primary': True
         })
@@ -118,6 +121,7 @@ class TestStudy:
                         study_id='beta',
                         centers=[],
                         datatypes=[],
+                        mode='aggregation',
                         published=True)
         project.apply(visitor)
         assert visitor.project_name == 'Project Beta'
