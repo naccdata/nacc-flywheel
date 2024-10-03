@@ -102,7 +102,7 @@ class UserEntry(BaseModel):
             return None
 
         authorizations = Authorizations.create_from_record(
-            record["flywheel_access_activities"])
+            study_id='adrc', activities=record["flywheel_access_activities"])
 
         org_name = record['contact_company_name']
         center_id = record['adresearchctr']

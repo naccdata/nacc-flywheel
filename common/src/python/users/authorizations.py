@@ -10,7 +10,7 @@ AuthNameType = Literal['submit-form', 'submit-dicom', 'submit-enrollment',
 
 class Authorizations(BaseModel):
     """Type class for authorizations."""
-    study_id: str = 'adrc'
+    study_id: str
     submit: List[DatatypeNameType]
     audit_data: bool
     approve_data: bool
@@ -41,7 +41,8 @@ class Authorizations(BaseModel):
         return self._activities
 
     @classmethod
-    def create_from_record(cls, activities: Sequence[str]) -> "Authorizations":
+    def create_from_record(cls, *, study_id: str,
+                           activities: Sequence[str]) -> "Authorizations":
         """Creates an Authorizations object directory access activities.
 
         Activities from the NACC directory are represented as a string
@@ -55,6 +56,7 @@ class Authorizations(BaseModel):
         - e: view reports
 
         Args:
+          study_id: the study ID for scope of authorizations
           activities: a string containing activities
         Returns:
           The Authorizations object
@@ -66,7 +68,8 @@ class Authorizations(BaseModel):
         if 'b' in activities:
             modalities.append('dicom')
 
-        return Authorizations(submit=modalities,
+        return Authorizations(study_id=study_id,
+                              submit=modalities,
                               audit_data=bool('c' in activities),
                               approve_data=('d' in activities),
                               view_reports=('e' in activities))
