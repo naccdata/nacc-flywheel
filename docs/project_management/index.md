@@ -3,7 +3,7 @@
 The project-management app builds containers within Flywheel for a coordinating center supported study.
 
 A *coordinating center supported study* is a research activity for which data is being collected at the coordinating center.
-For NACC is this primarily the ADRC program for which data is captured at Alzheimer's Disease Research Centers (ADRCs), and then transferred to NACC for harmonization and release.
+For NACC this is primarily the ADRC program for which data is captured at Alzheimer's Disease Research Centers (ADRCs), and then transferred to NACC for harmonization and release.
 
 ## A note on the app name
 The name "project-management" is historical and comes from a conversation with the NACC PI, Bud Kukull. 
