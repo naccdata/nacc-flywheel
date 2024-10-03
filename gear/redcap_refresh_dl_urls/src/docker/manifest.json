@@ -10,7 +10,8 @@
     "url": "https://naccdata.github.io/flywheel-gear-extensions",
     "source": "https://github.com/naccdata/flywheel-gear-extensions",
     "environment": {
-        "FLYWHEEL": "/flywheel/v0"
+        "FLYWHEEL": "/flywheel/v0",
+        "TEST_VAR": "is-set"
     },
     "custom": {
         "gear-builder": {
@@ -25,6 +26,16 @@
     "inputs": {
         "api-key": {
             "base": "api-key"
+        },
+        "dotenv": {
+            "description": "enviroment variables file for local testing and debugging. Exercise caution with API keys.",
+            "base": "file",
+            "type": {
+                "enum": [
+                    "source code"
+                ]
+            },
+            "optional": true
         }
     },
     "config": {
