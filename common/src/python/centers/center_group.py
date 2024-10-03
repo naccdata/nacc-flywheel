@@ -323,7 +323,9 @@ class CenterGroup(CenterAdaptor):
         if self.__is_active:
             for pipeline in ['ingest', 'sandbox']:
                 for datatype in study.datatypes:
-                    project_label = f"{pipeline}-{datatype.lower()}{study.project_suffix()}"
+                    project_label = (
+                        f"{pipeline}-{datatype.lower()}{study.project_suffix()}"
+                    )
                     project = self.__add_project(project_label)
                     study_info.add_ingest(
                         IngestProjectMetadata(study_id=study.study_id,
@@ -366,10 +368,6 @@ class CenterGroup(CenterAdaptor):
         portal_info = self.get_project_info()
 
         study_info = portal_info.get(study)
-
-        suffix = f"-{study.study_id}"
-        if study.is_primary():
-            suffix = ""
 
         if study.mode == 'aggregation':
             self.add_aggregating_study(study=study, study_info=study_info)
