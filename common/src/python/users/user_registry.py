@@ -24,7 +24,7 @@ class RegistryPerson:
 
     @classmethod
     def create(cls, *, firstname: str, lastname: str, email: str,
-               coid: str) -> 'RegistryPerson':
+               coid: int) -> 'RegistryPerson':
         """Creates a RegistryPerson object with the name and email.
 
         Note: the coid must match that of the registry
