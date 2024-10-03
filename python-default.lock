@@ -16,7 +16,8 @@
 //     "flywheel-sdk>=18.5.0",
 //     "fw-client>=0.7.0",
 //     "fw-utils>=3",
-//     "moto[s3,ses,ssm]",
+//     "moto[s3,ses,ssm]>=5.0.15",
+//     "nacc_form_validator@ https://github.com/naccdata/nacc-form-validator/releases/download/v0.2.0/nacc_form_validator-0.2.0-py3-none-any.whl",
 //     "pandas-stubs>=2.0.3",
 //     "pandas>=2.1.1",
 //     "pydantic>=2.5.2",
@@ -1062,6 +1063,26 @@
           "artifacts": [
             {
               "algorithm": "sha256",
+              "hash": "7649a5815024d18eb7c6aa5e7a95355c649a53aacfc9b050e9d0bf6bfa2af372",
+              "url": "https://files.pythonhosted.org/packages/fb/17/335e0a4daf5475ada5eaa74735f765cc088ace306fbfdd2f4c2285320cc3/Cerberus-1.3.5-py3-none-any.whl"
+            },
+            {
+              "algorithm": "sha256",
+              "hash": "81011e10266ef71b6ec6d50e60171258a5b134d69f8fb387d16e4936d0d47642",
+              "url": "https://files.pythonhosted.org/packages/07/20/3ec65289ab0ccf5f41d38d103343f5b609263944238e299598aeba684a82/Cerberus-1.3.5.tar.gz"
+            }
+          ],
+          "project_name": "cerberus",
+          "requires_dists": [
+            "importlib-metadata; python_version < \"3.8\""
+          ],
+          "requires_python": null,
+          "version": "1.3.5"
+        },
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
               "hash": "922820b53db7a7257ffbda3f597266d435245903d80737e34f8a45ff3e3230d8",
               "url": "https://files.pythonhosted.org/packages/12/90/3c9ff0512038035f59d279fddeb79f5f1eccd8859f06d6163c58798b9487/certifi-2024.8.30-py3-none-any.whl"
             },
@@ -1797,13 +1818,13 @@
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "fa1e92ffb55dbfb9fa92a2115a88c32481b75aa3fbd24075d1f29af2f9becffa",
-              "url": "https://files.pythonhosted.org/packages/a0/9f/317eb74ef4806963a9f5358f3e9bb108f73722e16c63fbc9675edf508d0a/moto-5.0.15-py2.py3-none-any.whl"
+              "hash": "4ce1f34830307f7b3d553d77a7ef26066ab3b70006203d4226b048c9d11a3be4",
+              "url": "https://files.pythonhosted.org/packages/06/59/2c3fc0d622f3db4a475103e36b96a8430b8780297e3c187e7971e0deaa2b/moto-5.0.16-py2.py3-none-any.whl"
             },
             {
               "algorithm": "sha256",
-              "hash": "57aa8c2af417cc64a0ddfe63e5bcd1ada90f5079b73cdd1f74c4e9fb30a1a7e6",
-              "url": "https://files.pythonhosted.org/packages/11/11/5dfe1bb81a2ec3861ee9004573a665ced822389ff9ef4307fa3703177002/moto-5.0.15.tar.gz"
+              "hash": "f4afb176a964cd7a70da9bc5e053d43109614ce3cab26044bcbb53610435dff4",
+              "url": "https://files.pythonhosted.org/packages/26/72/f7ec295a6a0b7211b5784efba783c1225c56e998a14d608abf5b2715d7b5/moto-5.0.16.tar.gz"
             }
           ],
           "project_name": "moto",
@@ -1908,7 +1929,24 @@
             "xmltodict"
           ],
           "requires_python": ">=3.8",
-          "version": "5.0.15"
+          "version": "5.0.16"
+        },
+        {
+          "artifacts": [
+            {
+              "algorithm": "sha256",
+              "hash": "1c4589aa076d201bddb987f9de5876f6d4126ed6d87cee26838701c177cbab95",
+              "url": "https://github.com/naccdata/nacc-form-validator/releases/download/v0.2.0/nacc_form_validator-0.2.0-py3-none-any.whl"
+            }
+          ],
+          "project_name": "nacc-form-validator",
+          "requires_dists": [
+            "cerberus>=1.3.5",
+            "python-dateutil>=2.9.0",
+            "types-python-dateutil>=2.9.0.20240316"
+          ],
+          "requires_python": "==3.11.*",
+          "version": "0.2.0"
         },
         {
           "artifacts": [
@@ -3065,7 +3103,8 @@
     "flywheel-sdk>=18.5.0",
     "fw-client>=0.7.0",
     "fw-utils>=3",
-    "moto[s3,ses,ssm]",
+    "moto[s3,ses,ssm]>=5.0.15",
+    "nacc_form_validator",
     "pandas-stubs>=2.0.3",
     "pandas>=2.1.1",
     "pydantic>=2.5.2",

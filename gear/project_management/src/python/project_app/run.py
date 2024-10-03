@@ -7,10 +7,11 @@ centers - array of centers
     name - name of center
     is-active - whether center is active, has users if True
 datatypes - array of datatype names (form, dicom)
+mode - string indicating 'aggregation' or 'distribution'
 published - boolean indicating whether data is to be published
 """
 import logging
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
@@ -22,6 +23,7 @@ from gear_execution.gear_execution import (
 )
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, get_object_lists
+from projects.study import Study
 
 from project_app.main import run
 
@@ -31,15 +33,11 @@ log = logging.getLogger(__name__)
 class ProjectCreationVisitor(GearExecutionEnvironment):
     """Defines the project management gear."""
 
-    def __init__(self,
-                 admin_id: str,
-                 client: ClientWrapper,
-                 project_list: List[List[Any]],
-                 new_only: bool = False):
+    def __init__(self, admin_id: str, client: ClientWrapper,
+                 project_filepath: str):
         super().__init__(client=client)
         self.__admin_id = admin_id
-        self.__new_only = new_only
-        self.__project_list = project_list
+        self.__project_filepath = project_filepath
 
     @classmethod
     def create(
@@ -58,21 +56,27 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
         """
         client = GearBotClient.create(context=context,
                                       parameter_store=parameter_store)
-        project_file = context.get_input_path('project_file')
-        try:
-            project_list = get_object_lists(project_file)
-        except YAMLReadError as error:
-            raise GearExecutionError(
-                f'Unable to read YAML file {project_file}: {error}') from error
-        if not project_list:
-            raise GearExecutionError("Failed to read project file")
+        project_filepath = context.get_input_path('project_file')
+        if not project_filepath:
+            raise GearExecutionError("No project file provided")
+
         admin_id = context.config.get("admin_group", "nacc")
 
         return ProjectCreationVisitor(admin_id=admin_id,
                                       client=client,
-                                      project_list=project_list,
-                                      new_only=context.config.get(
-                                          "new_only", False))
+                                      project_filepath=project_filepath)
+
+    def __get_study_list(self, project_filepath: str) -> List[Study]:
+        try:
+            project_iterator = get_object_lists(project_filepath)
+        except YAMLReadError as error:
+            raise GearExecutionError(
+                f'Unable to read YAML file {project_filepath}: {error}'
+            ) from error
+        if not project_iterator:
+            raise GearExecutionError("Failed to read project file")
+
+        return [Study.create(study_doc) for study_doc in project_iterator]
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
@@ -85,9 +89,7 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
         """
         run(proxy=self.proxy,
             admin_group=self.admin_group(admin_id=self.__admin_id),
-            project_list=self.__project_list,
-            role_names=['curate', 'upload', 'gear-bot'],
-            new_only=self.__new_only)
+            study_list=self.__get_study_list(self.__project_filepath))
 
 
 def main():

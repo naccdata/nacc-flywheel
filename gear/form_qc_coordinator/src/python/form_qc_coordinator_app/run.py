@@ -124,7 +124,7 @@ class FormQCCoordinator(GearExecutionEnvironment):
         assert parameter_store, "Parameter store expected"
         client = GearBotClient.create(context=context,
                                       parameter_store=parameter_store)
-        date_col = context.config.get('date_column', 'visitdate')
+        date_col = context.config.get('date_field', 'visitdate')
         check_all = context.config.get('check_all', False)
 
         return FormQCCoordinator(client=client,

@@ -82,7 +82,7 @@ def add_to_registry(*, user_entry: UserEntry,
         RegistryPerson.create(firstname=user_entry.first_name,
                               lastname=user_entry.last_name,
                               email=user_entry.auth_email,
-                              coid=str(registry.coid)))
+                              coid=registry.coid))
 
     return identifier_list
 
@@ -144,7 +144,9 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
       email_client: email client for notifications
     """
     for user_entry in user_list:
-        assert user_entry.auth_email, "user entry must have auth email"
+        if not user_entry.auth_email:
+            log.info("user %s has no auth email", user_entry.email)
+            continue
 
         person_list = registry.list(email=user_entry.auth_email)
         if not person_list:

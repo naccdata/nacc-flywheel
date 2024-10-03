@@ -51,6 +51,7 @@ class TestUserEntry:
                                                 last_name='puppy'),
                                 email='chip@theorg.org',
                                 authorizations=Authorizations(
+                                    study_id='adrc',
                                     submit=['form', 'enrollment'],
                                     audit_data=True,
                                     approve_data=True,
@@ -60,6 +61,7 @@ class TestUserEntry:
 
         assert entry.authorizations.audit_data
 
+        # assumes study_id is adrc
         entry2 = UserEntry.create_from_record({
             "contact_company_name":
             "the center",
@@ -103,6 +105,7 @@ class TestUserEntry:
                                                  last_name='puppy'),
                                  email='chip@theorg.org',
                                  authorizations=Authorizations(
+                                     study_id='dummy',
                                      submit=['form', 'enrollment'],
                                      audit_data=True,
                                      approve_data=True,
