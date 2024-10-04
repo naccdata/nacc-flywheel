@@ -68,3 +68,4 @@ def run(*,
         admin_access = admin_group.get_user_access()
         if admin_access:
             center_group.add_permissions(admin_access)
+            center_group.add_center_portal()
