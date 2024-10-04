@@ -151,7 +151,7 @@ class TestStudyMetadataSerialization:
         assert 'study-name' in study_dump
         assert 'ingest-projects' in study_dump
         assert 'accepted-project' in study_dump
-        assert len(study_dump.keys()) == 4
+        assert len(study_dump.keys()) == 5
 
         try:
             model_object = StudyMetadata.model_validate(study_dump)

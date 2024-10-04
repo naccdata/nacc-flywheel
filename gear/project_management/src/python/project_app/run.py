@@ -22,7 +22,7 @@ from gear_execution.gear_execution import (
     GearExecutionError,
 )
 from inputs.parameter_store import ParameterStore
-from inputs.yaml import YAMLReadError, get_object_lists
+from inputs.yaml import YAMLReadError, load_all_from_stream
 from projects.study import Study
 
 from project_app.main import run
@@ -68,15 +68,16 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
 
     def __get_study_list(self, project_filepath: str) -> List[Study]:
         try:
-            project_iterator = get_object_lists(project_filepath)
+            with open(project_filepath, 'r', encoding='utf-8') as stream:
+                project_list = load_all_from_stream(stream)
         except YAMLReadError as error:
             raise GearExecutionError(
                 f'Unable to read YAML file {project_filepath}: {error}'
             ) from error
-        if not project_iterator:
+        if not project_list:
             raise GearExecutionError("Failed to read project file")
 
-        return [Study.create(study_doc) for study_doc in project_iterator]
+        return [Study.create(study_doc) for study_doc in project_list]
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
