@@ -68,15 +68,15 @@ class ProjectCreationVisitor(GearExecutionEnvironment):
 
     def __get_study_list(self, project_filepath: str) -> List[Study]:
         try:
-            project_iterator = get_object_lists(project_filepath)
+            project_list = get_object_lists(project_filepath)
         except YAMLReadError as error:
             raise GearExecutionError(
                 f'Unable to read YAML file {project_filepath}: {error}'
             ) from error
-        if not project_iterator:
+        if not project_list:
             raise GearExecutionError("Failed to read project file")
 
-        return [Study.create(study_doc) for study_doc in project_iterator]
+        return [Study.create(study_doc) for study_doc in project_list]
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.

@@ -1,1 +1,1 @@
-python_tests(name="tests", )
+python_tests(name="tests", dependencies=["//:reqs#pytest-mock"])
