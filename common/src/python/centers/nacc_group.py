@@ -7,6 +7,7 @@ from flywheel.models.group import Group
 from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from pydantic import BaseModel, ValidationError
+from redcap.redcap_repository import REDCapParametersRepository
 
 from centers.center_adaptor import CenterAdaptor
 from centers.center_group import CenterGroup
@@ -59,6 +60,7 @@ class NACCGroup(CenterAdaptor):
     def __init__(self, *, group: Group, proxy: FlywheelProxy) -> None:
         super().__init__(group=group, proxy=proxy)
         self.__admin_project: Optional[ProjectAdaptor] = None
+        self.__redcap_param_repo: Optional[REDCapParametersRepository] = None
 
     @classmethod
     def create(cls,
@@ -79,6 +81,14 @@ class NACCGroup(CenterAdaptor):
         metadata_project.add_admin_users(admin_group.get_user_access())
 
         return admin_group
+
+    @property
+    def redcap_param_repo(self) -> Optional[REDCapParametersRepository]:
+        return self.__redcap_param_repo
+
+    def set_redcap_param_repo(self,
+                              redcap_param_repo: REDCapParametersRepository):
+        self.__redcap_param_repo = redcap_param_repo
 
     def add_center(self, center_group: CenterGroup) -> None:
         """Adds the metadata for the center.
@@ -167,7 +177,11 @@ class NACCGroup(CenterAdaptor):
         if not group:
             return None
 
-        return CenterGroup.create_from_group_adaptor(adaptor=group)
+        center_group = CenterGroup.create_from_group_adaptor(adaptor=group)
+        if self.redcap_param_repo:
+            center_group.set_redcap_param_repo(self.redcap_param_repo)
+
+        return center_group
 
     def add_center_user(self, user: User) -> None:
         """Authorizes a user to access the metadata project of nacc group.

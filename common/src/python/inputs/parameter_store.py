@@ -1,10 +1,10 @@
 """Module for getting proxy object for AWS SSM parameter store object."""
 import logging
+from typing import Dict, Optional
 
 from botocore.exceptions import ClientError, ParamValidationError
 from pydantic import TypeAdapter, ValidationError
 from ssm_parameter_store import EC2ParameterStore
-from typing import Dict, Optional
 from typing_extensions import Type, TypedDict, TypeVar
 
 from inputs.environment import get_environment_variable
@@ -175,18 +175,13 @@ class ParameterStore:
                             base_path)
                 continue
 
-            if (not prj_params or 'url' not in prj_params
-                    or 'token' not in prj_params):
+            type_adapter = TypeAdapter(REDCapParameters)
+            try:
+                redcap_params[key] = type_adapter.validate_python(prj_params)
+            except ValidationError as error:
                 raise ParameterError(
-                    f"Incorrect parameters for {key} at {base_path}")
-
-            url = prj_params.get('url')
-            token = prj_params.get('token')
-
-            if not url or not token:
-                raise ParameterError(f"Incorrect parameters at {base_path}")
-
-            redcap_params[key] = REDCapParameters(url=url, token=token)
+                    f"Incorrect parameters at {base_path}/{key}: {error}"
+                ) from error
 
         return redcap_params
 

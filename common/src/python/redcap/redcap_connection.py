@@ -5,8 +5,9 @@ from typing import Any, Dict, List, Optional
 
 import requests
 from inputs.parameter_store import REDCapParameters, REDCapReportParameters
-from redcap.redcap_project import REDCapProject
 from requests import Response
+
+from redcap.redcap_project import REDCapProject
 
 
 class REDCapSuperUserConnection:

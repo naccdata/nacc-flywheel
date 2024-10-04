@@ -12,16 +12,14 @@ from flywheel.models.group import Group
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor, ProjectAdaptor
-from inputs.parameter_store import ParameterError, ParameterStore
 from projects.study import Center, Study
 from projects.template_project import TemplateProject
 from pydantic import AliasGenerator, BaseModel, ConfigDict, ValidationError
-from redcap.redcap_connection import REDCapConnection, REDCapConnectionError
-from redcap.redcap_permissions import (
+from redcap.redcap_project import (
     CENTER_USER_ROLE,
     ENROLLMENT_MODULE,
-    assign_update_user_role_in_redcap,
 )
+from redcap.redcap_repository import REDCapParametersRepository
 from serialization.case import kebab_case
 from users.authorizations import AuthMap
 from users.nacc_directory import Authorizations
@@ -42,6 +40,7 @@ class CenterGroup(CenterAdaptor):
         self.__adcid = adcid
         self.__is_active = active
         self.__center_portal: Optional[ProjectAdaptor] = None
+        self.__redcap_param_repo: Optional[REDCapParametersRepository] = None
 
     @classmethod
     def create_from_group(cls, *, proxy: FlywheelProxy,
@@ -481,8 +480,7 @@ class CenterGroup(CenterAdaptor):
         return project
 
     def add_user_roles(self, user: User, authorizations: Authorizations,
-                       auth_map: AuthMap, parameter_store: ParameterStore,
-                       redcap_path: str) -> None:
+                       auth_map: AuthMap) -> None:
         """Adds user to authorized projects in the center group and to any
         associated NACC REDCap projects for data entry.
 
@@ -490,8 +488,6 @@ class CenterGroup(CenterAdaptor):
           user: the user to add
           authorizations: the authorizations for the user
           auth_map: authorizations to roles mapping
-          parameter_store: AWS parameter store connection
-          redcap_path: Parameter path prefix for REDCap API credentials
         """
         assert user.id, "requires user has ID"
         log.info("Adding roles for user %s", user.id)
@@ -523,9 +519,7 @@ class CenterGroup(CenterAdaptor):
 
             self.__add_user_to_redcap_project(user=user,
                                               form_ingest_project=project,
-                                              authorizations=authorizations,
-                                              parameter_store=parameter_store,
-                                              redcap_path=redcap_path)
+                                              authorizations=authorizations)
 
         metadata_project = self.get_metadata()
         if metadata_project:
@@ -582,21 +576,23 @@ class CenterGroup(CenterAdaptor):
     def __add_user_to_redcap_project(
             self, *, user: User,
             form_ingest_project: 'FormIngestProjectMetadata',
-            authorizations: Authorizations, parameter_store: ParameterStore,
-            redcap_path: str) -> bool:
+            authorizations: Authorizations) -> bool:
         """Adds user to the respective REDCap project for direct data entry.
 
         Args:
           user: the user to add
           form_ingest_project: metadata about form ingest project
           authorizations: the authorizations for the user
-          parameter_store: AWS parameter store connection
-          redcap_path: Parameter path prefix for REDCap API credentials
 
         Returns:
           True if user was added, False if errors occurred
         """
         assert user.id, "requires user has ID"
+
+        if not self.__redcap_param_repo:
+            log.warning('REDCap project repository not found in center %s',
+                        self.label)
+            return False
 
         if not form_ingest_project.redcap_projects:
             log.warning('REDCap project metadata not available for %s',
@@ -606,43 +602,35 @@ class CenterGroup(CenterAdaptor):
         activities = authorizations.get_activities()
 
         success = True
-        for redcap_prj in form_ingest_project.redcap_projects.values():
-            if (redcap_prj.label.upper() == ENROLLMENT_MODULE
-                    and 'submit-enrollment' in activities):
-                has_permissions = True
-            # assume all other modules are covered by submit-form permission
-            elif 'submit-form' in activities:
-                has_permissions = True
-            else:
-                has_permissions = False
-
-            if not has_permissions:  # User doesn't have submission privileges
+        for redcap_metadata in form_ingest_project.redcap_projects.values():
+            submission_type = redcap_metadata.get_submission_type()
+            # User doesn't have submission privileges for this module
+            if submission_type not in activities:
                 continue
 
-            try:
-                redcap_params = parameter_store.get_redcap_parameters(
-                    base_path=redcap_path, pid=redcap_prj.redcap_pid)
-            except ParameterError as error:
-                log.error(error)
+            redcap_project = self.__redcap_param_repo.get_redcap_project(
+                redcap_metadata.redcap_pid)
+
+            if not redcap_project:
+                log.error(
+                    'Failed to create an API connection to REDCap project %s',
+                    redcap_metadata.redcap_pid)
                 success = False
                 continue
 
-            try:
-                redcap_con = REDCapConnection.create_from(redcap_params)
-            except REDCapConnectionError as error:
-                log.error(error)
-                success = False
-                continue
-
-            if not assign_update_user_role_in_redcap(user.id, CENTER_USER_ROLE,
-                                                     redcap_con):
+            if not redcap_project.assign_update_user_role_by_label(
+                    user.id, CENTER_USER_ROLE):
                 success = False
                 continue
 
             log.info('User %s is assigned %s permissions in REDCap project %s',
-                     user.id, CENTER_USER_ROLE, redcap_con.title)
+                     user.id, CENTER_USER_ROLE, redcap_project.title)
 
         return success
+
+    def set_redcap_param_repo(self,
+                              redcap_param_repo: REDCapParametersRepository):
+        self.__redcap_param_repo = redcap_param_repo
 
 
 class CenterError(Exception):
@@ -698,6 +686,17 @@ class REDCapFormProject(BaseModel):
     redcap_pid: int
     label: str
     report_id: Optional[int] = None
+
+    def is_enrollment(self) -> bool:
+        return (self.label.upper() == ENROLLMENT_MODULE)
+
+    def get_submission_type(self) -> str:
+        if self.is_enrollment():
+            datatype = 'enrollment'
+        else:  # consider all other modules are form type
+            datatype = 'form'
+
+        return f"submit-{datatype}"
 
 
 class FormIngestProjectMetadata(IngestProjectMetadata):

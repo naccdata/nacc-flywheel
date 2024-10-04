@@ -1,8 +1,8 @@
 """Module to represent a REDCap project and associated API calls."""
 
 import json
-from json import JSONDecodeError
 import logging
+from json import JSONDecodeError
 from typing import Any, Dict, List, Optional
 
 from redcap.redcap_connection import (
@@ -210,8 +210,8 @@ class REDCapProject:
             self.assign_user_role(username, role_name)
         except REDCapConnectionError as error:
             log.error(
-                'Failed to assign/update permissions for user %s in REDCap project %s - %s',
-                username, self.title, error)
+                'Failed to assign/update permissions for user %s '
+                'in REDCap project %s - %s', username, self.title, error)
             return False
 
         return True
