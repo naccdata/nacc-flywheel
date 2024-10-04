@@ -119,8 +119,8 @@ class TestAuthorizations:
     # pylint: disable=(redefined-outer-name,no-self-use)
     def test_create_from_record(self):
         """Test create_from_record."""
-        authorizations = Authorizations.create_from_record(study_id='dummy',
-            activities=['a', 'b', 'c', 'd', 'e'])
+        authorizations = Authorizations.create_from_record(
+            study_id='dummy', activities=['a', 'b', 'c', 'd', 'e'])
         assert authorizations == Authorizations(
             study_id='dummy',
             submit=['form', 'enrollment', 'dicom'],
@@ -128,8 +128,8 @@ class TestAuthorizations:
             approve_data=True,
             view_reports=True)
 
-        authorizations = Authorizations.create_from_record(study_id='dummy',
-            activities=['a', 'b', 'c', 'd'])
+        authorizations = Authorizations.create_from_record(
+            study_id='dummy', activities=['a', 'b', 'c', 'd'])
         assert authorizations == Authorizations(
             study_id='dummy',
             submit=['form', 'enrollment', 'dicom'],
@@ -137,8 +137,8 @@ class TestAuthorizations:
             approve_data=True,
             view_reports=False)
 
-        authorizations = Authorizations.create_from_record(study_id='dummy',
-            activities=['a', 'b', 'c'])
+        authorizations = Authorizations.create_from_record(
+            study_id='dummy', activities=['a', 'b', 'c'])
         assert authorizations == Authorizations(
             study_id='dummy',
             submit=['form', 'enrollment', 'dicom'],
@@ -146,8 +146,8 @@ class TestAuthorizations:
             approve_data=False,
             view_reports=False)
 
-        authorizations = Authorizations.create_from_record(study_id='dummy',
-            activities=['a', 'b'])
+        authorizations = Authorizations.create_from_record(
+            study_id='dummy', activities=['a', 'b'])
         assert authorizations == Authorizations(
             study_id='dummy',
             submit=['form', 'enrollment', 'dicom'],
@@ -155,14 +155,16 @@ class TestAuthorizations:
             approve_data=False,
             view_reports=False)
 
-        authorizations = Authorizations.create_from_record(study_id='dummy',activities=['a'])
+        authorizations = Authorizations.create_from_record(study_id='dummy',
+                                                           activities=['a'])
         assert authorizations == Authorizations(study_id='dummy',
                                                 submit=['form', 'enrollment'],
                                                 audit_data=False,
                                                 approve_data=False,
                                                 view_reports=False)
 
-        authorizations = Authorizations.create_from_record(study_id='dummy',activities=[])
+        authorizations = Authorizations.create_from_record(study_id='dummy',
+                                                           activities=[])
         assert authorizations == Authorizations(study_id='dummy',
                                                 submit=[],
                                                 audit_data=False,
@@ -172,8 +174,8 @@ class TestAuthorizations:
     # pylint: disable=(redefined-outer-name,no-self-use)
     def test_create_from_record_invalid(self):
         """Test create_from_record with invalid input."""
-        authorizations = Authorizations.create_from_record(study_id='dummy',
-            activities=['a', 'b', 'x'])
+        authorizations = Authorizations.create_from_record(
+            study_id='dummy', activities=['a', 'b', 'x'])
         assert authorizations == Authorizations(
             study_id='dummy',
             submit=['form', 'enrollment', 'dicom'],
@@ -184,7 +186,8 @@ class TestAuthorizations:
     # pylint: disable=(redefined-outer-name,no-self-use)
     def test_create_from_record_empty(self):
         """Test create_from_record with empty input."""
-        authorizations = Authorizations.create_from_record(study_id='dummy',activities=[])
+        authorizations = Authorizations.create_from_record(study_id='dummy',
+                                                           activities=[])
         assert authorizations == Authorizations(study_id='dummy',
                                                 submit=[],
                                                 audit_data=False,
