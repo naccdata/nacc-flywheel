@@ -78,6 +78,10 @@ class StudyMappingAdaptor(ABC):
         """Exposes study name."""
         return self.__study.name
 
+    @abstractmethod
+    def add_study(self, center: CenterGroup) -> None:
+        """Adds the study of this mapping to the center."""
+
     def create_center_pipelines(self) -> None:
         """Creates data pipelines for centers in this project."""
         if not self.__study.centers:
@@ -95,15 +99,23 @@ class StudyMappingAdaptor(ABC):
             center_group = CenterGroup.create_from_group_adaptor(
                 adaptor=group_adaptor)
 
+            # TODO: do we need this here? also, added to center management
+            center_group.add_center_portal()
             try:
-                center_group.add_study(self.__study)
+                self.add_study(center=center_group)
             except CenterError as error:
                 log.error("Error adding study %s to center %s: %s",
                           self.__study.name, center_group.label, error)
 
     @abstractmethod
+    def create_release_pipeline(self) -> None:
+        """Creates the release pipeline for this study if the study is a
+        published aggregation study."""
+
     def create_study_pipelines(self) -> None:
-        """Creates pipelines for this study."""
+        """Creates the pipelines for this study."""
+        self.create_center_pipelines()
+        self.create_release_pipeline()
 
 
 class AggregationStudyMapping(StudyMappingAdaptor):
@@ -116,6 +128,27 @@ class AggregationStudyMapping(StudyMappingAdaptor):
 
         self.__admin_access = admin_group.get_user_access()
         self.__release_group: Optional[GroupAdaptor] = None
+
+    def add_study(self, center: CenterGroup) -> None:
+        """Adds aggregation pipeline details center.
+
+        Args:
+          center: the center group
+        """
+        # TODO: deal with duplicate code across mapping classes
+        portal_info = center.get_project_info()
+        study_info = portal_info.get(self.__study)
+        center.add_accepted_project(study=self.__study, study_info=study_info)
+        if center.is_active():
+            for pipeline in ['ingest', 'sandbox']:
+                for datatype in self.__study.datatypes:
+                    center.add_ingest_project(study=self.__study,
+                                              study_info=study_info,
+                                              pipeline=pipeline,
+                                              datatype=datatype)
+        center.update_project_info(portal_info)
+
+        center.add_retrospective_project(self.__study)
 
     def get_release_group(self) -> Optional[GroupAdaptor]:
         """Returns the release group for this study if it is published.
@@ -151,29 +184,6 @@ class AggregationStudyMapping(StudyMappingAdaptor):
         assert release_group
         return release_group.get_project(label='master-project')
 
-    def create_center_pipelines(self) -> None:
-        """Creates data pipelines for centers in this project."""
-        if not self.__study.centers:
-            log.warning(
-                "Not creating center groups for project %s: no centers given",
-                self.__study.name)
-            return
-
-        for center_id in self.__study.centers:
-            group_adaptor = self.__fw.find_group(center_id)
-            if not group_adaptor:
-                log.warning("No group found with center ID %s", center_id)
-                continue
-
-            center_group = CenterGroup.create_from_group_adaptor(
-                adaptor=group_adaptor)
-
-            try:
-                center_group.add_study(self.__study)
-            except CenterError as error:
-                log.error("Error adding study %s to center %s: %s",
-                          self.__study.name, center_group.label, error)
-
     def create_release_pipeline(self) -> None:
         """Creates the release pipeline for this study if the study is
         published."""
@@ -192,11 +202,6 @@ class AggregationStudyMapping(StudyMappingAdaptor):
             assert master_project
             master_project.add_admin_users(self.__admin_access)
 
-    def create_study_pipelines(self) -> None:
-        """Creates the pipelines for this study."""
-        self.create_center_pipelines()
-        self.create_release_pipeline()
-
 
 class DistributionStudyMapping(StudyMappingAdaptor):
     """Study mapping adaptor that implements creation of distribution
@@ -205,5 +210,18 @@ class DistributionStudyMapping(StudyMappingAdaptor):
     def __init__(self, *, study: Study, flywheel_proxy: FlywheelProxy) -> None:
         super().__init__(study=study, flywheel_proxy=flywheel_proxy)
 
+    def add_study(self, center: CenterGroup) -> None:
+        """Add distribution pipeline details to center."""
+        portal_info = center.get_project_info()
+        study_info = portal_info.get(self.__study)
+        for datatype in self.__study.datatypes:
+            center.add_distribution_project(study=self.__study,
+                                            study_info=study_info,
+                                            datatype=datatype)
+        center.update_project_info(portal_info)
+
     def create_study_pipelines(self) -> None:
         return self.create_center_pipelines()
+
+    def create_release_pipeline(self) -> None:
+        pass
