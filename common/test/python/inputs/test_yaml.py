@@ -3,7 +3,7 @@ from io import StringIO
 
 import pytest
 import yaml
-from inputs.yaml import get_object_lists, load_all_from_stream, load_from_stream
+from inputs.yaml import load_all_from_stream, load_from_stream
 
 
 @pytest.fixture
@@ -67,15 +67,3 @@ class TestYAML:
             'k1': 'v1',
             'k2': 'v2'
         }]
-
-    def test_get_object_lists(self, mock_file_open):
-        object_list = get_object_lists('example.yaml')
-
-        assert object_list == [{
-            'k1': 'v1',
-            'k2': 'v2'
-        }, {
-            'k1': 'v1',
-            'k2': 'v2'
-        }]
-        # TODO: the mock isn't getting closed

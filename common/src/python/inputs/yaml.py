@@ -1,28 +1,13 @@
 """Defines utilities for parsing YAML input."""
 import logging
-from typing import Any, Iterator, List
+from typing import Any, List
 
 import yaml
 
 log = logging.getLogger(__name__)
 
 
-def get_object_lists(yaml_file) -> List[Any]:
-    """Gets lists of objects from the yaml file.
-
-    Assumes the file can have more than one document.
-
-    Args:
-      yaml_file: name of the yaml file
-    Returns:
-      List of lists of object read from the file
-    """
-    with open(yaml_file, 'r', encoding='utf-8') as stream:
-        object_list = load_all_from_stream(stream)
-        return [object for object in object_list]
-
-
-def load_all_from_stream(stream) -> Iterator[Any]:
+def load_all_from_stream(stream) -> List[Any]:
     """Gets list of objects from the IO stream.
 
     Assumes the file can have more than one document.
@@ -34,7 +19,8 @@ def load_all_from_stream(stream) -> Iterator[Any]:
       List of lists of objects created from file or None if an error occurs
     """
     try:
-        return yaml.safe_load_all(stream)
+        object_iter = yaml.safe_load_all(stream)
+        return [object for object in object_iter]
     except yaml.MarkedYAMLError as error:
         mark = error.problem_mark
         if mark:

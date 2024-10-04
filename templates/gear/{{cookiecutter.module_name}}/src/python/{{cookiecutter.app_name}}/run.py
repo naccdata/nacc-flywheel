@@ -11,7 +11,6 @@ from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearExecutionEnvironment)
 from {{cookiecutter.app_name}}.main import run
 from inputs.parameter_store import ParameterStore
-from inputs.yaml import YAMLReadError, get_object_lists
 
 log = logging.getLogger(__name__)
 
