@@ -4,6 +4,7 @@ import logging
 from botocore.exceptions import ClientError, ParamValidationError
 from pydantic import TypeAdapter, ValidationError
 from ssm_parameter_store import EC2ParameterStore
+from typing import Dict, Optional
 from typing_extensions import Type, TypedDict, TypeVar
 
 from inputs.environment import get_environment_variable
@@ -140,6 +141,54 @@ class ParameterStore:
             raise ParameterError("No API Key found")
 
         return apikey
+
+    def get_all_redcap_parameters_at_path(
+            self,
+            *,
+            base_path: str,
+            prefix: Optional[str] = None) -> Dict[str, REDCapParameters]:
+        """Pulls URLs and Tokens for all the REDCap projects stored under a
+        base path in AWS parameter store.
+
+        Args:
+            base_path: base path in the parameter store
+            prefix (optional): parameter name prefix
+
+        Returns:
+            Dict[str, REDCapParameters]: Dictionary of REDCap parameters by PID
+
+        Raises:
+          ParameterError: if errors occur while retrieving parameters
+        """
+
+        redcap_params = {}
+        try:
+            parameters = self.__store.get_parameters_with_hierarchy(
+                base_path, decrypt=True)
+        except (ClientError, ParamValidationError) as error:
+            raise ParameterError(
+                f"Failed to retrieve parameters at {base_path}") from error
+
+        for key, prj_params in parameters.items():
+            if prefix and not key.startswith(prefix):
+                log.warning('Unexpected parameter %s at path %s', key,
+                            base_path)
+                continue
+
+            if (not prj_params or 'url' not in prj_params
+                    or 'token' not in prj_params):
+                raise ParameterError(
+                    f"Incorrect parameters for {key} at {base_path}")
+
+            url = prj_params.get('url')
+            token = prj_params.get('token')
+
+            if not url or not token:
+                raise ParameterError(f"Incorrect parameters at {base_path}")
+
+            redcap_params[key] = REDCapParameters(url=url, token=token)
+
+        return redcap_params
 
     def get_redcap_parameters(self, *, base_path: str,
                               pid: int) -> REDCapParameters:
