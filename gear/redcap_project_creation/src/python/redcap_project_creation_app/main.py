@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 from centers.center_group import (
     CenterGroup,
-    REDCapFormProject,
+    REDCapFormProjectMetadata,
     REDCapProjectInput,
     StudyREDCapMetadata,
 )
@@ -16,7 +16,6 @@ from redcap.redcap_connection import (
     REDCapConnectionError,
     REDCapSuperUserConnection,
 )
-from redcap.redcap_project import REDCapProject
 
 log = logging.getLogger(__name__)
 
@@ -130,9 +129,10 @@ def run(
                 redcap_pid = setup_new_project_elelments(
                     parameter_store, base_path, api_key, redcap_super_con.url)
                 if redcap_pid:
-                    module_obj = REDCapFormProject(redcap_pid=redcap_pid,
-                                                   label=module.label,
-                                                   report_id=None)
+                    module_obj = REDCapFormProjectMetadata(
+                        redcap_pid=redcap_pid,
+                        label=module.label,
+                        report_id=None)
                     project_object.projects.append(module_obj)
                 else:
                     errors = True
