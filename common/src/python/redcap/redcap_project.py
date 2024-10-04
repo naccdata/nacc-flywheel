@@ -216,7 +216,7 @@ class REDCapProject:
 
         return True
 
-    def add_gearbot_user_to_project(self, redcap_con: REDCapConnection):
+    def add_gearbot_user_to_project(self):
         """Add nacc gearbot user to the specified project.
 
         Args:

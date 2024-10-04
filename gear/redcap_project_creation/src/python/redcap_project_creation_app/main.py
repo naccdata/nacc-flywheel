@@ -16,7 +16,7 @@ from redcap.redcap_connection import (
     REDCapConnectionError,
     REDCapSuperUserConnection,
 )
-from redcap.redcap_permissions import add_gearbot_user_to_project
+from redcap.redcap_project import REDCapProject
 
 log = logging.getLogger(__name__)
 
@@ -42,21 +42,22 @@ def setup_new_project_elelments(parameter_store: ParameterStore,
 
     try:
         redcap_con = REDCapConnection(token=token, url=url)
-        add_gearbot_user_to_project(redcap_con)
+        redcap_prj = redcap_con.get_project()
+        redcap_prj.add_gearbot_user_to_project()
     except REDCapConnectionError as error:
         log.error(error)
         return None
 
     try:
         parameter_store.set_redcap_project_parameters(base_path=base_path,
-                                                      pid=redcap_con.pid,
+                                                      pid=redcap_prj.pid,
                                                       url=url,
                                                       token=token)
     except ParameterError as error:
         log.error(error)
         return None
 
-    return redcap_con.pid
+    return redcap_prj.pid
 
 
 # pylint: disable=(too-many-locals)
