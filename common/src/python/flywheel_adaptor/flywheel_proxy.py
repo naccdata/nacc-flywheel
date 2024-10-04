@@ -217,8 +217,11 @@ class FlywheelProxy:
 
         log.info('creating group...')
         # This just returns a string of the group ID
-        added_group_id = self.__fw.add_group(
-            flywheel.Group(group_id, group_label))
+        try:
+            added_group_id = self.__fw.add_group(
+                flywheel.Group(group_id, group_label))
+        except flywheel.rest.ApiException as error:
+            log.error('Group %s creation failed. Group likely exists, but user does not have permission', group_label)
         # we must fw.get_group() with ID string to get the actual Group object.
         group = self.__fw.get_group(added_group_id)
         log.info("success")
