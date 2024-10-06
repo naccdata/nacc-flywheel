@@ -29,7 +29,9 @@ from outputs.errors import (
     empty_field_error,
     identifier_error,
     missing_header_error,
+    unexpected_value_error,
 )
+from pydantic import ValidationError
 
 log = logging.getLogger(__name__)
 
@@ -331,9 +333,36 @@ class NewEnrollmentVisitor(CSVVisitor):
 
         log.info('Adding new enrollment for (%s,%s)', row['adcid'],
                  row['ptid'])
-        self.__batch.add(EnrollmentRecord.create_from(row))
-
-        return True
+        try:
+            self.__batch.add(
+                EnrollmentRecord(
+                    center_identifier=CenterIdentifiers(adcid=row['adcid'],
+                                                        ptid=row['ptid']),
+                    guid=row.get('guid') if row.get('guid') else None,
+                    naccid=None,
+                    start_date=row['frmdate_enrl']))
+            return True
+        except ValidationError as validation_error:
+            for error in validation_error.errors():
+                if error['type'] == 'string_pattern_mismatch':
+                    field_name = str(error['loc'][0])
+                    context = error.get('ctx', {'pattern': ''})
+                    self.__error_writer.write(
+                        unexpected_value_error(
+                            field=field_name,
+                            value=error['input'],
+                            expected=context['pattern'],
+                            message=f'Invalid {field_name.upper()}',
+                            line=line_num))
+                if error['type'] == 'datetime_from_date_parsing':
+                    self.__error_writer.write(
+                        unexpected_value_error(
+                            field='frmdate_enrl',
+                            value=error['input'],
+                            expected='',
+                            message='Expected valid datetime date',
+                            line=line_num))
+            return False
 
 
 class ProvisioningVisitor(CSVVisitor):
