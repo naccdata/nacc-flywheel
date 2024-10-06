@@ -280,16 +280,27 @@ class TransferVisitor(CSVVisitor):
         naccid = None
         if self.__naccid_identifier:
             naccid = self.__naccid_identifier.naccid
-        self.__transfer_info.add(
-            TransferRecord(date=row['frmdate_enrl'],
-                           initials=row['initials_enrl'],
-                           center_identifiers=new_identifiers,
-                           previous_identifiers=self.__previous_identifiers,
-                           naccid=naccid))
-
-        log.info('Transfer found on line %s', line_num)
-
-        return True
+        try:
+            self.__transfer_info.add(
+                TransferRecord(
+                    date=row['frmdate_enrl'],
+                    initials=row['initials_enrl'],
+                    center_identifiers=new_identifiers,
+                    previous_identifiers=self.__previous_identifiers,
+                    naccid=naccid))
+            log.info('Transfer found on line %s', line_num)
+            return True
+        except ValidationError as validation_error:
+            for error in validation_error.errors():
+                if error['type'] == 'datetime_from_date_parsing':
+                    self.__error_writer.write(
+                        unexpected_value_error(
+                            field='frmdate_enrl',
+                            value=error['input'],
+                            expected='',
+                            message='Expected valid datetime date',
+                            line=line_num))
+            return False
 
 
 class NewEnrollmentVisitor(CSVVisitor):
