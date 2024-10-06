@@ -1,7 +1,20 @@
 """Tests serialization of enrollment/transfer form data."""
 
+import pytest
 from enrollment.enrollment_transfer import EnrollmentRecord
+from identifiers.model import CenterIdentifiers
 from pydantic import ValidationError
+
+
+@pytest.fixture
+def bad_date_row():
+    yield {
+        'adcid': 0,
+        'ptid': "123456",
+        'naccid': "000000",
+        'frmdate_enrl': "10/06/2024",
+        'guid': '(*#$@@##)'
+    }
 
 
 # pylint: disable=(too-few-public-methods)
@@ -17,8 +30,34 @@ class TestEnrollmentSerialization:
             'frmdate_enrl': "2024-06-10",
             'guid': ''
         }
+        guid = row.get('guid', None)
         try:
-            record = EnrollmentRecord.create_from(row)
+            record = EnrollmentRecord(center_identifier=CenterIdentifiers(
+                adcid=row['adcid'], ptid=row['ptid']),
+                                      guid=guid if guid else None,
+                                      naccid=None,
+                                      start_date=row['frmdate_enrl'])
             assert record
         except ValidationError:
-            assert False, "row should be valid"
+            assert False, "row should be valid, got {str(e)}"
+
+    def test_create_error(self, bad_date_row):
+        """Test create_from method."""
+        row = bad_date_row
+        guid = row.get('guid', None)
+        try:
+            EnrollmentRecord(center_identifier=CenterIdentifiers(
+                adcid=row['adcid'], ptid=row['ptid']),
+                             guid=guid if guid else None,
+                             naccid=None,
+                             start_date=row['frmdate_enrl'])
+            assert False, "date is invalid should fail"
+        except ValidationError as e:
+            assert True, "date is invalid"
+            assert e.error_count() == 2
+            for error in e.errors():
+                print(error)
+                assert error['type'] == 'string_pattern_mismatch' or error[
+                    'type'] == 'datetime_from_date_parsing'
+                if error['type'] == 'string_pattern_mismatch':
+                    assert error['loc'][0] == 'guid'
