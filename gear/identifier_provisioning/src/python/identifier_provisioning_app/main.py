@@ -3,6 +3,7 @@
 import logging
 from typing import Any, Dict, Iterator, List, Optional, TextIO
 
+from dates.form_dates import DATE_FORMATS, DateFormatException, parse_date
 from enrollment.enrollment_project import EnrollmentProject, TransferInfo
 from enrollment.enrollment_transfer import (
     CenterValidator,
@@ -280,27 +281,30 @@ class TransferVisitor(CSVVisitor):
         naccid = None
         if self.__naccid_identifier:
             naccid = self.__naccid_identifier.naccid
+
         try:
-            self.__transfer_info.add(
-                TransferRecord(
-                    date=row['frmdate_enrl'],
-                    initials=row['initials_enrl'],
-                    center_identifiers=new_identifiers,
-                    previous_identifiers=self.__previous_identifiers,
-                    naccid=naccid))
-            log.info('Transfer found on line %s', line_num)
-            return True
-        except ValidationError as validation_error:
-            for error in validation_error.errors():
-                if error['type'] == 'datetime_from_date_parsing':
-                    self.__error_writer.write(
-                        unexpected_value_error(
-                            field='frmdate_enrl',
-                            value=error['input'],
-                            expected='',
-                            message='Expected valid datetime date',
-                            line=line_num))
+            enroll_date = parse_date(date_string=row['frmdate_enrl'],
+                                     formats=DATE_FORMATS)
+        except DateFormatException:
+            self.__error_writer.write(
+                unexpected_value_error(field='frmdate_enrl',
+                                       value=row['frmdate_enrl'],
+                                       expected='',
+                                       message='Expected valid datetime date',
+                                       line=line_num))
             return False
+
+
+        self.__transfer_info.add(
+            TransferRecord(
+                date=enroll_date,
+                initials=row['initials_enrl'],
+                center_identifiers=new_identifiers,
+                previous_identifiers=self.__previous_identifiers,
+                naccid=naccid))
+        log.info('Transfer found on line %s', line_num)
+        return True
+
 
 
 class NewEnrollmentVisitor(CSVVisitor):
@@ -345,13 +349,25 @@ class NewEnrollmentVisitor(CSVVisitor):
         log.info('Adding new enrollment for (%s,%s)', row['adcid'],
                  row['ptid'])
         try:
+            enroll_date = parse_date(date_string=row['frmdate_enrl'],
+                                     formats=DATE_FORMATS)
+        except DateFormatException:
+            self.__error_writer.write(
+                unexpected_value_error(field='frmdate_enrl',
+                                       value=row['frmdate_enrl'],
+                                       expected='',
+                                       message='Expected valid datetime date',
+                                       line=line_num))
+            return False
+
+        try:
             self.__batch.add(
                 EnrollmentRecord(
                     center_identifier=CenterIdentifiers(adcid=row['adcid'],
                                                         ptid=row['ptid']),
                     guid=row.get('guid') if row.get('guid') else None,
                     naccid=None,
-                    start_date=row['frmdate_enrl']))
+                    start_date=enroll_date))
             return True
         except ValidationError as validation_error:
             for error in validation_error.errors():
@@ -365,14 +381,7 @@ class NewEnrollmentVisitor(CSVVisitor):
                             expected=context['pattern'],
                             message=f'Invalid {field_name.upper()}',
                             line=line_num))
-                if error['type'] == 'datetime_from_date_parsing':
-                    self.__error_writer.write(
-                        unexpected_value_error(
-                            field='frmdate_enrl',
-                            value=error['input'],
-                            expected='',
-                            message='Expected valid datetime date',
-                            line=line_num))
+
             return False
 
 
