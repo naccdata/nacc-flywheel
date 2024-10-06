@@ -1,6 +1,7 @@
 """Tests serialization of enrollment/transfer form data."""
 
 import pytest
+from dates.form_dates import DATE_FORMATS, DateFormatException, parse_date
 from enrollment.enrollment_transfer import EnrollmentRecord
 from identifiers.model import CenterIdentifiers
 from pydantic import ValidationError
@@ -32,11 +33,16 @@ class TestEnrollmentSerialization:
         }
         guid = row.get('guid', None)
         try:
+            enroll_date = parse_date(date_string=row['frmdate_enrl'],
+                                     formats=DATE_FORMATS)
+        except DateFormatException:
+            assert False, 'date should be OK'
+        try:
             record = EnrollmentRecord(center_identifier=CenterIdentifiers(
                 adcid=row['adcid'], ptid=row['ptid']),
                                       guid=guid if guid else None,
                                       naccid=None,
-                                      start_date=row['frmdate_enrl'])
+                                      start_date=enroll_date)
             assert record
         except ValidationError:
             assert False, "row should be valid, got {str(e)}"
@@ -45,6 +51,11 @@ class TestEnrollmentSerialization:
         """Test create_from method."""
         row = bad_date_row
         guid = row.get('guid', None)
+        try:
+            parse_date(date_string=row['frmdate_enrl'], formats=DATE_FORMATS)
+        except DateFormatException:
+            assert True, 'date is invalid'
+
         try:
             EnrollmentRecord(center_identifier=CenterIdentifiers(
                 adcid=row['adcid'], ptid=row['ptid']),
