@@ -294,17 +294,14 @@ class TransferVisitor(CSVVisitor):
                                        line=line_num))
             return False
 
-
         self.__transfer_info.add(
-            TransferRecord(
-                date=enroll_date,
-                initials=row['initials_enrl'],
-                center_identifiers=new_identifiers,
-                previous_identifiers=self.__previous_identifiers,
-                naccid=naccid))
+            TransferRecord(date=enroll_date,
+                           initials=row['initials_enrl'],
+                           center_identifiers=new_identifiers,
+                           previous_identifiers=self.__previous_identifiers,
+                           naccid=naccid))
         log.info('Transfer found on line %s', line_num)
         return True
-
 
 
 class NewEnrollmentVisitor(CSVVisitor):
