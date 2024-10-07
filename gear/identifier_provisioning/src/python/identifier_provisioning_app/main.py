@@ -417,7 +417,7 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
                                transfer_info=transfer_info))
         if not success:
             log.error("no changes made due to errors in input file")
-            return True
+            return False
 
         log.info("requesting %s new NACCIDs", len(enrollment_batch))
         enrollment_batch.commit(repo)
