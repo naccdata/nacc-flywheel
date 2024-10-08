@@ -154,13 +154,16 @@ class REDCapProject:
         Raises:
           REDCapConnectionError if the response has an error
         """
-
-        message = f"assigning user {username} to role {role}"
-        info = {"username": username, "unique_role_name": role}
-        data = json.dumps([info])
-        data = {'content': 'userRoleMapping', 'action': 'import', 'data': data}
-
-        return self.__redcap_con.request_json_value(data=data, message=message)
+        data = {
+            'content': 'userRoleMapping',
+            'action': 'import',
+            'data': json.dumps([{
+                "username": username,
+                "unique_role_name": role
+            }])
+        }
+        return self.__redcap_con.request_json_value(
+            data=data, message=f"assigning user {username} to role {role}")
 
     def add_user(self, user_info: Dict[str, Any]) -> int:
         """Import a new user into a project and set user privileges, or update
