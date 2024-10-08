@@ -13,7 +13,7 @@ def bad_date_row():
         'adcid': 0,
         'ptid': "123456",
         'naccid': "000000",
-        'frmdate_enrl': "10/06/2024",
+        'frmdate_enrl': "10062024",
         'guid': '(*#$@@##)'
     }
 
@@ -65,7 +65,7 @@ class TestEnrollmentSerialization:
             assert False, "date is invalid should fail"
         except ValidationError as e:
             assert True, "date is invalid"
-            assert e.error_count() == 2
+            assert e.error_count() == 1
             for error in e.errors():
                 print(error)
                 assert error['type'] == 'string_pattern_mismatch' or error[

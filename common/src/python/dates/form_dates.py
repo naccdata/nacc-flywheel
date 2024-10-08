@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import List
 
-DATE_FORMATS = ['%m/%d/%Y', '%Y-%m-%d']
+DATE_FORMATS = ['%m/%d/%Y', '%m-%d-%Y', '%Y/%m/%d', '%Y-%m-%d']
 
 
 def parse_date(*, date_string: str, formats: List[str]) -> datetime:
