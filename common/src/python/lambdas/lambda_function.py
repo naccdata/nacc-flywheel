@@ -39,7 +39,6 @@ class ResponseObject(BaseModel):
     statusCode: int
     headers: Dict[str, str]
     body: str
-    isBase64Encoded: bool
 
 class ErrorResponseObject(BaseModel):
     """Base model for error response objects"""
