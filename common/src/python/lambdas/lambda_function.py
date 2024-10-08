@@ -40,11 +40,13 @@ class ResponseObject(BaseModel):
     headers: Dict[str, str]
     body: str
 
+
 class ErrorResponseObject(BaseModel):
-    """Base model for error response objects"""
+    """Base model for error response objects."""
     errorMessage: str
     errorType: str
     stackTrace: List[str]
+
 
 # pylint: disable=(too-few-public-methods)
 class LambdaClient:
@@ -80,7 +82,7 @@ class LambdaClient:
         payload = response['Payload'].read()
         try:
             return ResponseObject.model_validate_json(payload)
-        except ValidationError as error:
+        except ValidationError:
             pass
 
         try:
@@ -90,6 +92,7 @@ class LambdaClient:
             raise LambdaInvocationError(str(error)) from error
 
         raise LambdaInvocationError(response.errorMessage)
+
 
 class LambdaInvocationError(Exception):
     """Error class for error related to invoking lambda."""

@@ -20,9 +20,8 @@ from redcap.redcap_connection import (
 log = logging.getLogger(__name__)
 
 
-def setup_new_project_elements(parameter_store: ParameterStore,
-                                base_path: str, token: str,
-                                url: str) -> Optional[int]:
+def setup_new_project_elements(parameter_store: ParameterStore, base_path: str,
+                               token: str, url: str) -> Optional[int]:
     """Set up elements required to access the new REDCap project.
 
         - Retrieve the newly created REDCap PID using the project api token.

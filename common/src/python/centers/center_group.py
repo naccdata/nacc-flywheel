@@ -612,9 +612,8 @@ class CenterGroup(CenterAdaptor):
                 redcap_metadata.redcap_pid)
 
             if not redcap_project:
-                log.error(
-                    'No REDCap project %s found',
-                    redcap_metadata.redcap_pid)
+                log.error('No REDCap project %s found',
+                          redcap_metadata.redcap_pid)
                 success = False
                 continue
 

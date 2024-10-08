@@ -43,9 +43,10 @@ def ingest_project_with_redcap():
                                     datatype="form",
                                     redcap_projects={
                                         "dummyv9":
-                                        REDCapFormProjectMetadata(redcap_pid=12345,
-                                                                  label="dummyv9",
-                                                                  report_id=22)
+                                        REDCapFormProjectMetadata(
+                                            redcap_pid=12345,
+                                            label="dummyv9",
+                                            report_id=22)
                                     })
 
 

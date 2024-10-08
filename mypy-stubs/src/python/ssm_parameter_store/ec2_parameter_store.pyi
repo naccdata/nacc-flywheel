@@ -18,10 +18,11 @@ class EC2ParameterStore:
                                strip_path: bool = True) -> Dict[str, str]:
         ...
 
-    def get_parameters_with_hierarchy(self,
-                                      path: str,
-                                      decrypt: bool = True,
-                                      strip_path: bool = True) -> Dict[str, Any]:
+    def get_parameters_with_hierarchy(
+            self,
+            path: str,
+            decrypt: bool = True,
+            strip_path: bool = True) -> Dict[str, Any]:
         ...
 
     ...
