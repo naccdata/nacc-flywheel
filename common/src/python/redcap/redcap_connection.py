@@ -245,8 +245,9 @@ class REDCapReportConnection(REDCapConnection):
 
     @classmethod
     def create_from(
-            cls,
-            parameters: REDCapReportParameters) -> 'REDCapReportConnection':
+        cls,
+        parameters: REDCapReportParameters  # type: ignore[override]
+    ) -> 'REDCapReportConnection':
         """Creates a REDCap connection with report parameters.
 
         Args:
