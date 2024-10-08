@@ -23,6 +23,7 @@
 //     "pydantic>=2.5.2",
 //     "pytest-mock>=3.14.0",
 //     "pytest>=7.2.0",
+//     "python_dateutil>=2.5.3",
 //     "pyyaml==6.0",
 //     "requests-oauthlib>=2.0.0",
 //     "requests>=2.18.4",
@@ -30,6 +31,7 @@
 //     "ssm-parameter-store>=19.11.0",
 //     "types-PyYAML>=6.0.12",
 //     "types-jinja2>=2.11.9",
+//     "types-python-dateutil>=2.9.0",
 //     "types-requests",
 //     "typing-extensions>=4.8.0",
 //     "urllib3>=2.2.1"
@@ -3151,6 +3153,7 @@
     "pydantic>=2.5.2",
     "pytest-mock>=3.14.0",
     "pytest>=7.2.0",
+    "python_dateutil>=2.5.3",
     "pyyaml==6.0",
     "requests-oauthlib>=2.0.0",
     "requests>=2.18.4",
@@ -3158,6 +3161,7 @@
     "ssm-parameter-store>=19.11.0",
     "types-PyYAML>=6.0.12",
     "types-jinja2>=2.11.9",
+    "types-python-dateutil>=2.9.0",
     "types-requests",
     "typing-extensions>=4.8.0",
     "urllib3>=2.2.1"
