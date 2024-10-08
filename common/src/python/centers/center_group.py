@@ -613,7 +613,7 @@ class CenterGroup(CenterAdaptor):
 
             if not redcap_project:
                 log.error(
-                    'Failed to create an API connection to REDCap project %s',
+                    'No REDCap project %s found',
                     redcap_metadata.redcap_pid)
                 success = False
                 continue

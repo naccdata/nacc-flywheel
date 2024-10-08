@@ -20,7 +20,7 @@ from redcap.redcap_connection import (
 log = logging.getLogger(__name__)
 
 
-def setup_new_project_elelments(parameter_store: ParameterStore,
+def setup_new_project_elements(parameter_store: ParameterStore,
                                 base_path: str, token: str,
                                 url: str) -> Optional[int]:
     """Set up elements required to access the new REDCap project.
@@ -126,7 +126,7 @@ def run(
                     errors = True
                     continue
 
-                redcap_pid = setup_new_project_elelments(
+                redcap_pid = setup_new_project_elements(
                     parameter_store, base_path, api_key, redcap_super_con.url)
                 if redcap_pid:
                     module_obj = REDCapFormProjectMetadata(
