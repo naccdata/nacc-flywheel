@@ -407,6 +407,7 @@ def load_rule_definition_schemas(
     """
 
     # For CSV input, assumes all the records belong to the same module
+    module: Optional[str]
     if Keys.MODULE in input_data and input_data[Keys.MODULE]:
         module = str(input_data[Keys.MODULE]).upper()
     else:
