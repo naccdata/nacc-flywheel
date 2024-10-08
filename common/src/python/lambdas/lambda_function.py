@@ -1,6 +1,6 @@
 """Utilities for invoking AWS Lambda functions."""
 import logging
-from typing import Dict, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 import boto3
 from botocore.exceptions import ClientError
@@ -40,6 +40,11 @@ class ResponseObject(BaseModel):
     headers: Dict[str, str]
     body: str
 
+class ErrorResponseObject(BaseModel):
+    """Base model for error response objects"""
+    errorMessage: str
+    errorType: str
+    stackTrace: List[str]
 
 # pylint: disable=(too-few-public-methods)
 class LambdaClient:
@@ -59,6 +64,8 @@ class LambdaClient:
           request: the request object
         Returns:
           the response object from invoking the lambda function
+        Raises:
+          LambdaInvocationError if the response format is unexpected
         """
         try:
             response = self.__client.invoke(
@@ -70,13 +77,19 @@ class LambdaClient:
         except ClientError as error:
             raise LambdaInvocationError(str(error)) from error
 
+        payload = response['Payload'].read()
         try:
-            return ResponseObject.model_validate_json(
-                response['Payload'].read())
+            return ResponseObject.model_validate_json(payload)
+        except ValidationError as error:
+            pass
+
+        try:
+            response = ErrorResponseObject.model_validate_json(payload)
         except ValidationError as error:
             log.error("error validating lambda response: %s", str(error))
             raise LambdaInvocationError(str(error)) from error
 
+        raise LambdaInvocationError(response.errorMessage)
 
 class LambdaInvocationError(Exception):
     """Error class for error related to invoking lambda."""

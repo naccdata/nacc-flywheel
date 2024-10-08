@@ -3,6 +3,7 @@
 import logging
 from typing import Any, Dict, Iterator, List, Optional, TextIO
 
+from dates.form_dates import DATE_FORMATS, DateFormatException, parse_date
 from enrollment.enrollment_project import EnrollmentProject, TransferInfo
 from enrollment.enrollment_transfer import (
     CenterValidator,
@@ -29,7 +30,9 @@ from outputs.errors import (
     empty_field_error,
     identifier_error,
     missing_header_error,
+    unexpected_value_error,
 )
+from pydantic import ValidationError
 
 log = logging.getLogger(__name__)
 
@@ -278,15 +281,26 @@ class TransferVisitor(CSVVisitor):
         naccid = None
         if self.__naccid_identifier:
             naccid = self.__naccid_identifier.naccid
+
+        try:
+            enroll_date = parse_date(date_string=row['frmdate_enrl'],
+                                     formats=DATE_FORMATS)
+        except DateFormatException:
+            self.__error_writer.write(
+                unexpected_value_error(field='frmdate_enrl',
+                                       value=row['frmdate_enrl'],
+                                       expected='',
+                                       message='Expected valid datetime date',
+                                       line=line_num))
+            return False
+
         self.__transfer_info.add(
-            TransferRecord(date=row['frmdate_enrl'],
+            TransferRecord(date=enroll_date,
                            initials=row['initials_enrl'],
                            center_identifiers=new_identifiers,
                            previous_identifiers=self.__previous_identifiers,
                            naccid=naccid))
-
         log.info('Transfer found on line %s', line_num)
-
         return True
 
 
@@ -331,9 +345,41 @@ class NewEnrollmentVisitor(CSVVisitor):
 
         log.info('Adding new enrollment for (%s,%s)', row['adcid'],
                  row['ptid'])
-        self.__batch.add(EnrollmentRecord.create_from(row))
+        try:
+            enroll_date = parse_date(date_string=row['frmdate_enrl'],
+                                     formats=DATE_FORMATS)
+        except DateFormatException:
+            self.__error_writer.write(
+                unexpected_value_error(field='frmdate_enrl',
+                                       value=row['frmdate_enrl'],
+                                       expected='',
+                                       message='Expected valid datetime date',
+                                       line=line_num))
+            return False
 
-        return True
+        try:
+            self.__batch.add(
+                EnrollmentRecord(
+                    center_identifier=CenterIdentifiers(adcid=row['adcid'],
+                                                        ptid=row['ptid']),
+                    guid=row.get('guid') if row.get('guid') else None,
+                    naccid=None,
+                    start_date=enroll_date))
+            return True
+        except ValidationError as validation_error:
+            for error in validation_error.errors():
+                if error['type'] == 'string_pattern_mismatch':
+                    field_name = str(error['loc'][0])
+                    context = error.get('ctx', {'pattern': ''})
+                    self.__error_writer.write(
+                        unexpected_value_error(
+                            field=field_name,
+                            value=error['input'],
+                            expected=context['pattern'],
+                            message=f'Invalid {field_name.upper()}',
+                            line=line_num))
+
+            return False
 
 
 class ProvisioningVisitor(CSVVisitor):
