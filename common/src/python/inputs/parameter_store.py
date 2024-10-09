@@ -161,6 +161,9 @@ class ParameterStore:
           ParameterError: if errors occur while retrieving parameters
         """
 
+        if not base_path.endswith('/'):
+            base_path += '/'
+
         redcap_params = {}
         try:
             parameters = self.__store.get_parameters_with_hierarchy(
