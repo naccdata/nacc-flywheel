@@ -87,18 +87,21 @@ def add_to_registry(*, user_entry: UserEntry,
     return identifier_list
 
 
-def get_registry_id(claimed_list: List[RegistryPerson]) -> Optional[str]:
-    """Gets the registry ID for the person in the list.
+def get_registry_id(person_list: List[RegistryPerson]) -> Optional[str]:
+    """Gets the registry ID for a list of RegistryPerson objects
+    with the same email address.
+
+    Should only have one registry ID.
 
     Args:
-      claimed_list: person objects that are claimed
+      person_list: list of person objects representing "same" person
     Returns:
       registry ID from person object. None if none is found.
     """
-    registered = [
-        person.registry_id() for person in claimed_list
+    registered = {
+        person.registry_id() for person in person_list
         if person.registry_id()
-    ]
+    }
     if not registered:
         return None
     if len(registered) > 1:
