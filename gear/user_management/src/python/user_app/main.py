@@ -88,8 +88,8 @@ def add_to_registry(*, user_entry: UserEntry,
 
 
 def get_registry_id(person_list: List[RegistryPerson]) -> Optional[str]:
-    """Gets the registry ID for a list of RegistryPerson objects
-    with the same email address.
+    """Gets the registry ID for a list of RegistryPerson objects with the same
+    email address.
 
     Should only have one registry ID.
 
@@ -99,8 +99,8 @@ def get_registry_id(person_list: List[RegistryPerson]) -> Optional[str]:
       registry ID from person object. None if none is found.
     """
     registered = {
-        person.registry_id() for person in person_list
-        if person.registry_id()
+        person.registry_id()
+        for person in person_list if person.registry_id()
     }
     if not registered:
         return None
@@ -182,6 +182,12 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
 
                 notification_client.send_creation_email(user_entry)
                 log.info('Added user %s', user.id)
+
+            elif not user.firstlogin:
+                log.info('User %s has never logged in', user_entry.email)
+                if force_notifications or send_notification(
+                        user_entry=user_entry, person_list=person_list):
+                    notification_client.send_creation_email(user_entry)
 
             log.info('Changing user %s email to %s', registry_id,
                      user_entry.email)
