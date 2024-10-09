@@ -7,8 +7,6 @@ import requests
 from inputs.parameter_store import REDCapParameters, REDCapReportParameters
 from requests import Response
 
-from redcap.redcap_project import REDCapProject
-
 
 class REDCapSuperUserConnection:
     """REDCap connection using super API token.
@@ -120,21 +118,6 @@ class REDCapConnection:
         """
         return REDCapConnection(token=parameters['token'],
                                 url=parameters['url'])
-
-    def get_project(self) -> 'REDCapProject':
-        """Get the REDCap project for this connection."""
-
-        project_info = self.__export_project_info()
-        field_names = self.__export_field_names()
-
-        return REDCapProject(
-            redcap_con=self,
-            pid=int(project_info['project_id']),
-            title=project_info['project_title'],
-            pk_field=field_names[0]['export_field_name'],
-            longitudinal=(project_info['is_longitudinal'] == 1),
-            repeating_ins=(
-                project_info['has_repeating_instruments_or_events'] == 1))
 
     def post_request(self,
                      *,
