@@ -167,7 +167,7 @@ class ParameterStore:
                 base_path, decrypt=True)
         except (ClientError, ParamValidationError) as error:
             raise ParameterError(
-                f"Failed to retrieve parameters at {base_path}") from error
+                f"Failed to retrieve parameters at {base_path}: {error}") from error
 
         for key, prj_params in parameters.items():
             if prefix and not key.startswith(prefix):
