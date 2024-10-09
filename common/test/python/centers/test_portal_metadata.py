@@ -6,7 +6,7 @@ from centers.center_group import (
     FormIngestProjectMetadata,
     IngestProjectMetadata,
     ProjectMetadata,
-    REDCapFormProject,
+    REDCapFormProjectMetadata,
     REDCapProjectInput,
     StudyMetadata,
 )
@@ -43,9 +43,10 @@ def ingest_project_with_redcap():
                                     datatype="form",
                                     redcap_projects={
                                         "dummyv9":
-                                        REDCapFormProject(redcap_pid=12345,
-                                                          label="dummyv9",
-                                                          report_id=22)
+                                        REDCapFormProjectMetadata(
+                                            redcap_pid=12345,
+                                            label="dummyv9",
+                                            report_id=22)
                                     })
 
 
@@ -198,7 +199,7 @@ class TestREDCapUpdate:
                                           study_id="test",
                                           project_label="ingest-form-test",
                                           projects=[
-                                              REDCapFormProject(
+                                              REDCapFormProjectMetadata(
                                                   redcap_pid=12345,
                                                   label="enrollv1",
                                                   report_id=22)

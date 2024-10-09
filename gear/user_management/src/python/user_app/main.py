@@ -48,8 +48,8 @@ def authorize_user(*, user: User, center_id: int,
       user: the user
       center_id: the center of the user
       authorizations: the user authorizations
-      authorization_map: the map from authorization to FW role
       admin_group: the admin group
+      authorization_map: the map from authorization to FW role
     """
     center_group = admin_group.get_center(center_id)
     if not center_group:
@@ -141,7 +141,8 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
       admin_group: the NACCGroup object representing the admin group
       authorization_map: the AuthMap object representing the authorization map
       registry: the user registry
-      email_client: email client for notifications
+      notification_client: client for sending notification emails
+      force_notifications: whether to force send claim notification
     """
     for user_entry in user_list:
         if not user_entry.auth_email:
