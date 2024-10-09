@@ -16,6 +16,7 @@ from redcap.redcap_connection import (
     REDCapConnectionError,
     REDCapSuperUserConnection,
 )
+from redcap.redcap_project import REDCapProject
 
 log = logging.getLogger(__name__)
 
@@ -39,8 +40,8 @@ def setup_new_project_elements(parameter_store: ParameterStore, base_path: str,
     """
 
     try:
-        redcap_con = REDCapConnection(token=token, url=url)
-        redcap_prj = redcap_con.get_project()
+        redcap_prj = REDCapProject.create(
+            REDCapConnection(token=token, url=url))
         redcap_prj.add_gearbot_user_to_project()
     except REDCapConnectionError as error:
         log.error(error)

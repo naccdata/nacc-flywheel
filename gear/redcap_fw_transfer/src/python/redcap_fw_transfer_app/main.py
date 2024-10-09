@@ -132,7 +132,7 @@ def run(*, gear_context: GearToolkitContext,
 
     try:
         records_list = redcap_con.get_report_records()
-        redcap_prj = redcap_con.get_project()
+        redcap_prj = REDCapProject.create(redcap_con)
     except REDCapConnectionError as error:
         raise GearExecutionError(error.message) from error
 

@@ -87,7 +87,7 @@ class REDCapParametersRepository:
 
         redcap_con = REDCapConnection.create_from(redcap_params)
         try:
-            return redcap_con.get_project()
+            return REDCapProject.create(redcap_con)
         except REDCapConnectionError as error:
             log.error(error)
             return None

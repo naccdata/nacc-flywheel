@@ -89,6 +89,22 @@ class REDCapProject:
         self.__longitudinal = longitudinal
         self.__repeating_ins = repeating_ins
 
+    @classmethod
+    def create(cls, redcap_con: REDCapConnection) -> 'REDCapProject':
+        """Get the REDCap project for this connection."""
+
+        project_info = redcap_con.__export_project_info()
+        field_names = redcap_con.__export_field_names()
+
+        return REDCapProject(
+            redcap_con=redcap_con,
+            pid=int(project_info['project_id']),
+            title=project_info['project_title'],
+            pk_field=field_names[0]['export_field_name'],
+            longitudinal=(project_info['is_longitudinal'] == 1),
+            repeating_ins=(
+                project_info['has_repeating_instruments_or_events'] == 1))
+
     @property
     def pid(self) -> int:
         """Returns REDCap project ID."""
