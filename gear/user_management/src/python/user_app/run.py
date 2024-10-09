@@ -92,8 +92,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
 
-        redcap_path = context.config.get('redcap_parameter_path',
-                                         '/redcap/aws'),
+        redcap_path = context.config.get("redcap_parameter_path",
+                                         "/redcap/aws")
         redcap_param_repo = REDCapParametersRepository.create_from_parameterstore(
             param_store=parameter_store, base_path=redcap_path)  # type: ignore
         if not redcap_param_repo:
