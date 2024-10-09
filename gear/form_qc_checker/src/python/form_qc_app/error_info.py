@@ -160,8 +160,9 @@ class REDCapErrorStore(ErrorStore):
         if record_ids and self.__redcap_con:
             fields = list(ErrorDescription.__annotations__.keys())
             try:
-                records_list = self.__redcap_con.export_records(
-                    record_ids=record_ids, fields=fields)
+                redcap_prj = self.__redcap_con.get_project()
+                records_list = redcap_prj.export_records(record_ids=record_ids,
+                                                         fields=fields)
                 for record in records_list:
                     error_code = record['error_code']  # type: ignore
                     try:
