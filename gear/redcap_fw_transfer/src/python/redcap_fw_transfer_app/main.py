@@ -12,6 +12,7 @@ from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import GearExecutionError
 from redcap.redcap_connection import REDCapConnectionError, REDCapReportConnection
+from redcap.redcap_project import REDCapProject
 
 log = logging.getLogger(__name__)
 
@@ -44,12 +45,12 @@ def upload_to_flywheel(visits: List[Dict[str, Any]], output_file: TextIO,
             f'Problem occurred while writing CSV: {error}') from error
 
 
-def reset_upload_checkbox(redcap_con: REDCapReportConnection,
+def reset_upload_checkbox(redcap_prj: REDCapProject,
                           visits: List[Dict[str, str]], timestamp: datetime):
     """Reset the upload checkboxes in REDCap records.
 
     Args:
-        redcap_con: API connection to REDCap project
+        redcap_prj: REDCap project to update records
         visits: List of new/updated visits
         timestamp: Upload timestamp
 
@@ -61,9 +62,9 @@ def reset_upload_checkbox(redcap_con: REDCapReportConnection,
 
     for visit in visits:
         update = {}
-        update[redcap_con.primary_key_field] = visit[
-            redcap_con.primary_key_field]
-        if redcap_con.has_repeating_instruments_or_events():
+        update[redcap_prj.primary_key_field] = visit[
+            redcap_prj.primary_key_field]
+        if redcap_prj.has_repeating_instruments_or_events():
             update['redcap_event_name'] = visit['redcap_event_name']
             update['redcap_repeat_instance'] = visit['redcap_repeat_instance']
         update['upld_ready___1'] = '0'
@@ -71,19 +72,20 @@ def reset_upload_checkbox(redcap_con: REDCapReportConnection,
         updates.append(update)
 
     try:
-        num_updated = redcap_con.import_records(json.dumps(updates))
+        num_updated = redcap_prj.import_records(json.dumps(updates))
         log.info('Number of updated records: %s', num_updated)
     except REDCapConnectionError as error:
         raise GearExecutionError(error.message) from error
 
 
-def validate_redcap_report(redcap_con: REDCapReportConnection,
+def validate_redcap_report(redcap_prj: REDCapProject, report_id: str,
                            record: Dict[str, str],
                            schema: Dict[str, Any]) -> List[str]:
     """Check whether the required fields included in the report.
 
     Args:
-        redcap_con: API connection to REDCap project
+        redcap_prj: REDCap project the report is exported from
+        report_id: REDCap report id
         record: sample record from the report
         schema: expected schema for the module
 
@@ -94,17 +96,17 @@ def validate_redcap_report(redcap_con: REDCapReportConnection,
         GearExecutionError if required fields are missing in the report
     """
 
-    if redcap_con.primary_key_field not in record:
+    if redcap_prj.primary_key_field not in record:
         raise GearExecutionError(
-            f'Primary key {redcap_con.primary_key_field} not included '
-            f'in project {redcap_con.pid} report {redcap_con.report_id}')
+            f'Primary key {redcap_prj.primary_key_field} not included '
+            f'in project {redcap_prj.title} report {report_id}')
 
-    if redcap_con.has_repeating_instruments_or_events():
+    if redcap_prj.has_repeating_instruments_or_events():
         if ('redcap_event_name' not in record
                 or 'redcap_repeat_instance' not in record):
             raise GearExecutionError(
                 f'REDCap repeating instance fields not included '
-                f'in project {redcap_con.pid} report {redcap_con.report_id}')
+                f'in project {redcap_prj.title} report {report_id}')
 
     extra_fields = set(record.keys()).difference(set(schema.keys()))
     return list(extra_fields)
@@ -130,6 +132,7 @@ def run(*, gear_context: GearToolkitContext,
 
     try:
         records_list = redcap_con.get_report_records()
+        redcap_prj = redcap_con.get_project()
     except REDCapConnectionError as error:
         raise GearExecutionError(error.message) from error
 
@@ -151,7 +154,8 @@ def run(*, gear_context: GearToolkitContext,
         raise GearExecutionError(
             f'Field definitions not found in schema file {schema_file}')
 
-    extra_fields = validate_redcap_report(redcap_con, records_list[0],
+    extra_fields = validate_redcap_report(redcap_prj, redcap_con.report_id,
+                                          records_list[0],
                                           schema['definitions'])
 
     timestamp = datetime.now()
@@ -162,4 +166,4 @@ def run(*, gear_context: GearToolkitContext,
                                   encoding='utf-8') as output_file:
         upload_to_flywheel(records_list, output_file, extra_fields)
 
-    reset_upload_checkbox(redcap_con, records_list, timestamp)
+    reset_upload_checkbox(redcap_prj, records_list, timestamp)

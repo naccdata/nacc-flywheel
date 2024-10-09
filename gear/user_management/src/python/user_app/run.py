@@ -18,6 +18,7 @@ from inputs.parameter_store import ParameterError, ParameterStore
 from inputs.yaml import YAMLReadError, load_from_stream
 from notifications.email import EmailClient, create_ses_client
 from pydantic import ValidationError
+from redcap.redcap_repository import REDCapParametersRepository
 from users.authorizations import AuthMap
 from users.nacc_directory import ActiveUserEntry, UserFormatError
 from users.user_registry import UserRegistry
@@ -31,15 +32,18 @@ log = logging.getLogger(__name__)
 class UserManagementVisitor(GearExecutionEnvironment):
     """Defines the user management gear."""
 
-    def __init__(self,
-                 admin_id: str,
-                 client: ClientWrapper,
-                 user_filepath: str,
-                 auth_filepath: str,
-                 email_source: str,
-                 comanage_config: Configuration,
-                 comanage_coid: int,
-                 force_notifications: bool = False):
+    def __init__(
+        self,
+        admin_id: str,
+        client: ClientWrapper,
+        user_filepath: str,
+        auth_filepath: str,
+        email_source: str,
+        comanage_config: Configuration,
+        comanage_coid: int,
+        redcap_param_repo: REDCapParametersRepository,
+        force_notifications: bool = False,
+    ):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__user_filepath = user_filepath
@@ -47,6 +51,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         self.__email_source = email_source
         self.__comanage_config = comanage_config
         self.__comanage_coid = comanage_coid
+        self.__redcap_param_repo = redcap_param_repo
         self.__force_notifications = force_notifications
 
     @classmethod
@@ -87,6 +92,14 @@ class UserManagementVisitor(GearExecutionEnvironment):
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
 
+        redcap_path = context.config.get('redcap_parameter_path',
+                                         '/redcap/aws'),
+        redcap_param_repo = REDCapParametersRepository.create_from_parameterstore(
+            param_store=parameter_store, base_path=redcap_path)  # type: ignore
+        if not redcap_param_repo:
+            raise GearExecutionError(
+                'Failed to create REDCap parameter repository')
+
         return UserManagementVisitor(
             admin_id=context.config.get("admin_group", "nacc"),
             client=client,
@@ -98,6 +111,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 host=comanage_parameters['host'],
                 username=comanage_parameters['username'],
                 password=comanage_parameters['apikey']),
+            redcap_param_repo=redcap_param_repo,
             force_notifications=context.config.get(
                 'force_unclaimed_notifications', False))
 
@@ -114,10 +128,12 @@ class UserManagementVisitor(GearExecutionEnvironment):
 
         with ApiClient(
                 configuration=self.__comanage_config) as comanage_client:
+            admin_group = self.admin_group(admin_id=self.__admin_id)
+            admin_group.set_redcap_param_repo(self.__redcap_param_repo)
 
             run(proxy=self.proxy,
                 user_list=self.__get_user_list(self.__user_filepath),
-                admin_group=self.admin_group(admin_id=self.__admin_id),
+                admin_group=admin_group,
                 authorization_map=self.__get_auth_map(self.__auth_filepath),
                 notification_client=NotificationClient(
                     configuration_set_name="user-creation-claims",
