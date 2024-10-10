@@ -83,7 +83,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         sender_path = context.config.get('sender_path')
         if not sender_path:
             raise GearExecutionError('No email sender parameter path')
-        
+
         portal_path = context.config.get('portal_url_path')
         if not portal_path:
             raise GearExecutionError("No path for portal URL")
