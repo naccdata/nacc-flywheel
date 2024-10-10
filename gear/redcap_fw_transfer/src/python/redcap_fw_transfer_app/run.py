@@ -8,7 +8,7 @@ from centers.center_group import (
     CenterError,
     CenterGroup,
     FormIngestProjectMetadata,
-    REDCapFormProject,
+    REDCapFormProjectMetadata,
 )
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import GroupAdaptor
@@ -60,8 +60,8 @@ def get_destination_group_and_project(dest_container: Any) -> Tuple[str, str]:
 
 
 def get_redcap_projects_metadata(
-        *, group_adaptor: GroupAdaptor,
-        project_label: str) -> Dict[str, REDCapFormProject]:
+        *, fw_proxy: FlywheelProxy, group_adaptor: GroupAdaptor,
+        project_label: str) -> Dict[str, REDCapFormProjectMetadata]:
     """Retrieve the info on source REDCap projects to transfer the data from.
     REDCap->FW mapping info is included in each center's metadata project.
 

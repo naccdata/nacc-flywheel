@@ -25,13 +25,12 @@ To represent this a study release group is created with a single "master"
 project for managing the consolidated data.
 """
 import logging
+from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from centers.center_group import CenterError, CenterGroup
 from centers.nacc_group import NACCGroup
-from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import (
-    FlywheelError,
     FlywheelProxy,
     GroupAdaptor,
     ProjectAdaptor,
@@ -42,30 +41,22 @@ from projects.study import Study
 log = logging.getLogger(__name__)
 
 
-class StudyMappingAdaptor:
+class StudyMappingAdaptor(ABC):
     """Defines an adaptor for the coordinating center Study class that supports
     mapping to a data pipeline using Flywheel groups and projects."""
 
-    def __init__(self, *, study: Study, admin_group: NACCGroup,
-                 flywheel_proxy: FlywheelProxy, center_roles: List[GroupRole],
-                 new_only: bool) -> None:
+    def __init__(self, *, study: Study, flywheel_proxy: FlywheelProxy) -> None:
         """Creates an adaptor mapping the given study to the corresponding
         objects in the flywheel instance linked by the proxy.
 
         Args:
             study: the study
             flywheel_proxy: the proxy for the flywheel instance
-            center_roles: the roles for center users
             admin_group: the admin group for managing centers
             new_only: whether to only process new centers
         """
         self.__fw = flywheel_proxy
         self.__study = study
-        self.__admin_group = admin_group
-        self.__release_group: Optional[GroupAdaptor] = None
-        self.__admin_access = admin_group.get_user_access()
-        self.__center_roles = center_roles
-        self.__new_centers_only = new_only
 
     def has_datatype(self, datatype: str) -> bool:
         """Indicates whether this study has the datatype.
@@ -86,6 +77,78 @@ class StudyMappingAdaptor:
     def name(self) -> str:
         """Exposes study name."""
         return self.__study.name
+
+    @abstractmethod
+    def add_study(self, center: CenterGroup) -> None:
+        """Adds the study of this mapping to the center."""
+
+    def create_center_pipelines(self) -> None:
+        """Creates data pipelines for centers in this project."""
+        if not self.__study.centers:
+            log.warning(
+                "Not creating center groups for project %s: no centers given",
+                self.__study.name)
+            return
+
+        for center_id in self.__study.centers:
+            group_adaptor = self.__fw.find_group(center_id)
+            if not group_adaptor:
+                log.warning("No group found with center ID %s", center_id)
+                continue
+
+            center_group = CenterGroup.create_from_group_adaptor(
+                adaptor=group_adaptor)
+
+            # TODO: do we need this here? also, added to center management
+            center_group.add_center_portal()
+            try:
+                self.add_study(center=center_group)
+            except CenterError as error:
+                log.error("Error adding study %s to center %s: %s",
+                          self.__study.name, center_group.label, error)
+
+    @abstractmethod
+    def create_release_pipeline(self) -> None:
+        """Creates the release pipeline for this study if the study is a
+        published aggregation study."""
+
+    def create_study_pipelines(self) -> None:
+        """Creates the pipelines for this study."""
+        self.create_center_pipelines()
+        self.create_release_pipeline()
+
+
+class AggregationStudyMapping(StudyMappingAdaptor):
+    """Defines an adaptor for an aggregation Study object that creates data
+    pipelines to support aggregation of data submitted by centers."""
+
+    def __init__(self, *, study: Study, admin_group: NACCGroup,
+                 flywheel_proxy: FlywheelProxy) -> None:
+        super().__init__(study=study, flywheel_proxy=flywheel_proxy)
+
+        self.__admin_access = admin_group.get_user_access()
+        self.__release_group: Optional[GroupAdaptor] = None
+
+    def add_study(self, center: CenterGroup) -> None:
+        """Adds aggregation pipeline details center.
+
+        Args:
+          center: the center group
+        """
+        # TODO: deal with duplicate code across mapping classes
+        portal_info = center.get_project_info()
+        study_info = portal_info.get(self.__study)
+        center.add_accepted_project(study=self.__study, study_info=study_info)
+        if center.is_active():
+            for pipeline in ['ingest', 'sandbox']:
+                for datatype in self.__study.datatypes:
+                    center.add_ingest_project(study=self.__study,
+                                              study_info=study_info,
+                                              pipeline=pipeline,
+                                              datatype=datatype)
+        center.update_project_info(portal_info)
+
+        center.add_retrospective_project(self.__study)
 
     def get_release_group(self) -> Optional[GroupAdaptor]:
         """Returns the release group for this study if it is published.
@@ -121,37 +184,6 @@ class StudyMappingAdaptor:
         assert release_group
         return release_group.get_project(label='master-project')
 
-    def create_center_pipelines(self) -> None:
-        """Creates data pipelines for centers in this project."""
-        if not self.__study.centers:
-            log.warning(
-                "Not creating center groups for project %s: no centers given",
-                self.__study.name)
-            return
-
-        for center in self.__study.centers:
-            if self.__new_centers_only and 'new-center' not in center.tags:
-                continue
-
-            try:
-                center_group = CenterGroup.create_from_center(center=center,
-                                                              proxy=self.__fw)
-            except FlywheelError as error:
-                log.warning("Unable to create center: %s", str(error))
-                continue
-
-            center_group.add_roles(self.__center_roles)
-            self.__admin_group.add_center(center_group)
-
-            if self.__admin_access:
-                center_group.add_permissions(self.__admin_access)
-
-            try:
-                center_group.add_study(self.__study)
-            except CenterError as error:
-                log.error("Error adding study %s to center %s: %s",
-                          self.__study.name, center.name, error)
-
     def create_release_pipeline(self) -> None:
         """Creates the release pipeline for this study if the study is
         published."""
@@ -170,7 +202,26 @@ class StudyMappingAdaptor:
             assert master_project
             master_project.add_admin_users(self.__admin_access)
 
+
+class DistributionStudyMapping(StudyMappingAdaptor):
+    """Study mapping adaptor that implements creation of distribution
+    studies."""
+
+    def __init__(self, *, study: Study, flywheel_proxy: FlywheelProxy) -> None:
+        super().__init__(study=study, flywheel_proxy=flywheel_proxy)
+
+    def add_study(self, center: CenterGroup) -> None:
+        """Add distribution pipeline details to center."""
+        portal_info = center.get_project_info()
+        study_info = portal_info.get(self.__study)
+        for datatype in self.__study.datatypes:
+            center.add_distribution_project(study=self.__study,
+                                            study_info=study_info,
+                                            datatype=datatype)
+        center.update_project_info(portal_info)
+
     def create_study_pipelines(self) -> None:
-        """Creates the pipelines for this study."""
-        self.create_center_pipelines()
-        self.create_release_pipeline()
+        return self.create_center_pipelines()
+
+    def create_release_pipeline(self) -> None:
+        pass

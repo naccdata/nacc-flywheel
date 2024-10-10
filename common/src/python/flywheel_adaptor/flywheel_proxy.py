@@ -2,6 +2,7 @@
 """Defines project creation functions for calls to Flywheel."""
 import json
 import logging
+from json.decoder import JSONDecodeError
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 import flywheel
@@ -23,6 +24,7 @@ from flywheel.models.role_output import RoleOutput
 from flywheel.models.roles_role_assignment import RolesRoleAssignment
 from flywheel.models.user import User
 from flywheel.rest import ApiException
+from flywheel.view_builder import ViewBuilder
 from fw_client import FWClient
 from fw_utils import AttrDict
 
@@ -199,6 +201,8 @@ class FlywheelProxy:
 
         Returns:
           group: the created group
+        Raises:
+          FlywheelError if the group exists
         """
         group_list = self.find_groups(group_id)
         if group_list:
@@ -216,8 +220,16 @@ class FlywheelProxy:
 
         log.info('creating group...')
         # This just returns a string of the group ID
-        added_group_id = self.__fw.add_group(
-            flywheel.Group(group_id, group_label))
+        try:
+            added_group_id = self.__fw.add_group(
+                flywheel.Group(group_id, group_label))
+        except ApiException:
+            log.error(
+                ('Group %s creation failed. '
+                 'Group likely exists, but user does not have permission'),
+                group_label)
+            raise FlywheelError(f"Failed to create group {group_label}")
+
         # we must fw.get_group() with ID string to get the actual Group object.
         group = self.__fw.get_group(added_group_id)
         log.info("success")
@@ -583,6 +595,55 @@ class FlywheelProxy:
             Job: Flywheel Job object if found, else None
         """
         return self.__fw.jobs.find_first(search_str)
+
+    def get_matching_aquisition_files_info(
+            self,
+            *,
+            container_id: str,
+            dv_title: str,
+            columns: List[str],
+            filename_pattern: Optional[str] = '*.json',
+            filters: Optional[str] = None) -> Optional[List[Dict[str, str]]]:
+        """Retrieve info on the list of files matching with the given filters
+        (if any) from the specified Flywheel container.
+
+        Note: missing_data_strategy is set to 'drop-row'
+
+        Args:
+            container_id: Flywheel container ID
+            dv_title: dataview title
+            columns: list of columns to be included in dataview
+            filename_pattern (optional): the filename pattern to match, default '*.json'
+            filters (optional): If specified, returns visits matching with the filter
+
+        Returns:
+            List[Dict]: List of visits matching with the specified filters
+        """
+
+        builder = ViewBuilder(label=dv_title,
+                              columns=columns,
+                              container='acquisition',
+                              filename=filename_pattern,
+                              match='all',
+                              process_files=False,
+                              filter=filters,
+                              include_ids=False,
+                              include_labels=False)
+        builder = builder.missing_data_strategy('drop-row')
+        view = builder.build()
+
+        with self.__fw.read_view_data(view, container_id) as resp:
+            try:
+                result = json.load(resp)
+            except JSONDecodeError as error:
+                log.error('Error in loading dataview %s on container %s - %s',
+                          view.label, container_id, error)
+                return None
+
+        if not result or 'data' not in result:
+            return None
+
+        return result['data']
 
 
 def get_name(container) -> str:

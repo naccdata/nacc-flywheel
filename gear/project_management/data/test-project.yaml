@@ -2,38 +2,20 @@
 study: "Project Tau"
 study-id: tau
 centers:
-  - name: "Alpha Center"
-    center-id: alpha
-    adcid: 1
-    is-active: True
-    tags:
-      - 'center-code-1006'
-  - name: "Beta Center"
-    center-id: beta-inactive
-    adcid: 2
-    is-active: False
-    tags:
-      - 'center-code-2006'
+  - alpha
+  - beta-inactive
 datatypes:
   - form
   - dicom
+mode: 'aggregation'
 published: True
 ---
 study: "Project Zeta"
 study-id: zeta
 centers:
-  - name: "Alpha Center"
-    center-id: alpha
-    adcid: 1
-    is-active: True
-    tags:
-      - 'center-code-1006'
-  - name: "Gamma ADRC"
-    center-id: gamma-adrc
-    adcid: 3
-    is-active: True
-    tags:
-      - 'center-code-5006'
+  - alpha
+  - gamma-adrc
 datatypes:
   - form
+mode: 'aggregation'  
 published: False

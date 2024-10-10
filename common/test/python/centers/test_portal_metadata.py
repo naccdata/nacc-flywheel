@@ -6,7 +6,7 @@ from centers.center_group import (
     FormIngestProjectMetadata,
     IngestProjectMetadata,
     ProjectMetadata,
-    REDCapFormProject,
+    REDCapFormProjectMetadata,
     REDCapProjectInput,
     StudyMetadata,
 )
@@ -43,9 +43,10 @@ def ingest_project_with_redcap():
                                     datatype="form",
                                     redcap_projects={
                                         "dummyv9":
-                                        REDCapFormProject(redcap_pid=12345,
-                                                          label="dummyv9",
-                                                          report_id=22)
+                                        REDCapFormProjectMetadata(
+                                            redcap_pid=12345,
+                                            label="dummyv9",
+                                            report_id=22)
                                     })
 
 
@@ -151,7 +152,7 @@ class TestStudyMetadataSerialization:
         assert 'study-name' in study_dump
         assert 'ingest-projects' in study_dump
         assert 'accepted-project' in study_dump
-        assert len(study_dump.keys()) == 4
+        assert len(study_dump.keys()) == 5
 
         try:
             model_object = StudyMetadata.model_validate(study_dump)
@@ -198,7 +199,7 @@ class TestREDCapUpdate:
                                           study_id="test",
                                           project_label="ingest-form-test",
                                           projects=[
-                                              REDCapFormProject(
+                                              REDCapFormProjectMetadata(
                                                   redcap_pid=12345,
                                                   label="enrollv1",
                                                   report_id=22)
