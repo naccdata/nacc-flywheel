@@ -118,7 +118,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 password=comanage_parameters['apikey']),
             redcap_param_repo=redcap_param_repo,
             force_notifications=context.config.get(
-                'force_unclaimed_notifications', False),
+                'force_notifications', False),
             portal_url=portal_url)
 
     def run(self, context: GearToolkitContext) -> None:
