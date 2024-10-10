@@ -32,19 +32,17 @@ log = logging.getLogger(__name__)
 class UserManagementVisitor(GearExecutionEnvironment):
     """Defines the user management gear."""
 
-    def __init__(
-        self,
-        admin_id: str,
-        client: ClientWrapper,
-        user_filepath: str,
-        auth_filepath: str,
-        email_source: str,
-        comanage_config: Configuration,
-        comanage_coid: int,
-        redcap_param_repo: REDCapParametersRepository,
-        portal_url: str,
-        force_notifications: bool = False
-    ):
+    def __init__(self,
+                 admin_id: str,
+                 client: ClientWrapper,
+                 user_filepath: str,
+                 auth_filepath: str,
+                 email_source: str,
+                 comanage_config: Configuration,
+                 comanage_coid: int,
+                 redcap_param_repo: REDCapParametersRepository,
+                 portal_url: str,
+                 force_notifications: bool = False):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__user_filepath = user_filepath
@@ -85,13 +83,17 @@ class UserManagementVisitor(GearExecutionEnvironment):
         sender_path = context.config.get('sender_path')
         if not sender_path:
             raise GearExecutionError('No email sender parameter path')
+        
+        portal_path = context.config.get('portal_url_path')
+        if not portal_path:
+            raise GearExecutionError("No path for portal URL")
 
         try:
             comanage_parameters = parameter_store.get_comanage_parameters(
                 comanage_path)
             sender_parameters = parameter_store.get_notification_parameters(
                 sender_path)
-            portal_url = parameter_store.get_portal_url()
+            portal_url = parameter_store.get_portal_url(portal_path)
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
 

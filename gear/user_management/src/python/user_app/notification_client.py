@@ -6,8 +6,7 @@ class NotificationClient:
     """Wrapper for the email client to send email notifications for the user
     enrollment flow."""
 
-    def __init__(self, email_client: EmailClient,
-                 configuration_set_name: str,
+    def __init__(self, email_client: EmailClient, configuration_set_name: str,
                  portal_url: str) -> None:
         self.__client = email_client
         self.__configuration_set_name = configuration_set_name
