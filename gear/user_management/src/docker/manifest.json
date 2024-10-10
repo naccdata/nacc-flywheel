@@ -82,6 +82,11 @@
             "description": "Parameter path prefix for REDCap project credentials",
             "type": "string",
             "default": "/redcap/aws"
+        },
+        "portal_url_path": {
+            "description": "Parameter path for the portal URL",
+            "type": "string",
+            "default": "/prod/flywheel/portal"
         }
     },
     "command": "/bin/run"
