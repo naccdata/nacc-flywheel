@@ -42,7 +42,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
         comanage_config: Configuration,
         comanage_coid: int,
         redcap_param_repo: REDCapParametersRepository,
-        force_notifications: bool = False,
+        portal_url: str,
+        force_notifications: bool = False
     ):
         super().__init__(client=client)
         self.__admin_id = admin_id
@@ -53,6 +54,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         self.__comanage_coid = comanage_coid
         self.__redcap_param_repo = redcap_param_repo
         self.__force_notifications = force_notifications
+        self.__portal_url = portal_url
 
     @classmethod
     def create(
@@ -89,6 +91,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 comanage_path)
             sender_parameters = parameter_store.get_notification_parameters(
                 sender_path)
+            portal_url = parameter_store.get_portal_url()
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
 
@@ -113,7 +116,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 password=comanage_parameters['apikey']),
             redcap_param_repo=redcap_param_repo,
             force_notifications=context.config.get(
-                'force_unclaimed_notifications', False))
+                'force_unclaimed_notifications', False),
+            portal_url=portal_url)
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
@@ -138,7 +142,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 notification_client=NotificationClient(
                     configuration_set_name="user-creation-claims",
                     email_client=EmailClient(client=create_ses_client(),
-                                             source=self.__email_source)),
+                                             source=self.__email_source),
+                    portal_url=self.__portal_url),
                 registry=UserRegistry(api_instance=DefaultApi(comanage_client),
                                       coid=self.__comanage_coid),
                 force_notifications=self.__force_notifications)
