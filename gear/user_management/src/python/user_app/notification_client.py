@@ -7,9 +7,11 @@ class NotificationClient:
     enrollment flow."""
 
     def __init__(self, email_client: EmailClient,
-                 configuration_set_name: str) -> None:
+                 configuration_set_name: str,
+                 portal_url: str) -> None:
         self.__client = email_client
         self.__configuration_set_name = configuration_set_name
+        self.__portal_url = portal_url
 
     def __claim_template(self,
                          user_entry: ActiveUserEntry) -> TemplateDataModel:
@@ -83,4 +85,4 @@ class NotificationClient:
                                          cc_addresses=[user_entry.auth_email]),
             template="user-creation",
             template_data=TemplateDataModel(firstname=user_entry.first_name,
-                                            email_address=user_entry.email))
+                                            url=self.__portal_url))
