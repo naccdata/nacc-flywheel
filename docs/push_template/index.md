@@ -2,7 +2,7 @@
 
 Script to push settings from template projects in an admin group, to projects in center groups.
 
-## [Source directory](https://github.com/naccdata/flywheel-gear-extensions/tree/main/push_template)
+## [Source directory](https://github.com/naccdata/flywheel-gear-extensions/tree/main/gear/push_template)
 
 ## Environment
 

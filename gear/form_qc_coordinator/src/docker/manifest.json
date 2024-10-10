@@ -51,7 +51,7 @@
             "type": "string",
             "default": "/prod/flywheel/gearbot"
         },
-        "date_column": {
+        "date_field": {
             "description": "Variable name of the visit date field for the module (used to sort the participant visits)",
             "type": "string",
             "default": "visitdate"

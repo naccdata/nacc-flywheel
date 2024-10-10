@@ -48,8 +48,8 @@ def authorize_user(*, user: User, center_id: int,
       user: the user
       center_id: the center of the user
       authorizations: the user authorizations
-      authorization_map: the map from authorization to FW role
       admin_group: the admin group
+      authorization_map: the map from authorization to FW role
     """
     center_group = admin_group.get_center(center_id)
     if not center_group:
@@ -82,23 +82,26 @@ def add_to_registry(*, user_entry: UserEntry,
         RegistryPerson.create(firstname=user_entry.first_name,
                               lastname=user_entry.last_name,
                               email=user_entry.auth_email,
-                              coid=str(registry.coid)))
+                              coid=registry.coid))
 
     return identifier_list
 
 
-def get_registry_id(claimed_list: List[RegistryPerson]) -> Optional[str]:
-    """Gets the registry ID for the person in the list.
+def get_registry_id(person_list: List[RegistryPerson]) -> Optional[str]:
+    """Gets the registry ID for a list of RegistryPerson objects with the same
+    email address.
+
+    Should only have one registry ID.
 
     Args:
-      claimed_list: person objects that are claimed
+      person_list: list of person objects representing "same" person
     Returns:
       registry ID from person object. None if none is found.
     """
-    registered = [
-        person.registry_id() for person in claimed_list
-        if person.registry_id()
-    ]
+    registered = {
+        person.registry_id()
+        for person in person_list if person.registry_id()
+    }
     if not registered:
         return None
     if len(registered) > 1:
@@ -141,7 +144,8 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
       admin_group: the NACCGroup object representing the admin group
       authorization_map: the AuthMap object representing the authorization map
       registry: the user registry
-      email_client: email client for notifications
+      notification_client: client for sending notification emails
+      force_notifications: whether to force send claim notification
     """
     for user_entry in user_list:
         if not user_entry.auth_email:
@@ -178,6 +182,12 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
 
                 notification_client.send_creation_email(user_entry)
                 log.info('Added user %s', user.id)
+
+            elif not user.firstlogin:
+                log.info('User %s has never logged in', user_entry.email)
+                if force_notifications or send_notification(
+                        user_entry=user_entry, person_list=person_list):
+                    notification_client.send_creation_email(user_entry)
 
             log.info('Changing user %s email to %s', registry_id,
                      user_entry.email)

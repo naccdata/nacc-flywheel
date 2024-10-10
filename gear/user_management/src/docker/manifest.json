@@ -77,6 +77,11 @@
             "description": "Whether to ignore date restrictions on notifications for unclaimed user records",
             "type": "boolean",
             "default": false
+        },
+        "redcap_parameter_path": {
+            "description": "Parameter path prefix for REDCap project credentials",
+            "type": "string",
+            "default": "/redcap/aws"
         }
     },
     "command": "/bin/run"
