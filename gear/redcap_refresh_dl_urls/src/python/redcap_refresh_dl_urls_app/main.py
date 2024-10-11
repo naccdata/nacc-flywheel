@@ -20,14 +20,19 @@ def refresh_url(project, redcap_con, subject_label='',reader_email=''):
     for file in acquisition.files:
         if file.name.endswith('.zip'):
             dicom_file = file
+        if file.name.endswith('.nii.gz'):
+            nifti_file = file
 
-    file_download_url = acquisition.get_file_download_url(dicom_file.name)
+    dicom_file_download_url = acquisition.get_file_download_url(dicom_file.name)
+    nifti_file_download_url = acquisition.get_file_download_url(nifti_file.name)
 
-    print(f'file_download_url: {file_download_url}')
+    print(f'dicom_file_download_url: {dicom_file_download_url}')
+    print(f'nifti_file_download_url: {nifti_file_download_url}')
 
     record = {
         'record_id' : f'{reader_email}-{subject_label}',
-        'download_link' : file_download_url
+        'dicom_download_link' : dicom_file_download_url,
+        'nifti_download_link' : nifti_file_download_url
     }
 
     record_str = json.dumps([record])
