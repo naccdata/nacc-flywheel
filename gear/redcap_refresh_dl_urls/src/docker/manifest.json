@@ -2,7 +2,7 @@
     "name": "redcap-refresh-dl-urls",
     "label": "Refresh REDCap Download URLs",
     "description": "Refreshes download links for CLARiTI visual reads calibration",
-    "version": "0.0.1",
+    "version": "0.0.5",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
@@ -16,7 +16,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/redcap-refresh-dl-urls:0.0.1"
+            "image": "naccdata/redcap-refresh-dl-urls:0.0.5"
         },
         "flywheel": {
             "suite": "NACC Admin Gears",
