@@ -510,12 +510,12 @@ class CenterGroup(CenterAdaptor):
                                              auth_map=auth_map,
                                              authorizations=authorizations)
 
-            if not isinstance(project, FormIngestProjectMetadata):
-                continue
+            # if not isinstance(project, FormIngestProjectMetadata):
+            #     continue
 
-            self.__add_user_to_redcap_project(user=user,
-                                              form_ingest_project=project,
-                                              authorizations=authorizations)
+            # self.__add_user_to_redcap_project(user=user,
+            #                                   form_ingest_project=project,
+            #                                   authorizations=authorizations)
 
         metadata_project = self.get_metadata()
         if metadata_project:
