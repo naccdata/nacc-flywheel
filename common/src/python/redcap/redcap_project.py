@@ -336,7 +336,7 @@ class REDCapProject:
 
         # If any filters specified, export only matching records.
         if filters:
-            data['filterLogic'] = ','.join(filters)
+            data['filterLogic'] = filters
 
         message = 'failed to export records'
         if exp_format.lower() == 'json':

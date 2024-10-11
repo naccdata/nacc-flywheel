@@ -173,7 +173,7 @@ def run(*, gear_context: GearToolkitContext, redcap_con: REDCapConnection,
                     )
                 events = [event]
                 extra_fields.extend(
-                    ['redcap_event_name', 'redcap_repeat_instance'])
+                    ['redcap_event_name', 'redcap_repeat_instance', 'redcap_repeat_instrument'])
 
             records_list = redcap_prj.export_records(
                 fields=fields, events=events, filters=filters)  # type: ignore
