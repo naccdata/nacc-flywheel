@@ -22,7 +22,7 @@ from gear_execution.gear_execution import (
 )
 from inputs.context_parser import ConfigParseError, get_config
 from inputs.parameter_store import ParameterError, ParameterStore
-from redcap.redcap_connection import REDCapReportConnection
+from redcap.redcap_connection import REDCapConnection, REDCapReportConnection
 
 from redcap_fw_transfer_app.main import run
 
@@ -60,14 +60,13 @@ def get_destination_group_and_project(dest_container: Any) -> Tuple[str, str]:
 
 
 def get_redcap_projects_metadata(
-        *, fw_proxy: FlywheelProxy, group_adaptor: GroupAdaptor,
+        *, group_adaptor: GroupAdaptor,
         project_label: str) -> Dict[str, REDCapFormProjectMetadata]:
     """Retrieve the info on source REDCap projects to transfer the data from.
     REDCap->FW mapping info is included in each center's metadata project.
 
     Args:
-        fw_proxy: Flywheel proxy
-        group_adaptor: Flywhee adaptor for the center group
+        group_adaptor: Flywhee group adaptor
         project_label: Flywheel ingest project label to upload data
 
     Returns:
@@ -80,8 +79,7 @@ def get_redcap_projects_metadata(
     redcap_projects = {}
 
     try:
-        center_group = CenterGroup.create_from_group_adaptor(
-            adaptor=group_adaptor)
+        center_group = CenterGroup.get_center_group(adaptor=group_adaptor)
         center_metadata = center_group.get_project_info()
     except CenterError as error:
         raise GearExecutionError(
@@ -100,13 +98,14 @@ def get_redcap_projects_metadata(
         matches += 1
         log.info(
             'REDCap projects metadata found for center: %s, '
-            'study: %s, project: %s', group_adaptor.id, study, project_label)
+            'study: %s, project: %s', group_adaptor.label, study,
+            project_label)
         redcap_projects = project_metadata.redcap_projects
 
     if matches > 1:
         raise GearExecutionError(
             'More than one match found for project '
-            f'{project_label} in center {group_adaptor.id} metadata')
+            f'{project_label} in center {group_adaptor.label} metadata')
 
     return redcap_projects
 
@@ -156,7 +155,37 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                                              parameter_store=parameter_store,
                                              param_path=param_path)
 
-    # pylint: disable=(too-many-locals)
+    def get_redcap_connection(
+        self, redcap_project: REDCapFormProjectMetadata
+    ) -> Optional[REDCapConnection]:
+        """Get API connection for the sepcified REDCap project.
+
+        Args:
+            redcap_project: REDCap project metadata
+
+        Returns:
+            REDCapConnection(optional): REDCap API connection if successful, else None
+        """
+        try:
+            if redcap_project.report_id:
+                redcap_params = self.__param_store.get_redcap_report_params_for_project(
+                    base_path=self.__param_path,
+                    pid=redcap_project.redcap_pid,
+                    report_id=redcap_project.report_id)
+                redcap_con = REDCapReportConnection.create_from(redcap_params)
+            else:
+                redcap_params = self.__param_store.get_redcap_parameters(
+                    base_path=self.__param_path, pid=redcap_project.redcap_pid)
+                redcap_con = REDCapConnection.create_from(redcap_params)
+        except ParameterError as error:
+            log.error(
+                'Error in retrieving REDCap project credentials '
+                'for project %s module %s: %s', redcap_project.redcap_pid,
+                redcap_project.label, error)
+            return None
+
+        return redcap_con
+
     def run(self, context: GearToolkitContext):
         """Runs the redcap_fw_transfer app.
 
@@ -177,8 +206,8 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
 
         group_id, project_id = get_destination_group_and_project(
             dest_container)
-        group = self.proxy.find_group(group_id)
-        if not group:
+        group_adaptor = self.proxy.find_group(group_id)
+        if not group_adaptor:
             raise GearExecutionError(f'Cannot find Flywheel group {group_id}')
         project = self.proxy.get_project_by_id(project_id)
         if not project:
@@ -186,7 +215,7 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                 f'Cannot find Flywheel project {project_id}')
 
         redcap_projects = get_redcap_projects_metadata(
-            group_adaptor=group, project_label=project.label)
+            group_adaptor=group_adaptor, project_label=project.label)
 
         if not redcap_projects:
             raise GearExecutionError(
@@ -194,41 +223,24 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                 f'{group_id}/{project.label}')
 
         failed_count = 0
-        for module, redcap_project in redcap_projects.items():
-            if (not redcap_project.label or not redcap_project.redcap_pid
-                    or not redcap_project.report_id):
-                log.error(
-                    'Incomplete REDCap project info in %s/metadata '
-                    'for module %s', group_id, module)
+        for redcap_project in redcap_projects.values():
+            redcap_con = self.get_redcap_connection(redcap_project)
+            if not redcap_con:
                 failed_count += 1
                 continue
 
-            try:
-                redcap_params = self.__param_store.get_redcap_project_parameters(
-                    base_path=self.__param_path,
-                    pid=redcap_project.redcap_pid,
-                    report_id=redcap_project.report_id)
-                redcap_report_con = REDCapReportConnection.create_from(
-                    redcap_params)
-            except ParameterError as error:
-                log.error(
-                    'Error in retrieving REDCap report credentials '
-                    'for project %s module %s: %s', redcap_project.redcap_pid,
-                    redcap_project.label, error)
-                failed_count += 1
-                continue
-
+            module = redcap_project.label.lower()
             try:
                 run(gear_context=context,
-                    redcap_con=redcap_report_con,
+                    redcap_con=redcap_con,
                     redcap_pid=str(redcap_project.redcap_pid),
-                    module=redcap_project.label,
+                    module=module,
                     fw_group=group_id,
                     fw_project=project)
             except GearExecutionError as error:
                 log.error(
                     'Error in ingesting module %s from REDCap project %s: %s',
-                    redcap_project.label, redcap_project.redcap_pid, error)
+                    module, redcap_project.redcap_pid, error)
                 failed_count += 1
                 continue
 
