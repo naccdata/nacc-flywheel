@@ -119,7 +119,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
             redcap_param_repo=redcap_param_repo,
             force_notifications=context.config.get(
                 'force_notifications', False),
-            portal_url=portal_url)
+            portal_url=portal_url['url'])
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
