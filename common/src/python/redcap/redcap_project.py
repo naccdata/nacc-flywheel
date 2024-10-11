@@ -93,8 +93,8 @@ class REDCapProject:
     def create(cls, redcap_con: REDCapConnection) -> 'REDCapProject':
         """Get the REDCap project for this connection."""
 
-        project_info = redcap_con.__export_project_info()
-        field_names = redcap_con.__export_field_names()
+        project_info = redcap_con.export_project_info()
+        field_names = redcap_con.export_field_names()
 
         return REDCapProject(
             redcap_con=redcap_con,
