@@ -11,7 +11,11 @@ from flywheel import Project
 from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import GearExecutionError
-from redcap.redcap_connection import REDCapConnectionError, REDCapReportConnection
+from redcap.redcap_connection import (
+    REDCapConnection,
+    REDCapConnectionError,
+    REDCapReportConnection,
+)
 from redcap.redcap_project import REDCapProject
 
 log = logging.getLogger(__name__)
@@ -112,9 +116,8 @@ def validate_redcap_report(redcap_prj: REDCapProject, report_id: str,
     return list(extra_fields)
 
 
-def run(*, gear_context: GearToolkitContext,
-        redcap_con: REDCapReportConnection, redcap_pid: str, module: str,
-        fw_group: str, fw_project: Project):
+def run(*, gear_context: GearToolkitContext, redcap_con: REDCapConnection,
+        redcap_pid: str, module: str, fw_group: str, fw_project: Project):
     """Download new/updated records from REDCap and upload to Flywheel as a CSV
     file.
 
@@ -130,20 +133,7 @@ def run(*, gear_context: GearToolkitContext,
         GearExecutionError if any problem occurs during the transfer
     """
 
-    try:
-        records_list = redcap_con.get_report_records()
-        redcap_prj = REDCapProject.create(redcap_con)
-    except REDCapConnectionError as error:
-        raise GearExecutionError(error.message) from error
-
-    if len(records_list) == 0:
-        log.info(
-            'No new/updated visits found in REDCap project pid=%s module=%s '
-            'for Flywheel project %s/%s', redcap_pid, module, fw_group,
-            fw_project.label)
-        return
-
-    schema_file = module.lower() + '-schema.json'
+    schema_file = module + '-schema.json'
     try:
         schema = json.loads(fw_project.read_file(schema_file))
     except (ApiException, JSONDecodeError) as error:
@@ -154,9 +144,48 @@ def run(*, gear_context: GearToolkitContext,
         raise GearExecutionError(
             f'Field definitions not found in schema file {schema_file}')
 
-    extra_fields = validate_redcap_report(redcap_prj, redcap_con.report_id,
-                                          records_list[0],
-                                          schema['definitions'])
+    records_list: List[Dict[str, Any]] = []
+    try:
+        redcap_prj = REDCapProject.create(redcap_con)
+        if isinstance(redcap_con, REDCapReportConnection):
+            records_list = redcap_con.get_report_records()
+            extra_fields = validate_redcap_report(redcap_prj,
+                                                  redcap_con.report_id,
+                                                  records_list[0],
+                                                  schema['definitions'])
+        # If no report available export records using the schema definition
+        # For longitudinal projects assumes the events are defined by module
+        else:
+            events = None
+            fields = list(schema['definitions'].keys())
+            filters = '[upld_ready(1)] = 1'
+
+            extra_fields = []
+            if redcap_prj.primary_key_field not in fields:
+                fields.append(redcap_prj.primary_key_field)
+                extra_fields.append(redcap_prj.primary_key_field)
+
+            if redcap_prj.has_repeating_instruments_or_events():
+                event = redcap_prj.get_event_name_for_label(f'{module}-visit')
+                if not event:
+                    raise GearExecutionError(
+                        'Cannot find event {module}-visit in project {redcap_prj.title}'
+                    )
+                events = [event]
+                extra_fields.extend(
+                    ['redcap_event_name', 'redcap_repeat_instance'])
+
+            records_list = redcap_prj.export_records(
+                fields=fields, events=events, filters=filters)  # type: ignore
+    except REDCapConnectionError as error:
+        raise GearExecutionError(error.message) from error
+
+    if len(records_list) == 0:
+        log.info(
+            'No new/updated visits found in REDCap project pid=%s module=%s '
+            'for Flywheel project %s/%s', redcap_pid, module, fw_group,
+            fw_project.label)
+        return
 
     timestamp = datetime.now()
     file_name = 'redcapingest-' + timestamp.strftime(

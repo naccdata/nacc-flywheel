@@ -82,7 +82,7 @@ class CenterGroup(CenterAdaptor):
 
         Args:
           adaptor: the group adaptor
-          proxy: the flywheel proxy object
+
         Returns:
           the CenterGroup for the group
         """
@@ -122,6 +122,42 @@ class CenterGroup(CenterAdaptor):
             'adcid': center.adcid,
             'active': center.is_active()
         })
+
+        return center_group
+
+    @classmethod
+    def get_center_group(cls, *, adaptor: GroupAdaptor) -> 'CenterGroup':
+        """Returns the CenterGroup for an existing Flywheel Group.
+
+        Args:
+            adaptor: Flywheel group adaptor
+
+        Returns:
+            the CenterGroup for the center
+
+        Raises:
+            CenterError: if center metadata missing or incomplete
+        """
+        group = adaptor._group
+        proxy = adaptor.proxy()
+        meta_project = group.projects.find_first('label=metadata')
+        if not meta_project:
+            raise CenterError(
+                f"Unable to find metadata project for group {group.label}")
+
+        project_adaptor = ProjectAdaptor(project=meta_project, proxy=proxy)
+        metadata_info = project_adaptor.get_info()
+        if 'adcid' not in metadata_info:
+            raise CenterError(
+                f"Expected group {group.label}/metadata.info to have ADCID")
+
+        adcid = metadata_info['adcid']
+        active = metadata_info.get('active', False)
+
+        center_group = CenterGroup(adcid=adcid,
+                                   active=active,
+                                   group=group,
+                                   proxy=proxy)
 
         return center_group
 

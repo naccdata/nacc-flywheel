@@ -346,3 +346,37 @@ class REDCapProject:
         return self.__redcap_con.request_text_value(data=data,
                                                     result_format=exp_format,
                                                     message=message)
+
+    def export_events(self) -> List[Dict[str, Any]]:
+        """Exports the events defined in the project.
+
+        Returns:
+            List[Dict[str, str]]: List of event info Dicts
+
+        Raises:
+          REDCapConnectionError if the response has an error.
+        """
+        message = "exporting events"
+        data = {'content': 'event'}
+
+        return self.__redcap_con.request_json_value(data=data, message=message)
+
+    def get_event_name_for_label(self, label: str) -> Optional[str]:
+        """Returns the unique REDCap event name for given label.
+
+        Returns:
+            Optional[str]: REDCap event name if found, else None
+        """
+
+        try:
+            events = self.export_events()
+        except REDCapConnectionError as error:
+            log.error('Failed to retrieve events for project %s - %s',
+                      self.title, error)
+            return None
+
+        for event in events:
+            if label == event['event_name'].lower():
+                return event['unique_event_name']
+
+        return None
