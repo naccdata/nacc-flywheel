@@ -4,6 +4,7 @@ import logging
 from typing import Dict, List, Optional, Tuple
 
 from centers.center_group import (
+    CenterError,
     CenterGroup,
     REDCapFormProjectMetadata,
     REDCapProjectInput,
@@ -140,9 +141,14 @@ def run(
 
             # Update REDCap project metadata in Flywheel
             if len(project_object.projects) > 0:
-                center_group = CenterGroup.create_from_group_adaptor(
-                    adaptor=group_adaptor)
-                center_group.add_redcap_project(project_object)
+                try:
+                    center_group = CenterGroup.get_center_group(
+                        adaptor=group_adaptor)
+                    center_group.add_redcap_project(project_object)
+                except CenterError as error:
+                    log.error('Failed to update REDCap project metadata for %s/%s',
+                              group_adaptor.label, project_lbl)
+
                 redcap_metadata.append(project_object)
 
     return errors, redcap_metadata
