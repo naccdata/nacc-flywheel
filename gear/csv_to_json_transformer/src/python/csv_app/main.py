@@ -52,12 +52,13 @@ class JSONWriterVisitor(CSVVisitor):
         return True
 
 
-def run(*, input_file: TextIO, error_writer: ErrorWriter) -> bool:
+def run(*, input_file: TextIO, proxy: FlywheelProxy, error_writer: ErrorWriter) -> bool:
     """Reads records from the input file and transforms each into a JSON
     object.
 
     Args:
       input_file: the input file
+      proxy: Flywheel proxy object
       error_writer: the writer for error output
     """
 
