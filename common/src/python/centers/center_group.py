@@ -145,8 +145,8 @@ class CenterGroup(CenterAdaptor):
             raise CenterError(
                 f"Unable to find metadata project for group {group.label}")
 
-        project_adaptor = ProjectAdaptor(project=meta_project, proxy=proxy)
-        metadata_info = project_adaptor.get_info()
+        meta_project = meta_project.reload()
+        metadata_info = meta_project.info
         if 'adcid' not in metadata_info:
             raise CenterError(
                 f"Expected group {group.label}/metadata.info to have ADCID")

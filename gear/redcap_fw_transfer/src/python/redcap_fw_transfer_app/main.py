@@ -169,7 +169,7 @@ def run(*, gear_context: GearToolkitContext, redcap_con: REDCapConnection,
                 event = redcap_prj.get_event_name_for_label(f'{module}-visit')
                 if not event:
                     raise GearExecutionError(
-                        'Cannot find event {module}-visit in project {redcap_prj.title}'
+                        f'Cannot find event {module}-visit in project {redcap_prj.title}'
                     )
                 events = [event]
                 extra_fields.extend(
