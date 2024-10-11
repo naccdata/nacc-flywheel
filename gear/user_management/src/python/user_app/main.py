@@ -6,7 +6,7 @@ from typing import List, Optional
 from centers.nacc_group import NACCGroup
 from coreapi_client.models.identifier import Identifier
 from flywheel import User
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.flywheel_proxy import FlywheelError, FlywheelProxy
 from users.authorizations import AuthMap, Authorizations
 from users.nacc_directory import ActiveUserEntry, UserEntry
 from users.user_registry import RegistryPerson, UserRegistry
@@ -171,9 +171,15 @@ def run(*, proxy: FlywheelProxy, user_list: List[ActiveUserEntry],
 
             user = proxy.find_user(registry_id)
             if not user:
-                log.info('User %s has flywheel user with ID: %s',
+                log.info('User %s has no flywheel user with ID: %s',
                          user_entry.email, registry_id)
-                proxy.add_user(user_entry.register(registry_id).as_user())
+                try:
+                    proxy.add_user(user_entry.register(registry_id).as_user())
+                except FlywheelError as error:
+                    log.error("Unable to add user %s with ID %s: %s",
+                              user_entry.email, registry_id, str(error))
+                    continue
+
                 user = proxy.find_user(registry_id)
                 if not user:
                     log.error('Failed to add user %s with ID %s',
