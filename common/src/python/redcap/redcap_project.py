@@ -5,17 +5,17 @@ import logging
 from json import JSONDecodeError
 from typing import Any, Dict, List, Optional
 
+from keys.keys import DefaultValues
+
 from redcap.redcap_connection import (
     REDCapConnection,
     REDCapConnectionError,
     error_message,
 )
 
-ENROLLMENT_MODULE = 'ENROLLV1'
 NACC_TECH_ROLE = 'NACC-TECH-ROLE'
 NACC_STAFF_ROLE = 'NACC-STAFF-ROLE'
 CENTER_USER_ROLE = 'CENTER-USER-ROLE'
-GEARBOT_USER_ID = 'nacc-flywheel-gear@uw.edu'
 
 log = logging.getLogger()
 
@@ -245,11 +245,11 @@ class REDCapProject:
             REDCapConnectionError if the response has an error.
         """
 
-        if not self.assign_update_user_role_by_label(GEARBOT_USER_ID,
-                                                     NACC_TECH_ROLE):
+        if not self.assign_update_user_role_by_label(
+                DefaultValues.GEARBOT_USER_ID, NACC_TECH_ROLE):
             forms = self.export_instruments()
             gearbot_user = get_nacc_developer_permissions(
-                username=GEARBOT_USER_ID, forms_list=forms)
+                username=DefaultValues.GEARBOT_USER_ID, forms_list=forms)
             self.add_user(gearbot_user)
 
     def import_records(self, records: str, data_format: str = 'json') -> int:
