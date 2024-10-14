@@ -1,6 +1,7 @@
 """Classes for NACC directory user credentials."""
 
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, NewType, Optional
 
 from flywheel.models.user import User
@@ -29,6 +30,7 @@ class UserEntry(BaseModel):
     email: str
     auth_email: Optional[str] = Field(default=None)
     active: bool
+    registration_date: Optional[datetime] = None
 
     @property
     def first_name(self) -> str:
