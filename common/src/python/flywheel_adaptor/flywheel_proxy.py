@@ -152,8 +152,7 @@ class FlywheelProxy:
         try:
             return self.__fw.add_user(user)
         except ApiException as error:
-            raise FlywheelError(
-                f"Failed to add user: {error}") from error
+            raise FlywheelError(f"Failed to add user: {error}") from error
 
     def set_user_email(self, user: flywheel.User, email: str) -> None:
         """Sets user email on client.
