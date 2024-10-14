@@ -21,8 +21,14 @@ from pydantic import ValidationError
 from redcap.redcap_repository import REDCapParametersRepository
 from users.authorizations import AuthMap
 from users.nacc_directory import UserEntry, UserFormatError
-from users.user_processes import NotificationClient, UserProcess, UserProcessEnvironment, UserQueue
+from users.user_processes import (
+    NotificationClient,
+    UserProcess,
+    UserProcessEnvironment,
+    UserQueue,
+)
 from users.user_registry import RegistryError, UserRegistry
+
 from user_app.main import run
 
 log = logging.getLogger(__name__)
