@@ -5,6 +5,7 @@ from typing import Any, Dict, List, TextIO
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from inputs.csv_reader import CSVVisitor, read_csv
+from keys.keys import FieldNames
 from outputs.errors import ErrorWriter, missing_header_error
 
 log = logging.getLogger(__name__)
@@ -27,18 +28,18 @@ class JSONWriterVisitor(CSVVisitor):
         Returns:
           True if there a column header is missing. False, otherwise
         """
-        if 'module' not in header and 'formver' not in header:
+        if FieldNames.MODULE not in header:
             self.__error_writer.write(missing_header_error())
             return False
 
         # TODO: get transformations for module+formver
 
         # TODO: perhaps these should be determined by template file
-        if 'visitnum' not in header and 'visitdate' not in header:
+        if FieldNames.VISITNUM not in header and FieldNames.DATE_COLUMN not in header:
             self.__error_writer.write(missing_header_error())
             return False
 
-        if 'naccid' not in header:
+        if FieldNames.NACCID not in header:
             self.__error_writer.write(missing_header_error())
             return False
 
@@ -52,7 +53,8 @@ class JSONWriterVisitor(CSVVisitor):
         return True
 
 
-def run(*, input_file: TextIO, proxy: FlywheelProxy, error_writer: ErrorWriter) -> bool:
+def run(*, input_file: TextIO, proxy: FlywheelProxy,
+        error_writer: ErrorWriter) -> bool:
     """Reads records from the input file and transforms each into a JSON
     object.
 

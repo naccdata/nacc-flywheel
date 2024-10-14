@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from csv_app.main import run
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
@@ -16,6 +15,8 @@ from gear_execution.gear_execution import (
 )
 from inputs.parameter_store import ParameterStore
 from outputs.errors import ListErrorWriter
+
+from csv_app.main import run
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -56,14 +57,18 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                           error_writer=error_writer)
 
             context.metadata.add_qc_result(self.__file_input.file_input,
-                                           name="transformation",
+                                           name="validation",
                                            state="PASS" if success else "FAIL",
                                            data=error_writer.errors())
 
+            gear_name = context.manifest.get('name', 'csv-to-json-transformer')
+            context.metadata.add_file_tags(self.__file_input.file_input,
+                                           tags=gear_name)
+
 
 def main():
-    """Gear main method to transform CSV where row is participant data to set
-    of JSON files, one per participant."""
+    """Gear main method to transform CSV where row is participant visit to set
+    of JSON files, one per visit."""
 
     GearEngine().run(gear_type=CsvToJsonVisitor)
 

@@ -5,13 +5,11 @@ from typing import Any, Dict, List, Optional, TextIO
 
 from identifiers.model import IdentifierObject
 from inputs.csv_reader import CSVVisitor, read_csv
+from keys.keys import FieldNames
 from outputs.errors import ErrorWriter, identifier_error, missing_header_error
 from outputs.outputs import CSVWriter
 
 log = logging.getLogger(__name__)
-
-PTID = 'ptid'
-NACCID = 'naccid'
 
 
 class IdentifierVisitor(CSVVisitor):
@@ -58,12 +56,12 @@ class IdentifierVisitor(CSVVisitor):
         Returns:
           True if `ptid` occurs in the header, False otherwise
         """
-        if PTID not in header:
+        if FieldNames.PTID not in header:
             self.__error_writer.write(missing_header_error())
             return False
 
         self.__header = header
-        self.__header.append(NACCID)
+        self.__header.append(FieldNames.NACCID)
 
         return True
 
@@ -82,13 +80,13 @@ class IdentifierVisitor(CSVVisitor):
         """
         writer = self.__get_writer()
 
-        identifier = self.__identifiers.get(row[PTID])
+        identifier = self.__identifiers.get(row[FieldNames.PTID])
         if not identifier:
             self.__error_writer.write(
-                identifier_error(line=line_num, value=row[PTID]))
+                identifier_error(line=line_num, value=row[FieldNames.PTID]))
             return False
 
-        row[NACCID] = identifier.naccid
+        row[FieldNames.NACCID] = identifier.naccid
         writer.write(row)
 
         return True
