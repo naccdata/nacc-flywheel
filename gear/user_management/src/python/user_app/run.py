@@ -192,10 +192,6 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 log.error('Error creating user entry: %s', error)
                 continue
 
-            if not user_entry.auth_email:
-                log.info("user %s has no auth email", user_entry.email)
-                continue
-
             user_list.enqueue(user_entry)
 
         return user_list
