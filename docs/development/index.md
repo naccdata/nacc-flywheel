@@ -419,11 +419,11 @@ If you add new python dependencies
 
 ## Documenting and versioning
 
-All gear documentation and version tracking is stored under `docs/<gear-name>`, each with at minimum an `index.md` (for documentation) and a `CHANGELOG.md` (for tracking gear versions). These files should be updated whenver new or notable changes to the gear are added.
+All gear documentation and version tracking is stored under `docs/<gear-name>`, each with at minimum an `index.md` (for documentation) and a `CHANGELOG.md` (for tracking gear versions). The documentation only needs to be updated if new updates fundamentally change or deprecate previously documented features. The Changelog on the other hand should be updated consistently whenever any notable changes or bugfixes are added.
 
-The Changelogs loosely follow the convention described in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the gears in general all follow semantic versioning. All working changes should be added under the **Unreleased** header, and if a PR is associated with the change, the PR should be linked as well. 
+The Changelogs loosely follow the convention described in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the gears all follow semantic versioning. All working changes should be added under the **Unreleased** header, and if a PR is associated with the change, the PR should be linked as well. 
 
-Releases and version bumping are currently manually done. When releasing a new version of the gear, ensure the following have been updated:
+Releases and version bumping are currently done manually. When releasing a new version of the gear, ensure the following have been updated:
 
 * Increment the gear's image tag in the following files:
     * `src/docker/BUILD`: the `image_tags` field 
