@@ -470,7 +470,7 @@ class ActiveUserProcess(BaseUserProcess[ActiveUserEntry]):
             log.error('User %s must have authentication email', entry.email)
             return
 
-        person_list = self.__env.user_registry.list(email=entry.auth_email)
+        person_list = self.__env.user_registry.get(email=entry.auth_email)
         if not person_list:
             log.info('Active user not in registry: %s', entry.email)
             self.__add_to_registry(user_entry=entry)
