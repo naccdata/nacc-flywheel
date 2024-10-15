@@ -233,7 +233,7 @@ class InactiveUserProcess(BaseUserProcess[UserEntry]):
         Args:
           queue: the user entry queue
         """
-        log.info('Processing inactive entries')
+        log.info('**Processing inactive entries')
         queue.apply(self)
 
 
@@ -258,7 +258,7 @@ class CreatedUserProcess(BaseUserProcess[RegisteredUserEntry]):
         Args:
           queue: the user entry queue
         """
-        log.info('Processing recently created Flywheel users')
+        log.info('**Processing recently created Flywheel users')
         queue.apply(self)
 
 
@@ -337,7 +337,7 @@ class UpdateUserProcess(BaseUserProcess[RegisteredUserEntry]):
         Args:
           queue: the user entry queue
         """
-        log.info('Update Flywheel users')
+        log.info('**Update Flywheel users')
         queue.apply(self)
 
 
@@ -415,7 +415,7 @@ class ClaimedUserProcess(BaseUserProcess[RegisteredUserEntry]):
         Args:
           queue: the user entry queue
         """
-        log.info('Processing claimed users')
+        log.info('**Processing claimed users')
         queue.apply(self)
 
         created_process = CreatedUserProcess(self.__env.notification_client)
@@ -442,7 +442,7 @@ class UnclaimedUserProcess(BaseUserProcess[ActiveUserEntry]):
         Args:
           queue: the user entry queue
         """
-        log.info('Processing unclaimed users')
+        log.info('**Processing unclaimed users')
         queue.apply(self)
 
 
@@ -489,7 +489,7 @@ class ActiveUserProcess(BaseUserProcess[ActiveUserEntry]):
 
         claimed = self.__get_claimed(person_list)
         if claimed:
-            log.info('Claimed active user: %s', entry.email)
+            # log.info('Claimed active user: %s', entry.email)
             registry_id = self.__get_registry_id(claimed)
             if not registry_id:
                 log.error('User %s has no registry ID', entry.email)
@@ -498,7 +498,7 @@ class ActiveUserProcess(BaseUserProcess[ActiveUserEntry]):
             self.__claimed_queue.enqueue(entry.register(registry_id))
             return
 
-        log.info('Unclaimed active user: %s', entry.email)
+        # log.info('Unclaimed active user: %s', entry.email)
         self.__unclaimed_queue.enqueue(entry)
 
     def __get_claimed(
@@ -586,7 +586,7 @@ class ActiveUserProcess(BaseUserProcess[ActiveUserEntry]):
         Args:
           queue: the active user queue
         """
-        log.info('Processing active entries')
+        log.info('**Processing active entries')
         queue.apply(self)
 
         claimed_process = ClaimedUserProcess(
@@ -633,7 +633,7 @@ class UserProcess(BaseUserProcess[UserEntry]):
         Args:
           queue: the user queue
         """
-        log.info('Processing directory entries')
+        log.info('**Processing directory entries')
         queue.apply(self)
 
         ActiveUserProcess(self.__env).execute(self.__active_queue)
