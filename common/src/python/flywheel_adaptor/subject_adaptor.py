@@ -106,7 +106,7 @@ class SubjectAdaptor:
             return VisitInfo.model_validate(last_failed)
         except ValidationError as error:
             raise SubjectError('Incomplete failed visit metadata for subject '
-                               f'{self.label}/{module} - {error}')
+                               f'{self.label}/{module} - {error}') from error
 
     def set_last_failed_visit(self, module: str, failed_visit: VisitInfo):
         """Update last failed visit info for this subject for the given module.

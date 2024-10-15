@@ -183,7 +183,8 @@ class UserRegistry:
         """Returns the dictionary of RegistryPerson objects for records in the
         comanage registry.
 
-        Dictionary maps from an email address to a list of person objects with the email address.
+        Dictionary maps from an email address to a list of person objects with
+        the email address.
 
         Returns:
           the dictionary of email addresses RegistryPerson objects

@@ -59,7 +59,7 @@ class TestYAML:
         yaml_stream.write(two_objects)
         yaml_stream.seek(0)
         yaml_iterator = load_all_from_stream(yaml_stream)
-        object_list = [object for object in yaml_iterator]
+        object_list = [doc for doc in yaml_iterator]
         assert object_list == [{
             'k1': 'v1',
             'k2': 'v2'

@@ -17,9 +17,9 @@ def parse_date(*, date_string: str, formats: List[str]) -> datetime:
       DateFormatException if the string doesn't match either format
     """
 
-    for format in formats:
+    for date_format in formats:
         try:
-            return datetime.strptime(date_string, format)
+            return datetime.strptime(date_string, date_format)
         except ValueError:
             pass
 

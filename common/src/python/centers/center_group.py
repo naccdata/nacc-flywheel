@@ -686,10 +686,7 @@ class REDCapFormProjectMetadata(BaseModel):
         return (self.label.upper() == ENROLLMENT_MODULE)
 
     def get_submission_type(self) -> str:
-        if self.is_enrollment():
-            datatype = 'enrollment'
-        else:  # consider all other modules are form type
-            datatype = 'form'
+        datatype = 'enrollment' if self.is_enrollment() else 'form'
 
         return f"submit-{datatype}"
 
