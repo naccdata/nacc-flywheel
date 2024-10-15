@@ -1,6 +1,7 @@
 """Defines repository as interface to user registry."""
+from collections import defaultdict
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from coreapi_client.api.default_api import DefaultApi
 from coreapi_client.exceptions import ApiException
@@ -138,6 +139,7 @@ class UserRegistry:
     def __init__(self, api_instance: DefaultApi, coid: int):
         self.__api_instance = api_instance
         self.__coid = coid
+        self.__registry_map: Dict[str, List[RegistryPerson]] = {}
 
     @property
     def coid(self) -> int:
@@ -164,19 +166,34 @@ class UserRegistry:
         except ApiException as error:
             raise RegistryError(f"API call failed: {error}") from error
 
-    def list(self, email: str) -> List[RegistryPerson]:
-        """Returns the list of CoPersonMessage objects with the email.
+    def get(self, email: str) -> List[RegistryPerson]:
+        """Returns the list of person objects with the email address.
 
         Args:
-          the email address
+          email: the email address
         Returns:
-          the list of CoPersonMessage objects with the email address
+          the list of person objects with the email address
         """
+        if not self.__registry_map:
+            self.__registry_map = self.__list()
+
+        return self.__registry_map[email]
+
+    def __list(self) -> Dict[str, List[RegistryPerson]]:
+        """Returns the dictionary of RegistryPerson objects for records in the
+        comanage registry.
+
+        Dictionary maps from an email address to a list of person objects with the email address.
+
+        Returns:
+          the dictionary of email addresses RegistryPerson objects
+        """
+        result = defaultdict(list)
+
         limit = 100
         page_index = 0
         read_length = limit
 
-        result = []
         while read_length == limit:
             try:
                 response = self.__api_instance.get_co_person(coid=self.__coid,
@@ -192,8 +209,11 @@ class UserRegistry:
             page_index += 1
 
             for person in person_list:
-                if person.has_email(email):
-                    result.append(person)
+                if not person.email_address:
+                    continue
+
+                for address in person.email_address:
+                    result[address.mail].append(person)
 
         return result
 
