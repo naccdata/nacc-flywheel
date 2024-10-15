@@ -89,7 +89,7 @@ class UserEntry(BaseModel):
         name = PersonName(first_name=record['firstname'],
                           last_name=record['lastname'])
         email = record['email'].lower()
-        auth_email = record.get('fw_email', None)
+        auth_email = record.get('fw_email')
 
         if record['archive_contact'] == "1":
             log.info("Creating inactive user record for %s", email)
