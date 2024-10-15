@@ -419,7 +419,7 @@ If you add new python dependencies
 
 ## Documenting and versioning
 
-All gear documentation and version tracking is stored under `docs/<gear-name>`, each with at minimum an `index.md` (for documentation) and a `CHANGELOG.md` (for tracking gear versions). The documentation only needs to be updated if new updates fundamentally change or deprecate previously documented features. The Changelog on the other hand should be updated consistently whenever any notable changes or bugfixes are added.
+All gear documentation and version tracking is stored under `docs/<gear-name>`, each with at minimum an `index.md` (for documentation) and a `CHANGELOG.md` (for tracking gear versions), and should be added for every new gear. The documentation only needs to be updated if new updates fundamentally change or deprecate previously documented features. The Changelog on the other hand should be updated consistently whenever any notable changes or bugfixes are added.
 
 The Changelogs loosely follow the convention described in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the gears all follow semantic versioning. All working changes should be added under the **Unreleased** header, and if a PR is associated with the change, the PR should be linked as well. 
 
