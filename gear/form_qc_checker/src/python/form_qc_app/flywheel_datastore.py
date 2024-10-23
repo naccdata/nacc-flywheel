@@ -8,9 +8,8 @@ from typing import Dict, List, Optional
 from centers.nacc_group import NACCGroup
 from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from keys.keys import FieldNames
 from nacc_form_validator.datastore import Datastore
-
-from form_qc_app.parser import Keys
 
 log = logging.getLogger(__name__)
 
@@ -132,13 +131,14 @@ class FlywheelDatastore(Datastore):
                        'cannot retrieve the previous visits'), orderby)
             return None
 
-        if Keys.MODULE not in current_ins:
+        if FieldNames.MODULE not in current_ins:
             log.error(('Variable %s not set in current visit data, '
-                       'cannot retrieve the previous visits'), Keys.MODULE)
+                       'cannot retrieve the previous visits'),
+                      FieldNames.MODULE)
             return None
 
         subject_lbl = current_ins[pk_field]
-        module = current_ins[Keys.MODULE]
+        module = current_ins[FieldNames.MODULE]
         orderby_value = current_ins[orderby]
 
         prev_visits = self.get_previous_records(project=self.__project,

@@ -7,31 +7,11 @@ from json.decoder import JSONDecodeError
 from typing import Any, Dict, List, Mapping, Optional
 
 import yaml
+from keys.keys import DefaultValues, FieldNames
 from outputs.errors import ListErrorWriter, empty_field_error, system_error
 from s3.s3_client import S3BucketReader
 
 log = logging.getLogger(__name__)
-
-
-# pylint: disable=(too-few-public-methods)
-class Keys:
-    """Class to store frquently accessed keys."""
-
-    NACCID = 'naccid'
-    MODULE = 'module'
-    PACKET = 'packet'
-    PTID = 'ptid'
-    VISITNUM = 'visitnum'
-    CODE = 'code'
-    INDEX = 'index'
-    COMPAT = 'compatibility'
-    TEMPORAL = 'temporalrules'
-    NULLABLE = 'nullable'
-    REQUIRED = 'required'
-    MODE = 'mode'
-    NOTFILLED = '0'
-    LEGACY_PRJ_LABEL = 'retrospective-form'
-    DATE_COLUMN = 'visitdate'
 
 
 class ParserException(Exception):
@@ -205,7 +185,7 @@ class Parser:
         missing = []
         submission_status = {}
         for form in packet_info:
-            mode_var = f'{Keys.MODE}{form}'
+            mode_var = f'{FieldNames.MODE}{form}'
             if mode_var not in input_data or input_data[mode_var] == '':
                 if self.__strict:
                     error_writer.write(empty_field_error(mode_var))
@@ -215,7 +195,7 @@ class Parser:
                 continue
 
             submission_status[form] = False if input_data[
-                mode_var] == Keys.NOTFILLED else True
+                mode_var] == DefaultValues.NOTFILLED else True
 
         if missing:
             raise ParserException(

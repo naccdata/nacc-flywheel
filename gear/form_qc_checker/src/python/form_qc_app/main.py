@@ -26,6 +26,7 @@ from gear_execution.gear_execution import (
     GearExecutionError,
     InputFileWrapper,
 )
+from keys.keys import DefaultValues, FieldNames
 from nacc_form_validator.quality_check import (
     QualityCheck,
     QualityCheckException,
@@ -47,7 +48,7 @@ from s3.s3_client import S3BucketReader
 from form_qc_app.csv_visitor import FormQCCSVVisitor, read_first_data_row
 from form_qc_app.error_info import ErrorComposer, ErrorStore, REDCapErrorStore
 from form_qc_app.flywheel_datastore import FlywheelDatastore
-from form_qc_app.parser import Keys, Parser, ParserException
+from form_qc_app.parser import Parser, ParserException
 
 log = logging.getLogger(__name__)
 
@@ -268,7 +269,7 @@ def process_json_file(
     """
     valid = False
     # check whether there are any pending visits for this participant/module
-    failed_visit = has_failed_visits(module=input_data[Keys.MODULE],
+    failed_visit = has_failed_visits(module=input_data[FieldNames.MODULE],
                                      visitdate=input_data[date_field],
                                      file_id=input_wrapper.file_id,
                                      filename=input_wrapper.filename,
@@ -283,7 +284,7 @@ def process_json_file(
                                     error_writer=error_writer,
                                     codes_map=codes_map)
 
-        module = input_data[Keys.MODULE]
+        module = input_data[FieldNames.MODULE]
         if not valid:
             visit_info = VisitInfo(filename=input_wrapper.filename,
                                    file_id=input_wrapper.file_id,
@@ -408,8 +409,8 @@ def load_rule_definition_schemas(
 
     # For CSV input, assumes all the records belong to the same module
     module: Optional[str]
-    if input_data.get(Keys.MODULE):
-        module = str(input_data[Keys.MODULE]).upper()
+    if FieldNames.MODULE in input_data and input_data[FieldNames.MODULE]:
+        module = str(input_data[FieldNames.MODULE]).upper()
     else:
         module = get_module_name_from_file_suffix(filename)
 
@@ -418,8 +419,8 @@ def load_rule_definition_schemas(
             f'Failed to extract module information from file {filename}')
 
     s3_prefix = module
-    if input_data.get(Keys.PACKET):
-        packet = str(input_data[Keys.PACKET]).upper()
+    if FieldNames.PACKET in input_data and input_data[FieldNames.PACKET]:
+        packet = str(input_data[FieldNames.PACKET]).upper()
         s3_prefix = f'{s3_prefix}/{packet}'
 
     parser = Parser(s3_client, strict=strict)
@@ -515,10 +516,11 @@ def run(*,
             f'Failed to find the project with ID {file.parents.project}')
 
     legacy_label = gear_context.config.get('legacy_project_label',
-                                           Keys.LEGACY_PRJ_LABEL)
-    pk_field = (gear_context.config.get('primary_key', Keys.NACCID)).lower()
+                                           DefaultValues.LEGACY_PRJ_LABEL)
+    pk_field = (gear_context.config.get('primary_key',
+                                        FieldNames.NACCID)).lower()
     date_field = (gear_context.config.get('date_field',
-                                          Keys.DATE_COLUMN)).lower()
+                                          FieldNames.DATE_COLUMN)).lower()
     error_writer = ListErrorWriter(container_id=file_id,
                                    fw_path=proxy.get_lookup_path(file))
     input_path = Path(input_wrapper.filepath)
@@ -531,7 +533,7 @@ def run(*,
                     subject_adaptor = validate_json_input(
                         input_data=input_data,
                         pk_field=pk_field,
-                        module_field=Keys.MODULE,
+                        module_field=FieldNames.MODULE,
                         date_field=date_field,
                         project=project,
                         error_writer=error_writer)

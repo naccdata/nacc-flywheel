@@ -12,13 +12,11 @@ from flywheel.models.group import Group
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor, ProjectAdaptor
+from keys.keys import DefaultValues
 from projects.study import Center, Study
 from projects.template_project import TemplateProject
 from pydantic import AliasGenerator, BaseModel, ConfigDict, ValidationError
-from redcap.redcap_project import (
-    CENTER_USER_ROLE,
-    ENROLLMENT_MODULE,
-)
+from redcap.redcap_project import CENTER_USER_ROLE
 from redcap.redcap_repository import REDCapParametersRepository
 from serialization.case import kebab_case
 from users.authorizations import AuthMap
@@ -82,7 +80,7 @@ class CenterGroup(CenterAdaptor):
 
         Args:
           adaptor: the group adaptor
-          proxy: the flywheel proxy object
+
         Returns:
           the CenterGroup for the group
         """
@@ -122,6 +120,42 @@ class CenterGroup(CenterAdaptor):
             'adcid': center.adcid,
             'active': center.is_active()
         })
+
+        return center_group
+
+    @classmethod
+    def get_center_group(cls, *, adaptor: GroupAdaptor) -> 'CenterGroup':
+        """Returns the CenterGroup for an existing Flywheel Group.
+
+        Args:
+            adaptor: Flywheel group adaptor
+
+        Returns:
+            the CenterGroup for the center
+
+        Raises:
+            CenterError: if center metadata missing or incomplete
+        """
+        group = adaptor._group
+        proxy = adaptor.proxy()
+        meta_project = group.projects.find_first('label=metadata')
+        if not meta_project:
+            raise CenterError(
+                f"Unable to find metadata project for group {group.label}")
+
+        meta_project = meta_project.reload()
+        metadata_info = meta_project.info
+        if 'adcid' not in metadata_info:
+            raise CenterError(
+                f"Expected group {group.label}/metadata.info to have ADCID")
+
+        adcid = metadata_info['adcid']
+        active = metadata_info.get('active', False)
+
+        center_group = CenterGroup(adcid=adcid,
+                                   active=active,
+                                   group=group,
+                                   proxy=proxy)
 
         return center_group
 
@@ -297,6 +331,25 @@ class CenterGroup(CenterAdaptor):
             self.apply_to_ingest(stage=stage, template_map=template_map)
 
         self.apply_to_accepted(template_map)
+
+    def apply_template(self, template: TemplateProject) -> None:
+        """Applies the template to projects of this center group that match.
+
+        Args:
+          template: the template project
+        """
+        prefix_pattern = template.get_pattern()
+        if not prefix_pattern:
+            return
+
+        projects = self.__get_matching_projects(prefix_pattern)
+        for project in projects:
+            template.copy_to(project,
+                             value_map={
+                                 'adrc': self.label,
+                                 'project_id': project.id,
+                                 'site': self.proxy().get_site()
+                             })
 
     def get_portal(self) -> ProjectAdaptor:
         """Returns the center-portal project.
@@ -683,7 +736,7 @@ class REDCapFormProjectMetadata(BaseModel):
     report_id: Optional[int] = None
 
     def is_enrollment(self) -> bool:
-        return (self.label.upper() == ENROLLMENT_MODULE)
+        return (self.label.upper() == DefaultValues.ENROLLMENT_MODULE)
 
     def get_submission_type(self) -> str:
         datatype = 'enrollment' if self.is_enrollment() else 'form'

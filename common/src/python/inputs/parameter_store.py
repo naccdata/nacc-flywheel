@@ -218,7 +218,7 @@ class ParameterStore:
         return self.get_parameters(param_type=REDCapParameters,
                                    parameter_path=param_path)
 
-    def get_redcap_project_parameters(
+    def get_redcap_report_params_for_project(
             self, *, base_path: str, pid: int,
             report_id: int) -> REDCapReportParameters:
         """Pulls URL and Token for the respective REDCap project from SSM
