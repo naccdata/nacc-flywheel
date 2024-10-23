@@ -12,13 +12,11 @@ from flywheel.models.group import Group
 from flywheel.models.role_output import RoleOutput
 from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, GroupAdaptor, ProjectAdaptor
+from keys.keys import DefaultValues
 from projects.study import Center, Study
 from projects.template_project import TemplateProject
 from pydantic import AliasGenerator, BaseModel, ConfigDict, ValidationError
-from redcap.redcap_project import (
-    CENTER_USER_ROLE,
-    ENROLLMENT_MODULE,
-)
+from redcap.redcap_project import CENTER_USER_ROLE
 from redcap.redcap_repository import REDCapParametersRepository
 from serialization.case import kebab_case
 from users.authorizations import AuthMap
@@ -738,7 +736,7 @@ class REDCapFormProjectMetadata(BaseModel):
     report_id: Optional[int] = None
 
     def is_enrollment(self) -> bool:
-        return (self.label.upper() == ENROLLMENT_MODULE)
+        return (self.label.upper() == DefaultValues.ENROLLMENT_MODULE)
 
     def get_submission_type(self) -> str:
         if self.is_enrollment():

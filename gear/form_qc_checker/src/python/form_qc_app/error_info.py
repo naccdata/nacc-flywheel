@@ -4,6 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple
 
+from keys.keys import FieldNames, RuleLabels
 from outputs.errors import (
     CSVLocation,
     FileError,
@@ -15,11 +16,9 @@ from pydantic import BaseModel, ValidationError
 from redcap.redcap_connection import REDCapConnectionError, REDCapReportConnection
 from redcap.redcap_project import REDCapProject
 
-from form_qc_app.parser import Keys
-
 log = logging.getLogger(__name__)
 
-COMPOSITE_RULES = [Keys.COMPAT, Keys.TEMPORAL]
+COMPOSITE_RULES = [RuleLabels.COMPAT, RuleLabels.TEMPORAL]
 
 
 class ErrorDescription(BaseModel):
@@ -193,8 +192,8 @@ def replace_nullable_with_required(rule: str, code_shema: Dict[str,
     Returns:
         bool: True if a match found, else False
     """
-    if rule == Keys.NULLABLE and Keys.REQUIRED in code_shema:
-        code_shema[rule] = code_shema[Keys.REQUIRED]
+    if rule == RuleLabels.NULLABLE and RuleLabels.REQUIRED in code_shema:
+        code_shema[rule] = code_shema[RuleLabels.REQUIRED]
         return True
 
     return False
@@ -294,10 +293,10 @@ class ErrorComposer():
             if line_number else JSONLocation(key_path=field),
             value=value,
             message=error_msg,
-            ptid=str(self.__input_data[Keys.PTID])
-            if Keys.PTID in self.__input_data else None,
-            visitnum=str(self.__input_data[Keys.VISITNUM])
-            if Keys.VISITNUM in self.__input_data else None)
+            ptid=str(self.__input_data[FieldNames.PTID])
+            if FieldNames.PTID in self.__input_data else None,
+            visitnum=str(self.__input_data[FieldNames.VISITNUM])
+            if FieldNames.VISITNUM in self.__input_data else None)
 
     def __write_qc_error_no_code(self,
                                  *,
@@ -425,19 +424,19 @@ class ErrorComposer():
                 checks = code_shema[error.rule]
                 rule_index = error.info[0]
                 for check in checks:
-                    code_index = check[Keys.INDEX]
-                    if rule_index == code_index and check[Keys.CODE]:
+                    code_index = check[RuleLabels.INDEX]
+                    if rule_index == code_index and check[RuleLabels.CODE]:
                         first_code, other_codes = self._split_nacc_error_codes(
-                            check[Keys.CODE])
+                            check[RuleLabels.CODE])
                         nacc_error_codes.append(first_code)
                         err_info_map[first_code] = {
                             'error': error,
                             'field': field,
                             'other': other_codes
                         }
-            elif code_shema[error.rule][Keys.CODE]:
+            elif code_shema[error.rule][RuleLabels.CODE]:
                 first_code, other_codes = self._split_nacc_error_codes(
-                    code_shema[error.rule][Keys.CODE])
+                    code_shema[error.rule][RuleLabels.CODE])
                 nacc_error_codes.append(first_code)
                 err_info_map[first_code] = {
                     'error': error,

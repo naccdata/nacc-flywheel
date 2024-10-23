@@ -18,6 +18,7 @@ from gear_execution.gear_execution import (
 )
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, load_from_stream
+from keys.keys import FieldNames
 from pydantic import ValidationError
 
 from form_qc_coordinator_app.coordinator import QCGearInfo
@@ -124,7 +125,7 @@ class FormQCCoordinator(GearExecutionEnvironment):
         assert parameter_store, "Parameter store expected"
         client = GearBotClient.create(context=context,
                                       parameter_store=parameter_store)
-        date_col = context.config.get('date_field', 'visitdate')
+        date_col = context.config.get('date_field', FieldNames.DATE_COLUMN)
         check_all = context.config.get('check_all', False)
 
         return FormQCCoordinator(client=client,
