@@ -144,7 +144,8 @@ class ActiveUserEntry(UserEntry):
                                    org_name=self.org_name,
                                    adcid=self.adcid,
                                    authorizations=self.authorizations,
-                                   registry_id=registry_id)
+                                   registry_id=registry_id,
+                                   registration_date=self.registration_date)
 
     @classmethod
     def create(cls, entry: Dict[str, Any]) -> "ActiveUserEntry":
