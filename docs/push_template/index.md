@@ -26,21 +26,6 @@ Projects that are managed by the script should be in groups with a tag matching 
 For example, `adcid-14`.
 These tags can be set using the project management script.
 
-## Running from command-line
-
-The script can be run with 
-
-```bash
-pants run push_template/src/python/template_app:bin
-```
-
-which will push all template projects to pipeline stage projects within tagged groups.
-
-To give command line arguments, add `--` to the command line and give the arguments.
-Available arguments are
-- `--dry_run` to run the script without making changes, and 
-- `--admin_group` to indicate the group in which templates occur. The default admin group is `nacc`.
-
 ## Running from a batch script
 
 Flywheel utility gears are either triggered by a gear rule, or run from a batch script.
@@ -58,7 +43,9 @@ The equivalent of the command line arguments above are given in the `config` arg
 config = {
     "dry_run": False,
     "admin_group": "nacc",
-    "new_only": False
+    "new_only": False,
+    "template_project": "form-ingest-template",
+    "template_group": "nacc"
 }
 ```
 
