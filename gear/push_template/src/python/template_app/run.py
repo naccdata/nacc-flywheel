@@ -13,8 +13,8 @@ from gear_execution.gear_execution import (
 )
 from inputs.context_parser import get_api_key
 from inputs.parameter_store import ParameterStore
-
 from projects.template_project import TemplateProject
+
 from template_app.main import run
 
 log = logging.getLogger(__name__)
