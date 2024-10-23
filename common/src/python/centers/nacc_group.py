@@ -195,7 +195,7 @@ class NACCGroup(CenterAdaptor):
             group_id = center_info.group
             group = self._fw.find_group(group_id=(group_id))
             if group:
-                center = CenterGroup.create_from_group_adaptor(group)
+                center = CenterGroup.create_from_group_adaptor(adaptor=group)
                 centers.append(center)
 
         return centers
