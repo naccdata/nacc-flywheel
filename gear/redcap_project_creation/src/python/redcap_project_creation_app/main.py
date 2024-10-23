@@ -145,9 +145,10 @@ def run(
                     center_group = CenterGroup.get_center_group(
                         adaptor=group_adaptor)
                     center_group.add_redcap_project(project_object)
-                except CenterError as error:
-                    log.error('Failed to update REDCap project metadata for %s/%s',
-                              group_adaptor.label, project_lbl)
+                except CenterError:
+                    log.error(
+                        'Failed to update REDCap project metadata for %s/%s',
+                        group_adaptor.label, project_lbl)
 
                 redcap_metadata.append(project_object)
 
