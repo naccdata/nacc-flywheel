@@ -23,6 +23,7 @@ from users.authorizations import AuthMap
 from users.nacc_directory import UserEntry, UserFormatError
 from users.user_processes import (
     NotificationClient,
+    NotificationModeType,
     UserProcess,
     UserProcessEnvironment,
     UserQueue,
@@ -47,7 +48,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
                  comanage_coid: int,
                  redcap_param_repo: REDCapParametersRepository,
                  portal_url: str,
-                 force_notifications: bool = False):
+                 notification_mode: NotificationModeType = 'date'):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__user_filepath = user_filepath
@@ -56,7 +57,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
         self.__comanage_config = comanage_config
         self.__comanage_coid = comanage_coid
         self.__redcap_param_repo = redcap_param_repo
-        self.__force_notifications = force_notifications
+        self.__notification_mode: NotificationModeType = notification_mode
         self.__portal_url = portal_url
 
     @classmethod
@@ -122,8 +123,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 username=comanage_parameters['username'],
                 password=comanage_parameters['apikey']),
             redcap_param_repo=redcap_param_repo,
-            force_notifications=context.config.get('force_notifications',
-                                                   False),
+            notification_mode=context.config.get('notification_mode', 'none'),
             portal_url=portal_url['url'])
 
     def run(self, context: GearToolkitContext) -> None:
@@ -156,7 +156,7 @@ class UserManagementVisitor(GearExecutionEnvironment):
                                     client=create_ses_client(),
                                     source=self.__email_source),
                                 portal_url=self.__portal_url,
-                                force=self.__force_notifications),
+                                mode=self.__notification_mode),
                             proxy=self.proxy,
                             registry=UserRegistry(api_instance=DefaultApi(
                                 comanage_client),

@@ -73,10 +73,10 @@
             "type": "string",
             "default": "/prod/notifications"
         },
-        "force_notifications": {
-            "description": "Whether to ignore date restrictions on notifications for unclaimed user records",
-            "type": "boolean",
-            "default": false
+        "notification_mode": {
+            "description": "Mode for reminder notifications: date, force, none",
+            "type": "string",
+            "default": "date"
         },
         "redcap_parameter_path": {
             "description": "Parameter path prefix for REDCap project credentials",
