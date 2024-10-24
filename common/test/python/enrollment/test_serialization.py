@@ -31,7 +31,7 @@ class TestEnrollmentSerialization:
             'frmdate_enrl': "2024-06-10",
             'guid': ''
         }
-        guid = row.get('guid', None)
+        guid = row.get('guid')
         try:
             enroll_date = parse_date(date_string=row['frmdate_enrl'],
                                      formats=DATE_FORMATS)

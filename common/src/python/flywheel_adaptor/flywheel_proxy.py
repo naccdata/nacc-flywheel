@@ -150,7 +150,10 @@ class FlywheelProxy:
             assert user.id
             return user.id
 
-        return self.__fw.add_user(user)
+        try:
+            return self.__fw.add_user(user)
+        except ApiException as error:
+            raise FlywheelError(f"Failed to add user: {error}") from error
 
     def set_user_email(self, user: flywheel.User, email: str) -> None:
         """Sets user email on client.
@@ -223,12 +226,13 @@ class FlywheelProxy:
         try:
             added_group_id = self.__fw.add_group(
                 flywheel.Group(group_id, group_label))
-        except ApiException:
+        except ApiException as error:
             log.error(
                 ('Group %s creation failed. '
                  'Group likely exists, but user does not have permission'),
                 group_label)
-            raise FlywheelError(f"Failed to create group {group_label}")
+            raise FlywheelError(
+                f"Failed to create group {group_label}") from error
 
         # we must fw.get_group() with ID string to get the actual Group object.
         group = self.__fw.get_group(added_group_id)

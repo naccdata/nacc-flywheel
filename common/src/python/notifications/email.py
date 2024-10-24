@@ -51,7 +51,8 @@ class MessageComponent(BaseModel):
 class TemplateDataModel(BaseModel):
     """Defines a model for messages for the boto3 SES client."""
     firstname: str
-    email_address: str
+    email_address: Optional[str] = None
+    url: Optional[str] = None
 
 
 class EmailClient:
@@ -85,7 +86,7 @@ class EmailClient:
                 Destination=destination.model_dump(by_alias=True,
                                                    exclude_none=True),
                 Template=template,
-                TemplateData=template_data.model_dump_json())
+                TemplateData=template_data.model_dump_json(exclude_none=True))
             log.info("Sent %s email to %s", template,
                      ', '.join(destination.to_addresses))
 

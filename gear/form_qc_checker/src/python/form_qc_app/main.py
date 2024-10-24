@@ -409,7 +409,7 @@ def load_rule_definition_schemas(
 
     # For CSV input, assumes all the records belong to the same module
     module: Optional[str]
-    if FieldNames.MODULE in input_data and input_data[FieldNames.MODULE]:
+    if input_data.get(FieldNames.MODULE):
         module = str(input_data[FieldNames.MODULE]).upper()
     else:
         module = get_module_name_from_file_suffix(filename)
@@ -419,7 +419,7 @@ def load_rule_definition_schemas(
             f'Failed to extract module information from file {filename}')
 
     s3_prefix = module
-    if FieldNames.PACKET in input_data and input_data[FieldNames.PACKET]:
+    if input_data.get(FieldNames.PACKET):
         packet = str(input_data[FieldNames.PACKET]).upper()
         s3_prefix = f'{s3_prefix}/{packet}'
 
