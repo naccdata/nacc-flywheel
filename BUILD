@@ -14,3 +14,5 @@ python_requirements(
         },
     },
 )
+
+file(name="linux_x86_py311", source="linux_x86_py311.json")
