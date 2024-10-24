@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict, deque
 from datetime import datetime
-from typing import Dict, Generic, List, Optional, TypeVar
+from typing import Dict, Generic, List, Literal, Optional, TypeVar
 
 from centers.nacc_group import NACCGroup
 from coreapi_client.models.identifier import Identifier
@@ -16,17 +16,19 @@ from users.user_registry import RegistryPerson, UserRegistry
 
 log = logging.getLogger(__name__)
 
+NotificationModeType = Literal['date', 'force', 'none']
+
 
 class NotificationClient:
     """Wrapper for the email client to send email notifications for the user
     enrollment flow."""
 
     def __init__(self, email_client: EmailClient, configuration_set_name: str,
-                 portal_url: str, force: bool) -> None:
+                 portal_url: str, mode: NotificationModeType) -> None:
         self.__client = email_client
         self.__configuration_set_name = configuration_set_name
         self.__portal_url = portal_url
-        self.__force = force
+        self.__mode: NotificationModeType = mode
 
     def __claim_template(self,
                          user_entry: ActiveUserEntry) -> TemplateDataModel:
@@ -81,7 +83,7 @@ class NotificationClient:
         Args:
           user_entry: the user entry for the user
         """
-        if self.__force or self.__should_send(user_entry):
+        if self.__should_send(user_entry):
             self.__client.send(
                 configuration_set_name=self.__configuration_set_name,
                 destination=self.__claim_destination(user_entry),
@@ -95,7 +97,7 @@ class NotificationClient:
           user_entry: the user entry for the user
         """
         assert user_entry.auth_email, "user entry must have auth email"
-        if self.__force or self.__should_send(user_entry):
+        if self.__should_send(user_entry):
             self.__client.send(
                 configuration_set_name=self.__configuration_set_name,
                 destination=DestinationModel(
@@ -106,18 +108,27 @@ class NotificationClient:
                     firstname=user_entry.first_name, url=self.__portal_url))
 
     def __should_send(self, user_entry: ActiveUserEntry) -> bool:
-        """Determines whether to send a notification based on time since date
-        of registry record creation.
+        """Determines whether to send a notification.
+
+        If notification mode is force, then returns true.
+        If mode is none, returns False.
+        If mode is date, returns true if the number of days since creation is a multiple of 7, and False otherwise.
 
         Args:
         user_entry: the directory entry for user
         Returns:
-        True if number of days since creation is a multiple of 7. False, otherwise.
+        True if criteria for notification mode is met. False, otherwise.
         """
+        if self.__mode == 'force':
+            return True
+        if self.__mode == 'none':
+            return False
+
         assert user_entry.registration_date, "user must be registered"
 
         time_since_creation = user_entry.registration_date - datetime.now()
-        return time_since_creation.days % 7 == 0
+        return (time_since_creation.days % 7 == 0
+                and time_since_creation.days / 7 <= 3)
 
 
 class UserProcessEnvironment:
@@ -472,6 +483,10 @@ class ActiveUserProcess(BaseUserProcess[ActiveUserEntry]):
 
         person_list = self.__env.user_registry.get(email=entry.auth_email)
         if not person_list:
+            if self.__env.user_registry.has_bad_claim(entry.full_name):
+                log.error('Active user has incomplete claim: %s, %s', entry.full_name, entry.email)
+                return
+    
             log.info('Active user not in registry: %s', entry.email)
             self.__add_to_registry(user_entry=entry)
             self.__env.notification_client.send_claim_email(entry)
@@ -489,7 +504,6 @@ class ActiveUserProcess(BaseUserProcess[ActiveUserEntry]):
 
         claimed = self.__get_claimed(person_list)
         if claimed:
-            # log.info('Claimed active user: %s', entry.email)
             registry_id = self.__get_registry_id(claimed)
             if not registry_id:
                 log.error('User %s has no registry ID', entry.email)
@@ -498,7 +512,6 @@ class ActiveUserProcess(BaseUserProcess[ActiveUserEntry]):
             self.__claimed_queue.enqueue(entry.register(registry_id))
             return
 
-        # log.info('Unclaimed active user: %s', entry.email)
         self.__unclaimed_queue.enqueue(entry)
 
     def __get_claimed(
