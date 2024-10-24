@@ -17,6 +17,13 @@ class PersonName(BaseModel):
     first_name: str
     last_name: str
 
+    def as_str(self) -> str:
+        """Returns this name as a string with first and last names separated by a space.
+        
+        Returns:
+          The first and last name concatenated and separated by a space.
+        """
+        return f"{self.first_name} {self.last_name}"
 
 EntryDictType = NewType('EntryDictType',
                         Dict[str, str | int | PersonName | Authorizations])
@@ -41,6 +48,11 @@ class UserEntry(BaseModel):
     def last_name(self) -> str:
         """The last name for this directory entry."""
         return self.name.last_name
+    
+    @property
+    def full_name(self) -> str:
+        """The full name for this directory entry."""
+        return self.name.as_str()
 
     def as_dict(self) -> EntryDictType:
         """Builds a dictionary for this directory entry.
