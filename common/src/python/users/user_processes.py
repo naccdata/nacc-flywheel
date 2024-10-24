@@ -484,9 +484,10 @@ class ActiveUserProcess(BaseUserProcess[ActiveUserEntry]):
         person_list = self.__env.user_registry.get(email=entry.auth_email)
         if not person_list:
             if self.__env.user_registry.has_bad_claim(entry.full_name):
-                log.error('Active user has incomplete claim: %s, %s', entry.full_name, entry.email)
+                log.error('Active user has incomplete claim: %s, %s',
+                          entry.full_name, entry.email)
                 return
-    
+
             log.info('Active user not in registry: %s', entry.email)
             self.__add_to_registry(user_entry=entry)
             self.__env.notification_client.send_claim_email(entry)

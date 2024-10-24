@@ -75,23 +75,23 @@ class RegistryPerson:
     @property
     def email_address(self) -> Optional[List[EmailAddress]]:
         return self.__coperson_message.email_address
-    
+
     @property
     def primary_name(self) -> Optional[str]:
         """Returns the primary name of this person as a string.
-        
+
         Concatenates firstname and lastname separated by a space.
-        
+
         Returns:
           String representation of full primary name. None if there is none.
         """
         if not self.__coperson_message.name:
             return None
-        
+
         for name in self.__coperson_message.name:
             if name.primary_name:
                 return f"{name.given} {name.family}"
-            
+
         return None
 
     def has_email(self, email: str) -> bool:
@@ -197,10 +197,11 @@ class UserRegistry:
             self.__list()
 
         return self.__registry_map[email]
-    
+
     def has_bad_claim(self, name: str) -> bool:
-        """Returns true if a RegistryPerson with the primary name has an incomplete claim.
-        
+        """Returns true if a RegistryPerson with the primary name has an
+        incomplete claim.
+
         A claim is incomplete if it does not have a corresponding email address.
 
         Args:
@@ -257,7 +258,6 @@ class UserRegistry:
 
                 for address in person.email_address:
                     self.__registry_map[address.mail].append(person)
-
 
     def __parse_response(
             self, response: GetCoPerson200Response) -> List[RegistryPerson]:
