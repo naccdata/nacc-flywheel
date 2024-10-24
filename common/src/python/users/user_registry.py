@@ -75,6 +75,24 @@ class RegistryPerson:
     @property
     def email_address(self) -> Optional[List[EmailAddress]]:
         return self.__coperson_message.email_address
+    
+    @property
+    def primary_name(self) -> Optional[str]:
+        """Returns the primary name of this person as a string.
+        
+        Concatenates firstname and lastname separated by a space.
+        
+        Returns:
+          String representation of full primary name. None if there is none.
+        """
+        if not self.__coperson_message.name:
+            return None
+        
+        for name in self.__coperson_message.name:
+            if name.primary_name:
+                return f"{name.given} {name.family}"
+            
+        return None
 
     def has_email(self, email: str) -> bool:
         """Indicates whether this person has the email address.
@@ -140,6 +158,7 @@ class UserRegistry:
         self.__api_instance = api_instance
         self.__coid = coid
         self.__registry_map: Dict[str, List[RegistryPerson]] = {}
+        self.__bad_claims: Dict[str, List[RegistryPerson]] = {}
 
     @property
     def coid(self) -> int:
@@ -175,11 +194,26 @@ class UserRegistry:
           the list of person objects with the email address
         """
         if not self.__registry_map:
-            self.__registry_map = self.__list()
+            self.__list()
 
         return self.__registry_map[email]
+    
+    def has_bad_claim(self, name: str) -> bool:
+        """Returns true if a RegistryPerson with the primary name has an incomplete claim.
+        
+        A claim is incomplete if it does not have a corresponding email address.
 
-    def __list(self) -> Dict[str, List[RegistryPerson]]:
+        Args:
+          name: the registry person name
+        Returns:
+          True if the name corresposponds to an incomplete claim
+        """
+        if not self.__registry_map:
+            self.__list()
+
+        return name in self.__bad_claims
+
+    def __list(self) -> None:
         """Returns the dictionary of RegistryPerson objects for records in the
         comanage registry.
 
@@ -189,7 +223,8 @@ class UserRegistry:
         Returns:
           the dictionary of email addresses RegistryPerson objects
         """
-        result = defaultdict(list)
+        self.__registry_map = defaultdict(list)
+        self.__bad_claims = defaultdict(list)
 
         limit = 100
         page_index = 0
@@ -211,12 +246,18 @@ class UserRegistry:
 
             for person in person_list:
                 if not person.email_address:
+                    if not person.is_claimed():
+                        continue
+
+                    name = person.primary_name
+                    if name:
+                        self.__bad_claims[name].append(person)
+
                     continue
 
                 for address in person.email_address:
-                    result[address.mail].append(person)
+                    self.__registry_map[address.mail].append(person)
 
-        return result
 
     def __parse_response(
             self, response: GetCoPerson200Response) -> List[RegistryPerson]:
