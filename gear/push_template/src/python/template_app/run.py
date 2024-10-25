@@ -59,7 +59,7 @@ class TemplatingVisitor(GearExecutionEnvironment):
             raise GearExecutionError("Expected \"template_group\"")
         template_label = context.config.get("template_project")
         if not template_label:
-            raise GearExecutionError("Expected \"template_label\"")
+            raise GearExecutionError("Expected \"template_project\"")
 
         return TemplatingVisitor(
             admin_id=context.config.get("admin_group", "nacc"),

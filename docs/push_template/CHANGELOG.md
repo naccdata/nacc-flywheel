@@ -4,7 +4,9 @@ All notable changes to this gear are documented in this file.
 
 ## Unreleased
 
-* Adds this CHANGELOG
+## 1.0.1
+
+* Functionally the same as 1.0.0 but tweaks some build details
 
 ## 1.0.0
 
