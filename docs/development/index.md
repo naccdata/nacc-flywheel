@@ -480,6 +480,6 @@ Releases and version bumping are currently done manually. When releasing a new v
     * `src/docker/BUILD`: the `image_tags` field 
     * `src/docker/manifest.json`: the `version` and `custom/gear-builder/image` fields
 * In the `CHANGELOG.md`, move all changes under the **Unreleased** header to a new header under the new release version
-    * Link the corresponding commit to the release version header
+    * Right now it'll be a chicken and egg problem, but if you can try to also link the corresponding commit to the release version header
 
 See [this commit](https://github.com/naccdata/flywheel-gear-extensions/commit/fa3ff5ab5218282299b9c67665beacb90f5d8244) for an example of updating the version and image tags in the code.

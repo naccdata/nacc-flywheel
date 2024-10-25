@@ -4,7 +4,11 @@ All notable changes to this gear are documented in this file.
 
 ## Unreleased
 
-## [1.0.0](https://github.com/naccdata/flywheel-gear-extensions/commit/57474e4b25623963bc86ecb1525dc8b07d1e7347)
+## 1.0.1
+
+* Functionally the same as 1.0.0 but tweaks some build details
+
+## 1.0.0
 
 * [#61](https://github.com/naccdata/flywheel-gear-extensions/pull/61) 
   * Modifies templating to apply a single template project to matching projects:
