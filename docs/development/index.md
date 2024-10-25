@@ -35,7 +35,7 @@ To add new code see the [Adding a New Gear](#adding-a-new-gear)
 ### Basic environment
 
 This repository can be used within a VS Code devcontainer using a python3 environment with the Flywheel cli installed.
-To use it you will need to install VSCode, Docker, and enable dev containers within VSCode.
+To use it you will need to install VSCode, Docker, and [enable dev containers within VSCode](https://code.visualstudio.com/docs/devcontainers/containers).
 Then open the repository in VS Code and start the container.
 
 Because the build tool comes with its own Python interpreter, you may be able to work without the devcontainer.
