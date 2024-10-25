@@ -169,32 +169,18 @@ The build is managed using [Pants](https://www.pantsbuild.org), and the gear can
 pants package src/docker::
 ```
 
-If you are building/running on macOS with an Apple Silicon chip, building a docker image with the correct architecture is a bit more involved. For these builds, sure that `build_platform=["linux/amd64"]` is specified in your gear's `src/docker/BUILD` file and that `complete_platforms=["//:linux_x86_py311"]` is specified in `src/python/BUILD`:
+If you are building/running on macOS with an Apple Silicon chip, building a docker image with the correct architecture is a bit more involved. The following was added to the root BUILD file to support this, so should also handle all the gear builds, but you can update/change how its done for your specific gear.
 
 ```
-# src/docker/BUILD
+file(name="linux_x86_py311", source="linux_x86_py311.json")
 
-docker_image(
-    name="example-gear",
-    source="Dockerfile",
-    dependencies=[
-        ":manifest", "gear/example_gear/src/python/example_gear_app:bin"
-    ],
-    image_tags=["1.0.0", "latest"],
-    build_platform=["linux/amd64"]
-)
-
-# src/python/BUILD
-
-pex_binary(
-    name="bin",
-    entry_point="run.py",
-    complete_platforms=["//:linux_x86_py311"]
-)
-
+__defaults__({
+  pex_binary: dict(complete_platforms=["//:linux_x86_py311"]),
+  docker_image: dict(build_platform=["linux/amd64"]),
+})
 ```
 
-`docker_image`'s `build_platform` [sets the target platform(s) for the docker image](https://www.pantsbuild.org/dev/reference/targets/docker_image#build_platform), whereas `pex_binary`'s `environment` similarly [specifies the platforms the built PEX should be compatible with](https://www.pantsbuild.org/stable/reference/targets/pex_binary#complete_platforms). The latter pulls from the `linux_x86_py311.json` file living in the root of the repo, which is pulled into the root's BUILD file with `file(name="linux_x86_py311", source="linux_x86_py311.json")`.
+`docker_image`'s `build_platform` [sets the target platform(s) for the docker image](https://www.pantsbuild.org/dev/reference/targets/docker_image#build_platform), whereas `pex_binary`'s `complete_platforms` similarly [specifies the platforms the built PEX should be compatible with](https://www.pantsbuild.org/stable/reference/targets/pex_binary#complete_platforms). The latter pulls from the `linux_x86_py311.json` file living in the root of the repo, which is pulled into the root's BUILD file.
 
 ### Publishing a gear
 
