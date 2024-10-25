@@ -169,7 +169,7 @@ The build is managed using [Pants](https://www.pantsbuild.org), and the gear can
 pants package src/docker::
 ```
 
-If you are building/running on macOS with an Apple Silicon chip, building a docker image with the correct architecture is a bit more involved. For these builds, sure that `build_platform=["linux/amd64"]` is specified in your gear's `src/docker/BUILD` file and that `environment=["//:linux_x86_py311"]` is specified in `src/python/BUILD`:
+If you are building/running on macOS with an Apple Silicon chip, building a docker image with the correct architecture is a bit more involved. For these builds, sure that `build_platform=["linux/amd64"]` is specified in your gear's `src/docker/BUILD` file and that `complete_platforms=["//:linux_x86_py311"]` is specified in `src/python/BUILD`:
 
 ```
 # src/docker/BUILD
@@ -189,7 +189,7 @@ docker_image(
 pex_binary(
     name="bin",
     entry_point="run.py",
-    environment=["//:linux_x86_py311"]
+    complete_platforms=["//:linux_x86_py311"]
 )
 
 ```

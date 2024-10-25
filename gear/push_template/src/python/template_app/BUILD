@@ -2,6 +2,5 @@ python_sources(name="template_app", )
 
 pex_binary(
 	name="bin",
-	entry_point="run.py",
-	complete_platforms=["//:linux_x86_py311"]
+	entry_point="run.py"
 )

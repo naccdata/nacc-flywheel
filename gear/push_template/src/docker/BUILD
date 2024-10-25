@@ -6,6 +6,5 @@ docker_image(
     dependencies=[
         ":manifest", "gear/push_template/src/python/template_app:bin"
     ],
-    image_tags=["1.0.0", "latest"],
-    build_platform=["linux/amd64"]
+    image_tags=["1.0.1", "latest"]
 )
