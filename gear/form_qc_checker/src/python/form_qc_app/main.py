@@ -13,7 +13,7 @@ from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import Any, Dict, Literal, Mapping, Optional
 
-from flywheel import Project
+from flywheel import FileEntry, Project
 from flywheel.rest import ApiException
 from flywheel_adaptor.subject_adaptor import (
     SubjectAdaptor,
@@ -55,43 +55,38 @@ log = logging.getLogger(__name__)
 FailedStatus = Literal['NONE', 'SAME', 'DIFFERENT']
 
 
-def update_file_metadata(*, gear_context: GearToolkitContext,
-                         file_input: Dict[str, Dict[str, Any]],
+def update_file_metadata(*, gear_context: GearToolkitContext, file: FileEntry,
                          qc_status: bool, error_writer: ListErrorWriter):
     """Write error details to input file metadata and add gear tag.
 
     Args:
         gear_context: Flywheel gear context
-        file_input: file input object from gear context
+        file: Flywheel file object
         qc_status: QC check passed or failed
         error_writer: error output writer
     """
 
     status_str = "PASS" if qc_status else "FAIL"
     tag = gear_context.config.get('tag', 'form-qc-checker')
-    current_tags = gear_context.get_input_file_object_value(
-        'form_data_file', 'tags')
     fail_tag = f'{tag}-FAIL'
     pass_tag = f'{tag}-PASS'
     new_tag = f'{tag}-{status_str}'
 
-    if current_tags:
-        if fail_tag in current_tags:
-            current_tags.remove(fail_tag)
-        if pass_tag in current_tags:
-            current_tags.remove(pass_tag)
-        current_tags.append(new_tag)
+    if file.tags:
+        if fail_tag in file.tags:
+            file.tags.remove(fail_tag)
+        if pass_tag in file.tags:
+            file.tags.remove(pass_tag)
+        file.tags.append(new_tag)
     else:
-        current_tags = [new_tag]
-    gear_context.metadata.add_qc_result(file_input,
+        file.tags = [new_tag]
+
+    gear_context.metadata.add_qc_result(file,
                                         name='validation',
                                         state=status_str,
                                         data=error_writer.errors())
 
-    gear_context.metadata.update_file(file_input, tags=current_tags)
-
-    file_name = file_input['location']['name']
-    log.info('QC check status for file %s : %s', file_name, status_str)
+    log.info('QC check status for file %s : %s', file.name, status_str)
 
 
 def validate_input_file_type(mimetype: str) -> Optional[str]:
@@ -601,6 +596,6 @@ def run(*,
             f'Failed to read the input file: {error}') from error
 
     update_file_metadata(gear_context=gear_context,
-                         file_input=input_wrapper.file_input,
+                         file=file,
                          qc_status=valid,
                          error_writer=error_writer)
