@@ -72,8 +72,7 @@ class Parser:
                 # Select which file to load depending on form is submitted or not
                 filename = key.removeprefix(prefix)
                 formname = filename.partition('_')[0]
-                optional_def = True if filename.endswith(
-                    '_optional.json') else False
+                optional_def = filename.endswith('_optional.json')
 
                 if formname in optional_forms:
                     if optional_forms[formname]:  # form is submitted
@@ -152,19 +151,19 @@ class Parser:
         s3_client = self.__s3_bucket
         try:
             optional_forms = json.load(s3_client.read_data(self.__opfname))
-        except s3_client.exceptions.NoSuchKey:
+        except s3_client.exceptions.NoSuchKey as error:
             message = (f'Optional forms file {self.__opfname} '
                        f'not found in S3 bucket {s3_client.bucket_name}')
             error_writer.write(system_error(message, None))
-            raise ParserException(message)
+            raise ParserException(message) from error
         except s3_client.exceptions.InvalidObjectState as error:
             message = f'Unable to access optional forms file {self.__opfname}: {error}'
             error_writer.write(system_error(message, None))
-            raise ParserException(message)
+            raise ParserException(message) from error
         except (JSONDecodeError, TypeError) as error:
             message = f'Error in reading optional forms file {self.__opfname}: {error}'
             error_writer.write(system_error(message, None))
-            raise ParserException(message)
+            raise ParserException(message) from error
 
         if not optional_forms or module not in optional_forms:
             log.warning('Cannot find optional forms info for module %s',
@@ -194,8 +193,8 @@ class Parser:
                     submission_status[form] = False
                 continue
 
-            submission_status[form] = False if input_data[
-                mode_var] == DefaultValues.NOTFILLED else True
+            submission_status[form] = (input_data[mode_var]
+                                       != DefaultValues.NOTFILLED)
 
         if missing:
             raise ParserException(

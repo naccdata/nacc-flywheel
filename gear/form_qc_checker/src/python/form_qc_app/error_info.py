@@ -409,16 +409,17 @@ class ErrorComposer():
             if error.rule != error.schema_path[1]:
                 continue
 
-            if error.rule not in code_shema:
-                if not replace_nullable_with_required(error.rule, code_shema):
-                    log.warning(
-                        'NACC error code not found '
-                        'for variable %s rule %s - %s', field, error.rule,
-                        error.schema_path)
-                    self.__write_qc_error_no_code(error_obj=error,
-                                                  field=field,
-                                                  line_number=line_number)
-                    continue
+            if (error.rule not in code_shema
+                    and not replace_nullable_with_required(
+                        error.rule, code_shema)):
+                log.warning(
+                    'NACC error code not found '
+                    'for variable %s rule %s - %s', field, error.rule,
+                    error.schema_path)
+                self.__write_qc_error_no_code(error_obj=error,
+                                              field=field,
+                                              line_number=line_number)
+                continue
 
             if is_composite_rule(error.rule):
                 checks = code_shema[error.rule]
