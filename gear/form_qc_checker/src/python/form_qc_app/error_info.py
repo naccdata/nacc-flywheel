@@ -18,7 +18,7 @@ from redcap.redcap_project import REDCapProject
 
 log = logging.getLogger(__name__)
 
-COMPOSITE_RULES = [RuleLabels.COMPAT, RuleLabels.TEMPORAL]
+COMPOSITE_RULES = [RuleLabels.COMPAT, RuleLabels.TEMPORAL, RuleLabels.GDS]
 
 
 class ErrorDescription(BaseModel):

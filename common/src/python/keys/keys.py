@@ -29,6 +29,7 @@ class RuleLabels:
     TEMPORAL = 'temporalrules'
     NULLABLE = 'nullable'
     REQUIRED = 'required'
+    GDS = 'compute_gds'
 
 
 class DefaultValues:
