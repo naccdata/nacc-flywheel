@@ -18,7 +18,6 @@ class ParserException(Exception):
     """Raised when an error occurs during loading rule definitions."""
 
 
-# pylint: disable=(too-few-public-methods)
 class Parser:
     """Class to load the validation rules definitions as python objects."""
 

@@ -10,7 +10,6 @@ import logging
 import re
 from csv import DictReader
 from json.decoder import JSONDecodeError
-from pathlib import Path
 from typing import Any, Dict, Literal, Mapping, Optional
 
 from flywheel import FileEntry, Project
@@ -67,6 +66,12 @@ def update_file_metadata(*, gear_context: GearToolkitContext, file: FileEntry,
     """
 
     status_str = "PASS" if qc_status else "FAIL"
+
+    gear_context.metadata.add_qc_result(file,
+                                        name='validation',
+                                        state=status_str,
+                                        data=error_writer.errors())
+
     tag = gear_context.config.get('tag', 'form-qc-checker')
     fail_tag = f'{tag}-FAIL'
     pass_tag = f'{tag}-PASS'
@@ -74,17 +79,11 @@ def update_file_metadata(*, gear_context: GearToolkitContext, file: FileEntry,
 
     if file.tags:
         if fail_tag in file.tags:
-            file.tags.remove(fail_tag)
+            file.delete_tag(fail_tag)
         if pass_tag in file.tags:
-            file.tags.remove(pass_tag)
-        file.tags.append(new_tag)
-    else:
-        file.tags = [new_tag]
+            file.delete_tag(pass_tag)
 
-    gear_context.metadata.add_qc_result(file,
-                                        name='validation',
-                                        state=status_str,
-                                        data=error_writer.errors())
+    file.add_tag(new_tag)
 
     log.info('QC check status for file %s : %s', file.name, status_str)
 
@@ -466,9 +465,6 @@ def get_module_name_from_file_suffix(filename: str) -> Optional[str]:
     return module
 
 
-# pylint: disable=(too-many-locals)
-
-
 def run(*,
         client_wrapper: ClientWrapper,
         input_wrapper: InputFileWrapper,
@@ -518,10 +514,11 @@ def run(*,
                                           FieldNames.DATE_COLUMN)).lower()
     error_writer = ListErrorWriter(container_id=file_id,
                                    fw_path=proxy.get_lookup_path(file))
-    input_path = Path(input_wrapper.filepath)
+
     valid = False
     try:
-        with open(input_path, mode='r', encoding='utf-8') as file_obj:
+        with open(input_wrapper.filepath, mode='r',
+                  encoding='utf-8') as file_obj:
             if file_type == 'json':
                 try:
                     input_data = json.load(file_obj)
