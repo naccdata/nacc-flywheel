@@ -29,6 +29,7 @@ class RuleLabels:
     TEMPORAL = 'temporalrules'
     NULLABLE = 'nullable'
     REQUIRED = 'required'
+    GDS = 'compute_gds'
 
 
 class DefaultValues:
@@ -37,3 +38,14 @@ class DefaultValues:
     LEGACY_PRJ_LABEL = 'retrospective-form'
     ENROLLMENT_MODULE = 'ENROLLV1'
     GEARBOT_USER_ID = 'nacc-flywheel-gear@uw.edu'
+    NACC_GROUP_ID = 'nacc'
+    METADATA_PRJ_LBL = 'metadata'
+    ADMIN_PROJECT = 'project-admin'
+
+
+class MetadataKeys:
+    """Class to store metadata keys."""
+    LEGACY_KEY = 'legacy'
+    LEGACY_LBL = 'legacy_label'
+    LEGACY_ORDERBY = 'legacy_orderby'
+    FAILED = 'failed'

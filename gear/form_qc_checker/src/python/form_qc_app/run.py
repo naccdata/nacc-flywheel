@@ -86,7 +86,7 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
         try:
             redcap_con = REDCapReportConnection.create_from(redcap_params)
         except REDCapConnectionError as error:
-            raise GearExecutionError(error)
+            raise GearExecutionError(error) from error
 
         return FormQCCheckerVisitor(client=client,
                                     file_input=file_input,

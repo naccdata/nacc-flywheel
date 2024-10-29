@@ -2,9 +2,10 @@
 
 All notable changes to this gear are documented in this file.
 
-## Unreleased
-
-* Adds this CHANGELOG
+## 1.0.0
+* Update to use nacc-form-validator [v0.3.0](https://github.com/naccdata/nacc-form-validator/releases/tag/v0.3.0)
+* Rename/refactor `FlywheelDatastore` class to `DatastoreHelper` to allow more general operations
+* Add `compute_gds` as a composite rule to match new GDS score validation
 
 ## 0.0.32
 
