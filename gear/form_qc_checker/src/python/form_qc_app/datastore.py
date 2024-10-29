@@ -1,4 +1,4 @@
-"""Handles the connection with a Flywheel project."""
+"""Class for accessing internal or external data sources."""
 
 import json
 import logging
@@ -14,30 +14,36 @@ from nacc_form_validator.datastore import Datastore
 log = logging.getLogger(__name__)
 
 
-class FlywheelDatastore(Datastore):
-    """This class defines functions to retrieve previous visits from
-    Flywheel."""
+class DatastoreHelper(Datastore):
+    """This class extends nacc_form_validator.datastore.
 
-    def __init__(self, proxy: FlywheelProxy, group_id: str, project: Project,
-                 legacy_label: str):
+    Defines functions to retrieve previous visits and RxNorm validation.
+    """
+
+    def __init__(self, pk_field: str, orderby: str, proxy: FlywheelProxy,
+                 group_id: str, project: Project, legacy_label: str):
         """
 
         Args:
+            pk_field: primary key field to uniquely identify a participant
+            orderby: field to sort the records by
             proxy: Flywheel proxy object
             group: Flywheel group id
             project: Flywheel project container
             legacy_label: legacy project label
         """
 
+        super().__init__(pk_field, orderby)
+
         self.__proxy = proxy
         self.__gid = group_id
         self.__project = project
         self.__legacy_label = legacy_label
 
-        self.__legacy_project = self.get_legacy_project()
-        self.__legacy_info = self.get_legacy_modules_info()
+        self.__legacy_project = self._get_legacy_project()
+        self.__legacy_info = self._get_legacy_modules_info()
 
-    def get_legacy_project(self) -> Optional[Project]:
+    def _get_legacy_project(self) -> Optional[Project]:
         """Get the legacy form project for the center group.
 
         Returns:
@@ -60,7 +66,19 @@ class FlywheelDatastore(Datastore):
 
         return projects[0]
 
-    def get_previous_records(
+    def _get_legacy_modules_info(self) -> Dict[str, Dict[str, str]]:
+        """Get current modules->legacy modules mapping from Flywheel admin
+        group metadata project.
+
+        Returns:
+            Dict[str, Dict[str, str]]: current modules->legacy modules mapping
+        """
+        admin_group = NACCGroup.create(proxy=self.__proxy)
+        metadata_prj = admin_group.get_metadata()
+        info = metadata_prj.get_info()
+        return info.get('legacy', {})
+
+    def __get_previous_records(
             self, *, project: Project, subject_lbl: str, module: str,
             orderby: str, cutoff_val: str) -> Optional[List[Dict[str, str]]]:
         """Retrieve previous visit records for the specified project/subject.
@@ -106,74 +124,8 @@ class FlywheelDatastore(Datastore):
 
         return sorted(visits, key=lambda d: d[orderby_col], reverse=True)
 
-    def get_previous_instance(
-            self, orderby: str, pk_field: str,
-            current_ins: dict[str, str]) -> Optional[Dict[str, str]]:
-        """Overriding the abstract method, get the previous visit record for
-        the specified subject.
-
-        Args:
-            orderby (str): Variable name that visits are sorted by
-            pk_field (str): Primary key field of the project
-            current_ins (dict[str, str]): Visit currently being validated
-
-        Returns:
-            dict[str, str]: Previous visit record. None if no previous visit
-        """
-
-        if pk_field not in current_ins:
-            log.error(('Variable %s not set in current visit data, '
-                       'cannot retrieve the previous visits'), pk_field)
-            return None
-
-        if orderby not in current_ins:
-            log.error(('Variable %s not set in current visit data, '
-                       'cannot retrieve the previous visits'), orderby)
-            return None
-
-        if FieldNames.MODULE not in current_ins:
-            log.error(('Variable %s not set in current visit data, '
-                       'cannot retrieve the previous visits'),
-                      FieldNames.MODULE)
-            return None
-
-        subject_lbl = current_ins[pk_field]
-        module = current_ins[FieldNames.MODULE]
-        orderby_value = current_ins[orderby]
-
-        prev_visits = self.get_previous_records(project=self.__project,
-                                                subject_lbl=subject_lbl,
-                                                module=module,
-                                                orderby=orderby,
-                                                cutoff_val=orderby_value)
-
-        if not prev_visits and self.__legacy_project and self.__legacy_info:
-            legacy_module = self.__legacy_info.get(module, {})
-            if (not legacy_module or 'legacy_label' not in legacy_module
-                    or 'legacy_orderby' not in legacy_module):
-                log.warning(
-                    'Cannot find legacy module info for current module %s',
-                    module)
-                return None
-
-            prev_visits = self.get_previous_records(
-                project=self.__legacy_project,
-                subject_lbl=subject_lbl,
-                module=legacy_module.get('legacy_label'),  # type: ignore
-                orderby=legacy_module.get('legacy_orderby'),  # type: ignore
-                cutoff_val=orderby_value)
-
-        if not prev_visits:
-            log.error('No previous visits found for %s/%s', subject_lbl,
-                      module)
-            return None
-
-        latest_rec_info = prev_visits[0]
-        return self.get_visit_data(latest_rec_info['file.name'],
-                                   latest_rec_info['file.parents.acquisition'])
-
-    def get_visit_data(self, file_name: str,
-                       acq_id: str) -> dict[str, str] | None:
+    def _get_visit_data(self, file_name: str,
+                        acq_id: str) -> dict[str, str] | None:
         """Read the previous visit file and convert to python dictionary.
 
         Args:
@@ -197,14 +149,82 @@ class FlywheelDatastore(Datastore):
 
         return visit_data
 
-    def get_legacy_modules_info(self) -> Dict[str, Dict[str, str]]:
-        """Get current modules->legacy modules mapping from Flywheel admin
-        group metadata project.
+    def get_previous_record(
+            self, current_record: Dict[str, str]) -> Optional[Dict[str, str]]:
+        """Overriding the abstract method, get the previous visit record for
+        the specified participant.
+
+        Args:
+            current_record: record currently being validated
 
         Returns:
-            Dict[str, Dict[str, str]]: current modules->legacy modules mapping
+            dict[str, str]: previous visit record. None if no previous visit
         """
-        admin_group = NACCGroup.create(proxy=self.__proxy)
-        metadata_prj = admin_group.get_metadata()
-        info = metadata_prj.get_info()
-        return info.get('legacy', {})
+
+        if self.pk_field not in current_record:
+            log.error(('Variable %s not set in current visit data, '
+                       'cannot retrieve the previous visits'), self.pk_field)
+            return None
+
+        if self.orderby not in current_record:
+            log.error(('Variable %s not set in current visit data, '
+                       'cannot retrieve the previous visits'), self.orderby)
+            return None
+
+        if FieldNames.MODULE not in current_record:
+            log.error(('Variable %s not set in current visit data, '
+                       'cannot retrieve the previous visits'),
+                      FieldNames.MODULE)
+            return None
+
+        subject_lbl = current_record[self.pk_field]
+        module = current_record[FieldNames.MODULE]
+        orderby_value = current_record[self.orderby]
+
+        prev_visits = self.__get_previous_records(project=self.__project,
+                                                  subject_lbl=subject_lbl,
+                                                  module=module,
+                                                  orderby=self.orderby,
+                                                  cutoff_val=orderby_value)
+
+        if not prev_visits and self.__legacy_project and self.__legacy_info:
+            legacy_module = self.__legacy_info.get(module, {})
+            if (not legacy_module or 'legacy_label' not in legacy_module
+                    or 'legacy_orderby' not in legacy_module):
+                log.warning(
+                    'Cannot find legacy module info for current module %s',
+                    module)
+                return None
+
+            prev_visits = self.__get_previous_records(
+                project=self.__legacy_project,
+                subject_lbl=subject_lbl,
+                module=legacy_module.get('legacy_label'),  # type: ignore
+                orderby=legacy_module.get('legacy_orderby'),  # type: ignore
+                cutoff_val=orderby_value)
+
+        if not prev_visits:
+            log.error('No previous visits found for %s/%s', subject_lbl,
+                      module)
+            return None
+
+        latest_rec_info = prev_visits[0]
+        return self._get_visit_data(
+            latest_rec_info['file.name'],
+            latest_rec_info['file.parents.acquisition'])
+
+    def is_valid_rxcui(self, drugid: int) -> bool:
+        """Overriding the abstract method, check whether a given drug ID is
+        valid RXCUI. Check
+        https://www.nlm.nih.gov/research/umls/rxnorm/overview.html,
+        https://mor.nlm.nih.gov/RxNav/
+
+        Args:
+            drugid: provided drug ID
+
+        Returns:
+            bool: True if provided drug ID is valid, else False
+        """
+
+        # TODO - implement validation
+        return False

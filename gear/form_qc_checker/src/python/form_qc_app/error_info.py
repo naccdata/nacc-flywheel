@@ -2,7 +2,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 from keys.keys import FieldNames, RuleLabels
 from outputs.errors import (
@@ -49,7 +49,7 @@ class ErrorStore(ABC):
     """Base class to retrieve NACC QC checks information from a database."""
 
     # List of error cheks by error code
-    __errors_list: Dict[str, ErrorDescription] = {}
+    __errors_list: ClassVar[Dict[str, ErrorDescription]] = {}
 
     def __init__(self, preload: bool = False) -> None:
         """

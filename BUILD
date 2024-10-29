@@ -9,9 +9,6 @@ python_requirements(
         "ssm-parameter-store": {
             "dependencies": ["//:reqs#setuptools"]
         },
-        "flywheel-sdk": {
-            "dependencies": ["//:reqs#pandas"]
-        },
     },
 )
 

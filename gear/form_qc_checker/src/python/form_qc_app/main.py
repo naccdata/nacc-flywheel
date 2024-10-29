@@ -45,8 +45,8 @@ from redcap.redcap_connection import REDCapReportConnection
 from s3.s3_client import S3BucketReader
 
 from form_qc_app.csv_visitor import FormQCCSVVisitor, read_first_data_row
+from form_qc_app.datastore import DatastoreHelper
 from form_qc_app.error_info import ErrorComposer, ErrorStore, REDCapErrorStore
-from form_qc_app.flywheel_datastore import FlywheelDatastore
 from form_qc_app.parser import Parser, ParserException
 
 log = logging.getLogger(__name__)
@@ -556,10 +556,12 @@ def run(*,
                     error_writer=error_writer,
                     strict=strict)
 
-                datastore = FlywheelDatastore(proxy=proxy,
-                                              group_id=file.parents.group,
-                                              project=project,
-                                              legacy_label=legacy_label)
+                datastore = DatastoreHelper(pk_field=pk_field,
+                                            orderby=date_field,
+                                            proxy=proxy,
+                                            group_id=file.parents.group,
+                                            project=project,
+                                            legacy_label=legacy_label)
 
                 error_store = REDCapErrorStore(redcap_con=redcap_connection)
 
