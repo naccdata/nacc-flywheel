@@ -4,15 +4,15 @@ specialized subject wrappers."""
 import logging
 from typing import Any, Dict, List, Optional
 
+from dates.form_dates import DATE_PATTERN
 from flywheel.finder import Finder
 from flywheel.models.session import Session
 from flywheel.models.subject import Subject
+from keys.keys import MetadataKeys
 from pydantic import AliasGenerator, BaseModel, ConfigDict, Field, ValidationError
 from serialization.case import kebab_case
 
 log = logging.getLogger(__name__)
-
-DATE_PATTERN = r"^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
 
 
 class SubjectError(Exception):
@@ -98,7 +98,7 @@ class SubjectAdaptor:
         """
 
         module_info = self.info.get(module, {})
-        last_failed = module_info.get('failed', None)
+        last_failed = module_info.get(MetadataKeys.FAILED, None)
         if not last_failed:
             return None
 
@@ -119,7 +119,7 @@ class SubjectAdaptor:
         # make sure to load the existing metadata first and then modify
         # update_info() will replace everything under the top-level key
         module_info = self.info.get(module, {})
-        module_info['failed'] = failed_visit.model_dump()
+        module_info[MetadataKeys.FAILED] = failed_visit.model_dump()
         updates = {module: module_info}
         self._subject.update_info(updates)
 
@@ -133,7 +133,7 @@ class SubjectAdaptor:
         # make sure to load the existing metadata first and then modify
         # update_info() will replace everything under the top-level key
         module_info = self.info.get(module, {})
-        module_info['failed'] = {}
+        module_info[MetadataKeys.FAILED] = {}
         updates = {module: module_info}
         # Note: have to use update_info() here for reset to take effect
         # Using update() will not delete any exsisting data

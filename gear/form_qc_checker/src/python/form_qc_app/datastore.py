@@ -5,10 +5,9 @@ import logging
 from json.decoder import JSONDecodeError
 from typing import Dict, List, Optional
 
-from centers.nacc_group import NACCGroup
 from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from keys.keys import FieldNames
+from keys.keys import DefaultValues, FieldNames, MetadataKeys
 from nacc_form_validator.datastore import Datastore
 
 log = logging.getLogger(__name__)
@@ -73,10 +72,16 @@ class DatastoreHelper(Datastore):
         Returns:
             Dict[str, Dict[str, str]]: current modules->legacy modules mapping
         """
-        admin_group = NACCGroup.create(proxy=self.__proxy)
-        metadata_prj = admin_group.get_metadata()
-        info = metadata_prj.get_info()
-        return info.get('legacy', {})
+
+        info = {}
+        admin_group = self.__proxy.find_group(DefaultValues.NACC_GROUP_ID)
+        if admin_group:
+            metadata_prj = admin_group.find_project(
+                DefaultValues.METADATA_PRJ_LBL)
+            if metadata_prj:
+                info = metadata_prj.get_info()
+
+        return info.get(MetadataKeys.LEGACY_KEY, {})
 
     def __get_previous_records(
             self, *, project: Project, subject_lbl: str, module: str,
@@ -149,6 +154,41 @@ class DatastoreHelper(Datastore):
 
         return visit_data
 
+    def _get_legacy_records(
+            self, *, module: str, subject_lbl: str,
+            cutoff_value: str) -> Optional[List[Dict[str, str]]]:
+        """Retrieve previous visits records from the respective legacy project.
+
+        Args:
+            module: module name
+            subject_lbl: Flywheel subject label
+            cutoff_val: cutoff value on orderby field
+
+        Returns:
+            List[Dict]: List of visits matching with the specified cutoff value,
+                        sorted in descending order
+        """
+
+        if not self.__legacy_project or not self.__legacy_info:
+            log.warning('No legacy project/module info found for %s/%s',
+                        self.__project.label, module)
+            return None
+
+        legacy_module = self.__legacy_info.get(module, {})
+        if (not legacy_module or MetadataKeys.LEGACY_LBL not in legacy_module
+                or MetadataKeys.LEGACY_ORDERBY not in legacy_module):
+            log.warning('Cannot find legacy module info for current module %s',
+                        module)
+            return None
+
+        return self.__get_previous_records(
+            project=self.__legacy_project,
+            subject_lbl=subject_lbl,
+            module=legacy_module.get(MetadataKeys.LEGACY_LBL),  # type: ignore
+            orderby=legacy_module.get(
+                MetadataKeys.LEGACY_ORDERBY),  # type: ignore
+            cutoff_val=cutoff_value)
+
     def get_previous_record(
             self, current_record: Dict[str, str]) -> Optional[Dict[str, str]]:
         """Overriding the abstract method, get the previous visit record for
@@ -187,26 +227,19 @@ class DatastoreHelper(Datastore):
                                                   orderby=self.orderby,
                                                   cutoff_val=orderby_value)
 
-        if not prev_visits and self.__legacy_project and self.__legacy_info:
-            legacy_module = self.__legacy_info.get(module, {})
-            if (not legacy_module or 'legacy_label' not in legacy_module
-                    or 'legacy_orderby' not in legacy_module):
-                log.warning(
-                    'Cannot find legacy module info for current module %s',
-                    module)
+        # if no previous visits found in the current project, check the legacy project
+        if not prev_visits:
+            legacy_visits = self._get_legacy_records(
+                module=module,
+                subject_lbl=subject_lbl,
+                cutoff_value=orderby_value)
+
+            if not legacy_visits:
+                log.error('No previous visits found for %s/%s', subject_lbl,
+                          module)
                 return None
 
-            prev_visits = self.__get_previous_records(
-                project=self.__legacy_project,
-                subject_lbl=subject_lbl,
-                module=legacy_module.get('legacy_label'),  # type: ignore
-                orderby=legacy_module.get('legacy_orderby'),  # type: ignore
-                cutoff_val=orderby_value)
-
-        if not prev_visits:
-            log.error('No previous visits found for %s/%s', subject_lbl,
-                      module)
-            return None
+            prev_visits = legacy_visits
 
         latest_rec_info = prev_visits[0]
         return self._get_visit_data(
