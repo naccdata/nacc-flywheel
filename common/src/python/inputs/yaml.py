@@ -19,8 +19,8 @@ def load_all_from_stream(stream) -> List[Any]:
       List of lists of objects created from file or None if an error occurs
     """
     try:
-        object_iter = yaml.safe_load_all(stream)
-        return [object for object in object_iter]
+        doc_iter = yaml.safe_load_all(stream)
+        return [doc for doc in doc_iter]
     except yaml.MarkedYAMLError as error:
         mark = error.problem_mark
         if mark:

@@ -1,7 +1,7 @@
 """The run script for the user management gear."""
 
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from coreapi_client.api.default_api import DefaultApi
 from coreapi_client.api_client import ApiClient
@@ -20,11 +20,17 @@ from notifications.email import EmailClient, create_ses_client
 from pydantic import ValidationError
 from redcap.redcap_repository import REDCapParametersRepository
 from users.authorizations import AuthMap
-from users.nacc_directory import ActiveUserEntry, UserFormatError
-from users.user_registry import UserRegistry
+from users.nacc_directory import UserEntry, UserFormatError
+from users.user_processes import (
+    NotificationClient,
+    NotificationModeType,
+    UserProcess,
+    UserProcessEnvironment,
+    UserQueue,
+)
+from users.user_registry import RegistryError, UserRegistry
 
 from user_app.main import run
-from user_app.notification_client import NotificationClient
 
 log = logging.getLogger(__name__)
 
@@ -32,18 +38,17 @@ log = logging.getLogger(__name__)
 class UserManagementVisitor(GearExecutionEnvironment):
     """Defines the user management gear."""
 
-    def __init__(
-        self,
-        admin_id: str,
-        client: ClientWrapper,
-        user_filepath: str,
-        auth_filepath: str,
-        email_source: str,
-        comanage_config: Configuration,
-        comanage_coid: int,
-        redcap_param_repo: REDCapParametersRepository,
-        force_notifications: bool = False,
-    ):
+    def __init__(self,
+                 admin_id: str,
+                 client: ClientWrapper,
+                 user_filepath: str,
+                 auth_filepath: str,
+                 email_source: str,
+                 comanage_config: Configuration,
+                 comanage_coid: int,
+                 redcap_param_repo: REDCapParametersRepository,
+                 portal_url: str,
+                 notification_mode: NotificationModeType = 'date'):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__user_filepath = user_filepath
@@ -52,7 +57,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
         self.__comanage_config = comanage_config
         self.__comanage_coid = comanage_coid
         self.__redcap_param_repo = redcap_param_repo
-        self.__force_notifications = force_notifications
+        self.__notification_mode: NotificationModeType = notification_mode
+        self.__portal_url = portal_url
 
     @classmethod
     def create(
@@ -84,11 +90,16 @@ class UserManagementVisitor(GearExecutionEnvironment):
         if not sender_path:
             raise GearExecutionError('No email sender parameter path')
 
+        portal_path = context.config.get('portal_url_path')
+        if not portal_path:
+            raise GearExecutionError("No path for portal URL")
+
         try:
             comanage_parameters = parameter_store.get_comanage_parameters(
                 comanage_path)
             sender_parameters = parameter_store.get_notification_parameters(
                 sender_path)
+            portal_url = parameter_store.get_portal_url(portal_path)
         except ParameterError as error:
             raise GearExecutionError(f'Parameter error: {error}') from error
 
@@ -112,8 +123,8 @@ class UserManagementVisitor(GearExecutionEnvironment):
                 username=comanage_parameters['username'],
                 password=comanage_parameters['apikey']),
             redcap_param_repo=redcap_param_repo,
-            force_notifications=context.config.get(
-                'force_unclaimed_notifications', False))
+            notification_mode=context.config.get('notification_mode', 'none'),
+            portal_url=portal_url['url'])
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
@@ -131,19 +142,31 @@ class UserManagementVisitor(GearExecutionEnvironment):
             admin_group = self.admin_group(admin_id=self.__admin_id)
             admin_group.set_redcap_param_repo(self.__redcap_param_repo)
 
-            run(proxy=self.proxy,
-                user_list=self.__get_user_list(self.__user_filepath),
-                admin_group=admin_group,
-                authorization_map=self.__get_auth_map(self.__auth_filepath),
-                notification_client=NotificationClient(
-                    configuration_set_name="user-creation-claims",
-                    email_client=EmailClient(client=create_ses_client(),
-                                             source=self.__email_source)),
-                registry=UserRegistry(api_instance=DefaultApi(comanage_client),
-                                      coid=self.__comanage_coid),
-                force_notifications=self.__force_notifications)
+            try:
+                run(
+                    user_queue=self.__get_user_queue(self.__user_filepath),
+                    user_process=UserProcess(
+                        environment=UserProcessEnvironment(
+                            admin_group=admin_group,
+                            authorization_map=self.__get_auth_map(
+                                self.__auth_filepath),
+                            notification_client=NotificationClient(
+                                configuration_set_name="user-creation-claims",
+                                email_client=EmailClient(
+                                    client=create_ses_client(),
+                                    source=self.__email_source),
+                                portal_url=self.__portal_url,
+                                mode=self.__notification_mode),
+                            proxy=self.proxy,
+                            registry=UserRegistry(api_instance=DefaultApi(
+                                comanage_client),
+                                                  coid=self.__comanage_coid))),
+                )
+            except RegistryError as error:
+                raise GearExecutionError(
+                    f'User registry error: {error}') from error
 
-    def __get_user_list(self, user_file_path: str) -> List[ActiveUserEntry]:
+    def __get_user_queue(self, user_file_path: str) -> UserQueue[UserEntry]:
         """Get the active user objects from the user file.
 
         Args:
@@ -161,20 +184,15 @@ class UserManagementVisitor(GearExecutionEnvironment):
         if not object_list:
             raise GearExecutionError('No users found in user file')
 
-        user_list = []
+        user_list: UserQueue[UserEntry] = UserQueue()
         for user_doc in object_list:
-            if not user_doc.get('active'):
-                # TODO: disable inactive users
-                log.info('Ignoring inactive user %s', user_doc.get('email'))
-                continue
-
             try:
-                user_entry = ActiveUserEntry.create(user_doc)
-                if user_entry.auth_email:
-                    user_list.append(user_entry)
+                user_entry = UserEntry.create(user_doc)
             except UserFormatError as error:
                 log.error('Error creating user entry: %s', error)
                 continue
+
+            user_list.enqueue(user_entry)
 
         return user_list
 

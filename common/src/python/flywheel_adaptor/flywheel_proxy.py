@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Defines project creation functions for calls to Flywheel."""
 import json
 import logging
@@ -149,7 +150,10 @@ class FlywheelProxy:
             assert user.id
             return user.id
 
-        return self.__fw.add_user(user)
+        try:
+            return self.__fw.add_user(user)
+        except ApiException as error:
+            raise FlywheelError(f"Failed to add user: {error}") from error
 
     def set_user_email(self, user: flywheel.User, email: str) -> None:
         """Sets user email on client.
@@ -222,12 +226,13 @@ class FlywheelProxy:
         try:
             added_group_id = self.__fw.add_group(
                 flywheel.Group(group_id, group_label))
-        except ApiException:
+        except ApiException as error:
             log.error(
                 ('Group %s creation failed. '
                  'Group likely exists, but user does not have permission'),
                 group_label)
-            raise FlywheelError(f"Failed to create group {group_label}")
+            raise FlywheelError(
+                f"Failed to create group {group_label}") from error
 
         # we must fw.get_group() with ID string to get the actual Group object.
         group = self.__fw.get_group(added_group_id)
@@ -870,6 +875,10 @@ class GroupAdaptor:
         return ProjectAdaptor(project=projects[0], proxy=self._fw)
 
 
+class ProjectError(Exception):
+    """Exception class for errors involving projects."""
+
+
 class ProjectAdaptor:
     """Defines an adaptor for a flywheel project."""
 
@@ -877,6 +886,28 @@ class ProjectAdaptor:
                  proxy: FlywheelProxy) -> None:
         self._project = project
         self._fw = proxy
+
+    @classmethod
+    def create(cls, proxy: FlywheelProxy, group_id: str,
+               project_label: str) -> 'ProjectAdaptor':
+        """Creates a project adaptor for the project.
+
+        Args:
+          proxy: the Flywheel proxy
+          group_id: the group ID
+          project_label: the label for the project
+        Returns:
+          the adaptor for the named project if one exists
+        Raises:
+          ProjectError if no project exists
+        """
+        projects = proxy.find_projects(group_id=group_id,
+                                       project_label=project_label)
+        if not projects:
+            raise ProjectError(
+                f"Could not find project {group_id}/{project_label}")
+
+        return ProjectAdaptor(project=projects[0], proxy=proxy)
 
     def __pull_project(self) -> None:
         """Pulls the referenced project from Flywheel instance."""

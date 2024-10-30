@@ -1,6 +1,7 @@
 """Classes for NACC directory user credentials."""
 
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, NewType, Optional
 
 from flywheel.models.user import User
@@ -16,6 +17,15 @@ class PersonName(BaseModel):
     first_name: str
     last_name: str
 
+    def as_str(self) -> str:
+        """Returns this name as a string with first and last names separated by
+        a space.
+
+        Returns:
+          The first and last name concatenated and separated by a space.
+        """
+        return f"{self.first_name} {self.last_name}"
+
 
 EntryDictType = NewType('EntryDictType',
                         Dict[str, str | int | PersonName | Authorizations])
@@ -29,6 +39,7 @@ class UserEntry(BaseModel):
     email: str
     auth_email: Optional[str] = Field(default=None)
     active: bool
+    registration_date: Optional[datetime] = None
 
     @property
     def first_name(self) -> str:
@@ -39,6 +50,11 @@ class UserEntry(BaseModel):
     def last_name(self) -> str:
         """The last name for this directory entry."""
         return self.name.last_name
+
+    @property
+    def full_name(self) -> str:
+        """The full name for this directory entry."""
+        return self.name.as_str()
 
     def as_dict(self) -> EntryDictType:
         """Builds a dictionary for this directory entry.
@@ -87,7 +103,7 @@ class UserEntry(BaseModel):
         name = PersonName(first_name=record['firstname'],
                           last_name=record['lastname'])
         email = record['email'].lower()
-        auth_email = record.get('fw_email', None)
+        auth_email = record.get('fw_email')
 
         if record['archive_contact'] == "1":
             log.info("Creating inactive user record for %s", email)
@@ -142,7 +158,8 @@ class ActiveUserEntry(UserEntry):
                                    org_name=self.org_name,
                                    adcid=self.adcid,
                                    authorizations=self.authorizations,
-                                   registry_id=registry_id)
+                                   registry_id=registry_id,
+                                   registration_date=self.registration_date)
 
     @classmethod
     def create(cls, entry: Dict[str, Any]) -> "ActiveUserEntry":

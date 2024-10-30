@@ -73,7 +73,7 @@ class TestCenter:
                        "center-id: ucdavis\n"
                        "is-active: True")
         center_gen = yaml.safe_load_all(center_yaml)
-        center = Center.create([*center_gen][0])
+        center = Center.create(next(iter(center_gen)))
         center2 = Center(tags=['adcid-16'],
                          name="University of California, Davis",
                          center_id='ucdavis',

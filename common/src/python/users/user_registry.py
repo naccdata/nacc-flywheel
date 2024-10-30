@@ -1,6 +1,7 @@
 """Defines repository as interface to user registry."""
+from collections import defaultdict
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from coreapi_client.api.default_api import DefaultApi
 from coreapi_client.exceptions import ApiException
@@ -75,6 +76,24 @@ class RegistryPerson:
     def email_address(self) -> Optional[List[EmailAddress]]:
         return self.__coperson_message.email_address
 
+    @property
+    def primary_name(self) -> Optional[str]:
+        """Returns the primary name of this person as a string.
+
+        Concatenates firstname and lastname separated by a space.
+
+        Returns:
+          String representation of full primary name. None if there is none.
+        """
+        if not self.__coperson_message.name:
+            return None
+
+        for name in self.__coperson_message.name:
+            if name.primary_name:
+                return f"{name.given} {name.family}"
+
+        return None
+
     def has_email(self, email: str) -> bool:
         """Indicates whether this person has the email address.
 
@@ -138,6 +157,8 @@ class UserRegistry:
     def __init__(self, api_instance: DefaultApi, coid: int):
         self.__api_instance = api_instance
         self.__coid = coid
+        self.__registry_map: Dict[str, List[RegistryPerson]] = {}
+        self.__bad_claims: Dict[str, List[RegistryPerson]] = {}
 
     @property
     def coid(self) -> int:
@@ -164,19 +185,52 @@ class UserRegistry:
         except ApiException as error:
             raise RegistryError(f"API call failed: {error}") from error
 
-    def list(self, email: str) -> List[RegistryPerson]:
-        """Returns the list of CoPersonMessage objects with the email.
+    def get(self, email: str) -> List[RegistryPerson]:
+        """Returns the list of person objects with the email address.
 
         Args:
-          the email address
+          email: the email address
         Returns:
-          the list of CoPersonMessage objects with the email address
+          the list of person objects with the email address
         """
+        if not self.__registry_map:
+            self.__list()
+
+        return self.__registry_map[email]
+
+    def has_bad_claim(self, name: str) -> bool:
+        """Returns true if a RegistryPerson with the primary name has an
+        incomplete claim.
+
+        A claim is incomplete if it does not have a corresponding email address.
+
+        Args:
+          name: the registry person name
+        Returns:
+          True if the name corresposponds to an incomplete claim
+        """
+        if not self.__registry_map:
+            self.__list()
+
+        return name in self.__bad_claims
+
+    def __list(self) -> None:
+        """Returns the dictionary of RegistryPerson objects for records in the
+        comanage registry.
+
+        Dictionary maps from an email address to a list of person objects with
+        the email address.
+
+        Returns:
+          the dictionary of email addresses RegistryPerson objects
+        """
+        self.__registry_map = defaultdict(list)
+        self.__bad_claims = defaultdict(list)
+
         limit = 100
         page_index = 0
         read_length = limit
 
-        result = []
         while read_length == limit:
             try:
                 response = self.__api_instance.get_co_person(coid=self.__coid,
@@ -192,10 +246,18 @@ class UserRegistry:
             page_index += 1
 
             for person in person_list:
-                if person.has_email(email):
-                    result.append(person)
+                if not person.email_address:
+                    if not person.is_claimed():
+                        continue
 
-        return result
+                    name = person.primary_name
+                    if name:
+                        self.__bad_claims[name].append(person)
+
+                    continue
+
+                for address in person.email_address:
+                    self.__registry_map[address.mail].append(person)
 
     def __parse_response(
             self, response: GetCoPerson200Response) -> List[RegistryPerson]:

@@ -332,6 +332,25 @@ class CenterGroup(CenterAdaptor):
 
         self.apply_to_accepted(template_map)
 
+    def apply_template(self, template: TemplateProject) -> None:
+        """Applies the template to projects of this center group that match.
+
+        Args:
+          template: the template project
+        """
+        prefix_pattern = template.get_pattern()
+        if not prefix_pattern:
+            return
+
+        projects = self.__get_matching_projects(prefix_pattern)
+        for project in projects:
+            template.copy_to(project,
+                             value_map={
+                                 'adrc': self.label,
+                                 'project_id': project.id,
+                                 'site': self.proxy().get_site()
+                             })
+
     def get_portal(self) -> ProjectAdaptor:
         """Returns the center-portal project.
 
@@ -544,12 +563,12 @@ class CenterGroup(CenterAdaptor):
                                              auth_map=auth_map,
                                              authorizations=authorizations)
 
-            if not isinstance(project, FormIngestProjectMetadata):
-                continue
+            # if not isinstance(project, FormIngestProjectMetadata):
+            #     continue
 
-            self.__add_user_to_redcap_project(user=user,
-                                              form_ingest_project=project,
-                                              authorizations=authorizations)
+            # self.__add_user_to_redcap_project(user=user,
+            #                                   form_ingest_project=project,
+            #                                   authorizations=authorizations)
 
         metadata_project = self.get_metadata()
         if metadata_project:
@@ -720,10 +739,7 @@ class REDCapFormProjectMetadata(BaseModel):
         return (self.label.upper() == DefaultValues.ENROLLMENT_MODULE)
 
     def get_submission_type(self) -> str:
-        if self.is_enrollment():
-            datatype = 'enrollment'
-        else:  # consider all other modules are form type
-            datatype = 'form'
+        datatype = 'enrollment' if self.is_enrollment() else 'form'
 
         return f"submit-{datatype}"
 

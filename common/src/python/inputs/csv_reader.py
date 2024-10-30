@@ -117,8 +117,6 @@ class AggregateRowValidator(RowValidator):
         Returns:
             True if all the validator checks are true, False otherwise
         """
-        for validator in self.__validators:
-            if not validator.check(row, line_number):
-                return False
-
-        return True
+        return all(
+            validator.check(row, line_number)
+            for validator in self.__validators)

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from flywheel.models.container_parents import ContainerParents
 
@@ -40,4 +40,18 @@ class FileEntry:
         ...
 
     def reload(self) -> FileEntry:
+        ...
+
+    @property
+    def tags(self) -> List[str]:
+        ...
+
+    @tags.setter
+    def tags(self, tags: List[str]):
+        ...
+
+    def add_tag(self, tag, **kwargs):
+        ...
+
+    def delete_tag(self, tag, **kwargs):
         ...

@@ -10,10 +10,9 @@ import logging
 import re
 from csv import DictReader
 from json.decoder import JSONDecodeError
-from pathlib import Path
 from typing import Any, Dict, Literal, Mapping, Optional
 
-from flywheel import Project
+from flywheel import FileEntry, Project
 from flywheel.rest import ApiException
 from flywheel_adaptor.subject_adaptor import (
     SubjectAdaptor,
@@ -46,8 +45,8 @@ from redcap.redcap_connection import REDCapReportConnection
 from s3.s3_client import S3BucketReader
 
 from form_qc_app.csv_visitor import FormQCCSVVisitor, read_first_data_row
+from form_qc_app.datastore import DatastoreHelper
 from form_qc_app.error_info import ErrorComposer, ErrorStore, REDCapErrorStore
-from form_qc_app.flywheel_datastore import FlywheelDatastore
 from form_qc_app.parser import Parser, ParserException
 
 log = logging.getLogger(__name__)
@@ -55,43 +54,38 @@ log = logging.getLogger(__name__)
 FailedStatus = Literal['NONE', 'SAME', 'DIFFERENT']
 
 
-def update_file_metadata(*, gear_context: GearToolkitContext,
-                         file_input: Dict[str, Dict[str, Any]],
+def update_file_metadata(*, gear_context: GearToolkitContext, file: FileEntry,
                          qc_status: bool, error_writer: ListErrorWriter):
     """Write error details to input file metadata and add gear tag.
 
     Args:
         gear_context: Flywheel gear context
-        file_input: file input object from gear context
+        file: Flywheel file object
         qc_status: QC check passed or failed
         error_writer: error output writer
     """
 
     status_str = "PASS" if qc_status else "FAIL"
-    tag = gear_context.config.get('tag', 'form-qc-checker')
-    current_tags = gear_context.get_input_file_object_value(
-        'form_data_file', 'tags')
-    fail_tag = f'{tag}-FAIL'
-    pass_tag = f'{tag}-PASS'
-    new_tag = f'{tag}-{status_str}'
 
-    if current_tags:
-        if fail_tag in current_tags:
-            current_tags.remove(fail_tag)
-        if pass_tag in current_tags:
-            current_tags.remove(pass_tag)
-        current_tags.append(new_tag)
-    else:
-        current_tags = [new_tag]
-    gear_context.metadata.add_qc_result(file_input,
+    gear_context.metadata.add_qc_result(file,
                                         name='validation',
                                         state=status_str,
                                         data=error_writer.errors())
 
-    gear_context.metadata.update_file(file_input, tags=current_tags)
+    tag = gear_context.config.get('tag', 'form-qc-checker')
+    fail_tag = f'{tag}-FAIL'
+    pass_tag = f'{tag}-PASS'
+    new_tag = f'{tag}-{status_str}'
 
-    file_name = file_input['location']['name']
-    log.info('QC check status for file %s : %s', file_name, status_str)
+    if file.tags:
+        if fail_tag in file.tags:
+            file.delete_tag(fail_tag)
+        if pass_tag in file.tags:
+            file.delete_tag(pass_tag)
+
+    file.add_tag(new_tag)
+
+    log.info('QC check status for file %s : %s', file.name, status_str)
 
 
 def validate_input_file_type(mimetype: str) -> Optional[str]:
@@ -409,7 +403,7 @@ def load_rule_definition_schemas(
 
     # For CSV input, assumes all the records belong to the same module
     module: Optional[str]
-    if FieldNames.MODULE in input_data and input_data[FieldNames.MODULE]:
+    if input_data.get(FieldNames.MODULE):
         module = str(input_data[FieldNames.MODULE]).upper()
     else:
         module = get_module_name_from_file_suffix(filename)
@@ -419,7 +413,7 @@ def load_rule_definition_schemas(
             f'Failed to extract module information from file {filename}')
 
     s3_prefix = module
-    if FieldNames.PACKET in input_data and input_data[FieldNames.PACKET]:
+    if input_data.get(FieldNames.PACKET):
         packet = str(input_data[FieldNames.PACKET]).upper()
         s3_prefix = f'{s3_prefix}/{packet}'
 
@@ -471,9 +465,6 @@ def get_module_name_from_file_suffix(filename: str) -> Optional[str]:
     return module
 
 
-# pylint: disable=(too-many-locals)
-
-
 def run(*,
         client_wrapper: ClientWrapper,
         input_wrapper: InputFileWrapper,
@@ -523,10 +514,11 @@ def run(*,
                                           FieldNames.DATE_COLUMN)).lower()
     error_writer = ListErrorWriter(container_id=file_id,
                                    fw_path=proxy.get_lookup_path(file))
-    input_path = Path(input_wrapper.filepath)
+
     valid = False
     try:
-        with open(input_path, mode='r', encoding='utf-8') as file_obj:
+        with open(input_wrapper.filepath, mode='r',
+                  encoding='utf-8') as file_obj:
             if file_type == 'json':
                 try:
                     input_data = json.load(file_obj)
@@ -564,10 +556,12 @@ def run(*,
                     error_writer=error_writer,
                     strict=strict)
 
-                datastore = FlywheelDatastore(proxy=proxy,
-                                              group_id=file.parents.group,
-                                              project=project,
-                                              legacy_label=legacy_label)
+                datastore = DatastoreHelper(pk_field=pk_field,
+                                            orderby=date_field,
+                                            proxy=proxy,
+                                            group_id=file.parents.group,
+                                            project=project,
+                                            legacy_label=legacy_label)
 
                 error_store = REDCapErrorStore(redcap_con=redcap_connection)
 
@@ -601,6 +595,6 @@ def run(*,
             f'Failed to read the input file: {error}') from error
 
     update_file_metadata(gear_context=gear_context,
-                         file_input=input_wrapper.file_input,
+                         file=file,
                          qc_status=valid,
                          error_writer=error_writer)

@@ -16,6 +16,7 @@ To add new code see the [Adding a New Gear](#adding-a-new-gear)
   - [Gear basics](#gear-basics)
   - [Working with a gear](#working-with-a-gear)
     - [Validating the manifest](#validating-the-manifest)
+    - [Building a gear](#building-a-gear)
     - [Publishing a gear](#publishing-a-gear)
     - [Running a gear locally](#running-a-gear-locally)
       - [Basic configuration](#basic-configuration)
@@ -26,6 +27,7 @@ To add new code see the [Adding a New Gear](#adding-a-new-gear)
   - [Adding common code](#adding-common-code)
   - [Adding new dependencies](#adding-new-dependencies)
   - [Working with code](#working-with-code)
+  - [Documenting and versioning](#documenting-and-versioning)
 
 
 ## Getting Started
@@ -33,7 +35,7 @@ To add new code see the [Adding a New Gear](#adding-a-new-gear)
 ### Basic environment
 
 This repository can be used within a VS Code devcontainer using a python3 environment with the Flywheel cli installed.
-To use it you will need to install VSCode, Docker, and enable dev containers within VSCode.
+To use it you will need to install VSCode, Docker, and [enable dev containers within VSCode](https://code.visualstudio.com/docs/devcontainers/containers).
 Then open the repository in VS Code and start the container.
 
 Because the build tool comes with its own Python interpreter, you may be able to work without the devcontainer.
@@ -158,6 +160,28 @@ Validate the manifest with the command
 fw-beta gear --validate gear/<project-dir>/src/docker/manifest.json
 ```
 
+### Building a gear
+
+The build is managed using [Pants](https://www.pantsbuild.org), and the gear can be built with the following command:
+
+```bash
+# to force rebuild use the --no-local-cache flag
+pants package src/docker::
+```
+
+If you are building/running on macOS with an Apple Silicon chip, building a docker image with the correct architecture is a bit more involved. The following was added to the root BUILD file to support this, so should also handle all the gear builds, but you can update/change how its done for your specific gear.
+
+```
+file(name="linux_x86_py311", source="linux_x86_py311.json")
+
+__defaults__({
+  pex_binary: dict(complete_platforms=["//:linux_x86_py311"]),
+  docker_image: dict(build_platform=["linux/amd64"]),
+})
+```
+
+`docker_image`'s `build_platform` [sets the target platform(s) for the docker image](https://www.pantsbuild.org/dev/reference/targets/docker_image#build_platform), whereas `pex_binary`'s `complete_platforms` similarly [specifies the platforms the built PEX should be compatible with](https://www.pantsbuild.org/stable/reference/targets/pex_binary#complete_platforms). The latter pulls from the `linux_x86_py311.json` file living in the root of the repo, which is pulled into the root's BUILD file.
+
 ### Publishing a gear
 
 An important detail in publishing a gear is that Flywheel wont let you overwrite a previous version of a gear.
@@ -176,7 +200,7 @@ The steps for publishing a project as a gear are
 
    Otherwise, precede the paths in commands below with this path.
 
-3. Create docker image
+3. Create the docker image (see the previous section [Building a gear](#building-a-gear) for more details).
 
    ```bash
    pants package src/docker::
@@ -211,12 +235,12 @@ Before you run the following be sure that `gear/<project-dir>/src/docker/.gitign
 2. Use defaults from the manifest
 
    ```bash
-   fw-beta gear config --create src/docker
+   fw-beta gear config --new src/docker
    ```
 
 3. set api key
 
-   ```
+   ```bash
    fw-beta gear config -i api_key=$FW_API_KEY src/docker
    ```
 
@@ -226,8 +250,8 @@ Before you run the following be sure that `gear/<project-dir>/src/docker/.gitign
    fw-beta gear config -d <FW path> src/docker
    ```
 
-   The destination should be the path for a Flywheel container.
-   For instance, if the gear has no output, could use the admin project: `nacc/project-admin`.
+The destination should be the path for a Flywheel container.
+For instance, if the gear has no output, could use the admin project: `nacc/project-admin`.
 
 #### Gear-specific configuration
 
@@ -281,6 +305,18 @@ Then [run the gear](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run
 
 ```bash
 fw-beta gear run <project-dir>/src/docker
+```
+
+As of `fw-beta` version 0.18.0 you can also pass docker arguments directly by using `--` followed by the args. See [Flywheel's usage docs](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/#usage) for more information.
+
+If you are running on macOS with Apple Silicon, you will also need to specify the correct platform for docker run. This can be done by either explicitly passing it through the `fw-beta` command or setting the default docker platform flag:
+
+```bash
+# needs fw-beta 0.18.0+
+fw-beta gear run <project-dir>/src/docker -- --platform=linux/amd64
+
+# OR set the environment variable flag
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
 ```
 
 ## Adding a new gear
@@ -346,6 +382,8 @@ To complete the gear, you will need to
    
 Generally, `run.py` should handle gathering any inputs, and `main.py` should handle the computation.
 The `common` directory includes common code that may be used across the gears.
+
+Additionally, you should also document your gear. Under `docs`, add a new directory called `docs/<gear-name>` with an `index.md` and `CHANGELOG.md`. The `index.md` should describe your gear as well as the expected inputs and outputs/results, whereas the Changelog should keep track of gear versions. See [Documenting and versioning](#documenting-and-versioning) for more information.
 
 ## Adding common code
 
@@ -416,4 +454,18 @@ If you add new python dependencies
     pants check common::
     ```
 
+## Documenting and versioning
 
+All gear documentation and version tracking is stored under `docs/<gear-name>`, each with at minimum an `index.md` (for documentation) and a `CHANGELOG.md` (for tracking gear versions), and should be added for every new gear. The documentation only needs to be updated if new updates fundamentally change or deprecate previously documented features. The Changelog on the other hand should be updated consistently whenever any notable changes or bugfixes are added.
+
+The Changelogs loosely follow the convention described in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the gears all follow semantic versioning. All working changes should be added under the **Unreleased** header, and if a PR is associated with the change, the PR should be linked as well. 
+
+Releases and version bumping are currently done manually. When releasing a new version of the gear, ensure the following have been updated:
+
+* Increment the gear's image tag in the following files:
+    * `src/docker/BUILD`: the `image_tags` field 
+    * `src/docker/manifest.json`: the `version` and `custom/gear-builder/image` fields
+* In the `CHANGELOG.md`, move all changes under the **Unreleased** header to a new header under the new release version
+    * Right now it'll be a chicken and egg problem, but if you can try to also link the corresponding commit to the release version header
+
+See [this commit](https://github.com/naccdata/flywheel-gear-extensions/commit/fa3ff5ab5218282299b9c67665beacb90f5d8244) for an example of updating the version and image tags in the code.

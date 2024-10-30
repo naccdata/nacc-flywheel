@@ -2,7 +2,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 from keys.keys import FieldNames, RuleLabels
 from outputs.errors import (
@@ -18,7 +18,7 @@ from redcap.redcap_project import REDCapProject
 
 log = logging.getLogger(__name__)
 
-COMPOSITE_RULES = [RuleLabels.COMPAT, RuleLabels.TEMPORAL]
+COMPOSITE_RULES = [RuleLabels.COMPAT, RuleLabels.TEMPORAL, RuleLabels.GDS]
 
 
 class ErrorDescription(BaseModel):
@@ -49,7 +49,7 @@ class ErrorStore(ABC):
     """Base class to retrieve NACC QC checks information from a database."""
 
     # List of error cheks by error code
-    __errors_list: Dict[str, ErrorDescription] = {}
+    __errors_list: ClassVar[Dict[str, ErrorDescription]] = {}
 
     def __init__(self, preload: bool = False) -> None:
         """
@@ -409,16 +409,17 @@ class ErrorComposer():
             if error.rule != error.schema_path[1]:
                 continue
 
-            if error.rule not in code_shema:
-                if not replace_nullable_with_required(error.rule, code_shema):
-                    log.warning(
-                        'NACC error code not found '
-                        'for variable %s rule %s - %s', field, error.rule,
-                        error.schema_path)
-                    self.__write_qc_error_no_code(error_obj=error,
-                                                  field=field,
-                                                  line_number=line_number)
-                    continue
+            if (error.rule not in code_shema
+                    and not replace_nullable_with_required(
+                        error.rule, code_shema)):
+                log.warning(
+                    'NACC error code not found '
+                    'for variable %s rule %s - %s', field, error.rule,
+                    error.schema_path)
+                self.__write_qc_error_no_code(error_obj=error,
+                                              field=field,
+                                              line_number=line_number)
+                continue
 
             if is_composite_rule(error.rule):
                 checks = code_shema[error.rule]
