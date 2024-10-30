@@ -5,7 +5,10 @@ from typing import Any, Dict, List, TextIO
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from inputs.csv_reader import CSVVisitor, read_csv
-from outputs.errors import ErrorWriter, missing_header_error
+from keys.keys import FieldNames
+from outputs.errors import ListErrorWriter, empty_field_error, missing_field_error
+
+from csv_app.transformer import JSONTransformer
 
 log = logging.getLogger(__name__)
 
@@ -13,56 +16,80 @@ log = logging.getLogger(__name__)
 class JSONWriterVisitor(CSVVisitor):
     """Visitor to write the row as JSON."""
 
-    def __init__(self, error_writer: ErrorWriter) -> None:
+    def __init__(self, *, req_fields: List[str], transformer: JSONTransformer,
+                 error_writer: ListErrorWriter) -> None:
+        self.__transformer = transformer
+        self.__req_fields = req_fields
         self.__error_writer = error_writer
 
     def visit_header(self, header: List[str]) -> bool:
         """Prepares the visitor to process rows using the given header columns.
-
-        If the header doesn't have `naccid`, `module`, `visitnum` or `formver`
-        returns an error.
+        If the header doesn't have required fields writes an error.
 
         Args:
           header: the list of header names
+
         Returns:
-          True if there a column header is missing. False, otherwise
+          True if the header has all required fields, False otherwise
         """
-        if 'module' not in header and 'formver' not in header:
-            self.__error_writer.write(missing_header_error())
-            return False
 
-        # TODO: get transformations for module+formver
+        found_all = True
+        for field in self.__req_fields:
+            if field not in header:
+                found_all = False
+                self.__error_writer.write(missing_field_error(field))
 
-        # TODO: perhaps these should be determined by template file
-        if 'visitnum' not in header and 'visitdate' not in header:
-            self.__error_writer.write(missing_header_error())
-            return False
-
-        if 'naccid' not in header:
-            self.__error_writer.write(missing_header_error())
-            return False
-
-        return False
+        return found_all
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        # TODO: do any transformations on row
-        # TODO: construct file name
-        # TODO: write file (needs context?)
+        """Apply necessary transformations on the given data row.
 
-        return True
+        Args:
+          row: the dictionary for a row from a CSV file
+          line_num: line number in the CSV file
+
+        Returns:
+          True if the row was processed without error, False otherwise
+        """
+
+        found_all = True
+        for field in self.__req_fields:
+            if field not in row or not row[field]:
+                found_all = False
+                self.__error_writer.write(empty_field_error(field, line_num))
+
+        if not found_all:
+            return False
+
+        return self.__transformer.transform_record(row, line_num)
 
 
 def run(*, input_file: TextIO, proxy: FlywheelProxy,
-        error_writer: ErrorWriter) -> bool:
-    """Reads records from the input file and transforms each into a JSON
-    object.
+        error_writer: ListErrorWriter) -> bool:
+    """Reads records from the input file and transforms each into a JSON file.
+    Uploads the JSON file to the respective aquisition in Flywheel.
 
     Args:
-      input_file: the input file
-      proxy: Flywheel proxy object
-      error_writer: the writer for error output
+        input_file: the input file
+        proxy: Flywheel proxy object
+        error_writer: the writer for error output
+
+    Returns:
+        False if anything goes wrong while transforming the CSV, else True
     """
 
-    return read_csv(input_file=input_file,
-                    error_writer=error_writer,
-                    visitor=JSONWriterVisitor(error_writer=error_writer))
+    required_fields = [
+        FieldNames.NACCID, FieldNames.MODULE, FieldNames.VISITNUM,
+        FieldNames.DATE_COLUMN
+    ]
+    transformer = JSONTransformer(proxy=proxy, error_writer=error_writer)
+
+    result = read_csv(input_file=input_file,
+                      error_writer=error_writer,
+                      visitor=JSONWriterVisitor(req_fields=required_fields,
+                                                transformer=transformer,
+                                                error_writer=error_writer))
+
+    result = result and transformer.upload_pending_visits_file()
+
+    return result
