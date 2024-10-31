@@ -414,7 +414,6 @@ class ClaimedUserProcess(BaseUserProcess[RegisteredUserEntry]):
             return
 
         if not fw_user.firstlogin:
-            log.info('User %s has never logged in', entry.email)
             self.__created_queue.enqueue(entry)
 
         self.__update_queue.enqueue(entry)
