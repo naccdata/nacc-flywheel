@@ -57,9 +57,10 @@ class ParticipantVisits(BaseModel):
         visit_info = VisitInfo(filename=filename,
                                file_id=file_id,
                                visitdate=input_record[FieldNames.DATE_COLUMN])
-        return ParticipantVisits(participant=input_record[FieldNames.NACCID],
-                                 module=input_record[FieldNames.MODULE],
-                                 visits=[visit_info])
+        return ParticipantVisits(
+            participant=input_record[FieldNames.NACCID],
+            module=input_record[FieldNames.MODULE].upper(),
+            visits=[visit_info])
 
     def add_visit(self, *, filename: str, file_id: str, visitdate: str):
         """Add a new visit to the list of visits for this participant.
@@ -188,7 +189,7 @@ class SubjectAdaptor:
         self._subject.update_info(updates)
 
     def upload_file(self, file_spec: FileSpec) -> Optional[List[Dict]]:
-        """Upload a file to this subject
+        """Upload a file to this subject.
 
         Args:
             file_spec: Flywheel file spec

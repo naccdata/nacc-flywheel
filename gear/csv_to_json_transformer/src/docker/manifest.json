@@ -36,12 +36,6 @@
             }
         }
     },
-    "config": {
-        "required_fields": {
-            "description": "List of fields needs to be present in the file",
-            "type": "string",
-            "default": "naccid, module, visitnum, visitdate"
-        }
-    },
+    "config": {},
     "command": "/bin/run"
 }
