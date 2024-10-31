@@ -84,7 +84,7 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
     project_adaptor = ProjectAdaptor(project=project, proxy=proxy)
 
     if required_fields:
-        req_fields_list = required_fields.split(",")
+        req_fields_list = [item.strip() for item in required_fields.split(",")]
     else:
         req_fields_list = [
             FieldNames.NACCID, FieldNames.MODULE, FieldNames.VISITNUM,

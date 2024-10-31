@@ -2,7 +2,7 @@
     "name": "csv-to-json-transformer",
     "label": "CSV to JSON Transformer",
     "description": "Converts rows of CSV file to JSON files",
-    "version": "0.0.1",
+    "version": "0.0.6",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/csv-to-json-transformer:0.0.1"
+            "image": "naccdata/csv-to-json-transformer:0.0.6"
         },
         "flywheel": {
             "suite": "Curation",
@@ -26,7 +26,7 @@
         "api-key": {
             "base": "api-key"
         },
-        "csv_file": {
+        "input_file": {
             "description": "The project-level CSV file with naccid and module",
             "base": "file",
             "type": {

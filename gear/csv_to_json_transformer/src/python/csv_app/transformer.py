@@ -154,7 +154,7 @@ class JSONTransformer():
             log.info(
                 'Acquisition %s does not exist in session %s, '
                 'creating a new acquisition', acq_label, session_label)
-            acquisition = session.add_acquisition(f'label={acq_label}')
+            acquisition = session.add_acquisition(label=acq_label)
 
         normalized_date = convert_date(
             date_string=input_record[FieldNames.DATE_COLUMN],
@@ -194,6 +194,7 @@ class JSONTransformer():
             self.system_errors = True
             return False
 
+        acquisition = acquisition.reload()
         new_file = acquisition.get_file(visit_file_name)
         if not self._update_file_metadata(new_file, input_record):
             self.system_errors = True

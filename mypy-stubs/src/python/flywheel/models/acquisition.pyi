@@ -37,3 +37,6 @@ class Acquisition:
 
     def upload_file(self, file: FileSpec) -> List[Dict]:
         ...
+
+    def reload(self) -> 'Acquisition':
+        ...

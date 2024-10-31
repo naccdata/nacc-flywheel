@@ -95,5 +95,6 @@ def main():
 
     GearEngine().run(gear_type=CsvToJsonVisitor)
 
-    if __name__ == "__main__":
-        main()
+
+if __name__ == "__main__":
+    main()
