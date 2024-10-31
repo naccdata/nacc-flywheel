@@ -25,9 +25,13 @@ def is_duplicate_record(input_record: Dict[str, Any],
     Returns:
         True if a duplicate detected, else false
     """
-    input_dict = sorted(input_record)
-    currnt_dict = sorted(json.loads(current_record))
-    return (input_dict == currnt_dict)
+    input_dict = sorted(input_record.items())
+    try:
+        currnt_dict = sorted(json.loads(current_record).items())
+        return (input_dict == currnt_dict)
+    except json.JSONDecodeError as error:
+        log.error('Error in reading existing file - %s', error)
+        return False
 
 
 class JSONTransformer():
