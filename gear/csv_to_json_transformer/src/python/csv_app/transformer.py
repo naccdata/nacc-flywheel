@@ -16,7 +16,7 @@ from flywheel_adaptor.subject_adaptor import (
     SubjectError,
 )
 from keys.keys import DefaultValues, FieldNames
-from outputs.errors import ListErrorWriter, system_error, unexpected_value_error
+from outputs.errors import ListErrorWriter, unexpected_value_error
 
 log = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ class JSONTransformer():
         self.__project = project
         self.__error_writer = error_writer
         self.__pending_visits: Dict[str, VisitMapping] = {}
+        self.system_errors = False
 
     def _update_file_metadata(self, file: FileEntry,
                               input_record: Dict[str, Any]) -> bool:
@@ -187,14 +188,15 @@ class JSONTransformer():
         try:
             acquisition.upload_file(visit_file_spec)
         except ApiException as error:
-            message = 'Failed to upload file ' + \
-                f'{visit_file_name} to {self.__project.group}/{self.__project.label}'
-            self.__error_writer.write(system_error(message))
-            log.error('%s - %s', message, error)
+            log.error('Failed to upload file %s to %s/%s - %s',
+                      visit_file_name, self.__project.group,
+                      self.__project.label, error)
+            self.system_errors = True
             return False
 
         new_file = acquisition.get_file(visit_file_name)
         if not self._update_file_metadata(new_file, input_record):
+            self.system_errors = True
             return False
 
         self._add_pending_visit(subject=subject,
@@ -227,10 +229,11 @@ class JSONTransformer():
                                  content_type='application/yaml')
             try:
                 subject.upload_file(file_spec)
-                log.info('Uploaded file %s to subject %s',
-                         filename, participant)
+                log.info('Uploaded file %s to subject %s', filename,
+                         participant)
             except SubjectError as error:
                 success = False
+                self.system_errors = True
                 log.error('%s', error)
 
         return success

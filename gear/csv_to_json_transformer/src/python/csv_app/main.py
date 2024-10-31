@@ -1,7 +1,7 @@
 """Defines ADD DETAIL computation."""
 
 import logging
-from typing import Any, Dict, List, TextIO
+from typing import Any, Dict, List, TextIO, Tuple
 
 from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
@@ -66,7 +66,7 @@ class JSONWriterVisitor(CSVVisitor):
 
 
 def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
-        error_writer: ListErrorWriter) -> bool:
+        error_writer: ListErrorWriter) -> Tuple[bool, bool]:
     """Reads records from the input file and transforms each into a JSON file.
     Uploads the JSON file to the respective aquisition in Flywheel.
 
@@ -77,7 +77,7 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
         error_writer: the writer for error output
 
     Returns:
-        False if anything goes wrong while transforming the CSV, else True
+        Tuple[bool, bool]: Transformation successful, System errors occurred
     """
 
     project_adaptor = ProjectAdaptor(project=project, proxy=proxy)
@@ -99,4 +99,4 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
     # These files will trigger the form-qc-coordinator gear
     result = result and transformer.upload_pending_visits_file()
 
-    return result
+    return result, transformer.system_errors
