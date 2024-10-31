@@ -8,7 +8,7 @@ from dates.form_dates import DATE_PATTERN
 from flywheel.finder import Finder
 from flywheel.models.session import Session
 from flywheel.models.subject import Subject
-from keys.keys import MetadataKeys
+from keys.keys import FieldNames, MetadataKeys
 from pydantic import AliasGenerator, BaseModel, ConfigDict, Field, ValidationError
 from serialization.case import kebab_case
 
@@ -37,6 +37,40 @@ class ParticipantVisits(BaseModel):
     participant: str  # Flywheel subject label
     module: str  # module label (Flywheel aquisition label)
     visits: List[VisitInfo]
+
+    @classmethod
+    def create_from_visit_data(
+            cls, *, filename: str, file_id: str,
+            input_record: Dict[str, Any]) -> "ParticipantVisits":
+        """Create from input data and visit file details.
+
+        Args:
+            filename: Flywheel aquisition file name
+            file_id: Flywheel aquisition file ID
+            input_record: input visit data
+
+        Returns:
+            ParticipantVisits object
+        """
+        visit_info = VisitInfo(filename=filename,
+                               file_id=file_id,
+                               visitdate=input_record[FieldNames.DATE_COLUMN])
+        return ParticipantVisits(participant=input_record[FieldNames.NACCID],
+                                 module=input_record[FieldNames.MODULE],
+                                 visits=[visit_info])
+
+    def add_visit(self, *, filename: str, file_id: str, visitdate: str):
+        """Add a new visit to the list of visits for this participant.
+
+        Args:
+            filename: Flywheel aquisition file name
+            file_id: Flywheel aquisition file ID
+            visitdate: visit date
+        """
+        visit_info = VisitInfo(filename=filename,
+                               file_id=file_id,
+                               visitdate=visitdate)
+        self.visits.append(visit_info)
 
 
 class SubjectAdaptor:

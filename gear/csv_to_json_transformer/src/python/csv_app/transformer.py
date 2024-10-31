@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict
 
 from dates.form_dates import DEFAULT_DATE_FORMAT, convert_date
+from flywheel import FileEntry
 from flywheel.file_spec import FileSpec
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
@@ -12,26 +13,6 @@ from keys.keys import DefaultValues, FieldNames
 from outputs.errors import ListErrorWriter, system_error, unexpected_value_error
 
 log = logging.getLogger(__name__)
-
-
-def is_duplicate_record(input_record: Dict[str, Any],
-                        current_record: str) -> bool:
-    """Check whether the input data matches with an existing visit file.
-
-    Args:
-        input_record: input visit data
-        current_record: existing visit data
-
-    Returns:
-        True if a duplicate detected, else false
-    """
-    input_dict = sorted(input_record.items())
-    try:
-        currnt_dict = sorted(json.loads(current_record).items())
-        return (input_dict == currnt_dict)
-    except json.JSONDecodeError as error:
-        log.error('Error in reading existing file - %s', error)
-        return False
 
 
 class JSONTransformer():
@@ -53,6 +34,64 @@ class JSONTransformer():
         self.__project = project
         self.__error_writer = error_writer
         self.__pending_visits: Dict[str, ParticipantVisits] = {}
+
+    def _update_file_metadata(self, file: FileEntry,
+                              input_record: Dict[str, Any]) -> bool:
+        """Set file modality and info.forms.json metadata.
+
+        Args:
+            file: Flywheel file object
+            input_record: input visit data
+        """
+
+        # remove empty fields
+        non_empty_fields = {
+            k: v
+            for k, v in input_record.items() if v is not None
+        }
+        info = {"forms": {"json": non_empty_fields}}
+        try:
+            file.update(modality='Form')
+            file.update_info(info)
+        except ApiException as error:
+            message = 'Error in setting file metadata'
+            log.error('%s - %s', message, error)
+            self.__error_writer.write(system_error(message=message))
+            return False
+
+        return True
+
+    def _is_duplicate_record(self, input_record: Dict[str, Any],
+                             existing_file: FileEntry) -> bool:
+        """Check whether the input data matches with an existing visit file.
+
+        Args:
+            input_record: input visit data
+            existing_file: existing visit file
+
+        Returns:
+            True if a duplicate detected, else false
+        """
+        input_dict = sorted(input_record.items())
+        try:
+            currnt_dict = sorted(json.loads(existing_file.read()).items())
+            return (input_dict == currnt_dict)
+        except (json.JSONDecodeError, ApiException) as error:
+            log.warning('Error in reading existing file - %s', error)
+            return False
+
+    def _add_pending_visit(self, *, filename: str, file_id: str,
+                           input_record: Dict[str, Any]):
+        subject_lbl = input_record[FieldNames.NACCID]
+        if subject_lbl in self.__pending_visits:
+            participant_visits = self.__pending_visits[subject_lbl]
+            participant_visits.add_visit(
+                filename=filename,
+                file_id=file_id,
+                visitdate=input_record[FieldNames.DATE_COLUMN])
+        else:
+            participant_visits = ParticipantVisits.create_from_visit_data(
+                filename=filename, file_id=file_id, input_record=input_record)
 
     def transform_record(self, input_record: Dict[str, Any],
                          line_num: int) -> bool:
@@ -109,8 +148,8 @@ class JSONTransformer():
 
         visit_file_name = f'{subject_lbl}-{session_label}-{acq_label}.json'
         existing_file = acquisition.get_file(visit_file_name)
-        if existing_file and is_duplicate_record(input_record,
-                                                 existing_file.read()):
+        if existing_file and self._is_duplicate_record(input_record,
+                                                       existing_file):
             log.warning(
                 'Duplicate visit file %s already exists in project %s/%s',
                 visit_file_name, self.__project.group, self.__project.label)
@@ -130,6 +169,13 @@ class JSONTransformer():
             log.error('%s - %s', message, error)
             return False
 
+        new_file = acquisition.get_file(visit_file_name)
+        if not self._update_file_metadata(new_file, input_record):
+            return False
+
+        self._add_pending_visit(filename=visit_file_name,
+                                file_id=new_file.id,
+                                input_record=input_record)
         return True
 
     def upload_pending_visits_file(self) -> bool:
