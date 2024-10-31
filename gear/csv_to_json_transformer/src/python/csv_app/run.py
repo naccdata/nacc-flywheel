@@ -78,6 +78,9 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                                            tags=context.manifest.get(
                                                'name',
                                                'csv-to-json-transformer'))
+            if not success:
+                raise GearExecutionError(
+                    'Errors occurred while processing input file')
 
 
 def main():

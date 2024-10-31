@@ -95,6 +95,8 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
                                                 transformer=transformer,
                                                 error_writer=error_writer))
 
+    # Create and upload pending visits files for each participant
+    # These files will trigger the form-qc-coordinator gear
     result = result and transformer.upload_pending_visits_file()
 
     return result

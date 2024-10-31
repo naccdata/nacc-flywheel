@@ -1,18 +1,29 @@
 """Module for converting a record in CSV to a JSON file."""
 import json
 import logging
-from typing import Any, Dict
+from datetime import datetime
+from typing import Any, Dict, TypedDict
 
+import yaml
 from dates.form_dates import DEFAULT_DATE_FORMAT, convert_date
 from flywheel import FileEntry
 from flywheel.file_spec import FileSpec
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
-from flywheel_adaptor.subject_adaptor import ParticipantVisits
+from flywheel_adaptor.subject_adaptor import (
+    ParticipantVisits,
+    SubjectAdaptor,
+    SubjectError,
+)
 from keys.keys import DefaultValues, FieldNames
 from outputs.errors import ListErrorWriter, system_error, unexpected_value_error
 
 log = logging.getLogger(__name__)
+
+
+class VisitMapping(TypedDict):
+    subject: SubjectAdaptor
+    visits: ParticipantVisits
 
 
 class JSONTransformer():
@@ -33,7 +44,7 @@ class JSONTransformer():
         """
         self.__project = project
         self.__error_writer = error_writer
-        self.__pending_visits: Dict[str, ParticipantVisits] = {}
+        self.__pending_visits: Dict[str, VisitMapping] = {}
 
     def _update_file_metadata(self, file: FileEntry,
                               input_record: Dict[str, Any]) -> bool:
@@ -54,9 +65,8 @@ class JSONTransformer():
             file.update(modality='Form')
             file.update_info(info)
         except ApiException as error:
-            message = 'Error in setting file metadata'
-            log.error('%s - %s', message, error)
-            self.__error_writer.write(system_error(message=message))
+            log.error('Error in setting file %s metadata - %s', file.name,
+                      error)
             return False
 
         return True
@@ -80,18 +90,32 @@ class JSONTransformer():
             log.warning('Error in reading existing file - %s', error)
             return False
 
-    def _add_pending_visit(self, *, filename: str, file_id: str,
-                           input_record: Dict[str, Any]):
+    def _add_pending_visit(self, *, subject: SubjectAdaptor, filename: str,
+                           file_id: str, input_record: Dict[str, Any]):
+        """Add the visit to the list of visits pending for QC for the
+        participant.
+
+        Args:
+            subject: Flywheel subject adaptor for the participant
+            filename: Flywheel aquisition file name
+            file_id: Flywheel aquisition file ID
+            input_record: input visit data
+        """
         subject_lbl = input_record[FieldNames.NACCID]
         if subject_lbl in self.__pending_visits:
-            participant_visits = self.__pending_visits[subject_lbl]
-            participant_visits.add_visit(
+            visit_mapping = self.__pending_visits[subject_lbl]
+            visit_mapping['visits'].add_visit(
                 filename=filename,
                 file_id=file_id,
                 visitdate=input_record[FieldNames.DATE_COLUMN])
         else:
             participant_visits = ParticipantVisits.create_from_visit_data(
                 filename=filename, file_id=file_id, input_record=input_record)
+            visit_mapping: VisitMapping = {
+                'subject': subject,
+                'visits': participant_visits
+            }
+            self.__pending_visits[subject_lbl] = visit_mapping
 
     def transform_record(self, input_record: Dict[str, Any],
                          line_num: int) -> bool:
@@ -173,10 +197,40 @@ class JSONTransformer():
         if not self._update_file_metadata(new_file, input_record):
             return False
 
-        self._add_pending_visit(filename=visit_file_name,
+        self._add_pending_visit(subject=subject,
+                                filename=visit_file_name,
                                 file_id=new_file.id,
                                 input_record=input_record)
         return True
 
     def upload_pending_visits_file(self) -> bool:
-        return True
+        """Create and upload a pending visits file for each participant. These
+        files will trigger the form-qc-coordinator gear for respective Flywheel
+        subject.
+
+        Returns:
+            True if upload is successful, else False
+        """
+
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        success = True
+        for participant, visits_mapping in self.__pending_visits.items():
+            subject = visits_mapping['subject']
+            visits = visits_mapping['visits']
+            yaml_content = yaml.safe_dump(
+                data=visits.model_dump(serialize_as_any=True),
+                allow_unicode=True,
+                default_flow_style=False)
+            filename = f'{participant}-visits-pending-qc-{timestamp}.yaml'
+            file_spec = FileSpec(name=filename,
+                                 contents=yaml_content,
+                                 content_type='application/yaml')
+            try:
+                subject.upload_file(file_spec)
+                log.info('Uploaded file %s to subject %s',
+                         filename, participant)
+            except SubjectError as error:
+                success = False
+                log.error('%s', error)
+
+        return success

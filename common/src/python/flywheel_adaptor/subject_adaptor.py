@@ -5,9 +5,11 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from dates.form_dates import DATE_PATTERN
+from flywheel.file_spec import FileSpec
 from flywheel.finder import Finder
 from flywheel.models.session import Session
 from flywheel.models.subject import Subject
+from flywheel.rest import ApiException
 from keys.keys import FieldNames, MetadataKeys
 from pydantic import AliasGenerator, BaseModel, ConfigDict, Field, ValidationError
 from serialization.case import kebab_case
@@ -184,3 +186,22 @@ class SubjectAdaptor:
         # Note: have to use update_info() here for reset to take effect
         # Using update() will not delete any exsisting data
         self._subject.update_info(updates)
+
+    def upload_file(self, file_spec: FileSpec) -> Optional[List[Dict]]:
+        """Upload a file to this subject
+
+        Args:
+            file_spec: Flywheel file spec
+
+        Returns:
+            Optional[List[Dict]]: Information on the flywheel file
+
+        Raises:
+            SubjectError: if any error occurred while upload
+        """
+        try:
+            return self._subject.upload_file(file_spec)
+        except ApiException as error:
+            raise SubjectError(
+                f'Failed to upload file {file_spec.name} to {self.label} - {error}'
+            ) from error

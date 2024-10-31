@@ -1,7 +1,8 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
-from flywheel import Session
+from typing import Any, Dict, List, Optional
 
+from flywheel import Session
+from flywheel.file_spec import FileSpec
 from flywheel.finder import Finder
 
 
@@ -51,4 +52,7 @@ class Subject:
 
     def update_info(self, *args, **kwargs):
         """Update the info with the passed in arguments."""
+        ...
+
+    def upload_file(self, file: FileSpec) -> List[Dict]:
         ...
