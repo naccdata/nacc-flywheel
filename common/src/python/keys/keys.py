@@ -41,6 +41,7 @@ class DefaultValues:
     NACC_GROUP_ID = 'nacc'
     METADATA_PRJ_LBL = 'metadata'
     ADMIN_PROJECT = 'project-admin'
+    SESSION_LBL_PRFX = 'FORMS-VISIT-'
 
 
 class MetadataKeys:

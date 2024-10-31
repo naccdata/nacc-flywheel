@@ -2,15 +2,16 @@
 
 import logging
 import sys
-from pathlib import Path
 from typing import Optional
 
+from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
     ContextClient,
     GearEngine,
     GearExecutionEnvironment,
+    GearExecutionError,
     InputFileWrapper,
 )
 from inputs.parameter_store import ParameterStore
@@ -45,15 +46,27 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
         Args:
           context: the gear execution context
         """
+
         proxy = self.__client.get_proxy()
         file_id = self.__file_input.file_id
-        file = proxy.get_file(file_id)
-        input_path = Path(self.__file_input.filepath)
-        with open(input_path, mode='r', encoding='utf-8') as csv_file:
+        try:
+            file = proxy.get_file(file_id)
+        except ApiException as error:
+            raise GearExecutionError(
+                f'Failed to find the input file: {error}') from error
+
+        project = proxy.get_project_by_id(file.parents.project)
+        if not project:
+            raise GearExecutionError(
+                f'Failed to find the project with ID {file.parents.project}')
+
+        with open(self.__file_input.filepath, mode='r',
+                  encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(container_id=file_id,
                                            fw_path=proxy.get_lookup_path(file))
             success = run(input_file=csv_file,
                           proxy=proxy,
+                          project=project,
                           error_writer=error_writer)
 
             context.metadata.add_qc_result(self.__file_input.file_input,

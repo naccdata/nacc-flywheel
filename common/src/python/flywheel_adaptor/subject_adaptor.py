@@ -76,6 +76,18 @@ class SubjectAdaptor:
         """
         return self._subject.add_session(label=label)
 
+    def find_session(self, label: str) -> Optional[Session]:
+        """Finds the session with specified label.
+
+        Args:
+          label: the label for the session
+
+        Returns:
+          Session container or None
+        """
+
+        return self.sessions.find_first(f'label={label}')
+
     def update(self, info: Dict[str, Any]) -> None:
         """Updates the info object for this subject.
 

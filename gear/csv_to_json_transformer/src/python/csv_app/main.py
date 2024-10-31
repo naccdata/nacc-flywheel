@@ -3,7 +3,8 @@
 import logging
 from typing import Any, Dict, List, TextIO
 
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel import Project
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from inputs.csv_reader import CSVVisitor, read_csv
 from keys.keys import FieldNames
 from outputs.errors import ListErrorWriter, empty_field_error, missing_field_error
@@ -64,7 +65,7 @@ class JSONWriterVisitor(CSVVisitor):
         return self.__transformer.transform_record(row, line_num)
 
 
-def run(*, input_file: TextIO, proxy: FlywheelProxy,
+def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
         error_writer: ListErrorWriter) -> bool:
     """Reads records from the input file and transforms each into a JSON file.
     Uploads the JSON file to the respective aquisition in Flywheel.
@@ -72,17 +73,21 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy,
     Args:
         input_file: the input file
         proxy: Flywheel proxy object
+        project: Flyhweel project container
         error_writer: the writer for error output
 
     Returns:
         False if anything goes wrong while transforming the CSV, else True
     """
 
+    project_adaptor = ProjectAdaptor(project=project, proxy=proxy)
+
     required_fields = [
         FieldNames.NACCID, FieldNames.MODULE, FieldNames.VISITNUM,
         FieldNames.DATE_COLUMN
     ]
-    transformer = JSONTransformer(proxy=proxy, error_writer=error_writer)
+    transformer = JSONTransformer(project=project_adaptor,
+                                  error_writer=error_writer)
 
     result = read_csv(input_file=input_file,
                       error_writer=error_writer,
