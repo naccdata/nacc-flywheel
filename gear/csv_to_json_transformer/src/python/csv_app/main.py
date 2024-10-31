@@ -1,7 +1,7 @@
 """Defines ADD DETAIL computation."""
 
 import logging
-from typing import Any, Dict, List, TextIO, Tuple
+from typing import Any, Dict, List, Optional, TextIO, Tuple
 
 from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
@@ -66,7 +66,8 @@ class JSONWriterVisitor(CSVVisitor):
 
 
 def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
-        error_writer: ListErrorWriter) -> Tuple[bool, bool]:
+        error_writer: ListErrorWriter,
+        required_fields: Optional[str]) -> Tuple[bool, bool]:
     """Reads records from the input file and transforms each into a JSON file.
     Uploads the JSON file to the respective aquisition in Flywheel.
 
@@ -75,23 +76,27 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
         proxy: Flywheel proxy object
         project: Flyhweel project container
         error_writer: the writer for error output
-
+        required_fields(optional): list of required fields
     Returns:
         Tuple[bool, bool]: Transformation successful, System errors occurred
     """
 
     project_adaptor = ProjectAdaptor(project=project, proxy=proxy)
 
-    required_fields = [
-        FieldNames.NACCID, FieldNames.MODULE, FieldNames.VISITNUM,
-        FieldNames.DATE_COLUMN
-    ]
+    if required_fields:
+        req_fields_list = required_fields.split(",")
+    else:
+        req_fields_list = [
+            FieldNames.NACCID, FieldNames.MODULE, FieldNames.VISITNUM,
+            FieldNames.DATE_COLUMN
+        ]
+
     transformer = JSONTransformer(project=project_adaptor,
                                   error_writer=error_writer)
 
     result = read_csv(input_file=input_file,
                       error_writer=error_writer,
-                      visitor=JSONWriterVisitor(req_fields=required_fields,
+                      visitor=JSONWriterVisitor(req_fields=req_fields_list,
                                                 transformer=transformer,
                                                 error_writer=error_writer))
 

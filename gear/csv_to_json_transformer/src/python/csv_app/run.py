@@ -14,6 +14,7 @@ from gear_execution.gear_execution import (
     GearExecutionError,
     InputFileWrapper,
 )
+from inputs.context_parser import get_config
 from inputs.parameter_store import ParameterStore
 from outputs.errors import ListErrorWriter
 
@@ -60,6 +61,10 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             raise GearExecutionError(
                 f'Failed to find the project with ID {file.parents.project}')
 
+        required_fields = get_config(gear_context=context,
+                                     key='required_fields',
+                                     default=None)
+
         with open(self.__file_input.filepath, mode='r',
                   encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(container_id=file_id,
@@ -67,7 +72,8 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             success, sys_errors = run(input_file=csv_file,
                                       proxy=proxy,
                                       project=project,
-                                      error_writer=error_writer)
+                                      error_writer=error_writer,
+                                      required_fields=required_fields)
 
             context.metadata.add_qc_result(self.__file_input.file_input,
                                            name='validation',

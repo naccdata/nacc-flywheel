@@ -18,7 +18,7 @@
             "image": "naccdata/csv-to-json-transformer:0.0.1"
         },
         "flywheel": {
-            "suite": "NACC Admin Gears",
+            "suite": "Curation",
             "show-job": true
         }
     },
@@ -27,7 +27,7 @@
             "base": "api-key"
         },
         "csv_file": {
-            "description": "The project-level CSV file",
+            "description": "The project-level CSV file with naccid and module",
             "base": "file",
             "type": {
                 "enum": [
@@ -37,10 +37,10 @@
         }
     },
     "config": {
-        "dry_run": {
-            "description": "Whether to do a dry run",
-            "type": "boolean",
-            "default": false
+        "required_fields": {
+            "description": "List of fields needs to be present in the file",
+            "type": "string",
+            "default": "naccid, module, visitnum, visitdate"
         }
     },
     "command": "/bin/run"
