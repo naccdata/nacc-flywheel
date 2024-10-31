@@ -6,28 +6,29 @@ The JSON file will be added to a subject/session/acquisition for the participant
 - UDS
     - subject - [`naccid`]
     - session - FORMS-VIST-[`visitnum`]
-    - acquisition - UDSv[`formver`]
+    - acquisition - [`module`]
 - FTLD
     - subject - [`naccid`]
     - session - FORMS-VIST-[`visitnum`]
-    - acquisition - FTLDv[`formver`]
+    - acquisition - [`module`]
 - LBD
     - subject - [`naccid`]
     - session - FORMS-VIST-[`visitnum`]
-    - acquisition - LBDv[`formver`]
+    - acquisition - [`module`]
 - Milestone
     - subject - [`naccid`]
     - session - MILESTONE-[`visitdate`]
-    - acquisition - MLSTv[`formver`]
+    - acquisition - [`module`]
 - NP
     - subject - [`naccid`]
     - session - NP-RECORD-[`visitdate`]
-    - acquisition - NPv[`formver`]
+    - acquisition - [`module`]
     
 JSON filename: [subject]-[session]-[acquisition].json
-(e.g. NACC000123-FORMS-VISIT-05-UDSv4.json)
+(e.g. NACC000123-FORMS-VISIT-05-UDSV4.json)
 
 Transformations are determined by the `module` value and can include:
 - removing a column
 - renaming a column header
+- normalizing visit date to `YYYY-MM-DD` format
 - modifying the values in a column (?TBD)
