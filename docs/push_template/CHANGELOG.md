@@ -4,6 +4,11 @@ All notable changes to this gear are documented in this file.
 
 ## Unreleased
 
+## 1.0.2
+
+* Fixes template pattern generation to handle template labels that don't have a
+  datatype (e.g., 'accepted-template')
+
 ## 1.0.1
 
 * Functionally the same as 1.0.0 but tweaks some build details
