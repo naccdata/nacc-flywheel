@@ -51,10 +51,14 @@ class TemplateProject:
             log.error("template label doesn't match expected pattern")
             return None
 
-        datatype = match.group(datatype_group)
         stage = match.group(stage_group)
+        pattern = rf"^{stage}"
 
-        return rf"^{stage}-{datatype}"
+        datatype = match.group(datatype_group)
+        if datatype:
+            pattern = rf"^{pattern}-{datatype}"
+        
+        return pattern
 
     def copy_to(self,
                 destination: ProjectAdaptor,
