@@ -102,6 +102,7 @@ class JSONTransformer():
             file_id: Flywheel aquisition file ID
             input_record: input visit data
         """
+        visit_mapping: VisitMapping
         subject_lbl = input_record[FieldNames.NACCID]
         if subject_lbl in self.__pending_visits:
             visit_mapping = self.__pending_visits[subject_lbl]
@@ -112,10 +113,7 @@ class JSONTransformer():
         else:
             participant_visits = ParticipantVisits.create_from_visit_data(
                 filename=filename, file_id=file_id, input_record=input_record)
-            visit_mapping: VisitMapping = {
-                'subject': subject,
-                'visits': participant_visits
-            }
+            visit_mapping = {'subject': subject, 'visits': participant_visits}
             self.__pending_visits[subject_lbl] = visit_mapping
 
     def transform_record(self, input_record: Dict[str, Any],
