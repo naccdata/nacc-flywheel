@@ -5,6 +5,10 @@ All notable changes to this gear are documented in this file.
 ## Unreleased
 
 * tba
+  
+## 1.4.2
+
+* Remove premature "changing email" logging
 
 ## 1.4.1
 
