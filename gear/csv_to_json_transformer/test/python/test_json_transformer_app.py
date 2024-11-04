@@ -3,7 +3,7 @@ from io import StringIO
 from typing import Any, List
 
 import pytest
-from csv_app.main import JSONWriterVisitor, run
+from csv_app.main import run
 from outputs.errors import ErrorWriter
 
 
