@@ -293,8 +293,6 @@ class UpdateUserProcess(BaseUserProcess[RegisteredUserEntry]):
                       entry.registry_id)
             return
 
-        log.info('Changing user %s email to %s', entry.registry_id,
-                 entry.email)
         self.__update_email(user=fw_user, email=entry.email)
         self.__authorize_user(user=fw_user,
                               center_id=entry.adcid,
