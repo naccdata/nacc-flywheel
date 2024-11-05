@@ -230,13 +230,57 @@ class UserQueue(Generic[T]):
 class InactiveUserProcess(BaseUserProcess[UserEntry]):
     """User process for user entries marked inactive."""
 
+    def __init__(self, environment: UserProcessEnvironment) -> None:
+        self.__env = environment
+
     def visit(self, entry: UserEntry) -> None:
         """Visit method for an inactive user entry.
 
         Args:
           entry: the inactive user entry
         """
-        log.info("ignoring inactive entry %s", entry.email)
+        self.__disable_in_flywheel(entry)
+
+        if not entry.auth_email:
+            log.warning('User %s has no authentication email', entry.email)
+            return
+
+        self.__remove_from_redcap(entry)
+        self.__remove_from_registry(entry)
+
+    def __disable_in_flywheel(self, entry: UserEntry) -> None:
+        """Disables all Flywheel users with the email address of the entry.
+
+        Args:
+          entry: the user entry
+        """
+        fw_user_list = self.__env.proxy.find_user_by_email(entry.email)
+        for fw_user in fw_user_list:
+            log.info("Disabling Flywheel user %s ", fw_user.id)
+            self.__env.proxy.disable_user(fw_user)
+
+    def __remove_from_redcap(self, entry: UserEntry) -> None:
+        """Removes user from all redcap projects."""
+
+    def __remove_from_registry(self, entry: UserEntry) -> None:
+        """Deletes the user from the registry if found.
+
+        User entry must have `auth_email`, and person objects must have registry IDs.
+
+        Args:
+          entry: the user entry
+        """
+        assert entry.auth_email
+        person_list = self.__env.user_registry.get(email=entry.auth_email)
+        if not person_list:
+            log.info('No registry record for email %s', entry.auth_email)
+            return
+
+        for person in person_list:
+            registry_id = person.registry_id()
+            if registry_id:
+                log.info("Deleting registry record for %s", registry_id)
+                self.__env.user_registry.delete(registry_id)
 
     def execute(self, queue: UserQueue[UserEntry]) -> None:
         """Applies this process to the queue.
@@ -641,6 +685,8 @@ class UserProcess(BaseUserProcess[UserEntry]):
         """Splits the queue into active and inactive queues of entries, and
         then applies appropriate processes to each.
 
+        Process inactive users last to avoid reloading registry data.
+
         Args:
           queue: the user queue
         """
@@ -648,4 +694,5 @@ class UserProcess(BaseUserProcess[UserEntry]):
         queue.apply(self)
 
         ActiveUserProcess(self.__env).execute(self.__active_queue)
-        InactiveUserProcess().execute(self.__inactive_queue)
+        InactiveUserProcess(environment=self.__env).execute(
+            self.__inactive_queue)
