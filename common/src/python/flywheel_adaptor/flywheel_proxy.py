@@ -134,6 +134,16 @@ class FlywheelProxy:
         """
         return self.__fw.users.find_first(f'_id={user_id}')
 
+    def find_user_by_email(self, email: str) -> List[flywheel.User]:
+        """Returns list of users with the email address.
+
+        Args:
+          email: the email address
+        Returns:
+          a list with the users with the address
+        """
+        return self.__fw.users.find(f'email={email}')
+
     def add_user(self, user: flywheel.User) -> str:
         """Adds the user and returns the user id.
 
@@ -168,6 +178,16 @@ class FlywheelProxy:
             return
 
         self.__fw.modify_user(user.id, {'email': email})
+
+    def disable_user(self, user: flywheel.User) -> None:
+        """Disables the user and clears permissions.
+
+        Args:
+          user: the local instance of user
+        """
+        assert user.id
+        self.__fw.modify_user(user.id, {'disabled': True},
+                              clear_permissions=True)
 
     def get_file(self, file_id: str) -> FileEntry:
         """Returns file object with the file ID.
