@@ -198,6 +198,14 @@ class UserRegistry:
 
         return self.__registry_map[email]
 
+    def delete(self, registry_id: str) -> None:
+        """Removes the person object with the registry ID.
+
+        Args:
+            registry_id the registry id for the person object
+        """
+        self.__api_instance.delete_co_person(self.coid, registry_id)
+
     def has_bad_claim(self, name: str) -> bool:
         """Returns true if a RegistryPerson with the primary name has an
         incomplete claim.
@@ -213,6 +221,13 @@ class UserRegistry:
             self.__list()
 
         return name in self.__bad_claims
+
+    def refresh(self) -> None:
+        """Clears the local cash of registry records.
+        Subsequent calls to get records will for a load.
+        """
+        self.__registry_map = {}
+        self.__bad_claims = {}
 
     def __list(self) -> None:
         """Returns the dictionary of RegistryPerson objects for records in the
