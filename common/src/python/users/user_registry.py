@@ -204,9 +204,11 @@ class UserRegistry:
         Args:
             registry_id the registry id for the person object
         """
-        self.__api_instance.delete_co_person(self.coid, registry_id)
-        self.__registry_map = {}
-        self.__bad_claims = {}
+        # TODO: confirm delete does what we want
+        # self.__api_instance.delete_co_person(self.coid, registry_id)
+        # self.__registry_map = {}
+        # self.__bad_claims = {}
+
 
     def has_bad_claim(self, name: str) -> bool:
         """Returns true if a RegistryPerson with the primary name has an
