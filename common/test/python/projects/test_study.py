@@ -10,12 +10,12 @@ class DummyVisitor(StudyVisitor):
     """Visitor for testing apply methods."""
 
     def __init__(self) -> None:
-        self.center_name: Optional[str] = None
+        self.center_id: Optional[str] = None
         self.project_name: Optional[str] = None
         self.datatype_name: Optional[str] = None
 
-    def visit_center(self, center: Center) -> None:
-        self.center_name = center.name
+    def visit_center(self, center_id: str) -> None:
+        self.center_id = center_id
 
     def visit_datatype(self, datatype: str):
         self.datatype_name = datatype
@@ -65,7 +65,7 @@ class TestCenter:
                         center_id="dummy",
                         adcid=1)
         center.apply(visitor)
-        assert visitor.center_name == "Dummy Center"
+        assert visitor.center_id == "Dummy Center"
 
     def test_create_from_yaml(self):
         center_yaml = ("adcid: 16\n"
