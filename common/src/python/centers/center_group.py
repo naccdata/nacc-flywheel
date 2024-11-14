@@ -374,7 +374,6 @@ class CenterGroup(CenterAdaptor):
         ]
         for label in labels:
             project = self.__add_project(label)
-            project.add_admin_users(self.get_user_access())
 
     def add_ingest_project(self, *, study: Study, study_info: 'StudyMetadata',
                            pipeline: str, datatype: str) -> None:
@@ -394,7 +393,6 @@ class CenterGroup(CenterAdaptor):
                                   project_id=project.id,
                                   project_label=project_label,
                                   datatype=datatype))
-        project.add_admin_users(self.get_user_access())
 
     def add_accepted_project(self, *, study: Study,
                              study_info: 'StudyMetadata') -> None:
@@ -410,7 +408,6 @@ class CenterGroup(CenterAdaptor):
             ProjectMetadata(study_id=study.study_id,
                             project_id=accepted_project.id,
                             project_label=accepted_label))
-        accepted_project.add_admin_users(self.get_user_access())
 
     def add_distribution_project(self, *, study: Study,
                                  study_info: 'StudyMetadata',
@@ -429,13 +426,10 @@ class CenterGroup(CenterAdaptor):
                                         project_id=project.id,
                                         project_label=project_label,
                                         datatype=datatype))
-        project.add_admin_users(self.get_user_access())
 
     def add_center_portal(self) -> None:
         """Adds a center portal project to this group."""
         portal_project = self.__add_project('center-portal')
-        admin_access = self.get_user_access()
-        portal_project.add_admin_users(admin_access)
 
     def add_redcap_project(self, redcap_project: 'REDCapProjectInput') -> None:
         """Adds the REDCap project to the center group.
@@ -526,6 +520,7 @@ class CenterGroup(CenterAdaptor):
             raise CenterError(f"failed to create project {self.label}/{label}")
 
         project.add_tags(self.get_tags())
+        project.add_admin_users(self.get_user_access())
         return project
 
     def add_user_roles(self, user: User, authorizations: Authorizations,
