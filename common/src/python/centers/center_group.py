@@ -70,6 +70,7 @@ class CenterGroup(CenterAdaptor):
                                    group=group,
                                    proxy=proxy)
         metadata_project.add_admin_users(center_group.get_user_access())
+        center_group.add_center_portal()
 
         return center_group
 
@@ -121,6 +122,7 @@ class CenterGroup(CenterAdaptor):
             'active': center.is_active()
         })
 
+        center_group.add_center_portal()
         return center_group
 
     @classmethod
@@ -363,73 +365,9 @@ class CenterGroup(CenterAdaptor):
 
         return self.__center_portal
 
-    def add_retrospective_project(self, study: Study) -> None:
-        """Adds retrospective projects for the study to the center.
-
-        Args:
-          study: the study object
-        """
-        labels = [
-            f"retrospective-{datatype.lower()}" for datatype in study.datatypes
-        ]
-        for label in labels:
-            project = self.__add_project(label)
-
-    def add_ingest_project(self, *, study: Study, study_info: 'StudyMetadata',
-                           pipeline: str, datatype: str) -> None:
-        """Adds an ingest projects for the study datatype to the center.
-
-        Args:
-          study: the study object
-          study_info: the center study metadata
-          pipeline: the name of the pipeline
-          datatype: the name of the datatype
-        """
-        project_label = (
-            f"{pipeline}-{datatype.lower()}{study.project_suffix()}")
-        project = self.__add_project(project_label)
-        study_info.add_ingest(
-            IngestProjectMetadata(study_id=study.study_id,
-                                  project_id=project.id,
-                                  project_label=project_label,
-                                  datatype=datatype))
-
-    def add_accepted_project(self, *, study: Study,
-                             study_info: 'StudyMetadata') -> None:
-        """Adds an accepted project for the study to the center.
-
-        Args:
-          study: the study object
-          study_info: the center study metadata
-        """
-        accepted_label = f"accepted{study.project_suffix()}"
-        accepted_project = self.__add_project(accepted_label)
-        study_info.add_accepted(
-            ProjectMetadata(study_id=study.study_id,
-                            project_id=accepted_project.id,
-                            project_label=accepted_label))
-
-    def add_distribution_project(self, *, study: Study,
-                                 study_info: 'StudyMetadata',
-                                 datatype: str) -> None:
-        """Adds a distribution project to this center for the study.
-
-        Args:
-          study: the study object
-          study_info: the study metadata
-          datatype: the pipeline data type
-        """
-        project_label = f'distribution-{datatype.lower()}{study.project_suffix()}'
-        project = self.__add_project(project_label)
-        study_info.add_distribution(
-            DistributionProjectMetadata(study_id=study.study_id,
-                                        project_id=project.id,
-                                        project_label=project_label,
-                                        datatype=datatype))
-
     def add_center_portal(self) -> None:
         """Adds a center portal project to this group."""
-        portal_project = self.__add_project('center-portal')
+        self.__add_project('center-portal')
 
     def add_redcap_project(self, redcap_project: 'REDCapProjectInput') -> None:
         """Adds the REDCap project to the center group.
