@@ -158,6 +158,7 @@ class CenterGroup(CenterAdaptor):
                                    active=active,
                                    group=group,
                                    proxy=proxy)
+        center_group.add_center_portal()
 
         return center_group
 
