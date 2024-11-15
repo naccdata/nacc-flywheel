@@ -128,7 +128,7 @@ class AggregationMapper(StudyMapper):
           study_info: the study metadata
         """
         accepted_label = f"accepted{self.__study.project_suffix()}"
-        accepted_project = center.__add_project(accepted_label)
+        accepted_project = center.add_project(accepted_label)
         study_info.add_accepted(
             ProjectMetadata(study_id=self.__study.study_id,
                             project_id=accepted_project.id,
@@ -146,7 +146,7 @@ class AggregationMapper(StudyMapper):
         """
         project_label = (
             f"{pipeline}-{datatype.lower()}{self.__study.project_suffix()}")
-        project = center.__add_project(project_label)
+        project = center.add_project(project_label)
         study_info.add_ingest(
             IngestProjectMetadata(study_id=self.__study.study_id,
                                   project_id=project.id,
@@ -164,7 +164,7 @@ class AggregationMapper(StudyMapper):
             for datatype in self.__study.datatypes
         ]
         for label in labels:
-            center.__add_project(label)
+            center.add_project(label)
 
     def __get_release_group(self) -> Optional[GroupAdaptor]:
         """Returns the release group for this study if it is published.
@@ -237,7 +237,7 @@ class DistributionMapper(StudyMapper):
         """
         project_label = (f'distribution-{datatype.lower()}'
                          f'{self.__study.project_suffix()}')
-        project = center.__add_project(project_label)
+        project = center.add_project(project_label)
         study_info.add_distribution(
             DistributionProjectMetadata(study_id=self.__study.study_id,
                                         project_id=project.id,

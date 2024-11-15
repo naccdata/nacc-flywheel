@@ -367,7 +367,7 @@ class CenterGroup(CenterAdaptor):
 
     def add_center_portal(self) -> None:
         """Adds a center portal project to this group."""
-        self.__add_project('center-portal')
+        self.add_project('center-portal')
 
     def add_redcap_project(self, redcap_project: 'REDCapProjectInput') -> None:
         """Adds the REDCap project to the center group.
@@ -444,7 +444,7 @@ class CenterGroup(CenterAdaptor):
         metadata_project.update_info(
             project_info.model_dump(by_alias=True, exclude_none=True))
 
-    def __add_project(self, label: str) -> ProjectAdaptor:
+    def add_project(self, label: str) -> ProjectAdaptor:
         """Adds a project with the label to this group and returns the
         corresponding ProjectAdaptor.
 
