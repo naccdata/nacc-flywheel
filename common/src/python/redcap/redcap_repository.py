@@ -16,8 +16,9 @@ log = logging.getLogger(__name__)
 class REDCapParametersRepository:
     """Repository for REDCap connection credentials."""
 
-    def __init__(self, redcap_params: Dict[str, REDCapParameters] = {}):
-        self.__redcap_params = redcap_params
+    def __init__(self,
+                 redcap_params: Optional[Dict[str, REDCapParameters]] = None):
+        self.__redcap_params = redcap_params if redcap_params else {}
 
     @property
     def redcap_params(self) -> Dict[str, REDCapParameters]:

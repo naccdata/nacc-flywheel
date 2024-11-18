@@ -57,7 +57,7 @@ class TemplateProject:
         datatype = match.group(datatype_group)
         if datatype:
             pattern = rf"^{pattern}-{datatype}"
-        
+
         return pattern
 
     def copy_to(self,

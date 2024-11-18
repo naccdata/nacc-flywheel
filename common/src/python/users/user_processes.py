@@ -112,7 +112,8 @@ class NotificationClient:
 
         If notification mode is force, then returns true.
         If mode is none, returns False.
-        If mode is date, returns true if the number of days since creation is a multiple of 7, and False otherwise.
+        If mode is date, returns true if the number of days since creation is
+        a multiple of 7, and False otherwise.
 
         Args:
         user_entry: the directory entry for user
