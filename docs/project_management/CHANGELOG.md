@@ -6,7 +6,7 @@ All notable changes to this gear are documented in this file.
 
 * TBD
 
-## 1.0.4
+## 1.0.6
 
 * Adds this CHANGELOG
 * Fixes an access error in the implementation of the study mapping.
