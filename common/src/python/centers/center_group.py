@@ -528,13 +528,15 @@ class CenterGroup(CenterAdaptor):
         project.add_tags(self.get_tags())
         return project
 
-    def add_user_roles(self, user: User, authorizations: Authorizations,
+    def add_user_roles(self, user: User, auth_email: str,
+                       authorizations: Authorizations,
                        auth_map: AuthMap) -> None:
         """Adds user to authorized projects in the center group and to any
         associated NACC REDCap projects for data entry.
 
         Args:
           user: the user to add
+          auth_email: the email used in the registry
           authorizations: the authorizations for the user
           auth_map: authorizations to roles mapping
         """
@@ -567,6 +569,7 @@ class CenterGroup(CenterAdaptor):
             #     continue
 
             # self.__add_user_to_redcap_project(user=user,
+            #                                   auth_email=auth_email,
             #                                   form_ingest_project=project,
             #                                   authorizations=authorizations)
 
@@ -623,20 +626,20 @@ class CenterGroup(CenterAdaptor):
         return project.add_user_roles(user=user, roles=roles)
 
     def __add_user_to_redcap_project(
-            self, *, user: User,
+            self, *, user: User, auth_email: str,
             form_ingest_project: 'FormIngestProjectMetadata',
             authorizations: Authorizations) -> bool:
         """Adds user to the respective REDCap project for direct data entry.
 
         Args:
           user: the user to add
+          auth_email: the email used in the registry
           form_ingest_project: metadata about form ingest project
           authorizations: the authorizations for the user
 
         Returns:
           True if user was added, False if errors occurred
         """
-        assert user.id, "requires user has ID"
 
         if not self.__redcap_param_repo:
             log.warning('REDCap project repository not found in center %s',
@@ -667,12 +670,13 @@ class CenterGroup(CenterAdaptor):
                 continue
 
             if not redcap_project.assign_update_user_role_by_label(
-                    user.id, CENTER_USER_ROLE):
+                    auth_email, CENTER_USER_ROLE):
                 success = False
                 continue
 
-            log.info('User %s is assigned %s permissions in REDCap project %s',
-                     user.id, CENTER_USER_ROLE, redcap_project.title)
+            log.info(
+                'User %s (%s) is assigned %s permissions in REDCap project %s',
+                user.email, auth_email, CENTER_USER_ROLE, redcap_project.title)
 
         return success
 
