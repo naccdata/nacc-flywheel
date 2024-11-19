@@ -121,23 +121,21 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
 
         filename = f"{self.__file_input.filename}-identifier"
         input_path = Path(self.__file_input.filepath)
-        with open(input_path, mode='r', encoding='utf-8') as csv_file:
-            with context.open_output(f'{filename}.csv',
-                                     mode='w',
-                                     encoding='utf-8') as out_file:
-                error_writer = ListErrorWriter(
-                    container_id=file_id,
-                    fw_path=self.proxy.get_lookup_path(
-                        self.proxy.get_file(file_id)))
-                success = run(input_file=csv_file,
-                              identifiers=identifiers,
-                              output_file=out_file,
-                              error_writer=error_writer)
-                context.metadata.add_qc_result(
-                    self.__file_input.file_input,
-                    name="validation",
-                    state="PASS" if success else "FAIL",
-                    data=error_writer.errors())
+        with (open(input_path, mode='r', encoding='utf-8') as csv_file,
+              context.open_output(f'{filename}.csv',
+                                  mode='w',
+                                  encoding='utf-8') as out_file):
+            error_writer = ListErrorWriter(container_id=file_id,
+                                           fw_path=self.proxy.get_lookup_path(
+                                               self.proxy.get_file(file_id)))
+            success = run(input_file=csv_file,
+                          identifiers=identifiers,
+                          output_file=out_file,
+                          error_writer=error_writer)
+            context.metadata.add_qc_result(self.__file_input.file_input,
+                                           name="validation",
+                                           state="PASS" if success else "FAIL",
+                                           data=error_writer.errors())
 
 
 def main():

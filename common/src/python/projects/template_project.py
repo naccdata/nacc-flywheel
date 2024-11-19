@@ -57,7 +57,7 @@ class TemplateProject:
         datatype = match.group(datatype_group)
         if datatype:
             pattern = rf"^{pattern}-{datatype}"
-        
+
         return pattern
 
     def copy_to(self,
@@ -317,7 +317,7 @@ class TemplateProject:
             auto_update=rule.auto_update,
             any=rule.any,
             all=rule.all,
-            _not=rule._not,  # pylint: disable=(protected-access)
+            _not=rule._not,  # noqa: SLF001
             disabled=rule.disabled,
             compute_provider_id=rule.compute_provider_id,
             triggering_input=rule.triggering_input)

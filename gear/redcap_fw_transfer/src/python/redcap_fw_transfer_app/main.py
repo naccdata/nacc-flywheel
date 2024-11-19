@@ -105,12 +105,12 @@ def validate_redcap_report(redcap_prj: REDCapProject, report_id: str,
             f'Primary key {redcap_prj.primary_key_field} not included '
             f'in project {redcap_prj.title} report {report_id}')
 
-    if redcap_prj.has_repeating_instruments_or_events():
-        if ('redcap_event_name' not in record
-                or 'redcap_repeat_instance' not in record):
-            raise GearExecutionError(
-                f'REDCap repeating instance fields not included '
-                f'in project {redcap_prj.title} report {report_id}')
+    if (redcap_prj.has_repeating_instruments_or_events()
+            and ('redcap_event_name' not in record
+                 or 'redcap_repeat_instance' not in record)):
+        raise GearExecutionError(
+            f'REDCap repeating instance fields not included '
+            f'in project {redcap_prj.title} report {report_id}')
 
     extra_fields = set(record.keys()).difference(set(schema.keys()))
     return list(extra_fields)
@@ -169,8 +169,8 @@ def run(*, gear_context: GearToolkitContext, redcap_con: REDCapConnection,
                 event = redcap_prj.get_event_name_for_label(f'{module}-visit')
                 if not event:
                     raise GearExecutionError(
-                        f'Cannot find event {module}-visit in project {redcap_prj.title}'
-                    )
+                        f'Cannot find event {module}-visit'
+                        f' in project {redcap_prj.title}')
                 events = [event]
                 extra_fields.extend([
                     'redcap_event_name', 'redcap_repeat_instance',
