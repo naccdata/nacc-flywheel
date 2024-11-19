@@ -65,7 +65,7 @@ class TestCenter:
                         center_id="dummy",
                         adcid=1)
         center.apply(visitor)
-        assert visitor.center_id == "Dummy Center"
+        assert visitor.center_id == "dummy"
 
     def test_create_from_yaml(self):
         center_yaml = ("adcid: 16\n"

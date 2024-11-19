@@ -114,9 +114,9 @@ class Center:
         """Center tags property."""
         return tuple(self.__tags)
 
-    def apply(self, visitor):
+    def apply(self, visitor: StudyVisitor):
         """Applies visitor to this Center."""
-        visitor.visit_center(self)
+        visitor.visit_center(self.center_id)
 
     @classmethod
     def create(cls, center: Dict[str, Any]) -> "Center":
