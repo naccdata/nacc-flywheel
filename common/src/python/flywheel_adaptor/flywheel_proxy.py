@@ -412,12 +412,12 @@ class FlywheelProxy:
             log.info('Dry run: would modify data view')
             return
 
-        temp_id = source._id  # pylint: disable=(protected-access)
+        temp_id = source._id  # noqa: SLF001
         temp_parent = source.parent
-        source._id = None  # pylint: disable=(protected-access)
+        source._id = None  # noqa: SLF001
         source.parent = destination.parent
         self.__fw.modify_view(destination.id, source)
-        source._id = temp_id  # pylint: disable=(protected-access)
+        source._id = temp_id  # noqa: SLF001
         source.parent = temp_parent
 
     def delete_dataview(self, view: DataView) -> bool:
@@ -673,7 +673,11 @@ class GroupAdaptor:
         self._group = group
         self._fw = proxy
 
-    # pylint: disable=invalid-name
+    @property
+    def group(self) -> flywheel.Group:
+        """Returns the enclosed group."""
+        return self._group
+
     @property
     def id(self) -> str:
         """Return the ID for the group."""
@@ -918,7 +922,16 @@ class ProjectAdaptor:
 
         self._project = projects[0]
 
-    # pylint: disable=(invalid-name)
+    @property
+    def proxy(self) -> FlywheelProxy:
+        """Returns the flywheel proxy object."""
+        return self._fw
+
+    @property
+    def project(self) -> flywheel.Project:
+        """Returns the enclosed Project."""
+        return self._project
+
     @property
     def id(self):
         """Returns the ID of the enclosed project."""

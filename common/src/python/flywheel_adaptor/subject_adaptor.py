@@ -62,6 +62,11 @@ class SubjectAdaptor:
         return self._subject.sessions
 
     @property
+    def subject(self) -> Subject:
+        """Returns the subject object."""
+        return self._subject
+
+    @property
     def id(self) -> str:
         """Returns the ID for this subject."""
         return self._subject.id
