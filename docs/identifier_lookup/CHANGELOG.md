@@ -8,3 +8,5 @@ All notable changes to this gear are documented in this file.
 * [#29](https://github.com/naccdata/flywheel-gear-extensions/pull/29) Adds classes for capturing and outputting errors/alerts to CSV file
 * Adds this CHANGELOG
 * Changes Identifier Lookup so that it extracts the module name from the filename suffix and inserts it into the output CSV with the column name `module`.
+* Change code structure identified by linting
+

@@ -168,23 +168,22 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
         """
         try:
             if redcap_project.report_id:
-                redcap_params = self.__param_store.get_redcap_report_params_for_project(
+                return REDCapReportConnection.create_from(
+                    self.__param_store.get_redcap_report_params_for_project(
+                        base_path=self.__param_path,
+                        pid=redcap_project.redcap_pid,
+                        report_id=redcap_project.report_id))
+
+            return REDCapConnection.create_from(
+                self.__param_store.get_redcap_parameters(
                     base_path=self.__param_path,
-                    pid=redcap_project.redcap_pid,
-                    report_id=redcap_project.report_id)
-                redcap_con = REDCapReportConnection.create_from(redcap_params)
-            else:
-                redcap_params = self.__param_store.get_redcap_parameters(
-                    base_path=self.__param_path, pid=redcap_project.redcap_pid)
-                redcap_con = REDCapConnection.create_from(redcap_params)
+                    pid=redcap_project.redcap_pid))
         except ParameterError as error:
             log.error(
                 'Error in retrieving REDCap project credentials '
                 'for project %s module %s: %s', redcap_project.redcap_pid,
                 redcap_project.label, error)
             return None
-
-        return redcap_con
 
     def run(self, context: GearToolkitContext):
         """Runs the redcap_fw_transfer app.

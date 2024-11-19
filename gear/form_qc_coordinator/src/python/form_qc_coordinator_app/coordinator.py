@@ -225,7 +225,7 @@ class QCCoordinator():
                 destination = self._proxy.get_acquisition(acq_id)
             except ApiException as error:
                 raise GearExecutionError(
-                    f'Failed to retrieve {filename} - {error}')
+                    f'Failed to retrieve {filename} - {error}') from error
 
             job_id = gear.run(config=configs,
                               inputs={"form_data_file": visit_file},

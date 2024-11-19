@@ -77,7 +77,7 @@ class TestProjectMetadataSerialization:
             model_object = IngestProjectMetadata.model_validate(project_dump)
             assert model_object == project_with_datatype
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
 
     # pylint: disable=(redefined-outer-name)
     def test_project_with_datatype(self, project_with_datatype):
@@ -107,7 +107,7 @@ class TestProjectMetadataSerialization:
                 project_dump)
             assert model_object == ingest_project_with_redcap
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
 
     # pylint: disable=(redefined-outer-name)
     def test_project_without_datatype(self, project_without_datatype):
@@ -121,7 +121,7 @@ class TestProjectMetadataSerialization:
             model_object = ProjectMetadata.model_validate(project_dump)
             assert model_object == project_without_datatype
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
 
 
 # pylint: disable=(redefined-outer-name)
@@ -158,7 +158,7 @@ class TestStudyMetadataSerialization:
             model_object = StudyMetadata.model_validate(study_dump)
             assert model_object == study_object
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
 
 
 # pylint: disable=(redefined-outer-name)
@@ -185,7 +185,7 @@ class TestCenterPortalMetadataSerialization:
             model_object = CenterProjectMetadata.model_validate(portal_dump)
             assert model_object == portal_metadata
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
 
 
 class TestREDCapUpdate:

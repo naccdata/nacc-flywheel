@@ -45,7 +45,8 @@ def no_header_stream():
 @pytest.fixture(scope="function")
 def no_ids_stream():
     """Create data stream without expected column headers."""
-    data = [['dummy1', 'dummy2', 'dummy3'], [1, 1, 8], [1, 2, 99]]
+    data: List[List[str | int]] = [['dummy1', 'dummy2', 'dummy3'], [1, 1, 8],
+                                   [1, 2, 99]]
     stream = StringIO()
     write_to_stream(data, stream)
     yield stream
@@ -54,7 +55,8 @@ def no_ids_stream():
 @pytest.fixture(scope="function")
 def data_stream():
     """Create valid data stream with header row."""
-    data = [['adcid', 'ptid', 'var1'], [1, '1', 8], [1, '2', 99]]
+    data: List[List[str | int]] = [['adcid', 'ptid', 'var1'], [1, '1', 8],
+                                   [1, '2', 99]]
     stream = StringIO()
     write_to_stream(data, stream)
     stream.seek(0)
