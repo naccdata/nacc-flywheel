@@ -110,13 +110,13 @@ def run(
             for module in project.modules:
                 project_xml = None
                 if use_template and xml_templates:
-                    if module.label in xml_templates:
-                        project_xml = xml_templates[module.label]
-                    else:
+                    if module.label not in xml_templates:
                         log.error('Cannot find xml template for %s/%s/%s',
                                   center, project_lbl, module.label)
                         errors = True
                         continue
+
+                    project_xml = xml_templates[module.label]
 
                 redcap_prj_title = f'{group_adaptor.label} {module.title}'
                 try:
@@ -129,15 +129,14 @@ def run(
 
                 redcap_pid = setup_new_project_elements(
                     parameter_store, base_path, api_key, redcap_super_con.url)
-                if redcap_pid:
-                    module_obj = REDCapFormProjectMetadata(
-                        redcap_pid=redcap_pid,
-                        label=module.label,
-                        report_id=None)
-                    project_object.projects.append(module_obj)
-                else:
+                if not redcap_pid:
                     errors = True
                     continue
+
+                module_obj = REDCapFormProjectMetadata(redcap_pid=redcap_pid,
+                                                       label=module.label,
+                                                       report_id=None)
+                project_object.projects.append(module_obj)
 
             # Update REDCap project metadata in Flywheel
             if len(project_object.projects) > 0:
