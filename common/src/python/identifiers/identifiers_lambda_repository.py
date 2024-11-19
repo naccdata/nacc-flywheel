@@ -154,52 +154,13 @@ class IdentifiersLambdaRepository(IdentifierRepository):
           TypeError: if the arguments are nonsensical
         """
         if naccid is not None:
-            try:
-                response = self.__client.invoke(
-                    name='identifier-naccid-lambda-function',
-                    request=NACCIDRequest(mode=self.__mode, naccid=naccid))
-            except LambdaInvocationError as error:
-                raise IdentifierRepositoryError(error) from error
-
-            if response.statusCode == 200:
-                return IdentifierObject.model_validate_json(response.body)
-            if response.statusCode == 404:
-                return None
-
-            raise IdentifierRepositoryError(response.body)
+            return self.__get_by_naccid(naccid)
 
         if adcid is not None and ptid:
-            try:
-                response = self.__client.invoke(
-                    name='Identifier-ADCID-PTID-Lambda-Function',
-                    request=IdentifierRequest(mode=self.__mode,
-                                              adcid=adcid,
-                                              ptid=ptid,
-                                              guid=guid))
-            except LambdaInvocationError as error:
-                raise IdentifierRepositoryError(error) from error
-
-            if response.statusCode == 200:
-                return IdentifierObject.model_validate_json(response.body)
-            if response.statusCode == 404:
-                return None
-
-            raise IdentifierRepositoryError(response.body)
+            return self.__get_by_ptid(adcid=adcid, ptid=ptid, guid=guid)
 
         if guid:
-            try:
-                response = self.__client.invoke(
-                    name='identifier-guid-lambda-function',
-                    request=GUIDRequest(mode=self.__mode, guid=guid))
-            except LambdaInvocationError as error:
-                raise IdentifierRepositoryError(error) from error
-
-            if response.statusCode == 200:
-                return IdentifierObject.model_validate_json(response.body)
-            if response.statusCode == 404:
-                return None
-
-            raise IdentifierRepositoryError(response.body)
+            return self.__get_by_guid(guid)
 
         raise TypeError("Invalid arguments")
 
@@ -253,3 +214,81 @@ class IdentifiersLambdaRepository(IdentifierRepository):
             index += limit
 
         return identifier_list
+
+    def __get_by_naccid(self, naccid: str) -> Optional[IdentifierObject]:
+        """Returns the IdentifierObject for the NACCID.
+
+        Args:
+          naccid: the (integer part of the) NACCID
+        Returns:
+          the IdentifierObject for the naccid
+        Raises:
+          IdentifierRepositoryError if no Identifier record was found
+        """
+        try:
+            response = self.__client.invoke(
+                name='identifier-naccid-lambda-function',
+                request=NACCIDRequest(mode=self.__mode, naccid=naccid))
+        except LambdaInvocationError as error:
+            raise IdentifierRepositoryError(error) from error
+
+        if response.statusCode == 200:
+            return IdentifierObject.model_validate_json(response.body)
+        if response.statusCode == 404:
+            return None
+
+        raise IdentifierRepositoryError(response.body)
+
+    def __get_by_ptid(self, *, adcid: int, ptid: str,
+                      guid: Optional[str]) -> Optional[IdentifierObject]:
+        """Returns the IdentifierObject for the NACCID.
+
+        Args:
+          adcid: the center ID
+          ptid: the participant ID assigned by the center
+          guid: the NIA GUID
+        Returns:
+          the IdentifierObject for the ptid
+        Raises:
+          IdentifierRepositoryError if no Identifier record was found
+        """
+        try:
+            response = self.__client.invoke(
+                name='Identifier-ADCID-PTID-Lambda-Function',
+                request=IdentifierRequest(mode=self.__mode,
+                                          adcid=adcid,
+                                          ptid=ptid,
+                                          guid=guid))
+        except LambdaInvocationError as error:
+            raise IdentifierRepositoryError(error) from error
+
+        if response.statusCode == 200:
+            return IdentifierObject.model_validate_json(response.body)
+        if response.statusCode == 404:
+            return None
+
+        raise IdentifierRepositoryError(response.body)
+
+    def __get_by_guid(self, guid: str) -> Optional[IdentifierObject]:
+        """Returns the IdentifierObject for the GUID.
+
+        Args:
+          guid: the NIA GUID
+        Returns:
+          the IdentifierObject for the guid
+        Raises:
+          IdentifierRepositoryError if no Identifier record was found
+        """
+        try:
+            response = self.__client.invoke(
+                name='identifier-guid-lambda-function',
+                request=GUIDRequest(mode=self.__mode, guid=guid))
+        except LambdaInvocationError as error:
+            raise IdentifierRepositoryError(error) from error
+
+        if response.statusCode == 200:
+            return IdentifierObject.model_validate_json(response.body)
+        if response.statusCode == 404:
+            return None
+
+        raise IdentifierRepositoryError(response.body)
