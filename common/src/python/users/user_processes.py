@@ -112,7 +112,8 @@ class NotificationClient:
 
         If notification mode is force, then returns true.
         If mode is none, returns False.
-        If mode is date, returns true if the number of days since creation is a multiple of 7, and False otherwise.
+        If mode is date, returns true if the number of days since creation is
+        a multiple of 7, and False otherwise.
 
         Args:
         user_entry: the directory entry for user
@@ -293,8 +294,11 @@ class UpdateUserProcess(BaseUserProcess[RegisteredUserEntry]):
                       entry.registry_id)
             return
 
+        assert entry.auth_email, "user entry must have auth email"
+
         self.__update_email(user=fw_user, email=entry.email)
         self.__authorize_user(user=fw_user,
+                              auth_email=entry.auth_email,
                               center_id=entry.adcid,
                               authorizations=entry.authorizations)
 
@@ -317,7 +321,7 @@ class UpdateUserProcess(BaseUserProcess[RegisteredUserEntry]):
         log.info('Setting user %s email to %s', user.id, email)
         self.__env.proxy.set_user_email(user=user, email=email)
 
-    def __authorize_user(self, *, user: User, center_id: int,
+    def __authorize_user(self, *, user: User, auth_email: str, center_id: int,
                          authorizations: Authorizations) -> None:
         """Adds authorizations to the user.
 
@@ -325,7 +329,9 @@ class UpdateUserProcess(BaseUserProcess[RegisteredUserEntry]):
 
         Args:
         user: the user
+        auth_email: the email used in the registry
         center_id: the center of the user
+        authorizations: list of authorizations
         """
         center_group = self.__env.admin_group.get_center(center_id)
         if not center_group:
@@ -337,6 +343,7 @@ class UpdateUserProcess(BaseUserProcess[RegisteredUserEntry]):
 
         # give users access to center projects
         center_group.add_user_roles(user=user,
+                                    auth_email=auth_email,
                                     authorizations=authorizations,
                                     auth_map=self.__env.authorization_map)
 
