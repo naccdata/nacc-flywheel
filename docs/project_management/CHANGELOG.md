@@ -4,7 +4,13 @@ All notable changes to this gear are documented in this file.
 
 ## Unreleased
 
+* TBD
+
+## 1.0.6
+
 * Adds this CHANGELOG
+* Fixes an access error in the implementation of the study mapping.
+* Replaces the study mapping classes with an implementation of the neglected StudyVisitor abstract class.
 
 ## 1.0.2
 
