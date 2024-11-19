@@ -116,6 +116,7 @@ class TestIdentifierLookup:
         success = run(input_file=empty_data_stream,
                       identifiers=identifiers_map,
                       output_file=out_stream,
+                      module_name='dummy-module',
                       error_writer=StreamErrorWriter(stream=err_stream,
                                                      container_id='dummy',
                                                      fw_path='dummy-path'))
@@ -131,6 +132,7 @@ class TestIdentifierLookup:
         success = run(input_file=no_header_stream,
                       identifiers=identifiers_map,
                       output_file=out_stream,
+                      module_name='dummy-module',
                       error_writer=StreamErrorWriter(stream=err_stream,
                                                      container_id='dummy',
                                                      fw_path='dummy-path'))
@@ -146,6 +148,7 @@ class TestIdentifierLookup:
         success = run(input_file=no_ids_stream,
                       identifiers=identifiers_map,
                       output_file=out_stream,
+                      module_name='dummy-module',
                       error_writer=StreamErrorWriter(stream=err_stream,
                                                      container_id='dummy',
                                                      fw_path='dummy-path'))
@@ -161,6 +164,7 @@ class TestIdentifierLookup:
         success = run(input_file=data_stream,
                       identifiers=identifiers_map,
                       output_file=out_stream,
+                      module_name='dummy-module',
                       error_writer=StreamErrorWriter(stream=err_stream,
                                                      container_id='dummy',
                                                      fw_path='dummy-path'))
@@ -185,6 +189,7 @@ class TestIdentifierLookup:
         success = run(input_file=data_stream,
                       identifiers=mismatched_identifiers_map,
                       output_file=out_stream,
+                      module_name='dummy-module',
                       error_writer=StreamErrorWriter(stream=err_stream,
                                                      container_id='dummy',
                                                      fw_path='dummy-path'))
