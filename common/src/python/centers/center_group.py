@@ -86,7 +86,7 @@ class CenterGroup(CenterAdaptor):
         """
         # pylint: disable=protected-access
         return CenterGroup.create_from_group(proxy=adaptor.proxy(),
-                                             group=adaptor._group)
+                                             group=adaptor.group)
 
     @classmethod
     def create_from_center(cls, *, proxy: FlywheelProxy,
@@ -136,7 +136,7 @@ class CenterGroup(CenterAdaptor):
         Raises:
             CenterError: if center metadata missing or incomplete
         """
-        group = adaptor._group
+        group = adaptor.group
         proxy = adaptor.proxy()
         meta_project = group.projects.find_first('label=metadata')
         if not meta_project:

@@ -47,7 +47,7 @@ class EnrollmentSubject(SubjectAdaptor):
           the enrollment subject
         """
         # pylint: disable=protected-access
-        return EnrollmentSubject(subject=subject._subject)
+        return EnrollmentSubject(subject=subject.subject)
 
     def get_enrollment_info(self) -> Optional[IdentifierInfoRecord]:
         """Returns the enrollment info object for this subject.
