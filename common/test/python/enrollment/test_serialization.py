@@ -1,5 +1,7 @@
 """Tests serialization of enrollment/transfer form data."""
 
+from typing import Dict
+
 import pytest
 from dates.form_dates import DATE_FORMATS, DateFormatException, parse_date
 from enrollment.enrollment_transfer import EnrollmentRecord
@@ -25,7 +27,7 @@ class TestEnrollmentSerialization:
     # pylint: disable=(no-self-use)
     def test_create(self):
         """Test create_from method."""
-        row = {
+        row: Dict[str, int | str] = {
             'adcid': 0,
             'ptid': "123456",
             'frmdate_enrl': "2024-06-10",
@@ -33,19 +35,19 @@ class TestEnrollmentSerialization:
         }
         guid = row.get('guid')
         try:
-            enroll_date = parse_date(date_string=row['frmdate_enrl'],
+            enroll_date = parse_date(date_string=str(row['frmdate_enrl']),
                                      formats=DATE_FORMATS)
         except DateFormatException:
-            assert False, 'date should be OK'
+            assert False, 'date should be OK'  # noqa: B011
         try:
             record = EnrollmentRecord(center_identifier=CenterIdentifiers(
-                adcid=row['adcid'], ptid=row['ptid']),
-                                      guid=guid if guid else None,
+                adcid=int(row['adcid']), ptid=str(row['ptid'])),
+                                      guid=str(guid) if guid else None,
                                       naccid=None,
                                       start_date=enroll_date)
             assert record
         except ValidationError:
-            assert False, "row should be valid, got {str(e)}"
+            assert False, "row should be valid, got {str(e)}"  # noqa: B011
 
     def test_create_error(self, bad_date_row):
         """Test create_from method."""
@@ -62,7 +64,7 @@ class TestEnrollmentSerialization:
                              guid=guid if guid else None,
                              naccid=None,
                              start_date=row['frmdate_enrl'])
-            assert False, "date is invalid should fail"
+            assert False, "date is invalid should fail"  # noqa: B011
         except ValidationError as e:
             assert True, "date is invalid"
             assert e.error_count() == 1
