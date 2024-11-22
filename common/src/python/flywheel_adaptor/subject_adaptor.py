@@ -9,10 +9,12 @@ from flywheel.file_spec import FileSpec
 from flywheel.finder import Finder
 from flywheel.models.session import Session
 from flywheel.models.subject import Subject
+from flywheel.models.subject_parents import SubjectParents
 from flywheel.rest import ApiException
 from keys.keys import FieldNames, MetadataKeys
 from pydantic import AliasGenerator, BaseModel, ConfigDict, Field, ValidationError
 from serialization.case import kebab_case
+from utils.utils import is_duplicate_record
 
 log = logging.getLogger(__name__)
 
@@ -107,6 +109,11 @@ class SubjectAdaptor:
     def id(self) -> str:
         """Returns the ID for this subject."""
         return self._subject.id
+
+    @property
+    def parents(self) -> SubjectParents:
+        """Returns parents for this subject."""
+        return self._subject.parents
 
     def add_session(self, label: str) -> Session:
         """Adds and returns a new session for this subject.
@@ -211,3 +218,59 @@ class SubjectAdaptor:
             raise SubjectError(
                 f'Failed to upload file {file_spec.name} to {self.label} - {error}'
             ) from error
+
+    def upload_acquisition_file(self,
+                                *,
+                                session_lbl: str,
+                                acq_lbl: str,
+                                filename: str,
+                                contents: str,
+                                content_type: str,
+                                skip_duplicates: bool = True) -> bool:
+        """Uploads a file to a given session/acquisition in this subject.
+        Creates new containers if session/acquisition does not exist.
+
+        Args:
+            session_lbl: Flywheel session label
+            acq_lbl: Flywheel acquisition label
+            filename: file name
+            contents: file contents
+            content_type: contents type
+            skip_duplicates: whether to skip upload if a duplicate file already exists
+        """
+
+        session = self.find_session(session_lbl)
+        if not session:
+            log.info(
+                'Session %s does not exist in subject %s, creating a new session',
+                session_lbl, self.label)
+            session = self.add_session(session_lbl)
+
+        acquisition = session.acquisitions.find_first(f'label={acq_lbl}')
+        if not acquisition:
+            log.info(
+                'Acquisition %s does not exist in session %s, '
+                'creating a new acquisition', acq_lbl, session_lbl)
+            acquisition = session.add_acquisition(label=acq_lbl)
+
+        if skip_duplicates:
+            existing_file = acquisition.get_file(filename)
+            if existing_file and is_duplicate_record(
+                    contents, existing_file.read(), content_type):
+                log.warning(
+                    'Duplicate visit file %s already exists in subject %s',
+                    filename, self.label)
+                return True
+
+        record_file_spec = FileSpec(name=filename,
+                                    contents=contents,
+                                    content_type=content_type)
+
+        try:
+            acquisition.upload_file(record_file_spec)
+        except ApiException as error:
+            raise SubjectError(
+                f'Failed to upload file {filename} to subject {self.label} - {error}'
+            ) from error
+
+        return True

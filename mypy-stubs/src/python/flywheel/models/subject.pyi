@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 from flywheel import Session
 from flywheel.file_spec import FileSpec
 from flywheel.finder import Finder
+from flywheel.models.subject_parents import SubjectParents
 
 
 class Subject:
@@ -25,6 +26,14 @@ class Subject:
     def type(self) -> str:
         ...
 
+    @property
+    def sessions(self) -> Finder[Session]:
+        ...
+
+    @property
+    def parents(self) -> SubjectParents:
+        ...
+
     def update(
             self,
             *,
@@ -41,10 +50,6 @@ class Subject:
         ...
 
     def add_session(self, label: str) -> Session:
-        ...
-
-    @property
-    def sessions(self) -> Finder[Session]:
         ...
 
     def reload(self) -> Subject:
