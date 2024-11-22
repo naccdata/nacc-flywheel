@@ -10,6 +10,7 @@ from keys.keys import FieldNames
 from outputs.errors import ListErrorWriter, empty_field_error, missing_field_error
 
 from csv_app.transformer import RecordTransformer
+from csv_app.uploader import JSONUploader
 
 log = logging.getLogger(__name__)
 
@@ -77,21 +78,9 @@ class JSONWriterVisitor(CSVVisitor):
         return success
 
 
-def upload_visits(
-        transformed_records: Dict[str, List[Dict[str, Any]]]) -> bool:
-    """Converts a tranformed CSV record to a JSON file and uploads it to the
-    respective acquisition in Flywheel.
-
-    - If the record already exists in Flywheel (duplicate), it will not be re-uploaded.
-    - If the record is new/modified, upload it to Flywheel and update file metadata.
-
-    Args:
-        transformed_records: visit records to upload, by participant
-
-    Returns:
-        bool: True if uploads successful
-    """
-    return True
+def notify_upload_errors():
+    # TODO: send an email to nacc_dev@uw.edu
+    pass
 
 
 def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
@@ -129,5 +118,12 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
                           transformed_records=transformed_records,
                           error_writer=error_writer))
 
-    result = result and upload_visits(transformed_records)
-    return result
+    if not len(transformed_records) > 0:
+        return result
+
+    uploader = JSONUploader(project=project_adaptor)
+    upload_status = uploader.upload_visits(transformed_records)
+    if not upload_status:
+        notify_upload_errors()
+
+    return result and upload_status

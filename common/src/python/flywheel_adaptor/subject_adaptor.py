@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from dates.form_dates import DATE_PATTERN
 from flywheel.file_spec import FileSpec
 from flywheel.finder import Finder
+from flywheel.models.file_entry import FileEntry
 from flywheel.models.session import Session
 from flywheel.models.subject import Subject
 from flywheel.models.subject_parents import SubjectParents
@@ -219,14 +220,15 @@ class SubjectAdaptor:
                 f'Failed to upload file {file_spec.name} to {self.label} - {error}'
             ) from error
 
-    def upload_acquisition_file(self,
-                                *,
-                                session_lbl: str,
-                                acq_lbl: str,
-                                filename: str,
-                                contents: str,
-                                content_type: str,
-                                skip_duplicates: bool = True) -> bool:
+    def upload_acquisition_file(
+            self,
+            *,
+            session_lbl: str,
+            acq_lbl: str,
+            filename: str,
+            contents: str,
+            content_type: str,
+            skip_duplicates: bool = True) -> Optional[FileEntry]:
         """Uploads a file to a given session/acquisition in this subject.
         Creates new containers if session/acquisition does not exist.
 
@@ -237,6 +239,12 @@ class SubjectAdaptor:
             contents: file contents
             content_type: contents type
             skip_duplicates: whether to skip upload if a duplicate file already exists
+
+        Returns:
+            FileEntry(optional): Flywheel container for the newly uploaded file or None
+
+        Raises:
+            SubjectError: if any error occurred while upload
         """
 
         session = self.find_session(session_lbl)
@@ -260,7 +268,7 @@ class SubjectAdaptor:
                 log.warning(
                     'Duplicate visit file %s already exists in subject %s',
                     filename, self.label)
-                return True
+                return None
 
         record_file_spec = FileSpec(name=filename,
                                     contents=contents,
@@ -268,9 +276,9 @@ class SubjectAdaptor:
 
         try:
             acquisition.upload_file(record_file_spec)
+            acquisition = acquisition.reload()
+            return acquisition.get_file(filename)
         except ApiException as error:
             raise SubjectError(
                 f'Failed to upload file {filename} to subject {self.label} - {error}'
             ) from error
-
-        return True

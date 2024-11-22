@@ -650,12 +650,13 @@ class FlywheelProxy:
         return result['data']
 
     def lookup(self, path):
-        """Perform a path based lookup of a single node in the Flywheel hierarchy.
+        """Perform a path based lookup of a single node in the Flywheel
+        hierarchy.
 
         Args:
             path: The path to resolve
 
-        Returns: 
+        Returns:
             ResolverOutput
         """
         return self.__fw.lookup(path)
