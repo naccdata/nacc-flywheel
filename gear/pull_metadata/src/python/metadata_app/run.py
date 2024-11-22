@@ -2,14 +2,14 @@
 import logging
 import re
 import sys
-from typing import Dict
+from typing import Dict, List, Optional
 
 from centers.center_group import CenterError, CenterGroup
 from flywheel import Client
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from inputs.context_parser import ConfigParseError, get_config
-from inputs.parameter_store import ParameterError, ParameterStore
+from inputs.parameter_store import ParameterError, ParameterStore, S3Parameters
 from s3.s3_client import S3BucketReader
 
 from metadata_app.main import run
@@ -70,14 +70,22 @@ def main():
             sys.exit(1)
 
         try:
-            s3_param_path = get_config(gear_context=gear_context,
-                                       key='s3_param_path')
-            destination_label = get_config(gear_context=gear_context,
-                                           key='destination_label')
-            table_list = get_config(gear_context=gear_context,
-                                    key='table_list')
+            s3_param_path: Optional[str] = get_config(
+                gear_context=gear_context, key='s3_param_path')
+            destination_label: Optional[str] = get_config(
+                gear_context=gear_context, key='destination_label')
+            table_list: List[str] = get_config(gear_context=gear_context,
+                                               key='table_list')
         except ConfigParseError as error:
             log.error('Incomplete configuration: %s', error.message)
+            sys.exit(1)
+
+        if not s3_param_path:
+            log.error('Expected S3 parameter path')
+            sys.exit(1)
+
+        if not destination_label:
+            log.error('Expected destination label')
             sys.exit(1)
 
         apikey_path_prefix = gear_context.config.get("apikey_path_prefix",
@@ -88,7 +96,7 @@ def main():
             parameter_store = ParameterStore.create_from_environment()
             api_key = parameter_store.get_api_key(
                 path_prefix=apikey_path_prefix)
-            s3_parameters = parameter_store.get_s3_parameters(
+            s3_parameters: S3Parameters = parameter_store.get_s3_parameters(
                 param_path=s3_param_path)
         except ParameterError as error:
             log.error('Parameter error: %s', error)

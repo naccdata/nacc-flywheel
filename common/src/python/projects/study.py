@@ -34,11 +34,11 @@ class StudyVisitor(ABC):
         """
 
     @abstractmethod
-    def visit_center(self, center: "Center") -> None:
+    def visit_center(self, center_id: str) -> None:
         """Method to visit the given center within a study.
 
         Args:
-          center: the center to visit
+          center_id: the ID of the center to visit
         """
 
     @abstractmethod
@@ -114,9 +114,9 @@ class Center:
         """Center tags property."""
         return tuple(self.__tags)
 
-    def apply(self, visitor):
+    def apply(self, visitor: StudyVisitor):
         """Applies visitor to this Center."""
-        visitor.visit_center(self)
+        visitor.visit_center(self.center_id)
 
     @classmethod
     def create(cls, center: Dict[str, Any]) -> "Center":

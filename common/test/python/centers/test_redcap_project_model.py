@@ -30,4 +30,4 @@ class TestREDCapProjectInput:
             model_object = REDCapProjectInput.model_validate(project_dump)
             assert model_object == project_model
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011

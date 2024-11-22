@@ -14,27 +14,85 @@ from s3.s3_client import S3BucketReader
 log = logging.getLogger(__name__)
 
 
-class ParserException(Exception):
+class DefinitionException(Exception):
     """Raised when an error occurs during loading rule definitions."""
 
 
-class Parser:
+class DefinitionsLoader:
     """Class to load the validation rules definitions as python objects."""
 
-    def __init__(self, s3_bucket: S3BucketReader, strict: bool = True):
+    def __init__(self,
+                 *,
+                 s3_client: S3BucketReader,
+                 error_writer: ListErrorWriter,
+                 strict: bool = True):
         """
 
         Args:
             s3_bucket (S3BucketReader): S3 bucket to load rule definitions
+            error_writer: error writer object to output error metadata
             strict (optional): Validation mode, defaults to True.
         """
 
-        self.__s3_bucket = s3_bucket
+        self.__s3_bucket = s3_client
+        self.__error_writer = error_writer
         self.__strict = strict
         # optional forms file in S3 bucket
         self.__opfname = 'optional_forms.json'
 
-    def download_rule_definitions(
+    def load_definition_schemas(
+        self,
+        *,
+        input_data: dict[str, Any],
+        module: str,
+        optional_forms: Optional[Dict[str, bool]] = None
+    ) -> tuple[Dict[str, Mapping], Optional[Dict[str, Dict]]]:
+        """Download QC rule definitions and error code mappings from S3 bucket.
+
+        Args:
+            input_data: input data record
+            module: module name,
+            optional_forms(optional): Submission status of each optional form
+
+        Returns:
+            rule definition schema, code mapping schema (optional)
+
+        Raises:
+            DefinitionException: if error occurred while loading schemas
+        """
+
+        s3_prefix = module
+        if input_data.get(FieldNames.FORMVER, None):
+            formver = str(input_data[FieldNames.FORMVER])
+            s3_prefix = f'{s3_prefix}/{formver}'
+
+        if input_data.get(FieldNames.PACKET, None):
+            packet = str(input_data[FieldNames.PACKET]).upper()
+            s3_prefix = f'{s3_prefix}/{packet}'
+
+        schema = self.download_definitions_from_s3(f'{s3_prefix}/rules/',
+                                                   optional_forms)
+
+        try:
+            codes_map: Optional[Dict[
+                str, Dict]] = self.download_definitions_from_s3(
+                    f'{s3_prefix}/codes/', optional_forms)  # type: ignore
+            # TODO - validate code mapping schema
+        except DefinitionException as error:
+            log.warning(error)
+            codes_map = None
+
+        if codes_map:
+            diff_keys = set(schema.keys()) ^ (codes_map.keys())
+            if diff_keys:
+                raise DefinitionException(
+                    'Rule definitions and codes definitions does not match, '
+                    f'list of fields missing in one of the schemas: {diff_keys}'
+                )
+
+        return schema, codes_map
+
+    def download_definitions_from_s3(  # noqa: C901
             self, prefix: str,
             optional_forms: Optional[Dict[str, bool]]) -> Dict[str, Mapping]:
         """Download rule definition files from a source S3 bucket and generate
@@ -50,7 +108,7 @@ class Parser:
             dict[str, Mapping[str, object]: Schema object from rule definitions
 
         Raises:
-            ParserException: If error occurred while loading rule definitions
+            DefinitionException: If error occurred while loading rule definitions
         """
 
         full_schema: dict[str, Mapping] = {}
@@ -63,7 +121,7 @@ class Parser:
         if not rule_defs:
             message = ('Failed to load definitions from the S3 bucket: '
                        f'{self.__s3_bucket.bucket_name}/{prefix}')
-            raise ParserException(message)
+            raise DefinitionException(message)
 
         parser_error = False
         for key, file_object in rule_defs.items():
@@ -117,18 +175,14 @@ class Parser:
                 parser_error = True
 
         if parser_error:
-            raise ParserException(
+            raise DefinitionException(
                 'Error(s) occurred while loading rule definitions')
 
         return full_schema
 
     def get_optional_forms_submission_status(
-            self,
-            *,
-            input_data: Dict[str, Any],
-            module: str,
-            packet: Optional[str] = None,
-            error_writer: ListErrorWriter) -> Optional[Dict[str, bool]]:
+            self, *, input_data: Dict[str, Any],
+            module: str) -> Optional[Dict[str, bool]]:
         """Get the list of optional forms for the module/packet from
         optional_forms.json file in rule definitions S3 bucket. Check whether
         each optional form is submitted or not using the mode variable in input
@@ -137,14 +191,12 @@ class Parser:
         Args:
             input_data: input data record
             module: module name
-            packet: packet code,
-            error_writer: error writer object to output error metadata
 
         Returns:
             Dict[str, bool]: submission status of each optional form
 
         Raises:
-            ParserException: If failed to get optional forms submission status
+            DefinitionException: If failed to get optional forms submission status
         """
 
         s3_client = self.__s3_bucket
@@ -153,16 +205,16 @@ class Parser:
         except s3_client.exceptions.NoSuchKey as error:
             message = (f'Optional forms file {self.__opfname} '
                        f'not found in S3 bucket {s3_client.bucket_name}')
-            error_writer.write(system_error(message, None))
-            raise ParserException(message) from error
+            self.__error_writer.write(system_error(message, None))
+            raise DefinitionException(message) from error
         except s3_client.exceptions.InvalidObjectState as error:
             message = f'Unable to access optional forms file {self.__opfname}: {error}'
-            error_writer.write(system_error(message, None))
-            raise ParserException(message) from error
+            self.__error_writer.write(system_error(message, None))
+            raise DefinitionException(message) from error
         except (JSONDecodeError, TypeError) as error:
             message = f'Error in reading optional forms file {self.__opfname}: {error}'
-            error_writer.write(system_error(message, None))
-            raise ParserException(message) from error
+            self.__error_writer.write(system_error(message, None))
+            raise DefinitionException(message) from error
 
         if not optional_forms or module not in optional_forms:
             log.warning('Cannot find optional forms info for module %s',
@@ -171,9 +223,7 @@ class Parser:
 
         module_info = optional_forms[module]
         # some modules may not have separate packet codes, set to 'D' for default
-        if not packet:
-            packet = 'D'
-
+        packet = input_data.get(FieldNames.PACKET, 'D')
         if packet not in module_info:
             log.warning('Cannot find optional forms info for packet %s/%s',
                         module, packet)
@@ -184,19 +234,20 @@ class Parser:
         submission_status = {}
         for form in packet_info:
             mode_var = f'{FieldNames.MODE}{form}'
-            if mode_var not in input_data or input_data[mode_var] == '':
+            if not input_data.get(mode_var):
                 if self.__strict:
-                    error_writer.write(empty_field_error(mode_var))
+                    # TODO - change this to qc system error
+                    self.__error_writer.write(empty_field_error(mode_var))
                     missing.append(mode_var)
                 else:
                     submission_status[form] = False
                 continue
 
-            submission_status[form] = (input_data[mode_var]
+            submission_status[form] = (input_data.get(mode_var)
                                        != DefaultValues.NOTFILLED)
 
         if missing:
-            raise ParserException(
+            raise DefinitionException(
                 f'Missing fields {missing} required to validate optional forms'
             )
 

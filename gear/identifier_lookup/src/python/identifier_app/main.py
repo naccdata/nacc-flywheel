@@ -31,7 +31,7 @@ class IdentifierVisitor(CSVVisitor):
         self.__output_file = output_file
         self.__error_writer = error_writer
         self.__header: Optional[List[str]] = None
-        self.__writer = None
+        self.__writer: Optional[CSVWriter] = None
 
     def __get_writer(self):
         """Returns the writer for the CSV output.
