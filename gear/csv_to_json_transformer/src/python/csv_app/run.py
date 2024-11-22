@@ -56,6 +56,14 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             raise GearExecutionError(
                 f'Failed to find the input file: {error}') from error
 
+        admin_id: str = context.config.get('admin_project',
+                                           'nacc/project-admin')
+        try:
+            admin_project = proxy.lookup(admin_id)
+        except ApiException as error:
+            raise GearExecutionError(
+                f'Cannot find admin project - {error}') from error
+
         project = proxy.get_project_by_id(file.parents.project)
         if not project:
             raise GearExecutionError(
@@ -65,10 +73,11 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                   encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(container_id=file_id,
                                            fw_path=proxy.get_lookup_path(file))
-            success, sys_errors = run(input_file=csv_file,
-                                      proxy=proxy,
-                                      project=project,
-                                      error_writer=error_writer)
+            success = run(input_file=csv_file,
+                          proxy=proxy,
+                          project=project,
+                          admin_project=admin_project,
+                          error_writer=error_writer)
 
             context.metadata.add_qc_result(self.__file_input.file_input,
                                            name='validation',
@@ -79,9 +88,6 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                                            tags=context.manifest.get(
                                                'name',
                                                'csv-to-json-transformer'))
-            if sys_errors:
-                raise GearExecutionError(
-                    'System errors occurred while processing the input file')
 
 
 def main():

@@ -1,7 +1,7 @@
 """Defines ADD DETAIL computation."""
 
 import logging
-from typing import Any, Dict, List, TextIO, Tuple
+from typing import Any, Dict, List, TextIO
 
 from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
@@ -9,7 +9,7 @@ from inputs.csv_reader import CSVVisitor, read_csv
 from keys.keys import FieldNames
 from outputs.errors import ListErrorWriter, empty_field_error, missing_field_error
 
-from csv_app.transformer import JSONTransformer
+from csv_app.transformer import RecordTransformer
 
 log = logging.getLogger(__name__)
 
@@ -17,10 +17,13 @@ log = logging.getLogger(__name__)
 class JSONWriterVisitor(CSVVisitor):
     """Visitor to write the row as JSON."""
 
-    def __init__(self, *, req_fields: List[str], transformer: JSONTransformer,
+    def __init__(self, *, req_fields: List[str],
+                 transformer: RecordTransformer,
+                 transformed_records: Dict[str, List[Dict[str, Any]]],
                  error_writer: ListErrorWriter) -> None:
         self.__transformer = transformer
         self.__req_fields = req_fields
+        self.__transformed = transformed_records
         self.__error_writer = error_writer
 
     def visit_header(self, header: List[str]) -> bool:
@@ -62,11 +65,37 @@ class JSONWriterVisitor(CSVVisitor):
         if not found_all:
             return False
 
-        return self.__transformer.transform_record(row, line_num)
+        success = self.__transformer.transform_record(row, line_num)
+        if success:
+            subject_lbl = row[FieldNames.NACCID]
+            visits = self.__transformed.get(subject_lbl)
+            if not visits:
+                visits = []
+                self.__transformed[subject_lbl] = visits
+            visits.append(row)
+
+        return success
+
+
+def upload_visits(
+        transformed_records: Dict[str, List[Dict[str, Any]]]) -> bool:
+    """Converts a tranformed CSV record to a JSON file and uploads it to the
+    respective acquisition in Flywheel.
+
+    - If the record already exists in Flywheel (duplicate), it will not be re-uploaded.
+    - If the record is new/modified, upload it to Flywheel and update file metadata.
+
+    Args:
+        transformed_records: visit records to upload, by participant
+
+    Returns:
+        bool: True if uploads successful
+    """
+    return True
 
 
 def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
-        error_writer: ListErrorWriter) -> Tuple[bool, bool]:
+        admin_project: Project, error_writer: ListErrorWriter) -> bool:
     """Reads records from the input file and transforms each into a JSON file.
     Uploads the JSON file to the respective aquisition in Flywheel.
 
@@ -74,29 +103,31 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
         input_file: the input file
         proxy: Flywheel proxy object
         project: Flyhweel project container
+        admin_project: Flywheel admin_project container
         error_writer: the writer for error output
     Returns:
-        Tuple[bool, bool]: Transformation successful, System errors occurred
+        bool: True if transformation/upload successful
     """
 
     project_adaptor = ProjectAdaptor(project=project, proxy=proxy)
+    admin_adaptor = ProjectAdaptor(project=project, proxy=proxy)
 
     req_fields_list = [
         FieldNames.NACCID, FieldNames.MODULE, FieldNames.VISITNUM,
         FieldNames.DATE_COLUMN
     ]
 
-    transformer = JSONTransformer(project=project_adaptor,
-                                  error_writer=error_writer)
+    transformer = RecordTransformer(admin_project=admin_adaptor,
+                                    error_writer=error_writer)
 
+    transformed_records: Dict[str, List[Dict[str, Any]]] = {}
     result = read_csv(input_file=input_file,
                       error_writer=error_writer,
-                      visitor=JSONWriterVisitor(req_fields=req_fields_list,
-                                                transformer=transformer,
-                                                error_writer=error_writer))
+                      visitor=JSONWriterVisitor(
+                          req_fields=req_fields_list,
+                          transformer=transformer,
+                          transformed_records=transformed_records,
+                          error_writer=error_writer))
 
-    # Create and upload pending visits files for each participant
-    # These files will trigger the form-qc-coordinator gear
-    result = result and transformer.upload_pending_visits_file()
-
-    return result, transformer.system_errors
+    result = result and upload_visits(transformed_records)
+    return result

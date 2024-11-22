@@ -34,6 +34,11 @@
                     "source code"
                 ]
             }
+        },
+        "admin_project": {
+            "description": "Flywheel lookup string for the admin project",
+            "type": "string",
+            "default": "nacc/project-admin"
         }
     },
     "config": {},
