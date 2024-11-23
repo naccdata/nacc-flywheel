@@ -1,7 +1,7 @@
 """Defines ADD DETAIL computation."""
 
 import logging
-from typing import Any, Dict, List, TextIO
+from typing import Any, Dict, List, Optional, TextIO
 
 from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
@@ -9,23 +9,26 @@ from inputs.csv_reader import CSVVisitor, read_csv
 from keys.keys import FieldNames
 from outputs.errors import ListErrorWriter, empty_field_error, missing_field_error
 
-from csv_app.transformer import RecordTransformer
+from csv_app.transformer import LBDTransformer, RecordTransformer, UDSTransformer
 from csv_app.uploader import JSONUploader
 
 log = logging.getLogger(__name__)
 
+module_transformers = {'UDS': UDSTransformer, 'LBD': LBDTransformer}
 
-class JSONWriterVisitor(CSVVisitor):
+
+class CSVTransformVisitor(CSVVisitor):
     """Visitor to write the row as JSON."""
 
     def __init__(self, *, req_fields: List[str],
-                 transformer: RecordTransformer,
                  transformed_records: Dict[str, List[Dict[str, Any]]],
-                 error_writer: ListErrorWriter) -> None:
-        self.__transformer = transformer
+                 error_writer: ListErrorWriter,
+                 admin_project: ProjectAdaptor) -> None:
         self.__req_fields = req_fields
         self.__transformed = transformed_records
         self.__error_writer = error_writer
+        self.__admin_project = admin_project
+        self.__transformer: Optional[RecordTransformer] = None
 
     def visit_header(self, header: List[str]) -> bool:
         """Prepares the visitor to process rows using the given header columns.
@@ -47,7 +50,8 @@ class JSONWriterVisitor(CSVVisitor):
         return found_all
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Apply necessary transformations on the given data row.
+        """Apply necessary transformations on the given data row. Assumes all
+        records in the CSV file belongs to the same module.
 
         Args:
           row: the dictionary for a row from a CSV file
@@ -66,7 +70,20 @@ class JSONWriterVisitor(CSVVisitor):
         if not found_all:
             return False
 
-        success = self.__transformer.transform_record(row, line_num)
+        # Set transformer
+        # Assumes all records in the CSV file belongs to the same module.
+        if not self.__transformer:
+            module = row[FieldNames.MODULE].upper()
+            transformer_type = module_transformers.get(module)
+            if not transformer_type:
+                log.info('No module specific transformations defined for %s',
+                         module)
+                transformer_type = RecordTransformer
+
+            self.__transformer = transformer_type(self.__admin_project,
+                                                  self.__error_writer)
+
+        success = self.__transformer.transform(row, line_num)
         if success:
             subject_lbl = row[FieldNames.NACCID]
             visits = self.__transformed.get(subject_lbl)
@@ -99,24 +116,21 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
     """
 
     project_adaptor = ProjectAdaptor(project=project, proxy=proxy)
-    admin_adaptor = ProjectAdaptor(project=project, proxy=proxy)
+    admin_adaptor = ProjectAdaptor(project=admin_project, proxy=proxy)
 
     req_fields_list = [
         FieldNames.NACCID, FieldNames.MODULE, FieldNames.VISITNUM,
         FieldNames.DATE_COLUMN
     ]
 
-    transformer = RecordTransformer(admin_project=admin_adaptor,
-                                    error_writer=error_writer)
-
     transformed_records: Dict[str, List[Dict[str, Any]]] = {}
     result = read_csv(input_file=input_file,
                       error_writer=error_writer,
-                      visitor=JSONWriterVisitor(
+                      visitor=CSVTransformVisitor(
                           req_fields=req_fields_list,
-                          transformer=transformer,
                           transformed_records=transformed_records,
-                          error_writer=error_writer))
+                          error_writer=error_writer,
+                          admin_project=admin_adaptor))
 
     if not len(transformed_records) > 0:
         return result
