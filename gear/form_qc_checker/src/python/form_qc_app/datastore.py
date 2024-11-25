@@ -257,4 +257,4 @@ class DatastoreHelper(Datastore):
         Returns:
             bool: True if provided drug ID is valid, else False
         """
-        return RxNormConnectionError.get_rxcui_status(drugid) == RxcuiStatus.ACTIVE
+        return RxNormConnection.get_rxcui_status(drugid) == RxcuiStatus.ACTIVE
