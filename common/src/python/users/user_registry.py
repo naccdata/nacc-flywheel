@@ -3,6 +3,8 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Optional
 
+from pydantic import ValidationError
+
 from coreapi_client.api.default_api import DefaultApi
 from coreapi_client.exceptions import ApiException
 from coreapi_client.models.co_person import CoPerson
@@ -280,9 +282,13 @@ class UserRegistry:
 
         if response.additional_properties:
             for message_object in response.additional_properties.values():
-                person_list.append(
-                    RegistryPerson(
-                        CoPersonMessage.model_validate(message_object)))
+                try:
+                    person = RegistryPerson(
+                        CoPersonMessage.model_validate(message_object))
+                except ValidationError as error:
+                    raise RegistryError(f"Error parsing registry response: {error}") from error
+                
+                person_list.append(person)
 
         return person_list
 
