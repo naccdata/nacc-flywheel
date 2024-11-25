@@ -110,7 +110,7 @@ def main():
     """Gear main method to transform CSV where row is participant data to set
     of JSON files, one per participant."""
 
-    GearEngine().run(gear_type=CsvToJsonVisitor)
+    GearEngine.create_with_parameter_store().run(gear_type=CsvToJsonVisitor)
 
 
 if __name__ == "__main__":

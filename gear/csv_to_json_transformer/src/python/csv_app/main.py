@@ -146,7 +146,7 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
 
     req_fields_list = [
         FieldNames.NACCID, FieldNames.MODULE, FieldNames.VISITNUM,
-        FieldNames.DATE_COLUMN
+        FieldNames.DATE_COLUMN, FieldNames.FORMVER
     ]
 
     transformed_records: Dict[str, List[Dict[str, Any]]] = {}
