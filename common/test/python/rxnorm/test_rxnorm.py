@@ -1,12 +1,5 @@
 """ Tests the RxNorm API, which is public so doesn't need any authorization """
-import json
-import pytest
-
-from json.decoder import JSONDecodeError
-from rxnorm.rxnorm_connection import (
-    RxNormConnection,
-    RxcuiStatus
-)
+from rxnorm.rxnorm_connection import RxcuiStatus, RxNormConnection
 
 
 class TestRxNormConnection:

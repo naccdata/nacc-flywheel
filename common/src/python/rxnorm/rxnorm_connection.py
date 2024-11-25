@@ -3,10 +3,10 @@ Module for connecting to the RxNorm API.
 https://lhncbc.nlm.nih.gov/RxNav/APIs/RxNormAPIs.html
 """
 import json
-import requests
-
 from dataclasses import dataclass
-from json.decoder import JSONDecodeError
+from json import JSONDecodeError
+
+import requests
 from ratelimit import limits, sleep_and_retry
 from requests import Response
 
@@ -23,7 +23,7 @@ def error_message(message: str, response: Response) -> str:
 
 @dataclass
 class RxcuiStatus:
-    """ Enumeration for keeping track of valid Rxcui statuses returned by the API """
+    """Enumeration for keeping track of valid Rxcui statuses returned by the API"""
     ACTIVE = "Active"
     OBSOLETE = "Obsolete"
     REMAPPED = "Remapped"
@@ -33,7 +33,7 @@ class RxcuiStatus:
 
 
 class RxNormConnectionError(Exception):
-    """Exception for errors that occur when connecting to the RxNorm. API"""
+    """Exception for errors that occur when connecting to the RxNorm API"""
 
 
 class RxNormConnection:
@@ -87,7 +87,8 @@ class RxNormConnection:
             RxcuiStatus: The RxcuiStatus
         """
         message = "Getting the RXCUI history status"
-        response = RxNormConnection.get_request(f'REST/rxcui/{rxcui}/historystatus.json')
+        response = RxNormConnection.get_request(
+            f'REST/rxcui/{rxcui}/historystatus.json')
 
         if not response.ok:
             raise RxNormConnectionError(

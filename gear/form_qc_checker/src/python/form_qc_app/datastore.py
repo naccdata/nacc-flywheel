@@ -9,7 +9,7 @@ from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from keys.keys import DefaultValues, FieldNames, MetadataKeys
 from nacc_form_validator.datastore import Datastore
-from rxnorm.rxnorm_connection import RxNormConnection, RxcuiStatus
+from rxnorm.rxnorm_connection import RxcuiStatus, RxNormConnection
 
 log = logging.getLogger(__name__)
 
