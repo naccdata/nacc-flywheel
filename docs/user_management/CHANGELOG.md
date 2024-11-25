@@ -4,7 +4,8 @@ All notable changes to this gear are documented in this file.
 
 ## Unreleased
 
-* tba
+* Add error handling for CoManageMessage validation errors in user registry.
+* Add error handling for RegistryError errors in user management gear.
   
 ## 1.4.2
 
