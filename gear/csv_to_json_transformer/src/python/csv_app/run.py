@@ -8,7 +8,7 @@ from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
-    ContextClient,
+    GearBotClient,
     GearEngine,
     GearExecutionEnvironment,
     GearExecutionError,
@@ -35,7 +35,23 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
     def create(
             cls, context: GearToolkitContext,
             parameter_store: Optional[ParameterStore]) -> 'CsvToJsonVisitor':
-        client = ContextClient.create(context=context)
+        """Creates a gear execution object.
+
+        Args:
+            context: The gear context.
+            parameter_store: The parameter store
+
+        Returns:
+          the execution environment
+
+        Raises:
+          GearExecutionError if any expected inputs are missing
+        """
+        assert parameter_store, "Parameter store expected"
+
+        client = GearBotClient.create(context=context,
+                                      parameter_store=parameter_store)
+
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
 
