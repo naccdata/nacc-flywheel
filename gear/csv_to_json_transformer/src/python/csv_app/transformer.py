@@ -27,9 +27,10 @@ class RecordTransformer():
             error_writer: the writer for error output
             schema_file(optional): name of the transformation schema file
         """
-        self.__admin_project = admin_project
-        self.__error_writer = error_writer
-        self.__schema_file = schema_file
+        self._admin_project = admin_project
+        self._error_writer = error_writer
+        self._schema_file = schema_file
+        self._transformations = None
         self._load_transformation_schemas()
 
     def _load_transformation_schemas(self):
@@ -39,14 +40,14 @@ class RecordTransformer():
         Override this method to do any module specific schema
         processing.
         """
-        if self.__schema_file:
+        if self._schema_file:
             try:
-                self.__transformations = json.loads(
-                    self.__admin_project.read_file(self.__schema_file))
+                self._transformations = json.loads(
+                    self._admin_project.read_file(self._schema_file))
             except (ApiException, json.JSONDecodeError) as error:
                 raise GearExecutionError(
                     'Failed to read the transformation schmeas file '
-                    f'{self.__schema_file} - {error}') from error
+                    f'{self._schema_file} - {error}') from error
 
     def _drop_fields(self, input_record: Dict[str, Any],
                      drop_fields: Set[str]) -> Dict[str, Any]:
@@ -85,7 +86,7 @@ class RecordTransformer():
             date_string=input_record[FieldNames.DATE_COLUMN],
             date_format=DEFAULT_DATE_FORMAT)  # type: ignore
         if not normalized_date:
-            self.__error_writer.write(
+            self._error_writer.write(
                 unexpected_value_error(
                     field=FieldNames.DATE_COLUMN,
                     value=input_record[FieldNames.DATE_COLUMN],
@@ -113,9 +114,9 @@ class UDSTransformer(RecordTransformer):
         Derive C2/C2T only fields from the specified schema
         """
         super()._load_transformation_schemas()
-        if self.__transformations:
-            c2 = self.__transformations.get(MetadataKeys.C2, [])
-            c2t = self.__transformations.get(MetadataKeys.C2T, [])
+        if self._transformations:
+            c2 = self._transformations.get(MetadataKeys.C2, [])
+            c2t = self._transformations.get(MetadataKeys.C2T, [])
             self.__c2only = set(c2).difference(set(c2t))
             self.__c2tonly = set(c2t).difference(set(c2))
 
@@ -134,7 +135,7 @@ class UDSTransformer(RecordTransformer):
         if not super().transform(input_record, line_num):
             return None
 
-        if self.__transformations:
+        if self._transformations:
             c2_c2t = input_record.get(FieldNames.C2C2T)
             if c2_c2t == DefaultValues.C2TMODE:
                 return self._drop_fields(input_record, self.__c2only)
@@ -159,9 +160,9 @@ class LBDTransformer(RecordTransformer):
         Derive v3.0/v3.1 only fields from the specified schema
         """
         super()._load_transformation_schemas()
-        if self.__transformations:
-            lbd_long = self.__transformations.get(MetadataKeys.LBD_LONG, [])
-            lbd_short = self.__transformations.get(MetadataKeys.LBD_SHORT, [])
+        if self._transformations:
+            lbd_long = self._transformations.get(MetadataKeys.LBD_LONG, [])
+            lbd_short = self._transformations.get(MetadataKeys.LBD_SHORT, [])
             self.__long_only = set(lbd_long).difference(set(lbd_short))
             self.__short_only = set(lbd_short).difference(set(lbd_long))
 
@@ -179,7 +180,7 @@ class LBDTransformer(RecordTransformer):
         if not super().transform(input_record, line_num):
             return None
 
-        if self.__transformations:
+        if self._transformations:
             formver = input_record.get(FieldNames.FORMVER)
             if formver == DefaultValues.LBD_SHORT_VER:
                 return self._drop_fields(input_record, self.__long_only)
