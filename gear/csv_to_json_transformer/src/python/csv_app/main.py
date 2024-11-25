@@ -5,9 +5,15 @@ from typing import Any, Dict, List, Optional, TextIO
 
 from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
+from gear_execution.gear_execution import GearExecutionError
 from inputs.csv_reader import CSVVisitor, read_csv
 from keys.keys import FieldNames
-from outputs.errors import ListErrorWriter, empty_field_error, missing_field_error
+from outputs.errors import (
+    ListErrorWriter,
+    empty_field_error,
+    missing_field_error,
+    unexpected_value_error,
+)
 
 from csv_app.transformer import LBDTransformer, RecordTransformer, UDSTransformer
 from csv_app.uploader import JSONUploader
@@ -28,7 +34,13 @@ class CSVTransformVisitor(CSVVisitor):
         self.__transformed = transformed_records
         self.__error_writer = error_writer
         self.__admin_project = admin_project
+        self.__module = None
         self.__transformer: Optional[RecordTransformer] = None
+
+    @property
+    def module(self) -> Optional[str]:
+        """Returns the detected module for the CSV file."""
+        return self.__module
 
     def visit_header(self, header: List[str]) -> bool:
         """Prepares the visitor to process rows using the given header columns.
@@ -70,14 +82,27 @@ class CSVTransformVisitor(CSVVisitor):
         if not found_all:
             return False
 
-        # Set transformer
+        # Set module
         # Assumes all records in the CSV file belongs to the same module.
+        if not self.module:
+            self.__module = row[FieldNames.MODULE].upper()
+        else:  # Check for same module
+            row_module = row[FieldNames.MODULE].upper()
+            if self.module != row_module:
+                self.__error_writer.write(
+                    unexpected_value_error(field=FieldNames.MODULE,
+                                           value=row_module,
+                                           expected=self.module,
+                                           line=line_num))
+                return False
+
+        # Set transformer for the module
         if not self.__transformer:
-            module = row[FieldNames.MODULE].upper()
-            transformer_type = module_transformers.get(module)
+            transformer_type = module_transformers.get(
+                self.module)  # type: ignore
             if not transformer_type:
                 log.info('No module specific transformations defined for %s',
-                         module)
+                         self.module)
                 transformer_type = RecordTransformer
 
             self.__transformer = transformer_type(
@@ -125,18 +150,22 @@ def run(*, input_file: TextIO, proxy: FlywheelProxy, project: Project,
     ]
 
     transformed_records: Dict[str, List[Dict[str, Any]]] = {}
+    visitor = CSVTransformVisitor(req_fields=req_fields_list,
+                                  transformed_records=transformed_records,
+                                  error_writer=error_writer,
+                                  admin_project=admin_adaptor)
     result = read_csv(input_file=input_file,
                       error_writer=error_writer,
-                      visitor=CSVTransformVisitor(
-                          req_fields=req_fields_list,
-                          transformed_records=transformed_records,
-                          error_writer=error_writer,
-                          admin_project=admin_adaptor))
+                      visitor=visitor)
+
+    if not visitor.module:
+        raise GearExecutionError(
+            'Module information not found in the input file')
 
     if not len(transformed_records) > 0:
         return result
 
-    uploader = JSONUploader(project=project_adaptor)
+    uploader = JSONUploader(project=project_adaptor, module=visitor.module)
     upload_status = uploader.upload_visits(transformed_records)
     if not upload_status:
         notify_upload_errors()

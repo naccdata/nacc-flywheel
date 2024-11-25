@@ -24,8 +24,9 @@ class VisitMapping(TypedDict):
 
 class JSONUploader():
 
-    def __init__(self, project: ProjectAdaptor) -> None:
+    def __init__(self, project: ProjectAdaptor, module: str) -> None:
         self.__project = project
+        self.__module = module
         self.__pending_visits: Dict[str, VisitMapping] = {}
 
     def __add_pending_visit(self, *, subject: SubjectAdaptor, filename: str,
@@ -54,9 +55,9 @@ class JSONUploader():
             self.__pending_visits[subject_lbl] = visit_mapping
 
     def __create_pending_visits_file(self) -> bool:
-        """Create and upload a pending visits file for each participant. These
-        files will trigger the form-qc-coordinator gear for respective Flywheel
-        subject.
+        """Create and upload a pending visits file for each participant module.
+        These files will trigger the form-qc-coordinator gear for respective
+        Flywheel subject.
 
         Returns:
             True if upload is successful, else False
@@ -71,7 +72,7 @@ class JSONUploader():
                 data=visits.model_dump(serialize_as_any=True),
                 allow_unicode=True,
                 default_flow_style=False)
-            filename = f'{participant}-visits-pending-qc-{timestamp}.yaml'
+            filename = f'{participant}-{self.__module}-visits-pending-qc-{timestamp}.yaml'  # NOQA E501
             file_spec = FileSpec(name=filename,
                                  contents=yaml_content,
                                  content_type='application/yaml')

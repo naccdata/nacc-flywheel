@@ -49,6 +49,10 @@ class RecordTransformer():
                     'Failed to read the transformation schmeas file '
                     f'{self._schema_file} - {error}') from error
 
+            if self._transformations:
+                log.info('Loaded transformation schemas from %s',
+                         self._schema_file)
+
     def _drop_fields(self, input_record: Dict[str, Any],
                      drop_fields: Set[str]) -> Dict[str, Any]:
         """Drop the specified list of fields from the input record.
