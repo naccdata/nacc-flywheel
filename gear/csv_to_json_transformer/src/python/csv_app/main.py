@@ -1,4 +1,4 @@
-"""Defines ADD DETAIL computation."""
+"""Defines CSV to JSON transformations."""
 
 import logging
 from typing import Any, Dict, List, Optional, TextIO
@@ -18,7 +18,7 @@ module_transformers = {'UDS': UDSTransformer, 'LBD': LBDTransformer}
 
 
 class CSVTransformVisitor(CSVVisitor):
-    """Visitor to write the row as JSON."""
+    """Class to transform a participant visit CSV record."""
 
     def __init__(self, *, req_fields: List[str],
                  transformed_records: Dict[str, List[Dict[str, Any]]],
@@ -80,19 +80,20 @@ class CSVTransformVisitor(CSVVisitor):
                          module)
                 transformer_type = RecordTransformer
 
-            self.__transformer = transformer_type(self.__admin_project,
-                                                  self.__error_writer)
+            self.__transformer = transformer_type(
+                self.__admin_project, self.__error_writer,
+                'transformation-schemas.json')
 
-        success = self.__transformer.transform(row, line_num)
-        if success:
-            subject_lbl = row[FieldNames.NACCID]
+        transformed_row = self.__transformer.transform(row, line_num)
+        if transformed_row:
+            subject_lbl = transformed_row[FieldNames.NACCID]
             visits = self.__transformed.get(subject_lbl)
             if not visits:
                 visits = []
                 self.__transformed[subject_lbl] = visits
-            visits.append(row)
+            visits.append(transformed_row)
 
-        return success
+        return bool(transformed_row)
 
 
 def notify_upload_errors():

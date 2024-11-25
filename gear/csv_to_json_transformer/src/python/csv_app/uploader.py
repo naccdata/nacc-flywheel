@@ -123,7 +123,7 @@ class JSONUploader():
                         filename=visit_file_name,
                         contents=json.dumps(visit),
                         content_type='application/json')
-                except SubjectError as error:
+                except (SubjectError, TypeError) as error:
                     log.error(error)
                     success = False
                     continue

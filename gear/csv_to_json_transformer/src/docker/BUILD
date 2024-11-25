@@ -6,4 +6,4 @@ docker_image(name="csv-to-json-transformer",
                  ":manifest",
                  "gear/csv_to_json_transformer/src/python/csv_app:bin"
              ],
-             image_tags=["0.0.6", "latest"])
+             image_tags=["0.0.7", "latest"])
