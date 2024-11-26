@@ -34,6 +34,17 @@ class RxcuiStatus:
 
 class RxNormConnectionError(Exception):
     """Exception for errors that occur when connecting to the RxNorm API"""
+    def __init__(self, message: str) -> None:
+        super().__init__()
+        self._message = message
+
+    def __str__(self) -> str:
+        return self.message
+
+    @property
+    def message(self):
+        """The error message."""
+        return self._message
 
 
 class RxNormConnection:
