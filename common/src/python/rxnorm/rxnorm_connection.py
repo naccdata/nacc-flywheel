@@ -109,6 +109,7 @@ class RxNormConnection:
         try:
             history_record = json.loads(response.text)
         except (JSONDecodeError, ValueError) as error:
+            message = f"Error decoding RXCUI history status response to JSON: {error}"
             raise RxNormConnectionError(message=message) from error
 
         return history_record['rxcuiStatusHistory']['metaData']['status']
