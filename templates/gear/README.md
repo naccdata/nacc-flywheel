@@ -28,9 +28,9 @@ Type `enter` to accept the default value, or provide a new value.
   [2/9] gear_description (A NACC gear for Flywheel): A junk gear for trying this out
   [3/9] package_name (junk-gear): 
   [4/9] module_name (junk_gear): 
-  [5/9] app_name (junk_gear_app): junk_app                    
-  [6/9] class_name (junk_gear): junk 
+  [5/9] app_name (junk_gear_app): junk_app
+  [6/9] class_name (JunkGear): JunkGearExecution
   [7/9] image_tag (0.0.1):
-  [8/9] author (NACC): 
-  [9/9] maintainer (NACC <nacchelp@uw.edu>): 
+  [8/9] author (NACC):
+  [9/9] maintainer (NACC <nacchelp@uw.edu>):
 ```
