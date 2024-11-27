@@ -5,52 +5,80 @@ import logging
 from typing import Optional
 
 from centers.nacc_group import NACCGroup
+from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    ContextClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    GearExecutionError
+)
 from csv_center_splitter_app.main import run
-from inputs.parameter_store import ParameterStore
 
 log = logging.getLogger(__name__)
 
-class csv_center_splitter(GearExecutionEnvironment):
-    """Visitor for the templating gear."""
+class CsvCenterSplitterVisitor(GearExecutionEnvironment):
+    """Visitor for the CSV Center Splitter gear."""
 
-    def __init__(self, admin_id: str, client: ClientWrapper, new_only: bool):
-        super().__init__(client=client, admin_id=admin_id)
+    def __init__(self, client: ClientWrapper,
+                 input_filepath: str,
+                 adcid_key: str,
+                 target_project: str,
+                 delimiter: str):
+        super().__init__(client=client)
+
+        self.__input_filepath = input_filepath
+        self.__adcid_key = adcid_key
+        self.__target_project = target_project
+        self.__delimiter = delimiter
 
     @classmethod
     def create(
         cls,
-        context: GearToolkitContext,
-        parameter_store: Optional[ParameterStore] = None
-    ) -> 'csv_center_splitter':
+        context: GearToolkitContext
+    ) -> 'CsvCenterSplitterVisitor':
         """Creates a gear execution object.
 
         Args:
             context: The gear context.
-            parameter_store: The parameter store
         Returns:
           the execution environment
         Raises:
           GearExecutionError if any expected inputs are missing
         """
         client = ContextClient.create(context=context)
+        input_filepath = context.get_input_path('input_file')
 
-        return csv_center_splitter(
-            admin_id=context.config.get("admin_group", "nacc"),
+        if not input_csv:
+            raise GearExecutionError("No input CSV provided")
+
+        target_project = context.config.get('target_project', None)
+
+        if not target_project:
+            raise GearExecutionError("No target project provided")
+
+        return CsvCenterSplitterVisitor(
             client=client,
-            new_only=context.config.get("new_only", False))
+            input_filepath=input_filepath,
+            adcid_key=adcid_key,
+            target_project=target_project,
+            delimiter=context.config.get('delimiter', ","))
 
     def run(self, context: GearToolkitContext) -> None:
+        """ Runs the CSV Center Splitter app """
         run(proxy=self.proxy,
-            new_only=.self.__new_only)
+            input_filepath=self.__input_filepath,
+            adcid_key=self.__adcid_key,
+            target_project=self.__target_project,
+            delimiter=self.__delimiter)
         
 def main():
-    """Main method for csv_center_splitter."""
+    """Main method for CsvCenterSplitter. Splits CSV and distributes
+    per center.
+    """
 
-    GearEngine().run(gear_type=csv_center_splitter)
+    GearEngine().run(gear_type=CsvCenterSplitter)
 
 if __name__ == "__main__":
     main()

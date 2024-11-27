@@ -45,7 +45,7 @@ class {{cookiecutter.class_name}}(GearExecutionEnvironment):
 
     def run(self, context: GearToolkitContext) -> None:
         run(proxy=self.proxy,
-            new_only=.self.__new_only)
+            new_only=self.__new_only)
         
 def main():
     """Main method for {{cookiecutter.gear_name}}."""

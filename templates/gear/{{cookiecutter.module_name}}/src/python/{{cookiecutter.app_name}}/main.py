@@ -12,6 +12,6 @@ def run(*,
     """Runs ADD DETAIL process.
     
     Args:
-      proxy: the proxy for the Flywheel instance
+        proxy: the proxy for the Flywheel instance
     """
     pass

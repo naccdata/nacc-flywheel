@@ -1,13 +1,13 @@
 # CSV Center Splitter
 
-Splits a CSV of participant data by the center ID, and writes the results into projects for the corresponding centers.
+Splits a CSV of participant data by ADCID, and writes the results into projects for the corresponding centers.
 
 ## Input Format
 
 Along with the input CSV, the gear takes in a config YAML with the following fields:
 
 ```yaml
-center_key: <column name from the input CSV with the ADCID>
+adcid_key: <column name from the input CSV with the ADCID>
 target_project: <name of the target Flywheel project to write results to per center>
 ```
 
@@ -26,6 +26,6 @@ Example:
 ### Config Example
 
 ```yaml
-center_key: ADCID
+adcid_key: ADCID
 target_project: distribution-ncrad-biomarker
 ```
