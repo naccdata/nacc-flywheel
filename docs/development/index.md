@@ -307,6 +307,8 @@ Then [run the gear](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run
 fw-beta gear run <project-dir>/src/docker
 ```
 
+Note any input files must live at `<project-dir>/src/docker/input/<input_file_name>`.
+
 As of `fw-beta` version 0.18.0 you can also pass docker arguments directly by using `--` followed by the args. See [Flywheel's usage docs](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/#usage) for more information.
 
 If you are running on macOS with Apple Silicon, you will also need to specify the correct platform for docker run. This can be done by either explicitly passing it through the `fw-beta` command or setting the default docker platform flag:

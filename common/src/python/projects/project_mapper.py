@@ -1,14 +1,18 @@
 """ Maps ADCID to projects """
+import logging
 import re
 from typing import Dict, List
 
 from centers.center_group import CenterError, CenterGroup
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 
+log = logging.getLogger(__name__)
+
 
 def build_project_map(*, proxy: FlywheelProxy,
                       destination_label: str,
-                      center_tag_pattern=r'adcid-\d+') -> Dict[str, ProjectAdaptor]:
+                      center_tag_pattern=r'adcid-\d+',
+                      centers: List[int] = None) -> Dict[str, ProjectAdaptor]:
     """Builds a map from adcid to the project of center group with the given
     label.
 
@@ -16,6 +20,7 @@ def build_project_map(*, proxy: FlywheelProxy,
       proxy: the flywheel instance proxy
       destination_label: the project of center to map to
       center_tag_pattern: the regex for adcid-tags
+      centers: the subset of centers to return; if not specified, returns all 
     Returns:
       dictionary mapping from adcid to group
     """
@@ -32,6 +37,11 @@ def build_project_map(*, proxy: FlywheelProxy,
         log.warning('no centers found matching tag pattern %s',
                     center_tag_pattern)
         return {}
+
+    # TODO: would be nice to filter before during the above but does't
+    # seem straightforward due to the use of finding groups by tag
+    if centers:
+        group_list = [x for x in group_list if x.adcid in centers]
 
     project_map = {}
     for group in group_list:
