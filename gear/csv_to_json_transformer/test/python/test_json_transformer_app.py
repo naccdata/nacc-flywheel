@@ -4,7 +4,7 @@ from typing import Any, List
 
 import pytest
 from csv_app.main import run
-from outputs.errors import ErrorWriter
+from outputs.errors import StreamErrorWriter
 
 
 def write_to_stream(data: List[List[Any]], stream: StringIO) -> None:
@@ -88,8 +88,9 @@ class TestJSONWriterVisitor:
         """test missing expected column headers."""
         err_stream = StringIO()
         errors = run(input_file=missing_columns_stream,
-                     error_writer=ErrorWriter(stream=err_stream,
-                                              container_id='dummy'))
+                     error_writer=StreamErrorWriter(stream=err_stream,
+                                                    container_id='dummy',
+                                                    fw_path='dummy/dummy'))
         assert errors, ("expect error for missing columns")
         assert not empty(err_stream), "expect error message in output"
 
@@ -97,8 +98,9 @@ class TestJSONWriterVisitor:
         """Test case where data corresponds to form completed at visit."""
         err_stream = StringIO()
         errors = run(input_file=visit_data_stream,
-                     error_writer=ErrorWriter(stream=err_stream,
-                                              container_id='dummy'))
+                     error_writer=StreamErrorWriter(stream=err_stream,
+                                                    container_id='dummy',
+                                                    fw_path='dummy/dummy'))
         assert not errors, "expect no errors"
         assert empty(err_stream), "expect error stream to be empty"
 
@@ -106,7 +108,8 @@ class TestJSONWriterVisitor:
         """Test case where data does not correspond to visit."""
         err_stream = StringIO()
         errors = run(input_file=nonvisit_data_stream,
-                     error_writer=ErrorWriter(stream=err_stream,
-                                              container_id='dummy'))
+                     error_writer=StreamErrorWriter(stream=err_stream,
+                                                    container_id='dummy',
+                                                    fw_path='dummy/dummy'))
         assert not errors, "expect no errors"
         assert empty(err_stream), "expect error stream to be empty"
