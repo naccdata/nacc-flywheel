@@ -1,4 +1,4 @@
-"""Utility functions"""
+"""Utility functions."""
 
 import json
 import logging
@@ -10,7 +10,9 @@ from flywheel.rest import ApiException
 log = logging.getLogger(__name__)
 
 
-def is_duplicate_record(record1: str, record2: str, content_type: Optional[str] = None) -> bool:
+def is_duplicate_record(record1: str,
+                        record2: str,
+                        content_type: Optional[str] = None) -> bool:
     """Check whether the two records are identical.
 
     Args:
@@ -46,22 +48,18 @@ def update_file_info_metadata(file: FileEntry,
         modality: file modality (defaults to Form)
 
     Returns:
-        True if metadata update is successful 
+        True if metadata update is successful
     """
 
     # remove empty fields
-    non_empty_fields = {
-        k: v
-        for k, v in input_record.items() if v is not None
-    }
+    non_empty_fields = {k: v for k, v in input_record.items() if v is not None}
     info = {"forms": {"json": non_empty_fields}}
 
     try:
         file.update(modality=modality)
         file.update_info(info)
     except ApiException as error:
-        log.error('Error in setting file %s metadata - %s', file.name,
-                  error)
+        log.error('Error in setting file %s metadata - %s', file.name, error)
         return False
 
     return True
