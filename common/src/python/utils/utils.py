@@ -10,7 +10,7 @@ from flywheel.rest import ApiException
 log = logging.getLogger(__name__)
 
 
-def is_duplicate_record(self, record1: str, record2: str, content_type: Optional[str] = None) -> bool:
+def is_duplicate_record(record1: str, record2: str, content_type: Optional[str] = None) -> bool:
     """Check whether the two records are identical.
 
     Args:
