@@ -9,19 +9,10 @@ Along with the input CSV, the gear takes in a config YAML with the following fie
 ```yaml
 adcid_key: <column name from the input CSV with the ADCID>
 target_project: <name of the target Flywheel project to write results to per center>
+delimiter: <delimiter of the CSV, defaults to ','>
 ```
 
 The ADCIDs are mapped to the Flywheel group ID using the custom info found in the `metadata` project.
-
-### Input CSV and Example
-
-The input CSV is expected to at minimum have the following expected fields:
-
-Example:
-
-```csv
-
-```
 
 ### Config Example
 

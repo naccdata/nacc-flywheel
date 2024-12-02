@@ -40,7 +40,7 @@ def build_project_map(
                     center_tag_pattern)
         return {}
 
-    # TODO: would be nice to filter before during the above but does't
+    # TODO: would be nice to filter before/during the above but doesn't
     # seem straightforward due to the use of finding groups by tag
     if centers:
         group_list = [x for x in group_list if x.adcid in centers]
