@@ -19,6 +19,7 @@ class FieldNames:
     ENRLFRM_INITL = 'initials_enrl'
     NACCIDKWN = 'naccidknwn'
     PREVENRL = 'prevenrl'
+    C2C2T = 'rmmodec2c2t'
 
 
 class RuleLabels:
@@ -34,13 +35,16 @@ class RuleLabels:
 
 class DefaultValues:
     """Class to store default values."""
-    NOTFILLED = '0'
+    NOTFILLED = 0
     LEGACY_PRJ_LABEL = 'retrospective-form'
     ENROLLMENT_MODULE = 'ENROLLV1'
     GEARBOT_USER_ID = 'nacc-flywheel-gear@uw.edu'
     NACC_GROUP_ID = 'nacc'
     METADATA_PRJ_LBL = 'metadata'
     ADMIN_PROJECT = 'project-admin'
+    SESSION_LBL_PRFX = 'FORMS-VISIT-'
+    C2TMODE = 1
+    LBD_SHORT_VER = 3.1
 
 
 class MetadataKeys:
@@ -49,3 +53,7 @@ class MetadataKeys:
     LEGACY_LBL = 'legacy_label'
     LEGACY_ORDERBY = 'legacy_orderby'
     FAILED = 'failed'
+    C2 = 'UDS-C2'
+    C2T = 'UDS-C2T'
+    LBD_LONG = 'LBD-v3.0'
+    LBD_SHORT = 'LBD-v3.1'

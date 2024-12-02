@@ -203,7 +203,8 @@ class REDCapProjectCreation(GearExecutionEnvironment):
 def main():
     """Main method for REDCap Project Creation."""
 
-    GearEngine().run(gear_type=REDCapProjectCreation)
+    GearEngine().create_with_parameter_store().run(
+        gear_type=REDCapProjectCreation)
 
 
 if __name__ == "__main__":
