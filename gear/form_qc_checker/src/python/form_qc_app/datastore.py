@@ -9,6 +9,7 @@ from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from keys.keys import DefaultValues, FieldNames, MetadataKeys
 from nacc_form_validator.datastore import Datastore
+from rxnorm.rxnorm_connection import RxcuiStatus, RxNormConnection
 
 log = logging.getLogger(__name__)
 
@@ -248,16 +249,12 @@ class DatastoreHelper(Datastore):
 
     def is_valid_rxcui(self, drugid: int) -> bool:
         """Overriding the abstract method, check whether a given drug ID is
-        valid RXCUI. Check
-        https://www.nlm.nih.gov/research/umls/rxnorm/overview.html,
-        https://mor.nlm.nih.gov/RxNav/
+        valid RXCUI.
 
         Args:
-            drugid: provided drug ID
+            drugid: provided drug ID (rxcui to validate)
 
         Returns:
             bool: True if provided drug ID is valid, else False
         """
-
-        # TODO - implement validation
-        return False
+        return RxNormConnection.get_rxcui_status(drugid) == RxcuiStatus.ACTIVE

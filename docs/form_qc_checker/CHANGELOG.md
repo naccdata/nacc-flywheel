@@ -2,7 +2,12 @@
 
 All notable changes to this gear are documented in this file.
 
+## 1.0.4
+
+* Defines the `is_valid_rxcui` method in the `DataStoreHelper` class - adds the `rxnorm` common code to support this and future gears that may need to access the RxNorm API
+
 ## 1.0.0
+
 * Update to use nacc-form-validator [v0.3.0](https://github.com/naccdata/nacc-form-validator/releases/tag/v0.3.0)
 * Rename/refactor `FlywheelDatastore` class to `DatastoreHelper` to allow more general operations
 * Add `compute_gds` as a composite rule to match new GDS score validation
