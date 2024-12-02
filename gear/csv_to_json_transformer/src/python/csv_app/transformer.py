@@ -46,7 +46,7 @@ class RecordTransformer():
                     self._admin_project.read_file(self._schema_file))
             except (ApiException, json.JSONDecodeError) as error:
                 raise GearExecutionError(
-                    'Failed to read the transformation schmeas file '
+                    'Failed to read the transformation schema file '
                     f'{self._schema_file} - {error}') from error
 
             if self._transformations:
