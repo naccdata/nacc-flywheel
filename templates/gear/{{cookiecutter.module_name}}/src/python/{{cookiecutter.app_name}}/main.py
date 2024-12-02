@@ -10,7 +10,7 @@ def run(*,
         proxy: FlywheelProxy,
         new_only: bool = False):
     """Runs ADD DETAIL process.
-    
+
     Args:
         proxy: the proxy for the Flywheel instance
     """

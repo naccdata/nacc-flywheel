@@ -1,7 +1,7 @@
-""" Maps ADCID to projects """
+"""Maps ADCID to projects."""
 import logging
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from centers.center_group import CenterError, CenterGroup
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
@@ -9,10 +9,12 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 log = logging.getLogger(__name__)
 
 
-def build_project_map(*, proxy: FlywheelProxy,
-                      destination_label: str,
-                      center_tag_pattern=r'adcid-\d+',
-                      centers: List[int] = None) -> Dict[str, ProjectAdaptor]:
+def build_project_map(
+        *,
+        proxy: FlywheelProxy,
+        destination_label: str,
+        center_tag_pattern=r'adcid-\d+',
+        centers: Optional[List[int]] = None) -> Dict[str, ProjectAdaptor]:
     """Builds a map from adcid to the project of center group with the given
     label.
 
@@ -20,7 +22,7 @@ def build_project_map(*, proxy: FlywheelProxy,
       proxy: the flywheel instance proxy
       destination_label: the project of center to map to
       center_tag_pattern: the regex for adcid-tags
-      centers: the subset of centers to return; if not specified, returns all 
+      centers: the subset of centers to return; if not specified, returns all
     Returns:
       dictionary mapping from adcid to group
     """

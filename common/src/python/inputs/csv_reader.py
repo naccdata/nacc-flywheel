@@ -3,7 +3,7 @@
 import abc
 from abc import ABC, abstractmethod
 from csv import DictReader, Error, Sniffer
-from typing import Any, Dict, List, Optional, TextIO
+from typing import Any, Dict, List, Optional, TextIO, Tuple
 
 from outputs.errors import (
     ErrorWriter,
@@ -120,3 +120,44 @@ class AggregateRowValidator(RowValidator):
         return all(
             validator.check(row, line_number)
             for validator in self.__validators)
+
+
+def split_csv_by_key(
+        input_filepath: str,
+        header_key: str,
+        delimiter: str = ',') -> Tuple[Dict[str, object], List[str]]:
+    """Splits an input CSV by some header key.
+
+    Args:
+        input_filepath: The input CSV to split on
+        header_key: The name fo the header column to split by
+        delimiter: The CSV's delimiter; defaults to ','
+
+    Returns:
+        dict: The split data, keyed by the header key value to (JSON-formatted)
+            rows that correspond to it
+        list[str]: The list of headers
+    """
+    split_data = {}
+    headers = None
+    with open(input_filepath, 'r') as csvfile:
+        reader = DictReader(csvfile, delimiter=delimiter)
+        headers = reader.fieldnames
+
+        if not headers:
+            raise ValueError(
+                f"No headers found in input CSV: {input_filepath}")
+
+        if header_key not in headers:
+            raise ValueError(
+                f"Specified header key '{header_key}' not found " +
+                f"in input CSV headers: {input_filepath}")
+
+        for row in reader:
+            adcid = int(row[header_key])
+            if adcid not in split_data:
+                split_data[adcid] = []
+
+            split_data[adcid].append(row)
+
+    return split_data, headers

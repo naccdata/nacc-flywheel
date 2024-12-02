@@ -1,18 +1,14 @@
 """Entry script for csv_center_splitter."""
-
 import logging
-
 from typing import Optional
 
-from centers.nacc_group import NACCGroup
-from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
     ContextClient,
     GearEngine,
     GearExecutionEnvironment,
-    GearExecutionError
+    GearExecutionError,
 )
 from inputs.parameter_store import ParameterStore
 
@@ -23,11 +19,8 @@ log = logging.getLogger(__name__)
 class CsvCenterSplitterVisitor(GearExecutionEnvironment):
     """Visitor for the CSV Center Splitter gear."""
 
-    def __init__(self, client: ClientWrapper,
-                 input_filepath: str,
-                 input_filename: str,
-                 adcid_key: str,
-                 target_project: str,
+    def __init__(self, client: ClientWrapper, input_filepath: str,
+                 input_filename: str, adcid_key: str, target_project: str,
                  delimiter: str):
         super().__init__(client=client)
 
@@ -68,29 +61,32 @@ class CsvCenterSplitterVisitor(GearExecutionEnvironment):
         if not adcid_key:
             raise GearExecutionError("No ADCID key provided")
 
-        return CsvCenterSplitterVisitor(
-            client=client,
-            input_filepath=input_filepath,
-            input_filename=input_filename,
-            adcid_key=adcid_key,
-            target_project=target_project,
-            delimiter=context.config.get('delimiter', ","))
+        return CsvCenterSplitterVisitor(client=client,
+                                        input_filepath=input_filepath,
+                                        input_filename=input_filename,
+                                        adcid_key=adcid_key,
+                                        target_project=target_project,
+                                        delimiter=context.config.get(
+                                            'delimiter', ","))
 
     def run(self, context: GearToolkitContext) -> None:
-        """ Runs the CSV Center Splitter app """
+        """Runs the CSV Center Splitter app."""
         run(proxy=self.proxy,
             input_filepath=self.__input_filepath,
             input_filename=self.__input_filename,
             adcid_key=self.__adcid_key,
             target_project=self.__target_project,
             delimiter=self.__delimiter)
-        
+
+
 def main():
-    """Main method for CsvCenterSplitter. Splits CSV and distributes
-    per center.
+    """Main method for CsvCenterSplitter.
+
+    Splits CSV and distributes per center.
     """
 
     GearEngine().run(gear_type=CsvCenterSplitterVisitor)
+
 
 if __name__ == "__main__":
     main()
