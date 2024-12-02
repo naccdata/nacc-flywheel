@@ -15,7 +15,7 @@ from inputs.parameter_store import ParameterStore
 log = logging.getLogger(__name__)
 
 class {{cookiecutter.class_name}}(GearExecutionEnvironment):
-    """Visitor for the templating gear."""
+    """Visitor for the {{cookiecutter.gear_name}} gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper, new_only: bool):
         super().__init__(client=client, admin_id=admin_id)
