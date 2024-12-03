@@ -1,7 +1,6 @@
 """Methods to read and process a CSV file using a row visitor."""
 
 import abc
-import logging
 from abc import ABC, abstractmethod
 from csv import DictReader, Error, Sniffer
 from typing import Any, Dict, List, Optional, TextIO, Tuple
@@ -14,8 +13,6 @@ from outputs.errors import (
     missing_field_error,
     missing_header_error
 )
-
-log = logging.getLogger(__name__)
 
 
 class CSVVisitor(ABC):
