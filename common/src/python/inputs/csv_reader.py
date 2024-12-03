@@ -3,13 +3,13 @@
 import abc
 from abc import ABC, abstractmethod
 from csv import DictReader, Error, Sniffer
-from typing import Any, Dict, List, Optional, TextIO, Tuple
+from typing import Any, Dict, List, Optional, TextIO
 
 from outputs.errors import (
     ErrorWriter,
     empty_file_error,
     malformed_file_error,
-    missing_header_error
+    missing_header_error,
 )
 
 
@@ -39,8 +39,10 @@ class CSVVisitor(ABC):
         return True
 
 
-def read_csv(input_file: TextIO, error_writer: ErrorWriter,
-             visitor: CSVVisitor, delimiters=',') -> bool:
+def read_csv(input_file: TextIO,
+             error_writer: ErrorWriter,
+             visitor: CSVVisitor,
+             delimiters=',') -> bool:
     """Reads CSV file and applies the visitor to each row.
 
     Args:
