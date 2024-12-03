@@ -7,7 +7,6 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import (
     ListErrorWriter,
-    invalid_row_error,
     missing_field_error,
 )
 from outputs.outputs import write_csv_to_project
@@ -136,8 +135,8 @@ def run(*,
     visitor = APOETransformerCSVVisitor(error_writer)
     success = read_csv(input_file=input_file,
                        error_writer=error_writer,
-                       visitor=visitor,
-                       delimiters=delimiter)
+                       visitor=visitor)
+                       #delimiters=delimiter)  # TODO - pass after merging
 
     if not success:
         log.error(

@@ -45,12 +45,12 @@
         "output_filename": {
             "description": "The output filename; defaults to the input filename with `_apoe_transformed` postfixed",
             "type": "string",
-            "default": null
+            "default": ""
         },
         "target_project_id": {
             "description": "ID of the target project to write results to; if not provided, will write to same project the input file was uploaded to",
             "type": "string",
-            "default": null
+            "default": ""
         },
         "delimiter": {
             "description": "The input CSV delimiter",
