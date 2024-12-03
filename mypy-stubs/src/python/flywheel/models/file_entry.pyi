@@ -55,3 +55,9 @@ class FileEntry:
 
     def delete_tag(self, tag, **kwargs):
         ...
+
+    def update_info(self, *args, **kwargs):
+        ...
+
+    def update(self, *args, **kwargs):
+        ...
