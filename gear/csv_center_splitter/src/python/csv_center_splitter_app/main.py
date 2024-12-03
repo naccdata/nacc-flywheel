@@ -67,7 +67,8 @@ class CSVCenterSplitterVisitor(CSVVisitor):
         """Visit the dictionary for a row (per DictReader).
 
         Args:
-          row: the dictionary for a row from a CSV file
+          row: The dictionary for a row from a CSV file
+          line_num: The line number of the row
         Returns:
           True if the row was processed without error, False otherwise
         """
@@ -102,6 +103,7 @@ def run(*,
         input_file: The input CSV TextIO stream to split on
         input_filename: The name of the input CSV, used to build the filename
             for split files
+        error_writer: The ListErrorWriter to write errors to
         adcid_key: The name of the header column the ADCID is listed under
         target_project: The FW target project to write results to
         delimiter: The CSV's delimiter; defaults to ','
@@ -119,7 +121,7 @@ def run(*,
             "will not split data.")
         for x in error_writer.errors():
             log.error(x['message'])
-        return False
+        return
 
     # build project map from ADCID to FW project for upload
     project_map = build_project_map(proxy=proxy,
