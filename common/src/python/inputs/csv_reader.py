@@ -8,9 +8,7 @@ from typing import Any, Dict, List, Optional, TextIO, Tuple
 from outputs.errors import (
     ErrorWriter,
     empty_file_error,
-    invalid_row_error,
     malformed_file_error,
-    missing_field_error,
     missing_header_error
 )
 
@@ -73,17 +71,12 @@ def read_csv(input_file: TextIO, error_writer: ErrorWriter,
     reader = DictReader(input_file, dialect=detected_dialect)
     assert reader.fieldnames, "File has header, reader should have fieldnames"
 
-    success, missing_field = visitor.visit_header(list(reader.fieldnames))
+    success = visitor.visit_header(list(reader.fieldnames))
     if not success:
-        error_writer.write(missing_field_error(missing_field))
         return False
 
     for record in reader:
-        line_num = reader.line_num
-        row_success, error_reason = visitor.visit_row(record, line_num=line_num)
-        if not row_success:
-            error_writer.write(invalid_row_error(error_reason, line_num))
-
+        row_success = visitor.visit_row(record, line_num=reader.line_num)
         success = row_success and success
 
     return success

@@ -1,12 +1,16 @@
 """Defines csv_center_splitter."""
 import logging
 from io import StringIO
-from typing import Any, Dict, List, TextIO, Tuple
+from typing import Any, Dict, List, TextIO
 
 from flywheel import FileSpec
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from inputs.csv_reader import CSVVisitor, read_csv
-from outputs.errors import ListErrorWriter
+from outputs.errors import (
+    ListErrorWriter,
+    invalid_row_error,
+    missing_field_error,
+)
 from outputs.outputs import CSVWriter
 from projects.project_mapper import build_project_map
 
@@ -16,9 +20,10 @@ log = logging.getLogger(__name__)
 class CSVCenterSplitterVisitor(CSVVisitor):
     """Class for visiting each row in CSV."""
 
-    def __init__(self, adcid_key: str):
+    def __init__(self, adcid_key: str, error_writer: ListErrorWriter):
         """Initializer."""
         self.__adcid_key = adcid_key
+        self.__error_writer = error_writer
         self.__split_data = {}
         self.__headers = None
 
@@ -53,12 +58,12 @@ class CSVCenterSplitterVisitor(CSVVisitor):
         self.__headers = header
         result = self.adcid_key in header
         if not result:
-            return result, self.adcid_key
+            error = missing_field_error(self.adcid_key)
+            self.__error_writer.write(error)
 
-        return result, None
+        return result
 
-    def visit_row(self, row: Dict[str, Any],
-                  line_num: int) -> Tuple[bool, str]:
+    def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Visit the dictionary for a row (per DictReader).
 
         Args:
@@ -69,13 +74,16 @@ class CSVCenterSplitterVisitor(CSVVisitor):
         try:
             adcid = int(row[self.adcid_key])
         except ValueError as e:
-            return False, f"ADCID value must be an int: {e}"
+            error = invalid_row_error(f"ADCID value must be an int: {e}",
+                                      line_num)
+            self.__error_writer.write(error)
+            return False
 
         if adcid not in self.split_data:
             self.split_data[adcid] = []
 
         self.split_data[adcid].append(row)
-        return True, None
+        return True
 
 
 def run(*,
@@ -99,7 +107,7 @@ def run(*,
         delimiter: The CSV's delimiter; defaults to ','
     """
     # split CSV by ADCID key
-    visitor = CSVCenterSplitterVisitor(adcid_key=adcid_key)
+    visitor = CSVCenterSplitterVisitor(adcid_key, error_writer)
     success = read_csv(input_file=input_file,
                        error_writer=error_writer,
                        visitor=visitor,
