@@ -1,9 +1,7 @@
 """Defines csv_center_splitter."""
 import logging
-from io import StringIO
 from typing import Any, Dict, List, TextIO
 
-from flywheel import FileSpec
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import (
@@ -11,7 +9,7 @@ from outputs.errors import (
     invalid_row_error,
     missing_field_error,
 )
-from outputs.outputs import CSVWriter
+from outputs.outputs import write_csv_to_project
 from projects.project_mapper import build_project_map
 
 log = logging.getLogger(__name__)
@@ -148,19 +146,12 @@ def run(*,
     # write results to each center's project
     for adcid, data in visitor.split_data.items():
         project = project_map[f'adcid-{adcid}']
-
-        contents = StringIO()
-        writer = CSVWriter(contents, visitor.headers)
-        for row in data:
-            writer.write(row)
-
-        contents = contents.getvalue()
         filename = f'{adcid}_{input_filename}'
-        file_spec = FileSpec(name=filename,
-                             contents=contents,
-                             content_type='text/csv',
-                             size=len(contents))
 
         log.info(
             f"Uploading {filename} for ADCID {adcid}, project ID {project.id}")
-        project.upload_file(file_spec)
+
+        write_csv_to_project(headers=visitor.headers,
+                             data=data,
+                             filename=filename,
+                             project=project)
