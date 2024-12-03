@@ -18,7 +18,7 @@
             "image": "naccdata/apoe-transformer:0.1.0"
         },
         "flywheel": {
-            "suite": "NACC Admin Gears",
+            "suite": "Curation",
             "show-job": true
         }
     },
@@ -27,11 +27,11 @@
             "base": "api-key"
         },
         "input_file": {
-            "description": "The project YAML file",
+            "description": "The input APOE genotype file",
             "base": "file",
             "type": {
                 "enum": [
-                    "source code"
+                    "tabular data"
                 ]
             }
         }
@@ -42,21 +42,20 @@
             "type": "boolean",
             "default": false
         },
-        "admin_group": {
-            "description": "Name of the admin group",
+        "output_filename": {
+            "description": "The output filename; defaults to the input filename with `_apoe_transformed` postfixed",
             "type": "string",
-            "default": "nacc"
+            "default": null
         },
-        "new_only": {
-            "description": "Only create projects for centers tagged as new",
-            "type": "boolean",
-            "default": false
-        },
-        "apikey_path_prefix": {
-            "description": "The instance specific AWS parameter path prefix for apikey",
+        "target_project": {
+            "description": "Target project to write results to; defaults to the same project that the input file was uploaded to",
             "type": "string",
-            "default": "/prod/flywheel/gearbot"
-
+            "default": null
+        },
+        "delimiter": {
+            "description": "The input CSV delimiter",
+            "type": "string",
+            "default": ","
         }
     },
     "command": "/bin/run"

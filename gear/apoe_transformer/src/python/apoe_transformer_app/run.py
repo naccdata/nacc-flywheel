@@ -14,7 +14,7 @@ from inputs.parameter_store import ParameterStore
 
 log = logging.getLogger(__name__)
 
-class APOETransformer(GearExecutionEnvironment):
+class APOETransformerVisitor(GearExecutionEnvironment):
     """Visitor for the APOE Transformer gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper, new_only: bool):
@@ -38,7 +38,7 @@ class APOETransformer(GearExecutionEnvironment):
         """
         client = ContextClient.create(context=context)
 
-        return APOETransformer(
+        return APOETransformerVisitor(
             admin_id=context.config.get("admin_group", "nacc"),
             client=client,
             new_only=context.config.get("new_only", False))
@@ -50,7 +50,7 @@ class APOETransformer(GearExecutionEnvironment):
 def main():
     """Main method for APOE Transformer."""
 
-    GearEngine().run(gear_type=APOETransformer)
+    GearEngine().run(gear_type=APOETransformerVisitor)
 
 if __name__ == "__main__":
     main()
