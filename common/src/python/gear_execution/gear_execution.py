@@ -174,17 +174,25 @@ class InputFileWrapper:
                context: GearToolkitContext) -> Optional['InputFileWrapper']:
         """Creates the named InputFile.
 
+        Will return None if the named input is optional and no file is given.
+
         Args:
           input_name: the name of the input file
           context: the gear context
         Returns:
-          the input file object
+          the input file object. None, if the input is optional and not given
         Raises:
           GearExecutionError if there is no input with the name
         """
         file_input = context.get_input(input_name)
         if not file_input:
+            is_optional = context.manifest.get("inputs", {}).get(
+                input_name, {}).get("optional", False)
+            if is_optional:
+                return None
+
             raise GearExecutionError(f'Missing input file {input_name}')
+
         if file_input["base"] != "file":
             raise GearExecutionError(
                 f"The specified input {input_name} is not a file")

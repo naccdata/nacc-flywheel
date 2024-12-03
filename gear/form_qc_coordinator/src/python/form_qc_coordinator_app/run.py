@@ -156,6 +156,8 @@ class FormQCCoordinator(GearExecutionEnvironment):
 
         visits_file_input = InputFileWrapper.create(input_name='visits_file',
                                                     context=context)
+        assert visits_file_input, "create raises exception if missing"
+
         visits_file_path = visits_file_input.filepath
         visits_info = validate_input_data(visits_file_path,
                                           dest_container.label)
