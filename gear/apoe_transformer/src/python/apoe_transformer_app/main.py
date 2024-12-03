@@ -10,7 +10,7 @@ from outputs.errors import (
     invalid_row_error,
     missing_field_error,
 )
-from outputs.outputs import CSVWriter
+from outputs.outputs import write_csv_to_project
 
 log = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ def run(*,
         proxy: FlywheelProxy,
         input_file: TextIO,
         output_filename: str,
-        target_project: str,
+        target_project: str,  # TODO, NOT A STR
         error_writer: ListErrorWriter,
         delimiter: str = ','):
     """Runs the APOE transformation process.
@@ -141,9 +141,15 @@ def run(*,
 
     if not success:
         log.error(
-            "The following errors were found while reading input CSV file, " +
-            "will not transform the data.")
+            "The following errors were found while reading the input CSV " +
+            "file, will not transform the data.")
         for x in error_writer.errors():
             log.error(x['message'])
         return
 
+    log.info(f"Writing transformed APOE data to {project.id}")
+    # write transformed results to target project
+    write_csv_to_project(headers=visitor.EXPECTED_APOE_OUTPUT_HEADERS,
+                         data=visitor.transformed_data,
+                         filename=output_filename,
+                         project=target_project)
