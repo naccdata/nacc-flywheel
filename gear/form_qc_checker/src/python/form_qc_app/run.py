@@ -64,6 +64,7 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
                                       parameter_store=parameter_store)
         file_input = InputFileWrapper.create(input_name='form_data_file',
                                              context=context)
+        assert file_input, "create raises exception if missing expected input" 
 
         rules_s3_bucket: str = get_config(gear_context=context,
                                           key='rules_s3_bucket',

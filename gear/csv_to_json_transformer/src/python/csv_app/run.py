@@ -54,6 +54,7 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
 
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
+        assert file_input, "create raises exception if missing expected input" 
 
         return CsvToJsonVisitor(client=client, file_input=file_input)
 
