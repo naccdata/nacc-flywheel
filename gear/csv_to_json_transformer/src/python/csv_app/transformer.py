@@ -1,7 +1,9 @@
 """Module for applying required transformations to an input visit record."""
 import json
 import logging
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, List, Literal, Optional, Set
+
+from pydantic import BaseModel, RootModel, model_validator
 
 from dates.form_dates import DEFAULT_DATE_FORMAT, convert_date
 from flywheel.rest import ApiException
@@ -12,66 +14,93 @@ from outputs.errors import ListErrorWriter, unexpected_value_error
 
 log = logging.getLogger(__name__)
 
+"""
+{
+    "UDS": {
+        "C2": [],
+        "C2T": []
+    },
+    "LBD": {
+        "v3.0": [],
+        "v3.1": []
+    }
+}
+"""
+
+ModuleName = Literal['UDS', 'LBD']
+
+class FormTransform(BaseModel):
+    drop_lists: Dict[str,List[str]] = {}
+
+    def unique_fields(self, version_name: str) -> Set[str]:
+        field_set = set(self.drop_lists.get(version_name, set()))
+        if not field_set:
+            return field_set
+
+        for key in self.drop_lists.keys():
+            if key == version_name:
+                continue
+
+            key_fields = self.drop_lists.get(key)
+            if not key_fields:
+                continue
+
+            field_set = field_set.difference(set(key_fields))
+
+        return field_set
+    
+    def filter(self, input_record: Dict[str, Any], version_name: str) -> Dict[str,Any]:
+        drop_fields = self.unique_fields(version_name)
+        if not drop_fields:
+            return input_record
+        
+        return {
+            field:value for field, value in input_record.items()
+            if field not in drop_fields
+        }
+
+class FormTransformations(RootModel):
+    root: Dict[ModuleName, FormTransform] = {}
+
+    def __getitem__(self, key: ModuleName) -> FormTransform:
+        return self.root[key]
+    
+    def __setitem__(self, key: ModuleName, value: FormTransform) -> None:
+        self.root[key] = value
+
+
 
 class RecordTransformer():
     """This class applies the required transformations on a visit record."""
 
     def __init__(self,
-                 admin_project: ProjectAdaptor,
-                 error_writer: ListErrorWriter,
-                 schema_file: Optional[str] = None) -> None:
+                 error_writer: ListErrorWriter) -> None:
         """Initialize the CSV Transformer.
 
         Args:
-            admin_project: Flywheel admin project adaptor
-            error_writer: the writer for error output
             schema_file(optional): name of the transformation schema file
         """
-        self._admin_project = admin_project
         self._error_writer = error_writer
-        self._schema_file = schema_file
-        self._transformations = None
-        self._load_transformation_schemas()
 
-    def _load_transformation_schemas(self):
-        """Loads any schemas required for transformations from the admin
-        project.
+    # def _load_transformation_schemas(self):
+    #     """Loads any schemas required for transformations from the admin
+    #     project.
 
-        Override this method to do any module specific schema
-        processing.
-        """
-        if self._schema_file:
-            try:
-                self._transformations = json.loads(
-                    self._admin_project.read_file(self._schema_file))
-            except (ApiException, json.JSONDecodeError) as error:
-                raise GearExecutionError(
-                    'Failed to read the transformation schema file '
-                    f'{self._schema_file} - {error}') from error
+    #     Override this method to do any module specific schema
+    #     processing.
+    #     """
+    #     if self._schema_file:
+    #         try:
+    #             self._transformations = json.loads(
+    #                 self._admin_project.read_file(self._schema_file))
+    #         except (ApiException, json.JSONDecodeError) as error:
+    #             raise GearExecutionError(
+    #                 'Failed to read the transformation schema file '
+    #                 f'{self._schema_file} - {error}') from error
 
-            if self._transformations:
-                log.info('Loaded transformation schemas from %s',
-                         self._schema_file)
-
-    def _drop_fields(self, input_record: Dict[str, Any],
-                     drop_fields: Set[str]) -> Dict[str, Any]:
-        """Drop the specified list of fields from the input record.
-
-        Args:
-            input_record: input record from CSV file
-            drop_fields: list of fields to drop
-
-        Returns:
-            Dict[str, Any]: modified record
-        """
-
-        if not drop_fields:
-            return input_record
-
-        return {
-            key: input_record[key]
-            for key in input_record if key not in drop_fields
-        }
+    #         if self._transformations:
+    #             log.info('Loaded transformation schemas from %s',
+    #                      self._schema_file)
 
     def transform(self, input_record: Dict[str, Any],
                   line_num: int) -> Optional[Dict[str, Any]]:
@@ -106,23 +135,11 @@ class RecordTransformer():
 class UDSTransformer(RecordTransformer):
     """Classs to apply UDS specific transformations."""
 
-    def __init__(self, admin_project: ProjectAdaptor,
-                 error_writer: ListErrorWriter, schema_file: str) -> None:
-        self.__c2only = set()
-        self.__c2tonly = set()
-        super().__init__(admin_project, error_writer, schema_file)
-
-    def _load_transformation_schemas(self):
-        """Loads UDS transformations schema from the admin project.
-
-        Derive C2/C2T only fields from the specified schema
-        """
-        super()._load_transformation_schemas()
-        if self._transformations:
-            c2 = self._transformations.get(MetadataKeys.C2, [])
-            c2t = self._transformations.get(MetadataKeys.C2T, [])
-            self.__c2only = set(c2).difference(set(c2t))
-            self.__c2tonly = set(c2t).difference(set(c2))
+    def __init__(self,
+                 transform: FormTransform,
+                 error_writer: ListErrorWriter) -> None:
+        self._transform = transform
+        super().__init__(error_writer)
 
     def transform(self, input_record: Dict[str, Any],
                   line_num: int) -> Optional[Dict[str, Any]]:
@@ -139,36 +156,21 @@ class UDSTransformer(RecordTransformer):
         if not super().transform(input_record, line_num):
             return None
 
-        if self._transformations:
-            c2_c2t = input_record.get(FieldNames.C2C2T)
-            if c2_c2t == DefaultValues.C2TMODE:
-                return self._drop_fields(input_record, self.__c2only)
-            else:
-                return self._drop_fields(input_record, self.__c2tonly)
+        c2_c2t = input_record.get(FieldNames.C2C2T)
+        if c2_c2t == DefaultValues.C2TMODE:
+            return self._transform.filter(input_record, 'C2')
 
-        return input_record
+        return self._transform.filter(input_record, 'C2T')
+
 
 
 class LBDTransformer(RecordTransformer):
     """Classs to apply LBD specific transformations."""
 
-    def __init__(self, admin_project: ProjectAdaptor,
-                 error_writer: ListErrorWriter, schema_file: str) -> None:
-        self.__long_only = set()
-        self.__short_only = set()
-        super().__init__(admin_project, error_writer, schema_file)
-
-    def _load_transformation_schemas(self):
-        """Loads LBD transformations schema from the admin project.
-
-        Derive v3.0/v3.1 only fields from the specified schema
-        """
-        super()._load_transformation_schemas()
-        if self._transformations:
-            lbd_long = self._transformations.get(MetadataKeys.LBD_LONG, [])
-            lbd_short = self._transformations.get(MetadataKeys.LBD_SHORT, [])
-            self.__long_only = set(lbd_long).difference(set(lbd_short))
-            self.__short_only = set(lbd_short).difference(set(lbd_long))
+    def __init__(self, transform: FormTransform,
+                 error_writer: ListErrorWriter) -> None:
+        self._transform = transform
+        super().__init__(error_writer)
 
     def transform(self, input_record: Dict[str, Any],
                   line_num: int) -> Optional[Dict[str, Any]]:
@@ -184,11 +186,9 @@ class LBDTransformer(RecordTransformer):
         if not super().transform(input_record, line_num):
             return None
 
-        if self._transformations:
-            formver = input_record.get(FieldNames.FORMVER)
-            if formver == DefaultValues.LBD_SHORT_VER:
-                return self._drop_fields(input_record, self.__long_only)
-            else:
-                return self._drop_fields(input_record, self.__short_only)
+        formver = input_record.get(FieldNames.FORMVER)
+        if formver == DefaultValues.LBD_SHORT_VER:
+            return self._transform.filter(input_record, 'v3.0')
 
-        return input_record
+        return self._transform.filter(input_record, 'v3.1')
+
