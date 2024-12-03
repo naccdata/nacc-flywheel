@@ -1,7 +1,6 @@
 """Defines the APOE Transformer."""
 import logging
-
-from typing import Any, Dict, List, TextIO
+from typing import Any, Dict, List, TextIO, Tuple
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from inputs.csv_reader import CSVVisitor, read_csv
@@ -28,21 +27,21 @@ def transform_apoe(a1: str, a2: str) -> int:
 
     if a1 == "E3" and a2 == "E3":
         return 1
-    elif a1 =="E3" and a2 == "E4":
+    if a1 == "E3" and a2 == "E4":
         return 2
-    elif a1 =="E4" and a2 == "E3":
+    if a1 == "E4" and a2 == "E3":
         return 2
-    elif a1 =="E3" and a2 == "E2":
+    if a1 == "E3" and a2 == "E2":
         return 3
-    elif a1 =="E2" and a2 == "E3":
+    if a1 == "E2" and a2 == "E3":
         return 3
-    elif a1 =="E4" and a2 == "E4":
+    if a1 == "E4" and a2 == "E4":
         return 4
-    elif a1 =="E4" and a2 == "E2":
+    if a1 == "E4" and a2 == "E2":
         return 5
-    elif a1 =="E2" and a2 == "E4":
+    if a1 == "E2" and a2 == "E4":
         return 5
-    elif a1 =="E2" and a2 == "E2":
+    if a1 == "E2" and a2 == "E2":
         return 6
 
     return 9
@@ -51,20 +50,11 @@ def transform_apoe(a1: str, a2: str) -> int:
 class APOETransformerCSVVisitor(CSVVisitor):
     """Class for visiting each row in the APOE genotype CSV."""
 
-    EXPECTED_APOE_INPUT_HEADERS = [
-        'adcid',
-        'ptid',
-        'naccid',
-        'a1',
-        'a2'
-    ]
+    EXPECTED_APOE_INPUT_HEADERS: Tuple[str] = ('adcid', 'ptid', 'naccid', 'a1',
+                                               'a2')
 
-    EXPECTED_APOE_OUTPUT_HEADERS = [
-        'adcid',
-        'ptid',
-        'naccid',
-        'apoe'
-    ]
+    EXPECTED_APOE_OUTPUT_HEADERS: Tuple[str] = ('adcid', 'ptid', 'naccid',
+                                                'apoe')
 
     def __init__(self, error_writer: ListErrorWriter):
         """Initializer."""
@@ -94,8 +84,8 @@ class APOETransformerCSVVisitor(CSVVisitor):
         return result
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Visit the dictionary for the row (per DictReader) and
-        perform the APOE transformation.
+        """Visit the dictionary for the row (per DictReader) and perform the
+        APOE transformation.
 
         Args:
             row: The row data
@@ -136,7 +126,7 @@ def run(*,
     success = read_csv(input_file=input_file,
                        error_writer=error_writer,
                        visitor=visitor)
-                       #delimiters=delimiter)  # TODO - pass after merging
+    #delimiters=delimiter)  # TODO - pass after merging
 
     if not success:
         log.error(
@@ -147,7 +137,7 @@ def run(*,
         return
 
     # write transformed results to target project
-    log.info(f"Writing transformed APOE data to {project.id}")
+    log.info(f"Writing transformed APOE data to {target_project.id}")
     write_csv_to_project(headers=visitor.EXPECTED_APOE_OUTPUT_HEADERS,
                          data=visitor.transformed_data,
                          filename=output_filename,
