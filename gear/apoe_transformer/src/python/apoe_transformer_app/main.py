@@ -3,7 +3,7 @@ import logging
 
 from typing import Any, Dict, List, TextIO
 
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import (
     ListErrorWriter,
@@ -119,7 +119,7 @@ def run(*,
         proxy: FlywheelProxy,
         input_file: TextIO,
         output_filename: str,
-        target_project: str,  # TODO, NOT A STR
+        target_project: ProjectAdaptor,
         error_writer: ListErrorWriter,
         delimiter: str = ','):
     """Runs the APOE transformation process.
@@ -147,8 +147,8 @@ def run(*,
             log.error(x['message'])
         return
 
-    log.info(f"Writing transformed APOE data to {project.id}")
     # write transformed results to target project
+    log.info(f"Writing transformed APOE data to {project.id}")
     write_csv_to_project(headers=visitor.EXPECTED_APOE_OUTPUT_HEADERS,
                          data=visitor.transformed_data,
                          filename=output_filename,
