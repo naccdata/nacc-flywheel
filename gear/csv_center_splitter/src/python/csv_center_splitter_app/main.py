@@ -1,19 +1,88 @@
 """Defines csv_center_splitter."""
-import io
 import logging
+from io import StringIO
+from typing import Any, Dict, List, TextIO, Tuple
 
 from flywheel import FileSpec
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
-from inputs.csv_reader import split_csv_by_key
+from inputs.csv_reader import CSVVisitor, read_csv
+from outputs.errors import ListErrorWriter
 from outputs.outputs import CSVWriter
 from projects.project_mapper import build_project_map
 
 log = logging.getLogger(__name__)
 
+
+class CSVCenterSplitterVisitor(CSVVisitor):
+    """Class for visiting each row in CSV."""
+
+    def __init__(self, adcid_key: str):
+        """Initializer."""
+        self.__adcid_key = adcid_key
+        self.__split_data = {}
+        self.__headers = None
+
+    @property
+    def adcid_key(self):
+        """The header ADCID key."""
+        return self.__adcid_key
+
+    @property
+    def split_data(self):
+        """The data split by the header key."""
+        return self.__split_data
+
+    @property
+    def centers(self):
+        """Return the centers split on."""
+        return list(self.__split_data.keys())
+
+    @property
+    def headers(self):
+        """Return the data headers."""
+        return self.__headers
+
+    def visit_header(self, header: List[str]) -> bool:
+        """Adds the header and verifies that the header key is in it.
+
+        Args:
+          header: list of header names
+        Returns:
+          True if the header has the header key, False otherwise
+        """
+        self.__headers = header
+        result = self.adcid_key in header
+        if not result:
+            return result, self.adcid_key
+
+        return result, None
+
+    def visit_row(self, row: Dict[str, Any],
+                  line_num: int) -> Tuple[bool, str]:
+        """Visit the dictionary for a row (per DictReader).
+
+        Args:
+          row: the dictionary for a row from a CSV file
+        Returns:
+          True if the row was processed without error, False otherwise
+        """
+        try:
+            adcid = int(row[self.adcid_key])
+        except ValueError as e:
+            return False, f"ADCID value must be an int: {e}"
+
+        if adcid not in self.split_data:
+            self.split_data[adcid] = []
+
+        self.split_data[adcid].append(row)
+        return True, None
+
+
 def run(*,
         proxy: FlywheelProxy,
-        input_filepath: str,
+        input_file: TextIO,
         input_filename: str,
+        error_writer: ListErrorWriter,
         adcid_key: str,
         target_project: str,
         delimiter: str = ','):
@@ -22,7 +91,7 @@ def run(*,
 
     Args:
         proxy: the proxy for the Flywheel instance
-        input_filepath: The input CSV to split on
+        input_file: The input CSV TextIO stream to split on
         input_filename: The name of the input CSV, used to build the filename
             for split files
         adcid_key: The name of the header column the ADCID is listed under
@@ -30,21 +99,31 @@ def run(*,
         delimiter: The CSV's delimiter; defaults to ','
     """
     # split CSV by ADCID key
-    split_data, headers = split_csv_by_key(input_filepath=input_filepath,
-                                           header_key=adcid_key,
-                                           delimiter=delimiter)
+    visitor = CSVCenterSplitterVisitor(adcid_key=adcid_key)
+    success = read_csv(input_file=input_file,
+                       error_writer=error_writer,
+                       visitor=visitor,
+                       delimiters=delimiter)
+
+    if not success:
+        log.error(
+            "The following errors were found while reading input CSV file, " +
+            "will not split data.")
+        for x in error_writer.errors():
+            log.error(x['message'])
+        return False
 
     # build project map from ADCID to FW project for upload
     project_map = build_project_map(proxy=proxy,
                                     destination_label=target_project,
-                                    centers=list(split_data.keys()))
+                                    centers=visitor.centers)
 
     if not project_map:
         raise ValueError(f"No {target_project} projects found")
 
     # make sure all expected projects are there before upload
     missing_projects = []
-    for adcid in split_data:
+    for adcid in visitor.split_data:
         if f'adcid-{adcid}' not in project_map:
             missing_projects.append(adcid)
 
@@ -53,14 +132,15 @@ def run(*,
             f"Missing {target_project} projects for the following " +
             f"ADCIDs: {missing_projects}")
 
-    log.info("Writing split results for each ADCID...")
+    log.info(
+        f"Writing split results for the following ADCIDs: {visitor.centers}")
 
     # write results to each center's project
-    for adcid, data in split_data.items():
+    for adcid, data in visitor.split_data.items():
         project = project_map[f'adcid-{adcid}']
 
-        contents = io.StringIO()
-        writer = CSVWriter(contents, headers)
+        contents = StringIO()
+        writer = CSVWriter(contents, visitor.headers)
         for row in data:
             writer.write(row)
 

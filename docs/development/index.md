@@ -307,7 +307,7 @@ Then [run the gear](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run
 fw-beta gear run <project-dir>/src/docker
 ```
 
-Note any input files must live at `<project-dir>/src/docker/input/<input_file_name>`.
+Note any input files must live at `<project-dir>/src/docker/input/<input_file_variable_name>/<file>`.
 
 As of `fw-beta` version 0.18.0 you can also pass docker arguments directly by using `--` followed by the args. See [Flywheel's usage docs](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/#usage) for more information.
 

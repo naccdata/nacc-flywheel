@@ -54,6 +54,11 @@
             "description": "The input file delimiter",
             "type": "string",
             "default": ","
+        },
+        "local_run": {
+            "description": "Set to true if executing on a local input file",
+            "type": "boolean",
+            "default": false
         }
     },
     "command": "/bin/run"

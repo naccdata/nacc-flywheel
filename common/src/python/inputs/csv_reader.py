@@ -1,6 +1,7 @@
 """Methods to read and process a CSV file using a row visitor."""
 
 import abc
+import logging
 from abc import ABC, abstractmethod
 from csv import DictReader, Error, Sniffer
 from typing import Any, Dict, List, Optional, TextIO, Tuple
@@ -8,9 +9,13 @@ from typing import Any, Dict, List, Optional, TextIO, Tuple
 from outputs.errors import (
     ErrorWriter,
     empty_file_error,
+    invalid_row_error,
     malformed_file_error,
-    missing_header_error,
+    missing_field_error,
+    missing_header_error
 )
+
+log = logging.getLogger(__name__)
 
 
 class CSVVisitor(ABC):
@@ -40,7 +45,7 @@ class CSVVisitor(ABC):
 
 
 def read_csv(input_file: TextIO, error_writer: ErrorWriter,
-             visitor: CSVVisitor) -> bool:
+             visitor: CSVVisitor, delimiters=',') -> bool:
     """Reads CSV file and applies the visitor to each row.
 
     Args:
@@ -67,16 +72,21 @@ def read_csv(input_file: TextIO, error_writer: ErrorWriter,
         return False
 
     input_file.seek(0)
-    detected_dialect = sniffer.sniff(csv_sample, delimiters=',')
+    detected_dialect = sniffer.sniff(csv_sample, delimiters=delimiters)
     reader = DictReader(input_file, dialect=detected_dialect)
     assert reader.fieldnames, "File has header, reader should have fieldnames"
 
-    success = visitor.visit_header(list(reader.fieldnames))
+    success, missing_field = visitor.visit_header(list(reader.fieldnames))
     if not success:
+        error_writer.write(missing_field_error(missing_field))
         return False
 
     for record in reader:
-        row_success = visitor.visit_row(record, line_num=reader.line_num)
+        line_num = reader.line_num
+        row_success, error_reason = visitor.visit_row(record, line_num=line_num)
+        if not row_success:
+            error_writer.write(invalid_row_error(error_reason, line_num))
+
         success = row_success and success
 
     return success
@@ -120,44 +130,3 @@ class AggregateRowValidator(RowValidator):
         return all(
             validator.check(row, line_number)
             for validator in self.__validators)
-
-
-def split_csv_by_key(
-        input_filepath: str,
-        header_key: str,
-        delimiter: str = ',') -> Tuple[Dict[str, object], List[str]]:
-    """Splits an input CSV by some header key.
-
-    Args:
-        input_filepath: The input CSV to split on
-        header_key: The name fo the header column to split by
-        delimiter: The CSV's delimiter; defaults to ','
-
-    Returns:
-        dict: The split data, keyed by the header key value to (JSON-formatted)
-            rows that correspond to it
-        list[str]: The list of headers
-    """
-    split_data = {}
-    headers = None
-    with open(input_filepath, 'r') as csvfile:
-        reader = DictReader(csvfile, delimiter=delimiter)
-        headers = reader.fieldnames
-
-        if not headers:
-            raise ValueError(
-                f"No headers found in input CSV: {input_filepath}")
-
-        if header_key not in headers:
-            raise ValueError(
-                f"Specified header key '{header_key}' not found " +
-                f"in input CSV headers: {input_filepath}")
-
-        for row in reader:
-            adcid = int(row[header_key])
-            if adcid not in split_data:
-                split_data[adcid] = []
-
-            split_data[adcid].append(row)
-
-    return split_data, headers

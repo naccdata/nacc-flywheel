@@ -2,6 +2,7 @@
 import logging
 from typing import Optional
 
+from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
@@ -9,26 +10,33 @@ from gear_execution.gear_execution import (
     GearEngine,
     GearExecutionEnvironment,
     GearExecutionError,
+    InputFileWrapper,
 )
 from inputs.parameter_store import ParameterStore
+from outputs.errors import ListErrorWriter
 
 from csv_center_splitter_app.main import run
 
 log = logging.getLogger(__name__)
 
+
 class CsvCenterSplitterVisitor(GearExecutionEnvironment):
     """Visitor for the CSV Center Splitter gear."""
 
-    def __init__(self, client: ClientWrapper, input_filepath: str,
-                 input_filename: str, adcid_key: str, target_project: str,
-                 delimiter: str):
+    def __init__(self,
+                 client: ClientWrapper,
+                 file_input: InputFileWrapper,
+                 adcid_key: str,
+                 target_project: str,
+                 delimiter: str,
+                 local_run: bool = False):
         super().__init__(client=client)
 
-        self.__input_filepath = input_filepath
-        self.__input_filename = input_filename
+        self.__file_input = file_input
         self.__adcid_key = adcid_key
         self.__target_project = target_project
         self.__delimiter = delimiter
+        self.__local_run = local_run
 
     @classmethod
     def create(
@@ -46,11 +54,8 @@ class CsvCenterSplitterVisitor(GearExecutionEnvironment):
           GearExecutionError if any expected inputs are missing
         """
         client = ContextClient.create(context=context)
-        input_filepath = context.get_input_path('input_file')
-
-        if not input_filepath:
-            raise GearExecutionError("No input CSV provided")
-        input_filename = context.get_input_filename('input_file')
+        file_input = InputFileWrapper.create(input_name='input_file',
+                                             context=context)
 
         target_project = context.config.get('target_project', None)
 
@@ -61,22 +66,43 @@ class CsvCenterSplitterVisitor(GearExecutionEnvironment):
         if not adcid_key:
             raise GearExecutionError("No ADCID key provided")
 
+        local_run = context.config.get('local_run', False)
+
         return CsvCenterSplitterVisitor(client=client,
-                                        input_filepath=input_filepath,
-                                        input_filename=input_filename,
+                                        file_input=file_input,
                                         adcid_key=adcid_key,
                                         target_project=target_project,
                                         delimiter=context.config.get(
-                                            'delimiter', ","))
+                                            'delimiter', ","),
+                                        local_run=local_run)
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the CSV Center Splitter app."""
-        run(proxy=self.proxy,
-            input_filepath=self.__input_filepath,
-            input_filename=self.__input_filename,
-            adcid_key=self.__adcid_key,
-            target_project=self.__target_project,
-            delimiter=self.__delimiter)
+        # if local run, give dummy container for local file, otherwise
+        # grab from project
+        if self.__local_run:
+            file_id = 'local-container'
+            fw_path = 'local-run'
+        else:
+            file_id = self.__file_input.file_id
+            try:
+                file = self.proxy.get_file(file_id)
+                fw_path = self.proxy.get_lookup_path(file)
+            except ApiException as error:
+                raise GearExecutionError(
+                    f'Failed to find the input file: {error}') from error
+
+        with open(self.__file_input.filepath, mode='r', encoding='utf8') as fh:
+            error_writer = ListErrorWriter(container_id=file_id,
+                                           fw_path=fw_path)
+
+            run(proxy=self.proxy,
+                input_file=fh,
+                input_filename=self.__file_input.filename,
+                error_writer=error_writer,
+                adcid_key=self.__adcid_key,
+                target_project=self.__target_project,
+                delimiter=self.__delimiter)
 
 
 def main():
