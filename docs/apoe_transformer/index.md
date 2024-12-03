@@ -43,6 +43,7 @@ The only required input is the APOE genotype file from NCRAD, but the gear also 
 
 ```yaml
 output_filename: <output filename; defaults to the input filename with '_apoe_transformed' postfixed>
-target_project: <target output project; defaults to the same project the input file was uploaded to if not specified>
+target_project_id: <target output project ID; defaults to the same project the input file was uploaded to if not specified>
 delimiter: <the input CSV delimiter; defaults to ','>
+local_run: <whether or not this is a local run; if True, then target_project_id must be provided>
 ```

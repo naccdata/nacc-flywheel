@@ -47,8 +47,8 @@
             "type": "string",
             "default": null
         },
-        "target_project": {
-            "description": "Target project to write results to; defaults to the same project that the input file was uploaded to",
+        "target_project_id": {
+            "description": "ID of the target project to write results to; if not provided, will write to same project the input file was uploaded to",
             "type": "string",
             "default": null
         },
@@ -56,6 +56,11 @@
             "description": "The input CSV delimiter",
             "type": "string",
             "default": ","
+        },
+        "local_run": {
+            "description": "If running from a local file; if True, then target target_project_id must be provided",
+            "type": "boolean",
+            "default": false
         }
     },
     "command": "/bin/run"
