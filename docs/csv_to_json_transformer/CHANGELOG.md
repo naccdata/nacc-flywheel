@@ -2,6 +2,10 @@
 
 All notable changes to this gear are documented in this file.
 
+## TBD
+
+- Optional input files are allowed to be missing.
+
 ## 0.0.11
 - Normalizes the visit date to `YYYY-MM-DD` format
 - Apply module specific transformations
