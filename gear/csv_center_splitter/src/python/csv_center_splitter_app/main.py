@@ -154,7 +154,8 @@ def run(*,
         filename = f'{adcid}_{input_filename}'
 
         log.info(
-            f"Uploading {filename} for ADCID {adcid}, project ID {project.id}")
+            f"Uploading {filename} for project {target_project} ADCID {adcid} "
+            + f"with project ID {project.id}")
 
         write_csv_to_project(headers=visitor.headers,
                              data=data,
