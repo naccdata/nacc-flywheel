@@ -20,7 +20,7 @@ from csv_center_splitter_app.main import run
 log = logging.getLogger(__name__)
 
 
-class CsvCenterSplitterVisitor(GearExecutionEnvironment):
+class CSVCenterSplitterVisitor(GearExecutionEnvironment):
     """Visitor for the CSV Center Splitter gear."""
 
     def __init__(self,
@@ -43,7 +43,7 @@ class CsvCenterSplitterVisitor(GearExecutionEnvironment):
         cls,
         context: GearToolkitContext,
         parameter_store: Optional[ParameterStore] = None
-    ) -> 'CsvCenterSplitterVisitor':
+    ) -> 'CSVCenterSplitterVisitor':
         """Creates a gear execution object.
 
         Args:
@@ -68,7 +68,7 @@ class CsvCenterSplitterVisitor(GearExecutionEnvironment):
 
         local_run = context.config.get('local_run', False)
 
-        return CsvCenterSplitterVisitor(client=client,
+        return CSVCenterSplitterVisitor(client=client,
                                         file_input=file_input,
                                         adcid_key=adcid_key,
                                         target_project=target_project,
@@ -111,7 +111,7 @@ def main():
     Splits CSV and distributes per center.
     """
 
-    GearEngine().run(gear_type=CsvCenterSplitterVisitor)
+    GearEngine().run(gear_type=CSVCenterSplitterVisitor)
 
 
 if __name__ == "__main__":

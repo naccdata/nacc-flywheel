@@ -15,7 +15,7 @@ from projects.project_mapper import build_project_map
 log = logging.getLogger(__name__)
 
 
-class CSVCenterSplitterVisitor(CSVVisitor):
+class CSVVisitorCenterSplitter(CSVVisitor):
     """Class for visiting each row in CSV."""
 
     def __init__(self, adcid_key: str, error_writer: ListErrorWriter):
@@ -107,7 +107,7 @@ def run(*,
         delimiter: The CSV's delimiter; defaults to ','
     """
     # split CSV by ADCID key
-    visitor = CSVCenterSplitterVisitor(adcid_key, error_writer)
+    visitor = CSVVisitorCenterSplitter(adcid_key, error_writer)
     success = read_csv(input_file=input_file,
                        error_writer=error_writer,
                        visitor=visitor,
