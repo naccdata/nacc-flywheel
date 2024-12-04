@@ -1,8 +1,4 @@
 """Tests for CSV Center Splitter, namely the CSVCenterSplitterVisitor."""
-import csv
-from io import StringIO
-from typing import Any, List
-
 import pytest
 from csv_center_splitter_app.main import CSVVisitorCenterSplitter
 from outputs.errors import ListErrorWriter
