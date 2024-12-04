@@ -8,24 +8,6 @@ from csv_center_splitter_app.main import CSVVisitorCenterSplitter
 from outputs.errors import ListErrorWriter
 
 
-def write_to_stream(data: List[List[Any]], stream: StringIO) -> None:
-    """Writes data to the StringIO object for use in a test.
-
-    Resets stream pointer to beginning.
-
-    Args:
-      data: tabular data
-      stream: the output stream
-    """
-    writer = csv.writer(stream,
-                        delimiter=',',
-                        quotechar='\"',
-                        quoting=csv.QUOTE_NONNUMERIC,
-                        lineterminator='\n')
-    writer.writerows(data)
-    stream.seek(0)
-
-
 @pytest.fixture(scope='function')
 def visitor():
     """Creates a CSVVisitorCenterSplitter for testing."""
