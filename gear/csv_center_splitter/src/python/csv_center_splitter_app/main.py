@@ -45,6 +45,11 @@ class CSVVisitorCenterSplitter(CSVVisitor):
         """Return the data headers."""
         return self.__headers
 
+    @property
+    def error_writer(self):
+        """Return the error writer."""
+        return self.__error_writer
+
     def visit_header(self, header: List[str]) -> bool:
         """Adds the header and verifies that the header key is in it.
 
