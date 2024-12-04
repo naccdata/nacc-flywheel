@@ -12,39 +12,18 @@ from outputs.outputs import write_csv_to_project
 
 log = logging.getLogger(__name__)
 
-
-def transform_apoe(a1: str, a2: str) -> int:
-    """Transforms the APOE genotype encoding from NCRAD to NACC.
-
-    Args:
-        a1: APOE loci 1
-        a2: APOE loci 2
-    Returns:
-        int: The APOE NACC encoding
-    """
-    a1 = a1.strip().upper()
-    a2 = a2.strip().upper()
-
-    if a1 == "E3" and a2 == "E3":
-        return 1
-    if a1 == "E3" and a2 == "E4":
-        return 2
-    if a1 == "E4" and a2 == "E3":
-        return 2
-    if a1 == "E3" and a2 == "E2":
-        return 3
-    if a1 == "E2" and a2 == "E3":
-        return 3
-    if a1 == "E4" and a2 == "E4":
-        return 4
-    if a1 == "E4" and a2 == "E2":
-        return 5
-    if a1 == "E2" and a2 == "E4":
-        return 5
-    if a1 == "E2" and a2 == "E2":
-        return 6
-
-    return 9
+# NCRAD (a1, a2) to NACC encoding
+APOE_ENCODINGS = {
+    ("E3", "E3"): 1,
+    ("E3", "E4"): 2,
+    ("E4", "E3"): 2,
+    ("E3", "E2"): 3,
+    ("E2", "E3"): 3,
+    ("E4", "E4"): 4,
+    ("E4", "E2"): 5,
+    ("E2", "E4"): 5,
+    ("E2", "E2"): 6
+}
 
 
 class APOETransformerCSVVisitor(CSVVisitor):
@@ -65,6 +44,11 @@ class APOETransformerCSVVisitor(CSVVisitor):
     def transformed_data(self):
         """The APOE transformed data."""
         return self.__transformed_data
+
+    @property
+    def error_writer(self):
+        """The error writer."""
+        return self.__error_writer
 
     def visit_header(self, header: List[str]) -> bool:
         """Verifies that the header is valid.
@@ -93,12 +77,14 @@ class APOETransformerCSVVisitor(CSVVisitor):
         Returns:
             True if the row is valid and transformed successfully, else False
         """
-        row['apoe'] = transform_apoe(row.pop('a1'), row.pop('a2'))
+        a1, a2 = row.pop('a1'), row.pop('a2')
+        pair = (a1.strip().upper(), a2.strip().upper())
+        row['apoe'] = APOE_ENCODINGS.get(pair, 9)
 
         # remove any extra headers
-        for field in row:
-            if field not in self.EXPECTED_APOE_OUTPUT_HEADERS:
-                row.pop(field)
+        extra_fields = set(row.keys()) - set(self.EXPECTED_APOE_OUTPUT_HEADERS)
+        for field in extra_fields:
+            row.pop(field)
 
         self.__transformed_data.append(row)
         return True
