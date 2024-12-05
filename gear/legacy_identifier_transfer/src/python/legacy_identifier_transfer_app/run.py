@@ -2,7 +2,7 @@
 
 import logging
 
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from flywheel.models.group import Group
 from flywheel.rest import ApiException
@@ -14,14 +14,42 @@ from gear_execution.gear_execution import (
     GearExecutionEnvironment,
     GearExecutionError,
 )
+from identifiers.identifiers_lambda_repository import IdentifiersLambdaRepository, IdentifiersMode
+from identifiers.identifiers_repository import IdentifierRepository, IdentifierRepositoryError
+from identifiers.model import IdentifierObject
+from lambdas.lambda_function import LambdaClient, create_lambda_client
 from legacy_identifier_transfer_app.main import run
 from inputs.parameter_store import ParameterStore
 
 log = logging.getLogger(__name__)
 
+# This is copied from identifier_lookup - should move to module?
+
+
+def get_identifiers(identifiers_repo: IdentifierRepository,
+                    adcid: int) -> Dict[str, IdentifierObject]:
+    """Gets all of the Identifier objects from the identifier database using
+    the RDSParameters.
+
+    Args:
+      rds_parameters: the credentials for RDS MySQL with identifiers database
+      adcid: the center ID
+    Returns:
+      the dictionary mapping from PTID to Identifier object
+    """
+    identifiers = {}
+    center_identifiers = identifiers_repo.list(adcid=adcid)
+    if center_identifiers:
+        # pylint: disable=(not-an-iterable)
+        identifiers = {
+            identifier.ptid: identifier
+            for identifier in center_identifiers
+        }
+
+    return identifiers
+
+
 # This is copied from redcap_fw_transfer - should move to module?
-
-
 def get_destination_group_and_project(dest_container: Any) -> Tuple[str, str]:
     """Find the flywheel group id and project id for the destination project.
 
@@ -54,9 +82,10 @@ def get_destination_group_and_project(dest_container: Any) -> Tuple[str, str]:
 class legacy_identifier_transfer(GearExecutionEnvironment):
     """Visitor for the Legacy identifier transfer gear."""
 
-    def __init__(self, admin_id: str, client: ClientWrapper):
+    def __init__(self, admin_id: str, client: ClientWrapper, identifiers_mode: IdentifiersMode):
         super().__init__(client=client)
         self.__admin_id = admin_id
+        self.__identifiers_mode: IdentifiersMode = identifiers_mode
 
     @classmethod
     def create(
@@ -77,10 +106,12 @@ class legacy_identifier_transfer(GearExecutionEnvironment):
         client = ContextClient.create(context=context)
 
         admin_id = context.config.get("admin_group", "nacc")
+        mode = context.config.get("identifiers_mode", "dev")
 
         return legacy_identifier_transfer(
             admin_id=admin_id,
             client=client,
+            identifiers_mode=mode
         )
 
     def __get_adcid(self, project_id: str) -> Optional[int]:
@@ -118,14 +149,35 @@ class legacy_identifier_transfer(GearExecutionEnvironment):
         # Get Group and Project IDs, ADCID for group
         group_id, project_id = get_destination_group_and_project(
             dest_container)
-
         log.info(f"group_id: {group_id}")
 
-        run(proxy=self.proxy, adcid=self.__get_adcid(group_id))
+        adcid = self.__get_adcid(group_id)
+        log.info(f"ADCID: {adcid}")
+
+        if adcid is None:
+            raise GearExecutionError('Unable to determine center ID for group')
+
+        # Get all identifiers for adcid
+        try:
+            identifiers = get_identifiers(
+                identifiers_repo=IdentifiersLambdaRepository(
+                    client=LambdaClient(client=create_lambda_client()),
+                    mode=self.__identifiers_mode),
+                adcid=adcid)
+        except IdentifierRepositoryError as error:
+            raise GearExecutionError(error) from error
+
+        if not identifiers:
+            raise GearExecutionError('Unable to load center participant IDs')
+
+        run(proxy=self.proxy, adcid=adcid, identifiers=identifiers)
 
 
 def main():
-    """The Legacy Identifier Transfer gear reads a CSV with rows of ADCIDs."""
+    """The Legacy NACCID transfer gear looks up all of the NACCIDs for
+    a center. If the center does not already have a Subject with a given
+    NACCID, it creates a new subject at that center for that participant.
+    """
 
     # Strategy
     # pull information down from identifiers api then distribute it to center

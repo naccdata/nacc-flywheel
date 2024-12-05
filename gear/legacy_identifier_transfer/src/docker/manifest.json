@@ -38,6 +38,11 @@
             "type": "string",
             "default": "nacc"
         },
+        "identifier_mode": {
+            "description": "Whether to create identifiers in dev or prod database",
+            "type": "string",
+            "default": "prod"
+        },
         "apikey_path_prefix": {
             "description": "The instance specific AWS parameter path prefix for apikey",
             "type": "string",
