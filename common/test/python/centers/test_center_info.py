@@ -4,7 +4,7 @@ import yaml
 
 from pydantic import ValidationError
 
-from centers.center_info import CenterInfo
+from centers.center_info import CenterInfo, CenterMapInfo
 from projects.study import Study, StudyVisitor
 
 
@@ -25,9 +25,10 @@ class DummyVisitor(StudyVisitor):
     def visit_study(self, study: Study) -> None:
         self.project_name = study.name
 
+
 @pytest.fixture(scope='module')
 def dummy_center():
-    """Generate dummy center for general testing."""
+    """Generate dummy CenterInfo for general testing."""
     return CenterInfo(tags=['adcid-7'],
                       name="Alpha ADRC",
                       center_id='alpha-adrc',
@@ -35,9 +36,15 @@ def dummy_center():
                       group='alpha-group')
 
 
+@pytest.fixture(scope='function')
+def dummy_center_map(dummy_center):
+    """Generate dummy CenterMapInfo for general testing."""
+    return CenterMapInfo(centers={7: dummy_center})
+
+
 # pylint: disable=(no-self-use)
 class TestCenterInfo:
-    """Tests for centers.nacc_group.CenterInfo."""
+    """Tests for centers.center_info.CenterInfo."""
 
     def test_object(self, dummy_center):
         """Sanity check on object creation and properties."""
@@ -97,3 +104,29 @@ class TestCenterInfo:
             "adcid=7, "
             "active=True, "
             "tags=('adcid-7',)")
+
+
+# pylint: disable=(no-self-use)
+class TestCenterMapInfo:
+    """Tests for centers.center_info.CenterMapInfo."""
+
+    def test_creation(self, dummy_center, dummy_center_map):
+        """Test creation."""
+        assert dummy_center_map.centers == {
+            7: dummy_center
+        }
+
+        assert CenterMapInfo(centers={}).centers == {}
+
+    def test_add(self, dummy_center, dummy_center_map):
+        """Test adding."""
+        dummy_center_map.add(8, dummy_center)
+        assert dummy_center_map.centers == {
+            7: dummy_center,
+            8: dummy_center
+        }
+
+    def test_get(self, dummy_center, dummy_center_map):
+        """Test getting."""
+        assert dummy_center_map.get(7) == dummy_center
+        assert not dummy_center_map.get(1)
