@@ -33,9 +33,11 @@ class CenterInfo(BaseModel):
     def __repr__(self) -> str:
         return (f"Center(center_id={self.center_id}, "
                 f"name={self.name}, "
+                f"group={self.group}, "
                 f"adcid={self.adcid}, "
                 f"active={self.active}, "
-                f"tags={self.tags}")
+                f"tags={self.tags}"
+                )
 
     def __eq__(self, __o: object) -> bool:
         if not isinstance(__o, CenterInfo):

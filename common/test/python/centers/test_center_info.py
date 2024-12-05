@@ -25,25 +25,29 @@ class DummyVisitor(StudyVisitor):
     def visit_study(self, study: Study) -> None:
         self.project_name = study.name
 
+@pytest.fixture(scope='module')
+def dummy_center():
+    """Generate dummy center for general testing."""
+    return CenterInfo(tags=['adcid-7'],
+                      name="Alpha ADRC",
+                      center_id='alpha-adrc',
+                      adcid=7,
+                      group='alpha-group')
+
 
 # pylint: disable=(no-self-use)
 class TestCenterInfo:
     """Tests for centers.nacc_group.CenterInfo."""
 
-    def test_object(self):
+    def test_object(self, dummy_center):
         """Sanity check on object creation and properties."""
-        center = CenterInfo(tags=['adcid-7'],
-                            name="Alpha ADRC",
-                            center_id='alpha-adrc',
-                            adcid=7,
-                            group='dummy-group')
-        assert 'adcid-7' in center.tags
-        assert center.name == "Alpha ADRC"
-        assert center.active
-        assert center.center_id == 'alpha-adrc'
-        assert center.group == 'dummy-group'
+        assert 'adcid-7' in dummy_center.tags
+        assert dummy_center.name == "Alpha ADRC"
+        assert dummy_center.active
+        assert dummy_center.center_id == 'alpha-adrc'
+        assert dummy_center.group == 'alpha-group'
 
-    def test_create(self):
+    def test_create(self, dummy_center):
         """Check that model is created correctly from dict,
         and the equality matches.
         """
@@ -53,14 +57,9 @@ class TestCenterInfo:
             'center-id': 'alpha-adrc',
             'adcid': 7,
             'is-active': True,
-            'group': 'dummy-group'
+            'group': 'alpha-group'
         })
-        center2 = CenterInfo(tags=['adcid-7'],
-                             name="Alpha ADRC",
-                             center_id='alpha-adrc',
-                             adcid=7,
-                             group='dummy-group')
-        assert center == center2
+        assert center == dummy_center
 
     def test_invalid_creation(self):
         """Test invalid creation."""
@@ -70,32 +69,31 @@ class TestCenterInfo:
         with pytest.raises(ValidationError):
             CenterInfo(tags=['adcid-7'],
                        name="Alpha ADRC",
-                       adcid=7,
-                       group='dummy-group')
+                       adcid=7)
 
-    def test_apply(self):
+    def test_apply(self, dummy_center):
         """Test that visitor applied."""
         visitor = DummyVisitor()
-        center = CenterInfo(tags=['adcid-1'],
-                            name="Dummy CenterInfo",
-                            center_id="dummy",
-                            adcid=1,
-                            group='dummy-group')
-        center.apply(visitor)
-        assert visitor.center_id == "dummy"
+        dummy_center.apply(visitor)
+        assert visitor.center_id == "alpha-adrc"
 
-    def test_create_from_yaml(self):
+    def test_create_from_yaml(self, dummy_center):
         """Test creation from yaml."""
-        center_yaml = ("adcid: 16\n"
-                       "name: University of California, Davis\n"
-                       "center-id: ucdavis\n"
+        center_yaml = ("adcid: 7\n"
+                       "name: Alpha ADRC\n"
+                       "center-id: alpha-adrc\n"
                        "is-active: True\n"
-                       "group: dummy-group")
+                       "group: alpha-group")
         center_gen = yaml.safe_load_all(center_yaml)
         center = CenterInfo(**next(iter(center_gen)))
-        center2 = CenterInfo(tags=['adcid-16'],
-                             name="University of California, Davis",
-                             center_id='ucdavis',
-                             adcid=16,
-                             group='dummy-group')
-        assert center == center2
+        assert center == dummy_center
+
+    def test_repr(self, dummy_center):
+        """Test representation."""
+        assert repr(dummy_center) == (
+            "Center(center_id=alpha-adrc, "
+            "name=Alpha ADRC, "
+            "group=alpha-group, "
+            "adcid=7, "
+            "active=True, "
+            "tags=('adcid-7',)")
