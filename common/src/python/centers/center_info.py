@@ -15,7 +15,7 @@ class CenterInfo(BaseModel):
                          can also be aliased to group
 
         active (bool): Optional, active or inactive status. Defaults to True.
-        tags (List[str]): Optional, list of tags for the center
+        tags (Tuple[str]): Optional, list of tags for the center
     """
     adcid: int
     name: str
