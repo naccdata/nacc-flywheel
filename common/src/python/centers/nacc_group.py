@@ -1,6 +1,7 @@
 """Singleton class representing NACC with a FW group."""
 import logging
 from typing import List, Optional
+from pydantic import ValidationError
 
 from flywheel.models.group import Group
 from flywheel.models.user import User
@@ -77,7 +78,7 @@ class NACCGroup(CenterAdaptor):
             adcid,
             CenterInfo(adcid=adcid,
                        name=group_label,
-                       group=group_id,
+                       center_id=group_id,
                        active=active))
         metadata.update_info(center_map.model_dump())
 

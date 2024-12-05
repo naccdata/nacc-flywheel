@@ -32,8 +32,7 @@ def dummy_center():
     return CenterInfo(tags=['adcid-7'],
                       name="Alpha ADRC",
                       center_id='alpha-adrc',
-                      adcid=7,
-                      group='alpha-group')
+                      adcid=7)
 
 
 @pytest.fixture(scope='function')
@@ -52,7 +51,6 @@ class TestCenterInfo:
         assert dummy_center.name == "Alpha ADRC"
         assert dummy_center.active
         assert dummy_center.center_id == 'alpha-adrc'
-        assert dummy_center.group == 'alpha-group'
 
     def test_create(self, dummy_center):
         """Check that model is created correctly from dict,
@@ -63,8 +61,7 @@ class TestCenterInfo:
             'name': 'Alpha ADRC',
             'center-id': 'alpha-adrc',
             'adcid': 7,
-            'is-active': True,
-            'group': 'alpha-group'
+            'is-active': True
         })
         assert center == dummy_center
 
@@ -89,8 +86,7 @@ class TestCenterInfo:
         center_yaml = ("adcid: 7\n"
                        "name: Alpha ADRC\n"
                        "center-id: alpha-adrc\n"
-                       "is-active: True\n"
-                       "group: alpha-group")
+                       "is-active: True")
         center_gen = yaml.safe_load_all(center_yaml)
         center = CenterInfo(**next(iter(center_gen)))
         assert center == dummy_center
@@ -100,7 +96,6 @@ class TestCenterInfo:
         assert repr(dummy_center) == (
             "Center(center_id=alpha-adrc, "
             "name=Alpha ADRC, "
-            "group=alpha-group, "
             "adcid=7, "
             "active=True, "
             "tags=('adcid-7',)")

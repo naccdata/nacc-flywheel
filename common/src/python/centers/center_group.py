@@ -101,9 +101,13 @@ class CenterGroup(CenterAdaptor):
         Returns:
           the CenterGroup for the center
         """
+        group = proxy.get_group(group_label=center.name,
+                                group_id=center.center_id)
+        assert group, "No group for center"
+
         center_group = CenterGroup(adcid=center.adcid,
                                    active=center.active,
-                                   group=center.group,
+                                   group=group,
                                    proxy=proxy)
 
         tags = list(center.tags)

@@ -12,6 +12,7 @@ from typing import List, Optional
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
+    ContextClient,
     GearBotClient,
     GearEngine,
     GearExecutionEnvironment,
@@ -55,8 +56,10 @@ class CenterCreationVisitor(GearExecutionEnvironment):
         Raises:
           GearExecutionError if the center file cannot be loaded
         """
-        client = GearBotClient.create(context=context,
-                                      parameter_store=parameter_store)
+        #client = GearBotClient.create(context=context,
+        #                              parameter_store=parameter_store)
+        client = ContextClient.create(context=context)
+
         center_filepath = context.get_input_path('center_file')
         if not center_filepath:
             raise GearExecutionError('No center file provided')
@@ -68,7 +71,7 @@ class CenterCreationVisitor(GearExecutionEnvironment):
                                      new_only=context.config.get(
                                          "new_only", False))
 
-    def __get_center_list(self, center_file_path: str,) -> List[CenterInfo]:
+    def __get_center_list(self, center_file_path: str) -> List[CenterInfo]:
         """Get the centers from the file.
 
         Args:
@@ -86,14 +89,7 @@ class CenterCreationVisitor(GearExecutionEnvironment):
         if not object_list:
             raise GearExecutionError('No centers found in center file')
 
-        center_list = []
-        for center_doc in object_list:
-            group = self.proxy.get_group(group_label=center_doc['name'],
-                                         group_id=center_doc['center-id'])
-            assert group, "No group for center"
-            center_list.append(CenterInfo(**center_doc, group=group))
-
-        return center_list
+        return [CenterInfo(**center_doc) for center_doc in object_list]
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
@@ -106,7 +102,7 @@ class CenterCreationVisitor(GearExecutionEnvironment):
         """
         run(proxy=self.proxy,
             admin_group=self.admin_group(admin_id=self.__admin_id),
-            center_list=self.__get_center_list(self.__center_filepath, self.proxy),
+            center_list=self.__get_center_list(self.__center_filepath),
             role_names=['curate', 'upload', 'gear-bot'],
             new_only=self.__new_only)
 
@@ -114,9 +110,10 @@ class CenterCreationVisitor(GearExecutionEnvironment):
 def main():
     """Main method to run the center creation gear."""
 
-    GearEngine.create_with_parameter_store().run(
+    #GearEngine.create_with_parameter_store().run(
+    #    gear_type=CenterCreationVisitor)
+    GearEngine().run(
         gear_type=CenterCreationVisitor)
-
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,5 @@
 """Models representing center information and center mappings."""
 from typing import Any, Dict, List, Optional, Tuple
-
 from pydantic import (
     AliasChoices,
     BaseModel,
@@ -16,24 +15,27 @@ class CenterInfo(BaseModel):
 
     Attributes:
         adcid (int): The ADC ID of the center.
-        center_id (str): The symbolic ID for the center
         name (str): The name of the center.
-        group (str): The group ID of the center.
+        center_id (str): The symbolic ID for the center,
+                         can also be aliased to group
 
         active (bool): Optional, active or inactive status. Defaults to True.
         tags (List[str]): Optional, list of tags for the center
     """
     adcid: int
-    center_id: str = Field(validation_alias=AliasChoices('center_id', 'center-id'))
     name: str
-    group: str
-    active: Optional[bool] = True
-    tags: Optional[Tuple[str]] = ()
+    center_id: str = Field(validation_alias=AliasChoices('center_id',
+                                                         'center-id',
+                                                         'group'))
+    active: Optional[bool] = Field(validation_alias=AliasChoices('active',
+                                                                 'is-active',
+                                                                 'is_active'),
+                                   default=True)
+    tags: Optional[Tuple[str, ...]] = ()
 
     def __repr__(self) -> str:
         return (f"Center(center_id={self.center_id}, "
                 f"name={self.name}, "
-                f"group={self.group}, "
                 f"adcid={self.adcid}, "
                 f"active={self.active}, "
                 f"tags={self.tags}"
@@ -47,7 +49,6 @@ class CenterInfo(BaseModel):
             self.adcid == __o.adcid and
             self.center_id == __o.center_id and
             self.name == __o.name and
-            self.group == __o.group and
             self.active == __o.active
         )
 
