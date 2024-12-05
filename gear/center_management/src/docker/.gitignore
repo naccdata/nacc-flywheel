@@ -1,3 +1,4 @@
 config.json
 .input_map.json
 input
+run.sh
