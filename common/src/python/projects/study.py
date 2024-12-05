@@ -1,7 +1,7 @@
 """Classes for representing NACC studies (or, if you must, projects)."""
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable, List, Literal, Mapping, Optional
+from typing import Any, List, Literal, Mapping
 
 
 def convert_to_slug(name: str) -> str:

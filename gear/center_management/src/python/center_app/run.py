@@ -9,6 +9,7 @@ array of centers:
 import logging
 from typing import List, Optional
 
+from centers.center_info import CenterInfo
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
@@ -17,8 +18,6 @@ from gear_execution.gear_execution import (
     GearExecutionEnvironment,
     GearExecutionError,
 )
-
-from centers.center_info import CenterInfo
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, load_from_stream
 
@@ -109,7 +108,8 @@ def main():
     """Main method to run the center creation gear."""
 
     GearEngine.create_with_parameter_store().run(
-       gear_type=CenterCreationVisitor)
+        gear_type=CenterCreationVisitor)
+
 
 if __name__ == "__main__":
     main()

@@ -53,8 +53,8 @@ def run(*,
 
     for center in center_list:
         if new_only and 'new-center' not in center.tags:
-            log.info(f"new_only set to True and {center.name} does not "
-                     + "have `new-center` tag, skipping")
+            log.info(f"new_only set to True and {center.name} does not " +
+                     "have `new-center` tag, skipping")
             continue
 
         try:

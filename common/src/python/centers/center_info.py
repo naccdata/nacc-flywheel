@@ -1,13 +1,8 @@
 """Models representing center information and center mappings."""
-from typing import Any, Dict, List, Optional, Tuple
-from pydantic import (
-    AliasChoices,
-    BaseModel,
-    Field,
-    ValidationError,
-    validator)
+from typing import Dict, List, Optional, Tuple
 
 from projects.study import StudyVisitor
+from pydantic import AliasChoices, BaseModel, Field, validator
 
 
 class CenterInfo(BaseModel):
@@ -38,19 +33,14 @@ class CenterInfo(BaseModel):
                 f"name={self.name}, "
                 f"adcid={self.adcid}, "
                 f"active={self.active}, "
-                f"tags={self.tags}"
-                )
+                f"tags={self.tags}")
 
     def __eq__(self, __o: object) -> bool:
         if not isinstance(__o, CenterInfo):
             return False
         # compare everything except tags
-        return (
-            self.adcid == __o.adcid and
-            self.center_id == __o.center_id and
-            self.name == __o.name and
-            self.active == __o.active
-        )
+        return (self.adcid == __o.adcid and self.center_id == __o.center_id
+                and self.name == __o.name and self.active == __o.active)
 
     @validator("tags")
     def set_tags(cls, tags: Tuple[Tuple[str], List[str]]) -> Tuple[str]:

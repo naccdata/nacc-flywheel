@@ -1,11 +1,11 @@
 """Tests for centers.center_info."""
+from typing import Optional
+
 import pytest
 import yaml
-
-from pydantic import ValidationError
-
 from centers.center_info import CenterInfo, CenterMapInfo
 from projects.study import Study, StudyVisitor
+from pydantic import ValidationError
 
 
 class DummyVisitor(StudyVisitor):
@@ -53,16 +53,16 @@ class TestCenterInfo:
         assert dummy_center.center_id == 'alpha-adrc'
 
     def test_create(self, dummy_center):
-        """Check that model is created correctly from dict,
-        and the equality matches.
-        """
-        center = CenterInfo(**{
-            'tags': ['adcid-7'],
-            'name': 'Alpha ADRC',
-            'center-id': 'alpha-adrc',
-            'adcid': 7,
-            'is-active': True
-        })
+        """Check that model is created correctly from dict, and the equality
+        matches."""
+        center = CenterInfo(
+            **{
+                'tags': ['adcid-7'],
+                'name': 'Alpha ADRC',
+                'center-id': 'alpha-adrc',
+                'adcid': 7,
+                'is-active': True
+            })
         assert center == dummy_center
 
     def test_invalid_creation(self):
@@ -71,9 +71,7 @@ class TestCenterInfo:
             CenterInfo()
 
         with pytest.raises(ValidationError):
-            CenterInfo(tags=['adcid-7'],
-                       name="Alpha ADRC",
-                       adcid=7)
+            CenterInfo(tags=['adcid-7'], name="Alpha ADRC", adcid=7)
 
     def test_apply(self, dummy_center):
         """Test that visitor applied."""
@@ -93,12 +91,11 @@ class TestCenterInfo:
 
     def test_repr(self, dummy_center):
         """Test representation."""
-        assert repr(dummy_center) == (
-            "Center(center_id=alpha-adrc, "
-            "name=Alpha ADRC, "
-            "adcid=7, "
-            "active=True, "
-            "tags=('adcid-7',)")
+        assert repr(dummy_center) == ("Center(center_id=alpha-adrc, "
+                                      "name=Alpha ADRC, "
+                                      "adcid=7, "
+                                      "active=True, "
+                                      "tags=('adcid-7',)")
 
 
 # pylint: disable=(no-self-use)
@@ -107,19 +104,14 @@ class TestCenterMapInfo:
 
     def test_creation(self, dummy_center, dummy_center_map):
         """Test creation."""
-        assert dummy_center_map.centers == {
-            7: dummy_center
-        }
+        assert dummy_center_map.centers == {7: dummy_center}
 
         assert CenterMapInfo(centers={}).centers == {}
 
     def test_add(self, dummy_center, dummy_center_map):
         """Test adding."""
         dummy_center_map.add(8, dummy_center)
-        assert dummy_center_map.centers == {
-            7: dummy_center,
-            8: dummy_center
-        }
+        assert dummy_center_map.centers == {7: dummy_center, 8: dummy_center}
 
     def test_get(self, dummy_center, dummy_center_map):
         """Test getting."""

@@ -1,11 +1,11 @@
 """Singleton class representing NACC with a FW group."""
 import logging
 from typing import List, Optional
-from pydantic import ValidationError
 
 from flywheel.models.group import Group
 from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
+from pydantic import ValidationError
 from redcap.redcap_repository import REDCapParametersRepository
 
 from centers.center_adaptor import CenterAdaptor
