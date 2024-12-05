@@ -262,7 +262,7 @@ fw-beta gear config --show <project-dir>/src/docker
 ```
 
 >Defaults should already be set in `config.json` for any config or input keys that have them in the manifest.
-You may need to set these for your local run, which may be easy to do by editing the `config.json` file directly.
+You may need to set these for your local run, which may be easier to do by editing the `config.json` file directly.
 
 <i>For any config values that need a value</i> use the command
    
@@ -300,12 +300,15 @@ fw-beta gear run -p <project-dir>/src/docker
 ```
 
 this will build a file structure in `tmp/gear` using the image name.
+You need to use this directory in the run command.
 
 Then [run the gear](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/)  with the command
 
 ```bash
-fw-beta gear run <project-dir>/src/docker
+fw-beta gear run tmp/gear/<gear-structure>
 ```
+
+where `<gear-structure>` is the directory indicated by the "prepare" command.
 
 As of `fw-beta` version 0.18.0 you can also pass docker arguments directly by using `--` followed by the args. See [Flywheel's usage docs](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/#usage) for more information.
 
