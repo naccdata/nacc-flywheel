@@ -5,6 +5,7 @@ All notable changes to this gear are documented in this file.
 ## Unreleased
 
 * [#109](https://github.com/naccdata/flywheel-gear-extensions/pull/109) Moves the `add_study` behavior from `CenterGroup` to `StudyMapping`, keeping the project creation in `CenterGroup`
+* Consolidate `projects.study.Center` to `centers.centerinfo.CenterInfo` and updates gear to utilize it
 * Adds this CHANGELOG
 
 ## [1.0.1](https://github.com/naccdata/flywheel-gear-extensions/commit/aa620caf2b6ce8451bdccd1e3719ea2ddeb1d95c)

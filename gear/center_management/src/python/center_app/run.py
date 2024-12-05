@@ -17,9 +17,10 @@ from gear_execution.gear_execution import (
     GearExecutionEnvironment,
     GearExecutionError,
 )
+
+from centers.center_info import CenterInfo
 from inputs.parameter_store import ParameterStore
 from inputs.yaml import YAMLReadError, load_from_stream
-from projects.study import Center
 
 from center_app.main import run
 
@@ -67,7 +68,7 @@ class CenterCreationVisitor(GearExecutionEnvironment):
                                      new_only=context.config.get(
                                          "new_only", False))
 
-    def __get_center_list(self, center_file_path: str) -> List[Center]:
+    def __get_center_list(self, center_file_path: str) -> List[CenterInfo]:
         """Get the centers from the file.
 
         Args:
@@ -85,7 +86,7 @@ class CenterCreationVisitor(GearExecutionEnvironment):
         if not object_list:
             raise GearExecutionError('No centers found in center file')
 
-        return [Center.create(center_doc) for center_doc in object_list]
+        return [CenterInfo(**center_doc) for center_doc in object_list]
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.

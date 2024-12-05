@@ -4,10 +4,10 @@ import logging
 from typing import List
 
 from centers.center_group import CenterGroup
+from centers.center_info import CenterInfo
 from centers.nacc_group import NACCGroup
 from flywheel.models.group_role import GroupRole
 from flywheel_adaptor.flywheel_proxy import FlywheelError, FlywheelProxy
-from projects.study import Center
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def get_project_roles(flywheel_proxy,
 def run(*,
         proxy: FlywheelProxy,
         admin_group: NACCGroup,
-        center_list: List[Center],
+        center_list: List[CenterInfo],
         role_names: List[str],
         new_only: bool = False):
     """Runs center creation/management.
