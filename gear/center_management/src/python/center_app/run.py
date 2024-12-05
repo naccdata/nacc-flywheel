@@ -68,7 +68,7 @@ class CenterCreationVisitor(GearExecutionEnvironment):
                                      new_only=context.config.get(
                                          "new_only", False))
 
-    def __get_center_list(self, center_file_path: str) -> List[CenterInfo]:
+    def __get_center_list(self, center_file_path: str,) -> List[CenterInfo]:
         """Get the centers from the file.
 
         Args:
@@ -86,7 +86,14 @@ class CenterCreationVisitor(GearExecutionEnvironment):
         if not object_list:
             raise GearExecutionError('No centers found in center file')
 
-        return [CenterInfo(**center_doc) for center_doc in object_list]
+        center_list = []
+        for center_doc in object_list:
+            group = self.proxy.get_group(group_label=center_doc['name'],
+                                         group_id=center_doc['center-id'])
+            assert group, "No group for center"
+            center_list.append(CenterInfo(**center_doc, group=group))
+
+        return center_list
 
     def run(self, context: GearToolkitContext) -> None:
         """Executes the gear.
@@ -99,7 +106,7 @@ class CenterCreationVisitor(GearExecutionEnvironment):
         """
         run(proxy=self.proxy,
             admin_group=self.admin_group(admin_id=self.__admin_id),
-            center_list=self.__get_center_list(self.__center_filepath),
+            center_list=self.__get_center_list(self.__center_filepath, self.proxy),
             role_names=['curate', 'upload', 'gear-bot'],
             new_only=self.__new_only)
 
