@@ -287,9 +287,19 @@ Consult `fw-beta gear config --help` for details on the command.
 
 #### Environment Variables
 
-Environment variables are set in the `manifest.json`.
+Local Environment variables can be passed to the docker run command with `-e` the (alias `-env`) flag ([docs](https://docs.docker.com/reference/cli/docker/container/run/#env)).
 
->Secrets should not be added to the manifest file since it is version controlled.
+```bash
+fw-beta gear run -e xx=yy
+```
+
+Or, if using a .env file: 
+
+```bash
+fw-beta gear run -e ./env
+```
+
+>Note the templating script creates a project `.env` file automatically, so you may want to specify a different development file i.e. `.env.local` to store secrets. 
 
 #### Run the gear
 
