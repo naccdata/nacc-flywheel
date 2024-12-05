@@ -9,7 +9,7 @@ from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
-    ContextClient,
+    GearBotClient,
     GearEngine,
     GearExecutionEnvironment,
     GearExecutionError,
@@ -91,7 +91,7 @@ class legacy_identifier_transfer(GearExecutionEnvironment):
     def create(
         cls,
         context: GearToolkitContext,
-        parameter_store: Optional[ParameterStore] = None
+        parameter_store: Optional[ParameterStore]
     ) -> 'legacy_identifier_transfer':
         """Creates a gear execution object.
 
@@ -103,7 +103,10 @@ class legacy_identifier_transfer(GearExecutionEnvironment):
         Raises:
           GearExecutionError if any expected inputs are missing
         """
-        client = ContextClient.create(context=context)
+        assert parameter_store, "Parameter store expected"
+
+        client = GearBotClient.create(
+            context=context, parameter_store=parameter_store)
 
         admin_id = context.config.get("admin_group", "nacc")
         mode = context.config.get("identifiers_mode", "dev")
@@ -158,19 +161,19 @@ class legacy_identifier_transfer(GearExecutionEnvironment):
             raise GearExecutionError('Unable to determine center ID for group')
 
         # Get all identifiers for adcid
-        try:
-            identifiers = get_identifiers(
-                identifiers_repo=IdentifiersLambdaRepository(
-                    client=LambdaClient(client=create_lambda_client()),
-                    mode=self.__identifiers_mode),
-                adcid=adcid)
-        except IdentifierRepositoryError as error:
-            raise GearExecutionError(error) from error
+        # try:
+        #     identifiers = get_identifiers(
+        #         identifiers_repo=IdentifiersLambdaRepository(
+        #             client=LambdaClient(client=create_lambda_client()),
+        #             mode=self.__identifiers_mode),
+        #         adcid=adcid)
+        # except IdentifierRepositoryError as error:
+        #     raise GearExecutionError(error) from error
 
-        if not identifiers:
-            raise GearExecutionError('Unable to load center participant IDs')
+        # if not identifiers:
+        #     raise GearExecutionError('Unable to load center participant IDs')
 
-        run(proxy=self.proxy, adcid=adcid, identifiers=identifiers)
+        run(proxy=self.proxy, adcid=adcid, identifiers={})
 
 
 def main():
@@ -188,7 +191,8 @@ def main():
     # check if that enrollment record already exists on the center
     # if there's not an enrollment record for that naccid then create it using same logic as identifier-provisioning gear 2nd half
 
-    GearEngine().run(gear_type=legacy_identifier_transfer)
+    GearEngine().create_with_parameter_store().run(
+        gear_type=legacy_identifier_transfer)
 
 
 if __name__ == "__main__":
