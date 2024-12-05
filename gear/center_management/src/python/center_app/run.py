@@ -12,7 +12,6 @@ from typing import List, Optional
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
-    ContextClient,
     GearBotClient,
     GearEngine,
     GearExecutionEnvironment,
@@ -56,9 +55,8 @@ class CenterCreationVisitor(GearExecutionEnvironment):
         Raises:
           GearExecutionError if the center file cannot be loaded
         """
-        #client = GearBotClient.create(context=context,
-        #                              parameter_store=parameter_store)
-        client = ContextClient.create(context=context)
+        client = GearBotClient.create(context=context,
+                                      parameter_store=parameter_store)
 
         center_filepath = context.get_input_path('center_file')
         if not center_filepath:
@@ -110,10 +108,8 @@ class CenterCreationVisitor(GearExecutionEnvironment):
 def main():
     """Main method to run the center creation gear."""
 
-    #GearEngine.create_with_parameter_store().run(
-    #    gear_type=CenterCreationVisitor)
-    GearEngine().run(
-        gear_type=CenterCreationVisitor)
+    GearEngine.create_with_parameter_store().run(
+       gear_type=CenterCreationVisitor)
 
 if __name__ == "__main__":
     main()
