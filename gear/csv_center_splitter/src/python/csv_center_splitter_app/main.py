@@ -18,12 +18,17 @@ log = logging.getLogger(__name__)
 class CSVVisitorCenterSplitter(CSVVisitor):
     """Class for visiting each row in CSV."""
 
-    def __init__(self, adcid_key: str, error_writer: ListErrorWriter):
+    def __init__(self,
+                 adcid_key: str,
+                 error_writer: ListErrorWriter,
+                 allow_merged_cells: bool = False):
         """Initializer."""
         self.__adcid_key = adcid_key
         self.__error_writer = error_writer
         self.__split_data = {}
         self.__headers = None
+
+        self.__allow_merged_cells = allow_merged_cells
         self.__prev_adcid = None
 
     @property
@@ -82,8 +87,14 @@ class CSVVisitorCenterSplitter(CSVVisitor):
             # TODO: might want to do a clean up of empty rows? Or just assume
             # a clean CSV?
             raw_adcid = row[self.adcid_key]
+
             if not raw_adcid:
-                raw_adcid = self.__prev_adcid
+                if self.__allow_merged_cells:
+                    raw_adcid = self.__prev_adcid
+                else:
+                    error = invalid_row_error("Missing ADCID value", line_num)
+                    self.__error_writer.write(error)
+                    return False
 
             adcid = int(raw_adcid)
             self.__prev_adcid = adcid
@@ -107,6 +118,7 @@ def run(*,
         error_writer: ListErrorWriter,
         adcid_key: str,
         target_project: str,
+        allow_merged_cells: bool = False,
         delimiter: str = ','):
     """Runs the CSV Center Splitter. Splits an input CSV by ADCID and uploads
     to each center's target project.
@@ -119,10 +131,12 @@ def run(*,
         error_writer: The ListErrorWriter to write errors to
         adcid_key: The name of the header column the ADCID is listed under
         target_project: The FW target project to write results to
+        allow_merged_cells: Whether or not to allow merged cells
         delimiter: The CSV's delimiter; defaults to ','
     """
     # split CSV by ADCID key
-    visitor = CSVVisitorCenterSplitter(adcid_key, error_writer)
+    visitor = CSVVisitorCenterSplitter(adcid_key, error_writer,
+                                       allow_merged_cells)
     success = read_csv(input_file=input_file,
                        error_writer=error_writer,
                        visitor=visitor,
