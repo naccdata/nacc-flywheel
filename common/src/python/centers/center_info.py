@@ -11,17 +11,16 @@ class CenterInfo(BaseModel):
     Attributes:
         adcid (int): The ADC ID of the center.
         name (str): The name of the center.
-        center_id (str): The symbolic ID for the center,
-                         can also be aliased to group
+        group (str): The symbolic ID for the center
 
         active (bool): Optional, active or inactive status. Defaults to True.
         tags (Tuple[str]): Optional, list of tags for the center
     """
     adcid: int
     name: str
-    center_id: str = Field(validation_alias=AliasChoices('center_id',
-                                                         'center-id',
-                                                         'group'))
+    group: str = Field(validation_alias=AliasChoices('center_id',
+                                                     'center-id',
+                                                     'group'))
     active: Optional[bool] = Field(validation_alias=AliasChoices('active',
                                                                  'is-active',
                                                                  'is_active'),
@@ -29,7 +28,7 @@ class CenterInfo(BaseModel):
     tags: Optional[Tuple[str, ...]] = ()
 
     def __repr__(self) -> str:
-        return (f"Center(center_id={self.center_id}, "
+        return (f"Center(group={self.group}, "
                 f"name={self.name}, "
                 f"adcid={self.adcid}, "
                 f"active={self.active}, "
@@ -39,7 +38,7 @@ class CenterInfo(BaseModel):
         if not isinstance(__o, CenterInfo):
             return False
         # compare everything except tags
-        return (self.adcid == __o.adcid and self.center_id == __o.center_id
+        return (self.adcid == __o.adcid and self.group == __o.group
                 and self.name == __o.name and self.active == __o.active)
 
     @validator("tags")
@@ -50,7 +49,7 @@ class CenterInfo(BaseModel):
 
     def apply(self, visitor: StudyVisitor):
         """Applies visitor to this Center."""
-        visitor.visit_center(self.center_id)
+        visitor.visit_center(self.group)
 
 
 class CenterMapInfo(BaseModel):

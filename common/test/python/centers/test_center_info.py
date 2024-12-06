@@ -31,7 +31,7 @@ def dummy_center():
     """Generate dummy CenterInfo for general testing."""
     return CenterInfo(tags=['adcid-7'],
                       name="Alpha ADRC",
-                      center_id='alpha-adrc',
+                      group='alpha-adrc',
                       adcid=7)
 
 
@@ -50,7 +50,7 @@ class TestCenterInfo:
         assert 'adcid-7' in dummy_center.tags
         assert dummy_center.name == "Alpha ADRC"
         assert dummy_center.active
-        assert dummy_center.center_id == 'alpha-adrc'
+        assert dummy_center.group == 'alpha-adrc'
 
     def test_create(self, dummy_center):
         """Check that model is created correctly from dict, and the equality
@@ -91,7 +91,7 @@ class TestCenterInfo:
 
     def test_repr(self, dummy_center):
         """Test representation."""
-        assert repr(dummy_center) == ("Center(center_id=alpha-adrc, "
+        assert repr(dummy_center) == ("Center(group=alpha-adrc, "
                                       "name=Alpha ADRC, "
                                       "adcid=7, "
                                       "active=True, "

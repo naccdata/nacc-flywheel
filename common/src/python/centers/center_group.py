@@ -102,7 +102,7 @@ class CenterGroup(CenterAdaptor):
           the CenterGroup for the center
         """
         group = proxy.get_group(group_label=center.name,
-                                group_id=center.center_id)
+                                group_id=center.group)
         assert group, "No group for center"
 
         center_group = CenterGroup(adcid=center.adcid,
