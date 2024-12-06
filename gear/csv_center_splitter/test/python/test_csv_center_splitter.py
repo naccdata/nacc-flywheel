@@ -65,9 +65,6 @@ class TestCSVVisitorCenterSplitter:
 
         split_data = visitor.split_data
         assert len(split_data) == 2
-        assert len(split_data[1]) == 3
-        assert len(split_data[2]) == 2
-
         assert split_data[1] == data[0:3]
         assert split_data[2] == data[3:5]
 
