@@ -5,6 +5,7 @@ import sys
 from typing import Optional
 
 from flywheel.rest import ApiException
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
@@ -15,7 +16,9 @@ from gear_execution.gear_execution import (
     InputFileWrapper,
 )
 from inputs.parameter_store import ParameterStore
+from jsonschema import ValidationError
 from outputs.errors import ListErrorWriter
+from transform.transformer import FieldTransformations, TransformerFactory
 
 from csv_app.main import run
 
@@ -26,10 +29,11 @@ log = logging.getLogger(__name__)
 class CsvToJsonVisitor(GearExecutionEnvironment):
     """The gear execution visitor for the csv-to-json-transformer app."""
 
-    def __init__(self, client: ClientWrapper,
-                 file_input: InputFileWrapper) -> None:
+    def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
+                 transform_input: Optional[InputFileWrapper]) -> None:
         self.__client = client
         self.__file_input = file_input
+        self.__transform_input = transform_input
 
     @classmethod
     def create(
@@ -56,7 +60,12 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                                              context=context)
         assert file_input, "create raises exception if missing expected input"
 
-        return CsvToJsonVisitor(client=client, file_input=file_input)
+        transform_input = InputFileWrapper.create(input_name='transform_file',
+                                                  context=context)
+
+        return CsvToJsonVisitor(client=client,
+                                file_input=file_input,
+                                transform_input=transform_input)
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the CSV to JSON Transformer app.
@@ -73,14 +82,6 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             raise GearExecutionError(
                 f'Failed to find the input file: {error}') from error
 
-        admin_id: str = context.config.get('admin_project',
-                                           'nacc/project-admin')
-        try:
-            admin_project = proxy.lookup(admin_id)
-        except ApiException as error:
-            raise GearExecutionError(
-                f'Cannot find admin project - {error}') from error
-
         project = proxy.get_project_by_id(file.parents.project)
         if not project:
             raise GearExecutionError(
@@ -91,9 +92,10 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             error_writer = ListErrorWriter(container_id=file_id,
                                            fw_path=proxy.get_lookup_path(file))
             success = run(input_file=csv_file,
-                          proxy=proxy,
-                          project=project,
-                          admin_project=admin_project,
+                          destination=ProjectAdaptor(project=project,
+                                                     proxy=proxy),
+                          transformer_factory=self.__build_transformer(
+                              self.__transform_input),
                           error_writer=error_writer)
 
             context.metadata.add_qc_result(self.__file_input.file_input,
@@ -105,6 +107,21 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                                            tags=context.manifest.get(
                                                'name',
                                                'csv-to-json-transformer'))
+
+    def __build_transformer(
+            self, transformer_input: Optional[InputFileWrapper]
+    ) -> TransformerFactory:
+        if not transformer_input:
+            return TransformerFactory(FieldTransformations())
+
+        with open(transformer_input.filepath, mode='r',
+                  encoding='utf-8') as json_file:
+            try:
+                return TransformerFactory(
+                    FieldTransformations.model_validate_json(json_file.read()))
+            except ValidationError as error:
+                raise GearExecutionError('Error reading transformation file'
+                                         f'{error}') from error
 
 
 def main():
