@@ -24,6 +24,7 @@ class CSVVisitorCenterSplitter(CSVVisitor):
         self.__error_writer = error_writer
         self.__split_data = {}
         self.__headers = None
+        self.__prev_adcid = None
 
     @property
     def adcid_key(self):
@@ -76,7 +77,16 @@ class CSVVisitorCenterSplitter(CSVVisitor):
           True if the row was processed without error, False otherwise
         """
         try:
-            adcid = int(row[self.adcid_key])
+            # handle the merged rows case; if ADCID key is missing, assume
+            # same as previous row
+            # TODO: might want to do a clean up of empty rows? Or just assume
+            # a clean CSV?
+            raw_adcid = row[self.adcid_key]
+            if not raw_adcid:
+                raw_adcid = self.__prev_adcid
+
+            adcid = int(raw_adcid)
+            self.__prev_adcid = adcid
         except ValueError as e:
             error = invalid_row_error(f"ADCID value must be an int: {e}",
                                       line_num)

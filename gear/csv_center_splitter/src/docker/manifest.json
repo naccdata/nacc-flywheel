@@ -43,7 +43,7 @@
             "default": false
         },
         "adcid_key": {
-            "description": "Colun name from the input CSV with the ADCIDs",
+            "description": "Column name from the input CSV with the ADCIDs",
             "type": "string"
         },
         "target_project": {

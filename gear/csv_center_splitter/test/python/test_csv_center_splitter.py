@@ -9,7 +9,9 @@ def visitor():
     """Creates a CSVVisitorCenterSplitter for testing."""
     error_writer = ListErrorWriter(container_id='dummmy-container',
                                    fw_path='dummy-fw-path')
-    return CSVVisitorCenterSplitter('adcid', error_writer)
+    visitor = CSVVisitorCenterSplitter('adcid', error_writer)
+    assert visitor.visit_header(['adcid', 'data'])
+    return visitor
 
 
 class TestCSVVisitorCenterSplitter:
@@ -18,7 +20,6 @@ class TestCSVVisitorCenterSplitter:
     def test_visit_header(self, visitor):
         """Test the visit_header method, also checks that headers property is
         updated."""
-        assert visitor.visit_header(['adcid', 'data'])
         assert visitor.headers == ['adcid', 'data']
         assert visitor.visit_header(['adcid'])
         assert visitor.headers == ['adcid']
@@ -35,7 +36,6 @@ class TestCSVVisitorCenterSplitter:
     def test_visit_row(self, visitor):
         """Test the visit_row method, also checks that split_data property is
         updated."""
-        visitor.visit_header(['adcid', 'data'])
         for i in range(10):
             data = {'adcid': '0', 'data': f'value{i}'}
             assert visitor.visit_row(data, i + 1)
@@ -50,9 +50,29 @@ class TestCSVVisitorCenterSplitter:
         assert len(visitor.split_data[1]) == 1
         assert visitor.split_data[1][0] == data
 
+    def test_visit_row_merged(self, visitor):
+        """Test when the CSV had merged cells."""
+        data = [
+            {'adcid': '1', 'data': 'dummy_value'},
+            {'adcid': '', 'data': 'dummy_value_2'},
+            {'adcid': '', 'data': ''},
+            {'adcid': '2', 'data': 'hello'},
+            {'adcid': '', 'data': 'world'}
+        ]
+
+        for i, row in enumerate(data):
+            assert visitor.visit_row(row, i)
+
+        split_data = visitor.split_data
+        assert len(split_data) == 2
+        assert len(split_data[1]) == 3
+        assert len(split_data[2]) == 2
+
+        assert split_data[1] == data[0:3]
+        assert split_data[2] == data[3:5]
+
     def test_visit_row_invalid(self, visitor):
         """Test an invalid row."""
-        visitor.visit_header(['adcid', 'data'])
         assert not visitor.visit_row({'adcid': 'hello', 'data': 'world'}, 1)
 
         errors = visitor.error_writer.errors()
