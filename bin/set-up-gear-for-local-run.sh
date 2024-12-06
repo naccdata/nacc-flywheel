@@ -6,6 +6,7 @@ set -euo pipefail
 GEAR=$1
 FW_API_KEY=$2
 FW_PATH=${3:-nacc/project-admin}
+FW_CONTEXT=${4:-sandbox}  # sandbox or prod
 
 config_dir="./gear/${GEAR}/src/docker"
 
@@ -23,3 +24,6 @@ fw-beta gear config -i api_key=$FW_API_KEY $config_dir
 
 # Set destination for output
 fw-beta gear config -d $FW_PATH $config_dir
+
+# Set the apikey_path_prefix to sandbox
+fw-beta gear config -i api_key="/${FW_CONTEXT}/flywheel/gearbot" $config_dir
