@@ -34,7 +34,8 @@ class CenterGroup(CenterAdaptor):
                  proxy: FlywheelProxy) -> None:
         super().__init__(group=group, proxy=proxy)
         self.__datatypes: List[str] = []
-        self.__ingest_stages = ['ingest', 'retrospective', 'sandbox']
+        self.__ingest_stages = ['ingest', 'retrospective', 'sandbox',
+                                'distribution']
         self.__adcid = adcid
         self.__is_active = active
         self.__center_portal: Optional[ProjectAdaptor] = None

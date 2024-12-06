@@ -4,6 +4,10 @@ All notable changes to this gear are documented in this file.
 
 ## Unreleased
 
+## 1.0.3
+
+* Updates to support distribution projects
+
 ## 1.0.2
 
 * Fixes template pattern generation to handle template labels that don't have a
