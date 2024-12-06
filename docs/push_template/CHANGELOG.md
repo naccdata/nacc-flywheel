@@ -7,7 +7,7 @@ All notable changes to this gear are documented in this file.
 ## 1.0.3
 
 * Updates to support distribution projects
-* Adds `adcid` and URL to the projects's value map for replacement
+* Adds `adcid` and to the value map for template replacement
 
 ## 1.0.2
 
