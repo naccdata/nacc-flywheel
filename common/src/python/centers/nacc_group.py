@@ -80,7 +80,8 @@ class NACCGroup(CenterAdaptor):
                        name=group_label,
                        group=group_id,
                        active=active))
-        metadata.update_info(center_map.dict(exclude={'centers': {'__all__': {'tags'}}}))
+        exclude = {'centers': {'__all__': {'tags'}}}
+        metadata.update_info(center_map.model_dump(exclude=exclude))
 
     def get_center_map(self) -> CenterMapInfo:
         """Returns the adcid-group map.
