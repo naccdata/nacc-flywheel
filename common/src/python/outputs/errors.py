@@ -172,6 +172,13 @@ def previous_visit_failed_error(prev_visit: str) -> FileError:
                               'before evaluating any subsequent visits'))
 
 
+def invalid_row_error(error_reason: str, index: int) -> FileError:
+    """Creates a FileError when a row is invalid."""
+    return FileError(error_type='error',
+                     error_code='invalid-row',
+                     message=f'Row {index} was invalid: {error_reason}')
+
+
 class ErrorWriter(ABC):
     """Abstract base class for error writer."""
 

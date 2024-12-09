@@ -42,13 +42,18 @@
             "type": "boolean",
             "default": false
         },
-        "admin_group": {
-            "description": "Name of the admin group",
+        "checks_s3_bucket": {
+            "description": "The S3 URI containing the error check CSVs; defaults to the NACC QC Rules bucket",
             "type": "string",
-            "default": "nacc"
+            "default": "nacc-qc-rules/CSV"
         },
-        "new_only": {
-            "description": "Only create projects for centers tagged as new",
+        "qc_checks_db_path": {
+            "description": "AWS parameter base path for the target REDCap project to import error checks to; defaults to the NACC QC Checks project",
+            "type": "string",
+            "default": "/redcap/aws/qcchecks"
+        },
+        "fail_fast": {
+            "description": "Whether or not to fail fast during import",
             "type": "boolean",
             "default": false
         },
