@@ -17,7 +17,7 @@ local_run: <true if running on a local input file>
 
 Some additional notes:
 * The ADCIDs are mapped to the Flywheel group ID using the custom info found in the `metadata` project.
-* If `target_staging`, it will write _all_ split files for to the specified staging project _instead_ of the `target_project` per center, effectively overriding the former. This can be used for preliminary review/testing
+* If `staging_project_id` is specified, it will write _all_ split files for to the specified staging project _instead_ of the `target_project` per center, effectively overriding the former. This can be used for preliminary review/testing
 
 ### Config Example
 
