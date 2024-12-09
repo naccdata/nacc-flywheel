@@ -118,6 +118,7 @@ def run(*,
         error_writer: ListErrorWriter,
         adcid_key: str,
         target_project: str,
+        staging_project_id: str = None,
         allow_merged_cells: bool = False,
         delimiter: str = ','):
     """Runs the CSV Center Splitter. Splits an input CSV by ADCID and uploads
@@ -131,6 +132,9 @@ def run(*,
         error_writer: The ListErrorWriter to write errors to
         adcid_key: The name of the header column the ADCID is listed under
         target_project: The FW target project to write results to
+
+        staging_project_id: Project ID to stage results to; will override
+                            target_project if specified
         allow_merged_cells: Whether or not to allow merged cells
         delimiter: The CSV's delimiter; defaults to ','
     """
@@ -150,10 +154,17 @@ def run(*,
             log.error(x['message'])
         return
 
-    # build project map from ADCID to FW project for upload
-    project_map = build_project_map(proxy=proxy,
-                                    destination_label=target_project,
-                                    centers=visitor.centers)
+    if staging_project_id:
+        # if writing results to a staging project, manually build a project map
+        # that maps all to the specified project ID
+        project = proxy.get_project_by_id(staging_project_id)
+        project_map = {f'adcid-{adcid}': project for adcid in visitor.centers}
+    else:
+        # else build project map from ADCID to corresponding
+        # FW project for upload
+        project_map = build_project_map(proxy=proxy,
+                                        destination_label=target_project,
+                                        centers=visitor.centers)
 
     if not project_map:
         raise ValueError(f"No {target_project} projects found")
@@ -177,9 +188,14 @@ def run(*,
         project = project_map[f'adcid-{adcid}']
         filename = f'{adcid}_{input_filename}'
 
-        log.info(
-            f"Uploading {filename} for project {target_project} ADCID {adcid} "
-            + f"with project ID {project.id}")
+        if staging_project_id:
+            log.info(
+                f"Uploading {filename} to staging project {staging_project_id} "
+                + f"for ADCID {adcid}")
+        else:
+            log.info(
+                f"Uploading {filename} for project {target_project} ADCID "
+                + f"{adcid} with project ID {project.id}")
 
         write_csv_to_project(headers=visitor.headers,
                              data=data,

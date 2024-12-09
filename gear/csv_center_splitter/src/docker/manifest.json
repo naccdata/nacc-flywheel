@@ -48,7 +48,13 @@
         },
         "target_project": {
             "description": "Target project to write the split results to",
-            "type": "string"
+            "type": "string",
+            "default": ""
+        },
+        "staging_project_id": {
+            "description": "Staging project ID to stage all results to; overrides target_project",
+            "type": "string",
+            "default": ""
         },
         "allow_merged_cells": {
             "description": "Allow merged cells; if a row is missing an ADCID it assumes it's the same as the previous row(s)",

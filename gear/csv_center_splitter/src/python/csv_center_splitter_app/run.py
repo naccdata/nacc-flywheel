@@ -28,6 +28,7 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
                  file_input: InputFileWrapper,
                  adcid_key: str,
                  target_project: str,
+                 staging_project_id: str = None,
                  allow_merged_cells: bool = False,
                  delimiter: str = ',',
                  local_run: bool = False):
@@ -36,6 +37,7 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
         self.__file_input = file_input
         self.__adcid_key = adcid_key
         self.__target_project = target_project
+        self.__staging_project_id = staging_project_id
         self.__allow_merged_cells = allow_merged_cells
         self.__delimiter = delimiter
         self.__local_run = local_run
@@ -57,13 +59,15 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
         """
         client = GearBotClient.create(context=context,
                                       parameter_store=parameter_store)
+
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
 
         target_project = context.config.get('target_project', None)
+        staging_project_id = context.config.get('staging_project_id', None)
 
-        if not target_project:
-            raise GearExecutionError("No target project provided")
+        if not (target_project or staging_project_id):
+            raise GearExecutionError("No target or staging project provided")
 
         adcid_key = context.config.get('adcid_key', None)
         if not adcid_key:
@@ -77,6 +81,7 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
                                         file_input=file_input,
                                         adcid_key=adcid_key,
                                         target_project=target_project,
+                                        staging_project_id=staging_project_id,
                                         allow_merged_cells=allow_merged_cells,
                                         delimiter=delimiter,
                                         local_run=local_run)
@@ -107,6 +112,7 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
                 error_writer=error_writer,
                 adcid_key=self.__adcid_key,
                 target_project=self.__target_project,
+                staging_project_id=self.__staging_project_id,
                 allow_merged_cells=self.__allow_merged_cells,
                 delimiter=self.__delimiter)
 
