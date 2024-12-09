@@ -1,4 +1,4 @@
-# REDCap Import Error Checks
+# REDCap Error Checks Import
 
 Bulk imports all error checks to REDCap.
 

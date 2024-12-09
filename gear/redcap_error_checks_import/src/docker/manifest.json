@@ -1,6 +1,6 @@
 {
-    "name": "redcap-import-error-checks",
-    "label": "REDCap Import Error Checks",
+    "name": "redcap-error-checks-import",
+    "label": "REDCap Error Checks Import",
     "description": "Bulk imports all error checks to REDCap",
     "version": "0.1.0",
     "author": "NACC",
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/redcap-import-error-checks:0.1.0"
+            "image": "naccdata/redcap-error-checks-import:0.1.0"
         },
         "flywheel": {
             "suite": "NACC Admin Gears",
