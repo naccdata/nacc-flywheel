@@ -4,6 +4,7 @@ import logging
 
 from typing import Any, Dict, Optional, Tuple
 
+from enrollment.enrollment_project import EnrollmentProject
 from flywheel.models.group import Group
 from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
@@ -20,10 +21,9 @@ from identifiers.model import IdentifierObject
 from lambdas.lambda_function import LambdaClient, create_lambda_client
 from legacy_identifier_transfer_app.main import run
 from inputs.parameter_store import ParameterStore
+from outputs.errors import ListErrorWriter
 
 log = logging.getLogger(__name__)
-
-# This is copied from identifier_lookup - should move to module?
 
 
 def get_identifiers(identifiers_repo: IdentifierRepository,
@@ -35,14 +35,14 @@ def get_identifiers(identifiers_repo: IdentifierRepository,
       rds_parameters: the credentials for RDS MySQL with identifiers database
       adcid: the center ID
     Returns:
-      the dictionary mapping from PTID to Identifier object
+      the dictionary mapping from NACCID to Identifier object
     """
     identifiers = {}
     center_identifiers = identifiers_repo.list(adcid=adcid)
     if center_identifiers:
         # pylint: disable=(not-an-iterable)
         identifiers = {
-            identifier.ptid: identifier
+            identifier.naccid: identifier
             for identifier in center_identifiers
         }
 
@@ -70,7 +70,7 @@ def get_destination_group_and_project(dest_container: Any) -> Tuple[str, str]:
         project_id = dest_container.id
         group_id = dest_container.group
     elif dest_container.container_type in ('session', 'acquisition'):
-        project_id = dest_container.parents.project
+        project_id = dest_container.parents.project.id  # changed to access project id
         group_id = dest_container.parents.group
     else:
         raise GearExecutionError(
@@ -79,8 +79,8 @@ def get_destination_group_and_project(dest_container: Any) -> Tuple[str, str]:
     return group_id, project_id
 
 
-class legacy_identifier_transfer(GearExecutionEnvironment):
-    """Visitor for the Legacy identifier transfer gear."""
+class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
+    """The gear execution visitor for the Legacy identifier transfer gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper, identifiers_mode: IdentifiersMode):
         super().__init__(client=client)
@@ -92,8 +92,8 @@ class legacy_identifier_transfer(GearExecutionEnvironment):
         cls,
         context: GearToolkitContext,
         parameter_store: Optional[ParameterStore]
-    ) -> 'legacy_identifier_transfer':
-        """Creates a gear execution object.
+    ) -> 'LegacyIdentifierTransferVisitor':
+        """Creates a legacy naccid transfer execution visitor.
 
         Args:
             context: The gear context.
@@ -111,7 +111,7 @@ class legacy_identifier_transfer(GearExecutionEnvironment):
         admin_id = context.config.get("admin_group", "nacc")
         mode = context.config.get("identifiers_mode", "dev")
 
-        return legacy_identifier_transfer(
+        return LegacyIdentifierTransferVisitor(
             admin_id=admin_id,
             client=client,
             identifiers_mode=mode
@@ -126,6 +126,19 @@ class legacy_identifier_transfer(GearExecutionEnvironment):
         except ApiException as error:
             log.error(f"Error getting ADCID: {error}")
             return None
+
+    def initialize_error_writer(self, dest_container, project_id: str) -> ListErrorWriter:
+        try:
+            # This is a fix to get the lookup path since get_lookup_path breaks on dest_container
+            fw_path = f"fw://{dest_container.group}/{dest_container.label}"
+            # fw_path = self.proxy.get_lookup_path(dest_container)
+            return ListErrorWriter(
+                container_id=project_id,
+                fw_path=fw_path
+            )
+        except AttributeError as e:
+            log.error(f"Container hierarchy error: {e}")
+            raise
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the legacy NACCID transfer gear.
@@ -160,20 +173,42 @@ class legacy_identifier_transfer(GearExecutionEnvironment):
         if adcid is None:
             raise GearExecutionError('Unable to determine center ID for group')
 
-        # Get all identifiers for adcid
-        # try:
-        #     identifiers = get_identifiers(
-        #         identifiers_repo=IdentifiersLambdaRepository(
-        #             client=LambdaClient(client=create_lambda_client()),
-        #             mode=self.__identifiers_mode),
-        #         adcid=adcid)
-        # except IdentifierRepositoryError as error:
-        #     raise GearExecutionError(error) from error
+        # Get all identifiers for given adcid
+        try:
+            identifiers = get_identifiers(
+                identifiers_repo=IdentifiersLambdaRepository(
+                    client=LambdaClient(client=create_lambda_client()),
+                    mode=self.__identifiers_mode),
+                adcid=adcid)
+        except IdentifierRepositoryError as error:
+            raise GearExecutionError(error) from error
 
-        # if not identifiers:
-        #     raise GearExecutionError('Unable to load center participant IDs')
+        if not identifiers:
+            raise GearExecutionError('Unable to load center participant IDs')
+        log.info(f"Found {len(identifiers)} identifiers")
 
-        run(proxy=self.proxy, adcid=adcid, identifiers={})
+        # Initialize error writer
+        error_writer = self.initialize_error_writer(
+            dest_container, project_id)
+
+        # Initialize enrollment project adapter
+        group = self.proxy.find_group(group_id=group_id)
+        if not group:
+            raise GearExecutionError(
+                f'Unable to get center group: {group_id}')
+        log.info(f"Group: {group.label}")
+
+        project = group.get_project_by_id(project_id)
+        if not project:
+            raise GearExecutionError(
+                f'Unable to get parent project: {project_id}')
+        log.info(f"Project: {project.label}")
+        enrollment_project = EnrollmentProject.create_from(project)
+        log.info(f"Enrollment project: {enrollment_project.label}")
+
+        run(adcid=adcid, identifiers=identifiers,
+            error_writer=error_writer, enrollment_project=enrollment_project)
+        pass
 
 
 def main():
@@ -182,17 +217,8 @@ def main():
     NACCID, it creates a new subject at that center for that participant.
     """
 
-    # Strategy
-    # pull information down from identifiers api then distribute it to center
-    # runs on ingest-enrollment for a given center
-    # ask db for all records that match adcid (list(adcid) in identifiers_lambda_repository.py)
-    # take list of identifier objects
-    # convert identifier objects into enrollment records
-    # check if that enrollment record already exists on the center
-    # if there's not an enrollment record for that naccid then create it using same logic as identifier-provisioning gear 2nd half
-
     GearEngine().create_with_parameter_store().run(
-        gear_type=legacy_identifier_transfer)
+        gear_type=LegacyIdentifierTransferVisitor)
 
 
 if __name__ == "__main__":
