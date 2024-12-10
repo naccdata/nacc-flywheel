@@ -5,9 +5,6 @@ from csv import DictWriter
 from io import StringIO
 from typing import Any, Dict, List, Optional, TextIO
 
-from flywheel import FileSpec
-from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
-
 SimpleJSONObject = Dict[str, Optional[int | str | bool | float]]
 
 
@@ -78,30 +75,22 @@ class ListJSONWriter(JSONWriter):
         return self.__objects
 
 
-def write_csv_to_project(headers: List[str],
-                         data: List[Dict[str, Any]],
-                         filename: str,
-                         project: ProjectAdaptor,
-                         content_type: str = 'text/csv'):
+def write_csv_to_stream(headers: List[str],
+                        data: List[Dict[str, Any]],
+                        filename: str) -> str:
     """Takes a header and data pair and uses CSVWriter to write the CSV
-    contents to a stream which is then uploaded to a target project.
+    contents to a StringIO stream.
 
     Args:
         headers: The header values
         data: The data values, expected to be a list of JSON dicts
         filename: The filename
-        project: The project to upload results to
-        content_type: The MIME type; defaults to text/csv
+    Returns:
+        StringIO object containing the contents.
     """
     stream = StringIO()
     writer = CSVWriter(stream, headers)
     for row in data:
         writer.write(row)
 
-    contents = stream.getvalue()
-    file_spec = FileSpec(name=filename,
-                         contents=contents,
-                         content_type=content_type,
-                         size=len(contents))
-
-    project.upload_file(file_spec)
+    return stream

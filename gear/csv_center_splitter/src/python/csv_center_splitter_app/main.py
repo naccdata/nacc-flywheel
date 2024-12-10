@@ -2,6 +2,7 @@
 import logging
 from typing import Any, Dict, List, Optional, TextIO
 
+from flywheel import FileSpec
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import (
@@ -10,7 +11,7 @@ from outputs.errors import (
     missing_field_error,
     unexpected_value_error,
 )
-from outputs.outputs import write_csv_to_project
+from outputs.outputs import write_csv_to_stream
 from projects.project_mapper import build_project_map
 
 log = logging.getLogger(__name__)
@@ -206,7 +207,12 @@ def run(*,
                 f"Uploading {filename} for project {target_project} ADCID "
                 + f"{adcid} with project ID {project.id}")
 
-        write_csv_to_project(headers=visitor.headers,
-                             data=data,
-                             filename=filename,
-                             project=project)
+        contents = write_csv_to_stream(headers=visitor.headers,
+                                       data=data,
+                                       filename=filename).getvalue()
+        file_spec = FileSpec(name=filename,
+                             contents=contents,
+                             content_type="text/csv",
+                             size=len(contents))
+        project.upload_file(file_spec)
+        log.info(f"Successfully uploaded {filename}")
