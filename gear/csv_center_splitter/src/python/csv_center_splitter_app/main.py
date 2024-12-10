@@ -1,13 +1,14 @@
 """Defines csv_center_splitter."""
 import logging
-from typing import Any, Dict, List, TextIO
+from typing import Any, Dict, List, Optional, TextIO
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from inputs.csv_reader import CSVVisitor, read_csv
 from outputs.errors import (
     ListErrorWriter,
-    invalid_row_error,
+    empty_field_error,
     missing_field_error,
+    unexpected_value_error,
 )
 from outputs.outputs import write_csv_to_project
 from projects.project_mapper import build_project_map
@@ -92,15 +93,22 @@ class CSVVisitorCenterSplitter(CSVVisitor):
                 if self.__allow_merged_cells:
                     raw_adcid = self.__prev_adcid
                 else:
-                    error = invalid_row_error("Missing ADCID value", line_num)
+                    message = f"Row {line_num} was invalid: Missing ADCID value"
+                    error = empty_field_error(field=self.adcid_key,
+                                              line=line_num,
+                                              message=message)
                     self.__error_writer.write(error)
                     return False
 
             adcid = int(raw_adcid)
             self.__prev_adcid = adcid
         except ValueError as e:
-            error = invalid_row_error(f"ADCID value must be an int: {e}",
-                                      line_num)
+            message = f"Row {line_num} was invalid: ADCID value must be an int: {e}"
+            error = unexpected_value_error(field=self.adcid_key,
+                                           value=raw_adcid,
+                                           expected="integer value",
+                                           line=line_num,
+                                           message=message)
             self.__error_writer.write(error)
             return False
 
@@ -118,7 +126,7 @@ def run(*,
         error_writer: ListErrorWriter,
         adcid_key: str,
         target_project: str,
-        staging_project_id: str = None,
+        staging_project_id: Optional[str] = None,
         allow_merged_cells: bool = False,
         delimiter: str = ','):
     """Runs the CSV Center Splitter. Splits an input CSV by ADCID and uploads
@@ -131,7 +139,8 @@ def run(*,
             for split files
         error_writer: The ListErrorWriter to write errors to
         adcid_key: The name of the header column the ADCID is listed under
-        target_project: The FW target project to write results to
+        target_project: The FW target project name to write results to for
+                        each ADCID
 
         staging_project_id: Project ID to stage results to; will override
                             target_project if specified

@@ -28,7 +28,7 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
                  file_input: InputFileWrapper,
                  adcid_key: str,
                  target_project: str,
-                 staging_project_id: str = None,
+                 staging_project_id: Optional[str] = None,
                  allow_merged_cells: bool = False,
                  delimiter: str = ',',
                  local_run: bool = False):

@@ -47,7 +47,7 @@
             "type": "string"
         },
         "target_project": {
-            "description": "Target project to write the split results to",
+            "description": "Target project name to write the split results to; each ADCID in the split results is expected to have a project",
             "type": "string",
             "default": ""
         },

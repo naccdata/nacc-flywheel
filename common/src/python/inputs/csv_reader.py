@@ -49,6 +49,7 @@ def read_csv(input_file: TextIO,
       input_file: the input stream for the CSV file
       error_writer: the ErrorWriter for the input file
       visitor: the visitor
+      delimiters: The expected delimiter(s)
     Returns:
       True if the input file was processed without error, False otherwise
     """
@@ -72,7 +73,7 @@ def read_csv(input_file: TextIO,
     try:
         detected_dialect = sniffer.sniff(csv_sample, delimiters=delimiters)
         reader = DictReader(input_file, dialect=detected_dialect)
-    except Exception:
+    except Error as error:
         # sniffer cannot always determine delimiter, so try to just read directly
         reader = DictReader(input_file, delimiter=delimiters)
 
