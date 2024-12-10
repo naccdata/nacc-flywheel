@@ -161,7 +161,7 @@ def process_legacy_identifiers(
         if not dry_run:
             subject = enrollment_project.add_subject(record.naccid)
             subject.add_enrollment(record)
-        log.info('Created enrollment for subject %s', record.naccid)
+            log.info('Created enrollment for subject %s', record.naccid)
     return success
 
 
