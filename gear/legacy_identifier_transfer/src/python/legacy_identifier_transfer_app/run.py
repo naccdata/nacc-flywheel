@@ -5,7 +5,6 @@ import logging
 from typing import Any, Dict, Optional, Tuple
 
 from enrollment.enrollment_project import EnrollmentProject
-from flywheel.models.group import Group
 from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (

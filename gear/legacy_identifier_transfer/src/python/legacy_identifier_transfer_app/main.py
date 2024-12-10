@@ -2,16 +2,14 @@
 
 from datetime import datetime
 import logging
-from typing import Dict, Mapping, Optional
+from typing import Dict, Mapping
 
 from pydantic import ValidationError
 
 from enrollment.enrollment_project import EnrollmentProject
 from enrollment.enrollment_transfer import EnrollmentRecord
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from gear_execution.gear_execution import GearExecutionError
 from identifiers.model import CenterIdentifiers, IdentifierObject
-from keys.keys import FieldNames
 from outputs.errors import ErrorWriter, ListErrorWriter, identifier_error, legacy_naccid_error, unexpected_value_error
 
 log = logging.getLogger(__name__)

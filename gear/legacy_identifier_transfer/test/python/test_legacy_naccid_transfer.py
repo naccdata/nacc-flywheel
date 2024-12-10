@@ -10,7 +10,7 @@ from enrollment.enrollment_project import EnrollmentProject
 from legacy_identifier_transfer_app.main import process_legacy_identifiers
 from unittest.mock import MagicMock
 from legacy_identifier_transfer_app.main import LegacyEnrollmentBatch
-from typing import Dict, Mapping
+from typing import Mapping
 
 
 class TestLegacyEnrollmentBatch:
