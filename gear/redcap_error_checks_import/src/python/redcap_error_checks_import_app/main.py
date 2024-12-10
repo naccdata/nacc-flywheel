@@ -67,7 +67,8 @@ def run(*,
         proxy: FlywheelProxy,
         s3_bucket: S3BucketReader,
         redcap_connection: REDCapConnection,
-        fail_fast: bool = False
+        fail_fast: bool = False,
+        dry_run: bool = False
         ):
     """Runs the REDCAP Error Checks import process.
 
@@ -76,6 +77,7 @@ def run(*,
         s3_bucket: The S3BucketReader
         redcap_connection: The REDCapConnection
         fail_fast: Whether or not to fail fast on error
+        dry_run: Whether or not this is a dry run
     """
     bucket = s3_bucket.bucket_name
     file_objects = s3_bucket.read_directory(bucket)
@@ -96,6 +98,9 @@ def run(*,
             else:
                 log.info("Errors encountered, continuing to next file")
                 continue
+
+        if proxy.dry_run:
+            log.info("DRY RUN: Would upload the following to REDCAP:")
 
         # Upload to REDCap
         log.info("Importing error checks to REDCap...")

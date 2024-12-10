@@ -15,7 +15,7 @@ from inputs.parameter_store import ParameterError, ParameterStore
 from redcap.redcap_connection import REDCapConnection, REDCapConnectionError
 from s3.s3_client import S3BucketReader
 
-from redcap_error_checks_import.main import run
+from redcap_error_checks_import_app.main import run
 
 log = logging.getLogger(__name__)
 
