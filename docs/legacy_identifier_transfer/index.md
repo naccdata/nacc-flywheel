@@ -2,6 +2,25 @@
 
 This gear transfers legacy NACC IDs from the identifiers database into Flywheel by creating subjects and enrollment records.
 
+## Environment
+
+This gear uses the AWS SSM parameter store, and expects that AWS credentials are available in environment variables within the Flywheel runtime.
+The variables used are `AWS_SECRET_ACCESS_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_DEFAULT_REGION`.
+The gear needs to be added to the allow list for these variables to be shared.
+
+## Configuration
+
+The gear can be configured with the following options:
+
+- `dry_run` -- whether to run the script without updating Flywheel or the files
+  Default: `false`.
+- `admin_group` -- name of the admin group.
+  Default: `nacc`.
+- `identifier_mode` -- whether to create identifiers in dev or prod database.
+  Default: `prod`.
+- `apikey_path_prefix` -- the instance specific AWS parameter path prefix for apikey.
+  Default: `/prod/flywheel/gearbot`.
+
 ## Processing
 
 The following diagrams describe the processing of legacy identifiers.
