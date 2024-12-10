@@ -25,46 +25,46 @@ class TestVersionMap:
 class TestFieldFilter:
 
     def test_empty_fields(self):
-        filter = FieldFilter(version_map=VersionMap(
+        field_filter = FieldFilter(version_map=VersionMap(
             fieldname='dummy',
             value_map={'alpha-raw': 'beta'},
             default='alpha'),
-                             fields={
-                                 'alpha': [],
-                                 'beta': []
-                             })
+                                   fields={
+                                       'alpha': [],
+                                       'beta': []
+                                   })
         input_record = {
             'dummy': 'alpha-raw',
         }
-        record = filter.apply(input_record)
+        record = field_filter.apply(input_record)
 
         assert record == input_record
 
     def test_equal_fields(self):
-        filter = FieldFilter(version_map=VersionMap(
+        field_filter = FieldFilter(version_map=VersionMap(
             fieldname='dummy',
             value_map={'alpha-raw': 'beta'},
             default='alpha'),
-                             fields={
-                                 'alpha': ['f1'],
-                                 'beta': ['f1']
-                             })
+                                   fields={
+                                       'alpha': ['f1'],
+                                       'beta': ['f1']
+                                   })
         input_record = {'dummy': 'alpha-raw', 'f1': 'v1'}
-        record = filter.apply(input_record)
+        record = field_filter.apply(input_record)
 
         assert record == input_record
 
     def test_diff_fields(self):
-        filter = FieldFilter(version_map=VersionMap(
+        field_filter = FieldFilter(version_map=VersionMap(
             fieldname='dummy',
             value_map={'alpha-raw': 'beta'},
             default='alpha'),
-                             fields={
-                                 'alpha': ['a1'],
-                                 'beta': ['b1']
-                             })
+                                   fields={
+                                       'alpha': ['a1'],
+                                       'beta': ['b1']
+                                   })
         input_record = {'dummy': 'alpha-raw', 'a1': 'v1', 'b1': 'v2'}
-        record = filter.apply(input_record)
+        record = field_filter.apply(input_record)
 
         assert [k for k in record if k in input_record and k != 'b1']
 
