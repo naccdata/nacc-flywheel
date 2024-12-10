@@ -2,7 +2,7 @@
 import json
 import logging
 from io import StringIO
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from gear_execution.gear_execution import GearExecutionError
@@ -14,14 +14,14 @@ from redcap.redcap_connection import (
 )
 from s3.s3_client import S3BucketReader
 
-from .error_check_loader import ErrorCheckCSVVisitor
+from .error_check_csv_visitor import ErrorCheckCSVVisitor
 
 log = logging.getLogger(__name__)
 
 
 def load_error_check_csv(key: str,
                          file: Dict[str, Dict],
-                         error_writer: ListErrorWriter) -> List[Dict, str]:
+                         error_writer: ListErrorWriter) -> List[Dict[str, Any]]:
     """Load the error check CSV.
 
     Args:
@@ -36,8 +36,8 @@ def load_error_check_csv(key: str,
     # filename expected to be
     # form_<FORM_NAME>_<packet>_error_checks_<type>.csv
     key_parts = key.split('/')
-    if key_parts != 4:
-        raise ValueError("Expected files to be under "
+    if len(key_parts) != 4:
+        raise ValueError("Expected file to be under "
                          + "MODULE / FORM_VER / PACKET / filename")
 
     module, form_ver, packet, filename = key_parts

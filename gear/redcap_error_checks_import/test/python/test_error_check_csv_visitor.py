@@ -3,7 +3,7 @@ Tests the ErrorCheckCSVVisitor.
 """
 import pytest
 from outputs.errors import ListErrorWriter
-from redcap_error_checks_import.error_check_csv_visitor import ErrorCheckCSVVisitor
+from redcap_error_checks_import_app.error_check_csv_visitor import ErrorCheckCSVVisitor
 
 
 @pytest.fixture(scope='function')
