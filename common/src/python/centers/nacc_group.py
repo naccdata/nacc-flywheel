@@ -121,9 +121,11 @@ class NACCGroup(CenterAdaptor):
                        active=active))
         metadata.update_info(center_map.model_dump())
 
-    def get_center_map(self) -> CenterMapInfo:
+    def get_center_map(self, center_filter: Optional[List[int]] = None) -> CenterMapInfo:
         """Returns the adcid-group map.
 
+        Args:
+            center_filter: Optional list of ADCIDs to filter on for a mapping subset
         Returns:
           dictionary mapping adcid to adcid-group label correspondence
         """
@@ -133,6 +135,11 @@ class NACCGroup(CenterAdaptor):
         if not info:
             return CenterMapInfo(centers={})
 
+        if center_filter:
+            if 'centers' not in info:
+                log.error("Expected 'centers' attribute in metadata info")
+            info['centers'] = {adcid: data for adcid, data in info['centers'].items()
+                               if adcid in center_filter}
         try:
             center_map = CenterMapInfo.model_validate(info)
         except ValidationError as error:

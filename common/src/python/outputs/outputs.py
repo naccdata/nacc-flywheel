@@ -77,7 +77,7 @@ class ListJSONWriter(JSONWriter):
 
 def write_csv_to_stream(headers: List[str],
                         data: List[Dict[str, Any]],
-                        filename: str) -> str:
+                        filename: str) -> StringIO:
     """Takes a header and data pair and uses CSVWriter to write the CSV
     contents to a StringIO stream.
 

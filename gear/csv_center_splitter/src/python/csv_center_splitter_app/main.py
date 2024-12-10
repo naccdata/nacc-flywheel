@@ -25,13 +25,13 @@ class CSVVisitorCenterSplitter(CSVVisitor):
                  error_writer: ListErrorWriter,
                  allow_merged_cells: bool = False):
         """Initializer."""
-        self.__adcid_key = adcid_key
-        self.__error_writer = error_writer
-        self.__split_data = {}
-        self.__headers = None
+        self.__adcid_key: str = adcid_key
+        self.__error_writer: ListErrorWriter = error_writer
+        self.__split_data: Dict[int, List[str]] = {}
+        self.__headers: List[str] = []
 
         self.__allow_merged_cells = allow_merged_cells
-        self.__prev_adcid = None
+        self.__prev_adcid: Optional[int] = None
 
     @property
     def adcid_key(self):
@@ -164,6 +164,7 @@ def run(*,
             log.error(x['message'])
         return
 
+    project_map: Dict[str, Any] = {}
     if staging_project_id:
         # if writing results to a staging project, manually build a project map
         # that maps all to the specified project ID
@@ -174,7 +175,7 @@ def run(*,
         # FW project for upload
         project_map = build_project_map(proxy=proxy,
                                         destination_label=target_project,
-                                        centers=visitor.centers)
+                                        center_filter=visitor.centers)
 
     if not project_map:
         raise ValueError(f"No {target_project} projects found")
@@ -214,5 +215,9 @@ def run(*,
                              contents=contents,
                              content_type="text/csv",
                              size=len(contents))
-        project.upload_file(file_spec)
-        log.info(f"Successfully uploaded {filename}")
+
+        if proxy.dry_run:
+            log.info(f"DRY RUN: Would have uplaoded {filename}")
+        else:
+            project.upload_file(file_spec)
+            log.info(f"Successfully uploaded {filename}")
