@@ -46,7 +46,7 @@ class FieldFilter(BaseModel):
         if not field_set:
             return field_set
 
-        for key in self.fields.keys():
+        for key in self.fields:
             if key == version_name:
                 continue
 
@@ -82,7 +82,7 @@ class FieldFilter(BaseModel):
 
 class FieldTransformations(RootModel):
     """Root model for the form field schema."""
-    root: Dict[ModuleName, List[FieldFilter]] = {}
+    root: Dict[ModuleName, List[FieldFilter]] = {}  # noqa: RUF012
 
     def __getitem__(self, key: ModuleName) -> List[FieldFilter]:
         """Returns the FormField schema for the module.
@@ -94,9 +94,11 @@ class FieldTransformations(RootModel):
         """
         return self.root[key]
 
-    def get(self,
+    def get(
+            self,
             key: ModuleName,
-            default: List[FieldFilter] = []) -> List[FieldFilter]:
+            default: List[FieldFilter] = []  # noqa: B006
+    ) -> List[FieldFilter]:
         return self.root.get(key, default)
 
     def __setitem__(self, key: ModuleName, value: List[FieldFilter]) -> None:
@@ -155,7 +157,7 @@ class RecordTransformer(BaseRecordTransformer):
         Returns:
           the transformed record. None, if any transform returns None.
         """
-        record = input_record
+        record: Optional[Dict[str, Any]] = input_record
         for transformer in self.__transformers:
             if record is None:
                 return None
@@ -210,8 +212,8 @@ class DateTransformer(BaseRecordTransformer):
 class FilterTransformer(BaseRecordTransformer):
     """Defines a transform that applies a field filter to a record."""
 
-    def __init__(self, filter: FieldFilter) -> None:
-        self._transform = filter
+    def __init__(self, field_filter: FieldFilter) -> None:
+        self._transform = field_filter
 
     def transform(self, input_record: Dict[str, Any],
                   line_num: int) -> Optional[Dict[str, Any]]:
@@ -244,11 +246,11 @@ class TransformerFactory:
         Returns:
           the record transformer
         """
-        transformer_list = []
+        transformer_list: List[BaseRecordTransformer] = []
         transformer_list.append(DateTransformer(error_writer))
         if module:
             filter_list = self.__transformations.get(module)
-            for filter in filter_list:
-                transformer_list.append(FilterTransformer(filter))
+            for field_filter in filter_list:
+                transformer_list.append(FilterTransformer(field_filter))
 
         return RecordTransformer(transformer_list)

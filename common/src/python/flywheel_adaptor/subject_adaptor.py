@@ -266,9 +266,9 @@ class SubjectAdaptor:
             existing_file = acquisition.get_file(filename)
             if existing_file and is_duplicate_record(
                     contents, existing_file.read(), content_type):
-                log.warning(
-                    'Duplicate file %s already exists at %s/%s/%s',
-                    filename, self.label, session_label, acquisition_label)
+                log.warning('Duplicate file %s already exists at %s/%s/%s',
+                            filename, self.label, session_label,
+                            acquisition_label)
                 return None
 
         record_file_spec = FileSpec(name=filename,
