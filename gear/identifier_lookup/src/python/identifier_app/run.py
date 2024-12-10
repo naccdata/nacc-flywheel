@@ -1,6 +1,7 @@
 """Entrypoint script for the identifier lookup app."""
 
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -126,12 +127,12 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                 'Expect module suffix to input file name: '
                 f'{self.__file_input.filename}')
 
-        filename = f"{self.__file_input.filename}-identifier"
+        (basename, extension) = os.path.splitext(self.__file_input.filename)
+        filename = f"{basename}-identifier{extension}"
         input_path = Path(self.__file_input.filepath)
         with (open(input_path, mode='r', encoding='utf-8') as csv_file,
-              context.open_output(f'{filename}.csv',
-                                  mode='w',
-                                  encoding='utf-8') as out_file):
+              context.open_output(filename, mode='w', encoding='utf-8') as
+              out_file):
             error_writer = ListErrorWriter(container_id=file_id,
                                            fw_path=self.proxy.get_lookup_path(
                                                self.proxy.get_file(file_id)))

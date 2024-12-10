@@ -26,6 +26,7 @@ class IdentifierVisitor(CSVVisitor):
         Args:
           identifiers: the map from PTID to Identifier object
           output_file: the data output stream
+          module_name: the module name for the form
           error_writer: the error output writer
         """
         self.__identifiers = identifiers
@@ -115,6 +116,7 @@ def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
     Args:
       input_file: the data input stream
       identifiers: the map from PTID to Identifier object
+      module_name: the module name for the form
       output_file: the data output stream
       error_writer: the error output writer
     Returns:
