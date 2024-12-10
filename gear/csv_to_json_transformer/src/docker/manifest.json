@@ -56,6 +56,25 @@
             "description": "Name of the admin group",
             "type": "string",
             "default": "nacc"
+        },
+        "hierarchy_labels" : {
+            "description": "the string templates for session/acquisition/filename",
+            "type": "object",
+            "default": [ 
+                {
+                    "type": "session",
+                    "template": ""
+                },
+                {
+                    "type": "acquisition",
+                    "template": "",
+                    "transform": "upper"
+                },
+                {
+                    "type": "filename",
+                    "template": ""
+                }
+            ]
         }
     },
     "command": "/bin/run"
