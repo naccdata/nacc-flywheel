@@ -287,16 +287,18 @@ Consult `fw-beta gear config --help` for details on the command.
 
 #### Environment Variables
 
-Local Environment variables can be passed to the docker run command with `-e` the (alias `-env`) flag ([docs](https://docs.docker.com/reference/cli/docker/container/run/#env)).
+Flywheel CLI version >= 0.19.0 is required to pass environment variables through to Docker.
+
+Environment variables can be passed to the docker run command using pass-through arguments ([docs](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/#pass-through-arguments)):
 
 ```bash
-fw-beta gear run -e xx=yy
+fw-beta gear run tmp/gear/<gear-structure> -- -e xx=yy
 ```
 
-Or, if using a .env file: 
+Or, if using a .env file:
 
 ```bash
-fw-beta gear run -e ./env
+fw-beta gear run tmp/gear/<gear-structure> -- --env-file .env
 ```
 
 >Note the templating script creates a project `.env` file automatically, so you may want to specify a different development file i.e. `.env.local` to store secrets. 
