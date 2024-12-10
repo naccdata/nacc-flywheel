@@ -86,12 +86,3 @@ class TestCSVVisitorCenterSplitter:
         errors = visitor.error_writer.errors()
         assert len(errors) == 1
         assert errors[0]['message'] == "Row 1 was invalid: Missing ADCID value"
-
-    def test_visit_row_invalid(self, visitor):
-        """Test an invalid row."""
-        assert not visitor.visit_row({'adcid': 'hello', 'data': 'world'}, 1)
-
-        errors = visitor.error_writer.errors()
-        assert len(errors) == 1
-        assert errors[0]['message'] == "Row 1 was invalid: ADCID value must be " \
-            + "an int: invalid literal for int() with base 10: 'hello'"

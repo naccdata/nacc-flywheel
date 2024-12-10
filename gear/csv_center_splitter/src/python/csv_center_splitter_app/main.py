@@ -9,7 +9,6 @@ from outputs.errors import (
     ListErrorWriter,
     empty_field_error,
     missing_field_error,
-    unexpected_value_error,
 )
 from outputs.outputs import write_csv_to_stream
 from projects.project_mapper import build_project_map
@@ -83,36 +82,24 @@ class CSVVisitorCenterSplitter(CSVVisitor):
         Returns:
           True if the row was processed without error, False otherwise
         """
-        try:
-            # handle the merged rows case; if ADCID key is missing, assume
-            # same as previous row
-            # TODO: might want to do a clean up of empty rows? Or just assume
-            # a clean CSV?
-            raw_adcid = row[self.adcid_key]
+        # handle the merged rows case; if ADCID key is missing, assume
+        # same as previous row
+        # TODO: might want to do a clean up of empty rows? Or just assume
+        # a clean CSV?
+        adcid = row[self.adcid_key]
 
-            if not raw_adcid:
-                if self.__allow_merged_cells:
-                    raw_adcid = self.__prev_adcid
-                else:
-                    message = f"Row {line_num} was invalid: Missing ADCID value"
-                    error = empty_field_error(field=self.adcid_key,
-                                              line=line_num,
-                                              message=message)
-                    self.__error_writer.write(error)
-                    return False
+        if not adcid:
+            if self.__allow_merged_cells:
+                adcid = self.__prev_adcid
+            else:
+                message = f"Row {line_num} was invalid: Missing ADCID value"
+                error = empty_field_error(field=self.adcid_key,
+                                          line=line_num,
+                                          message=message)
+                self.__error_writer.write(error)
+                return False
 
-            adcid = int(raw_adcid)
-            self.__prev_adcid = adcid
-        except ValueError as e:
-            message = f"Row {line_num} was invalid: ADCID value must be an int: {e}"
-            error = unexpected_value_error(field=self.adcid_key,
-                                           value=raw_adcid,
-                                           expected="integer value",
-                                           line=line_num,
-                                           message=message)
-            self.__error_writer.write(error)
-            return False
-
+        self.__prev_adcid = adcid
         if adcid not in self.split_data:
             self.split_data[adcid] = []
 

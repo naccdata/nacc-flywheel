@@ -7,6 +7,7 @@ from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
     GearBotClient,
+    ContextClient,
     GearEngine,
     GearExecutionEnvironment,
     GearExecutionError,
@@ -57,8 +58,9 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
         Raises:
           GearExecutionError if any expected inputs are missing
         """
-        client = GearBotClient.create(context=context,
-                                      parameter_store=parameter_store)
+        client = ContextClient.create(context=context)
+        # client = GearBotClient.create(context=context,
+        #                               parameter_store=parameter_store)
 
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
@@ -123,7 +125,7 @@ def main():
     Splits CSV and distributes per center.
     """
 
-    GearEngine.create_with_parameter_store().run(
+    GearEngine().run(
         gear_type=CSVCenterSplitterVisitor)
 
 
