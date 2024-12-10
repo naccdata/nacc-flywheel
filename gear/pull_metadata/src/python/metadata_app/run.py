@@ -70,7 +70,6 @@ def main():
         proxy = FlywheelProxy(client=Client(api_key), dry_run=dry_run)
 
         project_map = build_project_map(proxy=proxy,
-                                        center_tag_pattern=r'adcid-\d+',
                                         destination_label=destination_label)
         if not project_map:
             log.error('No ADCID groups found')
