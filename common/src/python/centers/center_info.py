@@ -2,7 +2,7 @@
 from typing import Dict, List, Optional, Tuple
 
 from projects.study import StudyVisitor
-from pydantic import AliasChoices, BaseModel, Field, validator
+from pydantic import AliasChoices, BaseModel, Field, field_validator
 
 
 class CenterInfo(BaseModel):
@@ -41,7 +41,7 @@ class CenterInfo(BaseModel):
         return (self.adcid == __o.adcid and self.group == __o.group
                 and self.name == __o.name and self.active == __o.active)
 
-    @validator("tags")
+    @field_validator("tags")
     def set_tags(cls, tags: Tuple[Tuple[str], List[str]]) -> Tuple[str]:
         if not tags:
             return ()
