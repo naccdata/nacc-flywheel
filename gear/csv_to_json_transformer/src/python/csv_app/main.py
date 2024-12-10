@@ -4,18 +4,17 @@ import logging
 from typing import Any, Dict, List, Optional, TextIO
 
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
-from gear_execution.gear_execution import GearExecutionError
 from inputs.csv_reader import CSVVisitor, read_csv
 from keys.keys import FieldNames
 from outputs.errors import (
-    ListErrorWriter,
+    ErrorWriter,
     empty_field_error,
     missing_field_error,
     unexpected_value_error,
 )
 from transform.transformer import BaseRecordTransformer, TransformerFactory
 
-from csv_app.uploader import JSONUploader
+from csv_app.uploader import FormJSONUploader, JSONUploader, LabelTemplate, RecordUploader
 
 log = logging.getLogger(__name__)
 
@@ -25,24 +24,24 @@ class CSVTransformVisitor(CSVVisitor):
 
     def __init__(self, *, req_fields: List[str],
                  transformed_records: Dict[str, List[Dict[str, Any]]],
-                 error_writer: ListErrorWriter,
+                 error_writer: ErrorWriter,
                  transformer_factory: TransformerFactory) -> None:
         self.__req_fields = req_fields
         self.__transformed = transformed_records
         self.__error_writer = error_writer
         self.__transformer_factory = transformer_factory
         self.__has_module_field = False
-        self.__module = None
+        self.__module: Optional[str] = None
         self.__transformer: Optional[BaseRecordTransformer] = None
 
     def has_module(self) -> bool:
         """Indicates whether a module field was detected in the file header.
-        
+
         Returns:
           True if a module field was found in the file header. False, otherwise.
         """
         return self.__has_module_field
-    
+
     @property
     def module(self) -> Optional[str]:
         """Returns the detected module for the CSV file."""
@@ -137,7 +136,7 @@ class CSVTransformVisitor(CSVVisitor):
 
     def __check_module(self, row: Dict[str, Any], line_num: int) -> bool:
         """Checks the module in the row matches the module in this visitor.
-        
+
         If the file has no module field, returns True.
 
         Args:
@@ -169,7 +168,8 @@ def notify_upload_errors():
 
 def run(*, input_file: TextIO, destination: ProjectAdaptor,
         transformer_factory: TransformerFactory,
-        error_writer: ListErrorWriter) -> bool:
+        template_map: Dict[str,
+                           LabelTemplate], error_writer: ErrorWriter) -> bool:
     """Reads records from the input file and transforms each into a JSON file.
     Uploads the JSON file to the respective aquisition in Flywheel.
 
@@ -192,15 +192,15 @@ def run(*, input_file: TextIO, destination: ProjectAdaptor,
                       error_writer=error_writer,
                       visitor=visitor)
 
-    if not visitor.module:
-        raise GearExecutionError(
-            'Module information not found in the input file')
-
     if not len(transformed_records) > 0:
         return result
 
-    uploader = JSONUploader(project=destination, module=visitor.module)
-    upload_status = uploader.upload_visits(transformed_records)
+    if visitor.has_module():
+        uploader: RecordUploader = FormJSONUploader(project=destination,
+                                    module=visitor.module)  # type: ignore
+    else:
+        uploader = JSONUploader(project=destination, template_map=template_map)
+    upload_status = uploader.upload(transformed_records)
     if not upload_status:
         notify_upload_errors()
 

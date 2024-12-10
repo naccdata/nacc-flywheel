@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import Optional
+from typing import Dict, Optional
 
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
@@ -16,11 +16,12 @@ from gear_execution.gear_execution import (
     InputFileWrapper,
 )
 from inputs.parameter_store import ParameterStore
-from jsonschema import ValidationError
 from outputs.errors import ListErrorWriter
+from pydantic import ValidationError
 from transform.transformer import FieldTransformations, TransformerFactory
 
 from csv_app.main import run
+from csv_app.uploader import LabelTemplate, UploadTemplateList
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -30,9 +31,11 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
     """The gear execution visitor for the csv-to-json-transformer app."""
 
     def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
-                 transform_input: Optional[InputFileWrapper]) -> None:
+                 transform_input: Optional[InputFileWrapper],
+                 hierarchy_labels: Dict[str, str]) -> None:
         self.__client = client
         self.__file_input = file_input
+        self.__hierarchy_labels = hierarchy_labels
         self.__transform_input = transform_input
 
     @classmethod
@@ -63,9 +66,14 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
         transform_input = InputFileWrapper.create(input_name='transform_file',
                                                   context=context)
 
+        hierarchy_labels = context.config.get('hierarchy_labels')
+        if not hierarchy_labels:
+            raise GearExecutionError("Expecting non-empty label templates")
+
         return CsvToJsonVisitor(client=client,
                                 file_input=file_input,
-                                transform_input=transform_input)
+                                transform_input=transform_input,
+                                hierarchy_labels=hierarchy_labels)
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the CSV to JSON Transformer app.
@@ -87,6 +95,8 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             raise GearExecutionError(
                 f'Failed to find the project with ID {file.parents.project}')
 
+        template_map = self.__load_template(self.__hierarchy_labels)
+
         with open(self.__file_input.filepath, mode='r',
                   encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(container_id=file_id,
@@ -96,6 +106,7 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                                                      proxy=proxy),
                           transformer_factory=self.__build_transformer(
                               self.__transform_input),
+                          template_map=template_map,
                           error_writer=error_writer)
 
             context.metadata.add_qc_result(self.__file_input.file_input,
@@ -111,6 +122,17 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
     def __build_transformer(
             self, transformer_input: Optional[InputFileWrapper]
     ) -> TransformerFactory:
+        """Loads the transformation file and creates a transformer factory.
+
+        If the input is None, returns a factory for empty transformations.
+        Otherwise, loads the file as a FileTransformations object and creates
+        a factory using those.
+
+        Args:
+          transformer_input: the input file wrapper
+        Returns:
+          the TransformerFactory for the input
+        """
         if not transformer_input:
             return TransformerFactory(FieldTransformations())
 
@@ -122,6 +144,28 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             except ValidationError as error:
                 raise GearExecutionError('Error reading transformation file'
                                          f'{error}') from error
+
+    def __load_template(
+            self, template_list: Dict[str, str]) -> Dict[str, LabelTemplate]:
+        """Creates the list of label templates from the input objects.
+
+        Args:
+          template_list: dictionary with label template details
+        Returns:
+          Dictionary from label types to label template object
+        Raises:
+          GearExecutionError if the model validation fails
+        """
+        try:
+            upload_templates = UploadTemplateList.model_validate(template_list)
+        except ValidationError as error:
+            raise GearExecutionError('Error reading label templates: '
+                                     f'{error}') from error
+
+        return {
+            template_info.type: LabelTemplate(template_info)
+            for template_info in upload_templates
+        }
 
 
 def main():
