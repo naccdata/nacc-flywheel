@@ -287,9 +287,21 @@ Consult `fw-beta gear config --help` for details on the command.
 
 #### Environment Variables
 
-Environment variables are set in the `manifest.json`.
+Flywheel CLI version >= 0.19.0 is required to pass environment variables through to Docker.
 
->Secrets should not be added to the manifest file since it is version controlled.
+Environment variables can be passed to the docker run command using pass-through arguments ([docs](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/#pass-through-arguments)):
+
+```bash
+fw-beta gear run tmp/gear/<gear-structure> -- -e xx=yy
+```
+
+Or, if using a .env file:
+
+```bash
+fw-beta gear run tmp/gear/<gear-structure> -- --env-file .env
+```
+
+>Note the templating script creates a project `.env` file automatically, so you may want to specify a different development file i.e. `.env.local` to store secrets. 
 
 #### Run the gear
 
