@@ -2,7 +2,7 @@
 
 from datetime import datetime
 import logging
-from typing import Dict, Optional
+from typing import Dict, Mapping, Optional
 
 from pydantic import ValidationError
 
@@ -42,7 +42,7 @@ class LegacyEnrollmentBatch:
 
 
 def process_legacy_identifiers(
-    identifiers: Dict[str, IdentifierObject],
+    identifiers: Mapping[str, IdentifierObject],
     enrollment_date: datetime,  # Added parameter for enrollment date
     enrollment_project: EnrollmentProject,
     error_writer: ErrorWriter,
