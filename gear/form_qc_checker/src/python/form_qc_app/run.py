@@ -103,9 +103,13 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
 
         assert context, 'Gear context required'
 
+        admin_group = self.admin_group(
+            admin_id=context.config.get('admin_group', 'nacc'))
+
         run(client_wrapper=self.client,
             input_wrapper=self.__file_input,
             s3_client=self.__s3_client,
+            admin_group=admin_group,
             gear_context=context,
             redcap_connection=self.__redcap_con)
 

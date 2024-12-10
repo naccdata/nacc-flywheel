@@ -3,8 +3,9 @@
 import json
 import logging
 from json.decoder import JSONDecodeError
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
+from centers.nacc_group import NACCGroup
 from flywheel import Project
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from keys.keys import DefaultValues, FieldNames, MetadataKeys
@@ -21,27 +22,47 @@ class DatastoreHelper(Datastore):
     """
 
     def __init__(self, pk_field: str, orderby: str, proxy: FlywheelProxy,
-                 group_id: str, project: Project, legacy_label: str):
+                 adcid: int, group_id: str, project: Project,
+                 admin_group: NACCGroup, legacy_label: str):
         """
 
         Args:
             pk_field: primary key field to uniquely identify a participant
             orderby: field to sort the records by
             proxy: Flywheel proxy object
+            adcid: Center's ADCID
             group: Flywheel group id
             project: Flywheel project container
+            admin_group: Flywheel admin group
             legacy_label: legacy project label
         """
 
         super().__init__(pk_field, orderby)
 
         self.__proxy = proxy
+        self.__adcid = adcid
         self.__gid = group_id
         self.__project = project
+        self.__admin_group = admin_group
         self.__legacy_label = legacy_label
 
+        self.__current_adcids = self._pull_adcids_list()
         self.__legacy_project = self._get_legacy_project()
         self.__legacy_info = self._get_legacy_modules_info()
+
+    def _pull_adcids_list(self) -> Optional[List[int]]:
+        """Pull the list of ADCIDs from the admin group metadata project.
+
+        Returns:
+            Optional[List[int]]: List of ADCIDs
+        """
+        center_map = self.__admin_group.get_center_map()
+        if center_map and center_map.centers:
+            return list(center_map.centers.keys())
+
+        log.error('Failed to retrieve list of centers form admin group %s',
+                  self.__admin_group.label)
+        return None
 
     def _get_legacy_project(self) -> Optional[Project]:
         """Get the legacy form project for the center group.
@@ -247,6 +268,21 @@ class DatastoreHelper(Datastore):
             latest_rec_info['file.name'],
             latest_rec_info['file.parents.acquisition'])
 
+    def get_previous_nonempty_record(
+            self, current_record: Dict[str, str],
+            field: Tuple[str, List[str]]) -> Optional[Dict[str, str]]:
+        """Overriding the abstract method to return the previous record where
+        all fields are NOT empty for the specified participant.
+
+        Args:
+            current_record: Record currently being validated
+            field: Field(s) to check for
+
+        Returns:
+            Dict[str, str]: Previous nonempty record or None if none found
+        """
+        return None
+
     def is_valid_rxcui(self, drugid: int) -> bool:
         """Overriding the abstract method, check whether a given drug ID is
         valid RXCUI.
@@ -258,3 +294,23 @@ class DatastoreHelper(Datastore):
             bool: True if provided drug ID is valid, else False
         """
         return RxNormConnection.get_rxcui_status(drugid) == RxcuiStatus.ACTIVE
+
+    def is_valid_adcid(self, adcid: int, own: bool) -> bool:
+        """Overriding the abstract method to check whether a given ADCID is
+        valid.
+
+        Args:
+            adcid: provided ADCID
+            own: whether to validate against own ADCID or list of current ADCIDs
+
+        Returns:
+            bool: True if provided ADCID is valid, else False
+        """
+
+        if own:
+            return self.__adcid == adcid
+
+        if self.__current_adcids:
+            return adcid in self.__current_adcids
+
+        return False

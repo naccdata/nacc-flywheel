@@ -72,6 +72,11 @@
             "type": "string",
             "default": "visitdate"
         },
+        "admin_group": {
+            "description": "Name of the admin group",
+            "type": "string",
+            "default": "nacc"
+        },
         "tag": {
             "description": "The tag to be added on input file upon job completion.",
             "type": "string",

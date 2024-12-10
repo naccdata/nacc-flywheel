@@ -8,6 +8,7 @@ validator) for validating the inputs.
 import logging
 from typing import Optional
 
+from centers.nacc_group import NACCGroup
 from flywheel import FileEntry
 from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
@@ -96,6 +97,7 @@ def run(  # noqa: C901
         client_wrapper: ClientWrapper,
         input_wrapper: InputFileWrapper,
         s3_client: S3BucketReader,
+        admin_group: NACCGroup,
         gear_context: GearToolkitContext,
         redcap_connection: Optional[REDCapReportConnection] = None):
     """Starts QC process for input file. Depending on the input file type calls
@@ -105,6 +107,7 @@ def run(  # noqa: C901
         client_wrapper: Flywheel SDK client wrapper
         input_wrapper: Gear input file wrapper
         s3_client: boto3 client for QC rules S3 bucket
+        admin_group: Flywheel admin group
         gear_context: Flywheel gear context
         redcap_connection (Optional): REDCap project for NACC QC checks
 
@@ -184,18 +187,22 @@ def run(  # noqa: C901
     except DefinitionException as error:
         raise GearExecutionError(error) from error
 
-    datastore = None
-    if file_type == 'json':
-        datastore = DatastoreHelper(pk_field=pk_field,
-                                    orderby=date_field,
-                                    proxy=proxy,
-                                    group_id=file.parents.group,
-                                    project=project,
-                                    legacy_label=legacy_label)
+    gid = file.parents.group
+    adcid = admin_group.get_adcid(gid)
+    if not adcid:
+        raise GearExecutionError(f'Failed to find ADCID for group: {gid}')
+
+    datastore = DatastoreHelper(pk_field=pk_field,
+                                orderby=date_field,
+                                proxy=proxy,
+                                adcid=adcid,
+                                group_id=gid,
+                                project=project,
+                                admin_group=admin_group,
+                                legacy_label=legacy_label)
 
     try:
-        qual_check = QualityCheck(pk_field, schema, strict,
-                                  datastore)  # type: ignore
+        qual_check = QualityCheck(pk_field, schema, strict, datastore)
     except QualityCheckException as error:
         raise GearExecutionError(
             f'Failed to initialize QC module: {error}') from error
