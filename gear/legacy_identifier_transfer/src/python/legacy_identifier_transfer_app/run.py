@@ -86,6 +86,7 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__identifiers_mode: IdentifiersMode = identifiers_mode
+        self.__dry_run = client.dry_run
 
     @classmethod
     def create(
@@ -207,7 +208,7 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
         log.info(f"Enrollment project: {enrollment_project.label}")
 
         run(adcid=adcid, identifiers=identifiers,
-            error_writer=error_writer, enrollment_project=enrollment_project)
+            error_writer=error_writer, enrollment_project=enrollment_project, dry_run=self.__dry_run)
         pass
 
 

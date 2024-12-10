@@ -46,6 +46,7 @@ def process_legacy_identifiers(
     enrollment_date: datetime,  # Added parameter for enrollment date
     enrollment_project: EnrollmentProject,
     error_writer: ErrorWriter,
+    dry_run: bool = True
 ) -> bool:
     """
     Process legacy identifiers and create enrollment records.
@@ -55,6 +56,7 @@ def process_legacy_identifiers(
         enrollment_date: Date to use as start_date for enrollments
         enrollment_project: Project to add enrollments to
         error_writer: For reporting errors
+        dry_run: If True, do not actually add enrollments to Flywheel
 
     Returns:
         bool: True if processing was successful
@@ -156,9 +158,9 @@ def process_legacy_identifiers(
             # Skip adding enrollments to Flywheel if subject already exists
             continue
 
-        # TESTING: Skip adding enrollments to Flywheel
-        # subject = enrollment_project.add_subject(record.naccid)
-        # subject.add_enrollment(record)
+        if not dry_run:
+            subject = enrollment_project.add_subject(record.naccid)
+            subject.add_enrollment(record)
         log.info('Created enrollment for subject %s', record.naccid)
     return success
 
@@ -167,6 +169,7 @@ def run(*,
         adcid: int,
         identifiers: Dict[str, IdentifierObject],
         enrollment_project: EnrollmentProject,
+        dry_run: bool = True,
         error_writer: ListErrorWriter) -> bool:
     """Runs legacy identifier enrollment process.
 
@@ -187,6 +190,7 @@ def run(*,
             # TODO: refactor identifiers API to get actual enrollment date?
             enrollment_date=datetime.now(),
             enrollment_project=enrollment_project,
+            dry_run=dry_run,
             error_writer=error_writer
         )
 
