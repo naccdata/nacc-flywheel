@@ -19,17 +19,20 @@ class IdentifierVisitor(CSVVisitor):
     data from same ADRC (have the same ADCID).
     """
 
-    def __init__(self, identifiers: Dict[str, IdentifierObject],
-                 output_file: TextIO, error_writer: ErrorWriter) -> None:
+    def __init__(self, *, identifiers: Dict[str, IdentifierObject],
+                 output_file: TextIO, module_name: str,
+                 error_writer: ErrorWriter) -> None:
         """
         Args:
           identifiers: the map from PTID to Identifier object
           output_file: the data output stream
+          module_name: the module name for the form
           error_writer: the error output writer
         """
         self.__identifiers = identifiers
         self.__output_file = output_file
         self.__error_writer = error_writer
+        self.__module_name = module_name
         self.__header: Optional[List[str]] = None
         self.__writer: Optional[CSVWriter] = None
 
@@ -62,6 +65,7 @@ class IdentifierVisitor(CSVVisitor):
 
         self.__header = header
         self.__header.append(FieldNames.NACCID)
+        self.__header.append(FieldNames.MODULE)
 
         return True
 
@@ -87,13 +91,16 @@ class IdentifierVisitor(CSVVisitor):
             return False
 
         row[FieldNames.NACCID] = identifier.naccid
+        row[FieldNames.MODULE] = self.__module_name
+
         writer.write(row)
 
         return True
 
 
 def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
-        output_file: TextIO, error_writer: ErrorWriter) -> bool:
+        module_name: str, output_file: TextIO,
+        error_writer: ErrorWriter) -> bool:
     """Reads participant records from the input CSV file, finds the NACCID for
     each row from the ADCID and PTID, and outputs a CSV file with the NACCID
     inserted.
@@ -109,6 +116,7 @@ def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
     Args:
       input_file: the data input stream
       identifiers: the map from PTID to Identifier object
+      module_name: the module name for the form
       output_file: the data output stream
       error_writer: the error output writer
     Returns:
@@ -119,4 +127,5 @@ def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
                     error_writer=error_writer,
                     visitor=IdentifierVisitor(identifiers=identifiers,
                                               output_file=output_file,
+                                              module_name=module_name,
                                               error_writer=error_writer))
