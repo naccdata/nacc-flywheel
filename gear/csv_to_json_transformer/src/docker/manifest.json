@@ -1,8 +1,8 @@
 {
-    "name": "redcap-project-creation",
-    "label": "REDCap Project Creation",
-    "description": "A gear to create REDCap projects using the REDCap API",
-    "version": "0.0.3",
+    "name": "csv-to-json-transformer",
+    "label": "CSV to JSON Transformer",
+    "description": "Converts rows of CSV file to JSON files",
+    "version": "0.0.11",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
@@ -15,10 +15,10 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/redcap-project-creation:0.0.3"
+            "image": "naccdata/csv-to-json-transformer:0.0.11"
         },
         "flywheel": {
-            "suite": "NACC Admin Gears",
+            "suite": "Curation",
             "show-job": true
         }
     },
@@ -27,14 +27,13 @@
             "base": "api-key"
         },
         "input_file": {
-            "description": "YAML file with REDCap project details for the study",
+            "description": "The project-level CSV file with naccid and module",
             "base": "file",
             "type": {
                 "enum": [
                     "source code"
                 ]
-            },
-            "optional": false
+            }
         }
     },
     "config": {
@@ -43,30 +42,10 @@
             "type": "string",
             "default": "/prod/flywheel/gearbot"
         },
-        "super_token_path": {
-            "description": "AWS parameter path for REDCap super api token",
-            "type": "string",
-            "default": "/redcap/aws/super"
-        },
-        "project_token_path": {
-            "description": "AWS parameter path prefix to store REDCap project api token",
-            "type": "string",
-            "default": "/redcap/aws"
-        },
         "admin_project": {
             "description": "Flywheel lookup string for the admin project",
             "type": "string",
             "default": "nacc/project-admin"
-        },
-        "use_xml_template": {
-            "description": "Use XML template to create REDCap projects",
-            "type": "boolean",
-            "default": true
-        },
-        "output_file_prefix": {
-            "description": "Prefix for output file name",
-            "type": "string",
-            "default": "redcap-projects"
         }
     },
     "command": "/bin/run"

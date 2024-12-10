@@ -83,6 +83,7 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                                       parameter_store=parameter_store)
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
+        assert file_input, "create raises exception if missing expected input"
 
         admin_id = context.config.get("admin_group", "nacc")
         mode = context.config.get("identifiers_mode", "dev")
