@@ -1,6 +1,7 @@
 """Entrypoint script for the identifier lookup app."""
 
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -120,18 +121,25 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
         if not identifiers:
             raise GearExecutionError('Unable to load center participant IDs')
 
-        filename = f"{self.__file_input.filename}-identifier"
+        module_name = self.__file_input.get_module_name_from_file_suffix()
+        if not module_name:
+            raise GearExecutionError(
+                'Expect module suffix to input file name: '
+                f'{self.__file_input.filename}')
+
+        (basename, extension) = os.path.splitext(self.__file_input.filename)
+        filename = f"{basename}-identifier{extension}"
         input_path = Path(self.__file_input.filepath)
         with (open(input_path, mode='r', encoding='utf-8') as csv_file,
-              context.open_output(f'{filename}.csv',
-                                  mode='w',
-                                  encoding='utf-8') as out_file):
+              context.open_output(filename, mode='w', encoding='utf-8') as
+              out_file):
             error_writer = ListErrorWriter(container_id=file_id,
                                            fw_path=self.proxy.get_lookup_path(
                                                self.proxy.get_file(file_id)))
             success = run(input_file=csv_file,
                           identifiers=identifiers,
                           output_file=out_file,
+                          module_name=module_name,
                           error_writer=error_writer)
             context.metadata.add_qc_result(self.__file_input.file_input,
                                            name="validation",
