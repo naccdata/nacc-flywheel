@@ -15,6 +15,17 @@ from centers.center_group import CenterGroup
 log = logging.getLogger(__name__)
 
 
+class LegacyModuleInfo(BaseModel):
+    """Represents information about a legacy module in nacc/metadata project.
+
+    Attributes:
+        legacy_label (str): Label of the legacy module.
+        legacy_orderby (str): Orderby field for legacy module
+    """
+    legacy_label: str
+    legacy_orderby: str
+
+
 class CenterInfo(BaseModel):
     """Represents information about a center in nacc/metadata project.
 

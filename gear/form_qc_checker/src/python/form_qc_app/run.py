@@ -15,6 +15,7 @@ from gear_execution.gear_execution import (
 )
 from inputs.context_parser import get_config
 from inputs.parameter_store import ParameterError, ParameterStore
+from keys.keys import DefaultValues
 from redcap.redcap_connection import (
     REDCapConnectionError,
     REDCapReportConnection,
@@ -103,8 +104,8 @@ class FormQCCheckerVisitor(GearExecutionEnvironment):
 
         assert context, 'Gear context required'
 
-        admin_group = self.admin_group(
-            admin_id=context.config.get('admin_group', 'nacc'))
+        admin_group = self.admin_group(admin_id=context.config.get(
+            'admin_group', DefaultValues.NACC_GROUP_ID))
 
         run(client_wrapper=self.client,
             input_wrapper=self.__file_input,
