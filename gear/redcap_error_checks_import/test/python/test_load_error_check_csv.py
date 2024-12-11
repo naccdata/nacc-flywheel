@@ -38,7 +38,7 @@ def file(headers):
 @pytest.fixture(scope="module")
 def key():
     """Create dummy key for data."""
-    return "dummy_module/3.1/I/form_d1a_ivp_error_checks_mc.csv"
+    return "CSV/dummy_module/3.1/I/form_d1a_ivp_error_checks_mc.csv"
 
 
 class TestLoadErrorCheckCSV:
@@ -67,7 +67,7 @@ class TestLoadErrorCheckCSV:
             load_error_check_csv("bad/key", None, None)
 
         assert str(e.value) == "Expected file to be under " \
-            + "MODULE / FORM_VER / PACKET / filename"
+            + "CSV / MODULE / FORM_VER / PACKET / filename"
 
     def test_empty_error_checks(self, key, headers, error_writer):
         """Test when there is only a header"""

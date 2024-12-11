@@ -42,7 +42,8 @@ class CSVVisitor(ABC):
 def read_csv(input_file: TextIO,
              error_writer: ErrorWriter,
              visitor: CSVVisitor,
-             delimiters=",") -> bool:
+             delimiters=",",
+             ignore_sniffer_errors: bool = False) -> bool:
     """Reads CSV file and applies the visitor to each row.
 
     Args:
@@ -58,21 +59,22 @@ def read_csv(input_file: TextIO,
         error_writer.write(empty_file_error())
         return False
 
-    try:
-        has_header = sniffer.has_header(csv_sample)
-    except Error as error:
-        error_writer.write(malformed_file_error(str(error)))
-        return False
+    if not ignore_sniffer_errors:
+        try:
+            has_header = sniffer.has_header(csv_sample)
+        except Error as error:
+            error_writer.write(malformed_file_error(str(error)))
+            return False
 
-    if not has_header:
-        error_writer.write(missing_header_error())
-        return False
+        if not has_header:
+            error_writer.write(missing_header_error())
+            return False
 
     input_file.seek(0)
     try:
         detected_dialect = sniffer.sniff(csv_sample, delimiters=delimiters)
         reader = DictReader(input_file, dialect=detected_dialect)
-    except Exception:
+    except Error as error:
         # sniffer cannot always determine delimiter, so try to just read directly
         reader = DictReader(input_file, delimiter=delimiters)
 
