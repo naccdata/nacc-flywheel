@@ -52,6 +52,7 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
 
         Args:
             context: The gear context.
+            parameter_store: The parameter store
         Returns:
           the execution environment
         Raises:
@@ -77,14 +78,15 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
         delimiter = context.config.get('delimiter', ',')
         local_run = context.config.get('local_run', False)
 
-        return CSVCenterSplitterVisitor(client=client,
-                                        file_input=file_input,
-                                        adcid_key=adcid_key,
-                                        target_project=target_project,
-                                        staging_project_id=staging_project_id,
-                                        allow_merged_cells=allow_merged_cells,
-                                        delimiter=delimiter,
-                                        local_run=local_run)
+        return CSVCenterSplitterVisitor(
+            client=client,
+            file_input=file_input,  # type: ignore
+            adcid_key=adcid_key,
+            target_project=target_project,
+            staging_project_id=staging_project_id,
+            allow_merged_cells=allow_merged_cells,
+            delimiter=delimiter,
+            local_run=local_run)
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the CSV Center Splitter app."""

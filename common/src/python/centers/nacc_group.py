@@ -83,7 +83,8 @@ class NACCGroup(CenterAdaptor):
         exclude = {'centers': {'__all__': {'tags'}}}
         metadata.update_info(center_map.model_dump(exclude=exclude))
 
-    def get_center_map(self, center_filter: Optional[List[str]] = None) -> CenterMapInfo:
+    def get_center_map(self,
+                       center_filter: Optional[List[str]] = None) -> CenterMapInfo:
         """Returns the adcid-group map.
 
         Args:
@@ -99,7 +100,6 @@ class NACCGroup(CenterAdaptor):
 
         if center_filter:
             log.info(f"Filtering mapping to the following centers: {center_filter}")
-            log.info(info)
             if 'centers' not in info:
                 log.error("Expected 'centers' attribute in metadata info")
                 return CenterMapInfo(centers={})

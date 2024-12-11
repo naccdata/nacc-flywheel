@@ -1,6 +1,5 @@
 """Maps ADCID to projects."""
 import logging
-import re
 from typing import Dict, List, Optional
 
 from centers.center_group import CenterError, CenterGroup
@@ -30,7 +29,7 @@ def build_project_map(
         get_center_map(center_filter=center_filter)
 
     if not center_map:
-        log.warning('no centers found')
+        log.warning('No centers found to build project map')
         return {}
 
     project_map = {}
@@ -48,6 +47,6 @@ def build_project_map(
         return {}
 
     if not project_map:
-        log.warning('no projects found')
+        log.warning('No projects found while building project map')
 
     return project_map

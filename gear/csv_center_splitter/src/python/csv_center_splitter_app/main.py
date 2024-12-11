@@ -76,18 +76,16 @@ class CSVVisitorCenterSplitter(CSVVisitor):
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Visit the dictionary for a row (per DictReader).
 
+        TODO: Should we clean up/ignore empty rows? Or just assume
+              a clean CSV? Particularly in the merged cells case.
+
         Args:
           row: The dictionary for a row from a CSV file
           line_num: The line number of the row
         Returns:
           True if the row was processed without error, False otherwise
         """
-        # handle the merged rows case; if ADCID key is missing, assume
-        # same as previous row
-        # TODO: might want to do a clean up of empty rows? Or just assume
-        # a clean CSV?
         adcid = row[self.adcid_key]
-
         if not adcid:
             if self.__allow_merged_cells:
                 adcid = self.__prev_adcid
@@ -168,11 +166,10 @@ def run(*,
         raise ValueError(f"No {target_project} projects found")
 
     # make sure all expected projects are there before upload
-    missing_projects = []
-    for adcid in visitor.split_data:
-        if f'adcid-{adcid}' not in project_map:
-            missing_projects.append(adcid)
-
+    missing_projects = [
+        adcid for adcid in visitor.split_data
+        if f'adcid-{adcid}' not in project_map
+    ]
     if missing_projects:
         raise ValueError(
             f"Missing {target_project} projects for the following " +
@@ -186,14 +183,8 @@ def run(*,
         project = project_map[f'adcid-{adcid}']
         filename = f'{adcid}_{input_filename}'
 
-        if staging_project_id:
-            log.info(
-                f"Uploading {filename} to staging project {staging_project_id} "
-                + f"for ADCID {adcid}")
-        else:
-            log.info(
-                f"Uploading {filename} for project {target_project} ADCID "
-                + f"{adcid} with project ID {project.id}")
+        log.info(f"Uploading {filename} for project {project.label} " + # type: ignore
+                 f"ADCID {adcid} with project ID {project.id}")         # type: ignore
 
         contents = write_csv_to_stream(headers=visitor.headers,
                                        data=data,
@@ -204,7 +195,7 @@ def run(*,
                              size=len(contents))
 
         if proxy.dry_run:
-            log.info(f"DRY RUN: Would have uplaoded {filename}")
+            log.info(f"DRY RUN: Would have uploaded {filename}")
         else:
-            project.upload_file(file_spec)
+            project.upload_file(file_spec)  # type: ignore
             log.info(f"Successfully uploaded {filename}")
