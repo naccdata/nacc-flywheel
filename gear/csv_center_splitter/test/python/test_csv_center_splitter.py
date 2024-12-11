@@ -22,27 +22,13 @@ def visitor(error_writer):
 @pytest.fixture(scope='module')
 def merged_csv_data():
     """Creates dummy CSV data with merged cells."""
-    return [{
-        'adcid': '1',
-        'data': 'dummy_value',
-        'extra': ''
-    }, {
-        'adcid': '',
-        'data': 'dummy_value_2',
-        'extra': ''
-    }, {
-        'adcid': '',
-        'data': '',
-        'extra': ''
-    }, {
-        'adcid': '2',
-        'data': 'hello',
-        'extra': ''
-    }, {
-        'adcid': '',
-        'data': 'world',
-        'extra': ''
-    }]
+    return [
+        {'adcid': '1', 'data': 'dummy_value', 'extra': ''},
+        {'adcid': '', 'data': 'dummy_value_2', 'extra': ''},
+        {'adcid': '', 'data': '', 'extra': ''},
+        {'adcid': '2', 'data': 'hello', 'extra': ''},
+        {'adcid': '', 'data': 'world', 'extra': ''}
+    ]
 
 
 class TestCSVVisitorCenterSplitter:
