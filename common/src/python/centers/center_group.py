@@ -35,8 +35,9 @@ class CenterGroup(CenterAdaptor):
                  proxy: FlywheelProxy) -> None:
         super().__init__(group=group, proxy=proxy)
         self.__datatypes: List[str] = []
-        self.__ingest_stages = ['ingest', 'retrospective', 'sandbox',
-                                'distribution']
+        self.__ingest_stages = [
+            'ingest', 'retrospective', 'sandbox', 'distribution'
+        ]
         self.__adcid = adcid
         self.__is_active = active
         self.__center_portal: Optional[ProjectAdaptor] = None
@@ -102,8 +103,7 @@ class CenterGroup(CenterAdaptor):
         Returns:
           the CenterGroup for the center
         """
-        group = proxy.get_group(group_label=center.name,
-                                group_id=center.group)
+        group = proxy.get_group(group_label=center.name, group_id=center.group)
         assert group, "No group for center"
 
         center_group = CenterGroup(adcid=center.adcid,
