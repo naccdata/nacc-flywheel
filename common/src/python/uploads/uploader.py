@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
 import json
 import logging
+from abc import ABC, abstractmethod
 from datetime import datetime
 from string import Template
 from typing import Any, Dict, List, Literal, Optional, TypedDict
@@ -89,17 +89,19 @@ class LabelTemplate:
 
         return result
 
+
 class RecordUploader(ABC):
-    
+
     @abstractmethod
     def upload(self, records: Dict[str, List[Dict[str, Any]]]) -> bool:
         """Uploads the records to acquisitions under the subject.
-        
+
         Args:
           records: map from subject to list of records
         Returns:
           True if the file for each record is saved. False, otherwise.
         """
+
 
 class JSONUploader(RecordUploader):
     """Generalizes upload of a record to an acquisition as JSON."""
