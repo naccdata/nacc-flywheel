@@ -1,6 +1,4 @@
-"""
-Tests the load_error_check_csv method.
-"""
+"""Tests the load_error_check_csv method."""
 from io import BytesIO
 
 import pytest
@@ -15,7 +13,8 @@ from redcap_error_checks_import_app.main import load_error_check_csv
 def headers():
     """Creates dummy headers for testing."""
     headers = list(ErrorCheckCSVVisitor.REQUIRED_HEADERS)
-    headers.extend(['error_no', 'do_in_redcap', 'in_prev_versions', 'questions'])
+    headers.extend(
+        ['error_no', 'do_in_redcap', 'in_prev_versions', 'questions'])
     return ','.join(headers)
 
 
@@ -69,6 +68,6 @@ class TestLoadErrorCheckCSV:
             + "CSV / MODULE / FORM_VER / PACKET / filename"
 
     def test_empty_error_checks(self, key, headers):
-        """Test when there is only a header"""
+        """Test when there is only a header."""
         data = {"Body": BytesIO(headers.encode('utf-8'))}
         assert not load_error_check_csv(key, data)

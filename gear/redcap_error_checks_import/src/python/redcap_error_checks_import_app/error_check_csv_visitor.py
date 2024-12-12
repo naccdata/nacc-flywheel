@@ -1,6 +1,4 @@
-"""
-Module to handle downloading error check CSVs from S3
-"""
+"""Module to handle downloading error check CSVs from S3."""
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -17,13 +15,15 @@ log = logging.getLogger(__name__)
 
 
 class ErrorCheckKey(BaseModel):
-    """Pydantic model for the error check key, which expects to be
-    of the form
+    """Pydantic model for the error check key.
+
+    Expects to be of the form:
         CSV / MODULE / FORM_VER / PACKET /
             form_<FORM_NAME>_<PACKET>_error_checks_<type>.csv
-    except for ENRL, which is of the form
-        CSV / MODULE / FORM_VER /
-            naccid-enrollment-form_error_checks_<type>.csv
+
+    except for ENRL, which is of the form:
+        CSV / MODULE / FORM_VER / naccid-enrollment-
+            form_error_checks_<type>.csv
     """
 
     full_path: str
@@ -72,9 +72,10 @@ class ErrorCheckKey(BaseModel):
                                  filename=filename,
                                  form_name=form_name)
 
-        raise ValueError(f"Cannot parse ErrorCheckKey components from {key}; "
-                         + "Expected to be of the form "
-                         + "CSV / MODULE / FORM_VER / PACKET / filename")
+        raise ValueError(
+            f"Cannot parse ErrorCheckKey components from {key}; " +
+            "Expected to be of the form " +
+            "CSV / MODULE / FORM_VER / PACKET / filename")
 
 
 class ErrorCheckCSVVisitor(CSVVisitor):
@@ -82,28 +83,13 @@ class ErrorCheckCSVVisitor(CSVVisitor):
 
     # error_no, do_in_redcap, in_prev_versions,
     # questions, and any other extra headers ignored
-    REQUIRED_HEADERS = (
-        "error_code",
-        "error_type",
-        "form_name",
-        "packet",
-        "var_name",
-        "check_type",
-        "test_name",
-        "short_desc",
-        "full_desc",
-        "test_logic",
-        "comp_forms",
-        "comp_vars"
-    )
+    REQUIRED_HEADERS = ("error_code", "error_type", "form_name", "packet",
+                        "var_name", "check_type", "test_name", "short_desc",
+                        "full_desc", "test_logic", "comp_forms", "comp_vars")
 
-    ALLOWED_EMPTY_FIELDS = (
-        "comp_forms",
-        "comp_vars"
-    )
+    ALLOWED_EMPTY_FIELDS = ("comp_forms", "comp_vars")
 
-    def __init__(self,
-                 key: ErrorCheckKey,
+    def __init__(self, key: ErrorCheckKey,
                  error_writer: ListErrorWriter) -> None:
         """Initializer."""
         self.__key = key
@@ -129,8 +115,7 @@ class ErrorCheckCSVVisitor(CSVVisitor):
         return self.__validated_error_checks
 
     def visit_header(self, header: List[str]) -> bool:
-        """Adds the header, and asserts all required fields
-        are present.
+        """Adds the header, and asserts all required fields are present.
 
         Args:
           header: list of header names
@@ -150,9 +135,9 @@ class ErrorCheckCSVVisitor(CSVVisitor):
         return valid
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Visit the dictionary for a row (per DictReader).
-        Ensure the row matches the expected form/packet and fields and
-        data is filled for all files.
+        """Visit the dictionary for a row (per DictReader). Ensure the row
+        matches the expected form/packet and fields and data is filled for all
+        files.
 
         Args:
           row: the dictionary for a row from a CSV file
@@ -168,11 +153,9 @@ class ErrorCheckCSVVisitor(CSVVisitor):
 
         error = None
         for field, value in row.items():
-            if (not value and
-                field not in self.ALLOWED_EMPTY_FIELDS and
-                field in self.REQUIRED_HEADERS):
-                error = empty_field_error(field=field,
-                                          line=line_num)
+            if (not value and field not in self.ALLOWED_EMPTY_FIELDS
+                    and field in self.REQUIRED_HEADERS):
+                error = empty_field_error(field=field, line=line_num)
                 self.__error_writer.write(error)
 
         if row.get('form_name') != self.__key.form_name:
@@ -190,17 +173,17 @@ class ErrorCheckCSVVisitor(CSVVisitor):
             self.__error_writer.write(error)
 
         if row.get('packet') != self.__key.packet:
-            error = unexpected_value_error('packet',
-                                           row.get('packet'),
-                                           self.__key.packet,
-                                           line_num)
+            error = unexpected_value_error('packet', row.get('packet'),
+                                           self.__key.packet, line_num)
             self.__error_writer.write(error)
 
         if self.__error_writer.errors():
             return False
 
         # only import items in REQUIRED_HEADERS
-        upload_row = {field: row[field] for field in self.REQUIRED_HEADERS
-                      if field in row}
+        upload_row = {
+            field: row[field]
+            for field in self.REQUIRED_HEADERS if field in row
+        }
         self.__validated_error_checks.append(upload_row)
         return True

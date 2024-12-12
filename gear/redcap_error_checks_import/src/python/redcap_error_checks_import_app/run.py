@@ -74,7 +74,8 @@ class REDCapImportErrorChecksVisitor(GearExecutionEnvironment):
             redcap_params = parameter_store.get_redcap_report_parameters(
                 param_path=qc_checks_db_path)
         except ParameterError as error:
-            raise GearExecutionError(f'REDCap parameter error: {error}') from error
+            raise GearExecutionError(
+                f'REDCap parameter error: {error}') from error
 
         s3_bucket = S3BucketReader.create_from_environment(checks_s3_bucket)
         if not s3_bucket:
@@ -100,11 +101,13 @@ class REDCapImportErrorChecksVisitor(GearExecutionEnvironment):
             modules=self.__modules,
             fail_fast=self.__fail_fast)
 
+
 def main():
     """Main method for REDCap Import Error Checks."""
 
     GearEngine().create_with_parameter_store().\
         run(gear_type=REDCapImportErrorChecksVisitor)
+
 
 if __name__ == "__main__":
     main()

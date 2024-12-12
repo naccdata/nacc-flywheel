@@ -27,10 +27,8 @@ def load_error_check_csv(key: ErrorCheckKey,
     Returns:
         List of the validated and read in error checks.
     """
-    error_writer = ListErrorWriter(container_id="local",
-                                   fw_path="local")
-    visitor = ErrorCheckCSVVisitor(key=key,
-                                   error_writer=error_writer)
+    error_writer = ListErrorWriter(container_id="local", fw_path="local")
+    visitor = ErrorCheckCSVVisitor(key=key, error_writer=error_writer)
 
     # TODO: ideally want pure utf-8 but a bit difficult with the
     # way the CSVs are generated
@@ -41,7 +39,8 @@ def load_error_check_csv(key: ErrorCheckKey,
                        ignore_sniffer_errors=True)
 
     if not success:
-        log.error(f"The following error occured while reading from {key.full_path}:")
+        log.error(
+            f"The following error occured while reading from {key.full_path}:")
         log.error(f"{[x['message'] for x in error_writer.errors()]}")
         return None
 
@@ -57,8 +56,7 @@ def run(*,
         s3_bucket: S3BucketReader,
         redcap_project: REDCapProject,
         modules: List[str],
-        fail_fast: bool = True
-        ):
+        fail_fast: bool = True):
     """Runs the REDCAP Error Checks import process.
 
     Args:
@@ -103,8 +101,8 @@ def run(*,
 
         # Upload to REDCap; import each record in JSON format
         try:
-            num_records = redcap_project.import_records(json.dumps(error_checks),
-                                                        data_format='json')
+            num_records = redcap_project.import_records(
+                json.dumps(error_checks), data_format='json')
             log.info(f"Imported {num_records} records from {full_path}")
         except REDCapConnectionError as error:
             raise GearExecutionError(error.message) from error
