@@ -34,16 +34,6 @@
                     "tabular data"
                 ]
             }
-        },
-        "transform_file": {
-            "description": "a JSON file with transform data",
-            "base": "file",
-            "optional": true,
-            "type": {
-                "enum": [
-                    "source code"
-                ]
-            }
         }
     },
     "config": {

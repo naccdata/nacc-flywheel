@@ -18,10 +18,9 @@ from gear_execution.gear_execution import (
 from inputs.parameter_store import ParameterStore
 from outputs.errors import ListErrorWriter
 from pydantic import ValidationError
-from transform.transformer import FieldTransformations, TransformerFactory
+from uploads.uploader import LabelTemplate, UploadTemplateList
 
 from csv_app.main import run
-from csv_app.uploader import LabelTemplate, UploadTemplateList
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -104,8 +103,6 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             success = run(input_file=csv_file,
                           destination=ProjectAdaptor(project=project,
                                                      proxy=proxy),
-                          transformer_factory=self.__build_transformer(
-                              self.__transform_input),
                           template_map=template_map,
                           error_writer=error_writer)
 
@@ -118,32 +115,6 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                                            tags=context.manifest.get(
                                                'name',
                                                'csv-to-json-transformer'))
-
-    def __build_transformer(
-            self, transformer_input: Optional[InputFileWrapper]
-    ) -> TransformerFactory:
-        """Loads the transformation file and creates a transformer factory.
-
-        If the input is None, returns a factory for empty transformations.
-        Otherwise, loads the file as a FileTransformations object and creates
-        a factory using those.
-
-        Args:
-          transformer_input: the input file wrapper
-        Returns:
-          the TransformerFactory for the input
-        """
-        if not transformer_input:
-            return TransformerFactory(FieldTransformations())
-
-        with open(transformer_input.filepath, mode='r',
-                  encoding='utf-8') as json_file:
-            try:
-                return TransformerFactory(
-                    FieldTransformations.model_validate_json(json_file.read()))
-            except ValidationError as error:
-                raise GearExecutionError('Error reading transformation file'
-                                         f'{error}') from error
 
     def __load_template(
             self, template_list: Dict[str, str]) -> Dict[str, LabelTemplate]:

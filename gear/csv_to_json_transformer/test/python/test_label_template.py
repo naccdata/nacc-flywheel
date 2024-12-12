@@ -1,4 +1,4 @@
-from csv_app.uploader import LabelTemplate, UploadTemplateInfo
+from uploads.uploader import LabelTemplate, UploadTemplateInfo
 
 
 class TestLabelTemplate:

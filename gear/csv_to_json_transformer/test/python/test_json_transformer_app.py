@@ -1,12 +1,12 @@
 import csv
+from collections import defaultdict
 from io import StringIO
-from typing import Any, Dict, List
+from typing import Any, DefaultDict, Dict, List
 
 import pytest
-from csv_app.main import CSVTransformVisitor
+from csv_app.main import CSVSplitVisitor
 from inputs.csv_reader import read_csv
 from outputs.errors import StreamErrorWriter
-from transform.transformer import FieldTransformations, TransformerFactory
 
 
 def write_to_stream(data: List[List[Any]], stream: StringIO) -> None:
@@ -89,15 +89,13 @@ class TestCSVTransformVisitor:
     def test_missing_column_headers(self, missing_columns_stream):
         """test missing expected column headers."""
         err_stream = StringIO()
-        records: Dict[str, List[Dict[str, Any]]] = {}
+        records: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(list)
         error_writer = StreamErrorWriter(stream=err_stream,
                                          container_id='dummy',
                                          fw_path='dummy/dummy')
-        visitor = CSVTransformVisitor(req_fields=['naccid'],
-                                      transformed_records=records,
-                                      error_writer=error_writer,
-                                      transformer_factory=TransformerFactory(
-                                          FieldTransformations()))
+        visitor = CSVSplitVisitor(req_fields=['naccid'],
+                                  records=records,
+                                  error_writer=error_writer)
 
         errors = read_csv(input_file=missing_columns_stream,
                           error_writer=error_writer,
@@ -108,15 +106,13 @@ class TestCSVTransformVisitor:
     def test_valid_visit(self, visit_data_stream):
         """Test case where data corresponds to form completed at visit."""
         err_stream = StringIO()
-        records: Dict[str, List[Dict[str, Any]]] = {}
+        records: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(list)
         error_writer = StreamErrorWriter(stream=err_stream,
                                          container_id='dummy',
                                          fw_path='dummy/dummy')
-        visitor = CSVTransformVisitor(req_fields=['naccid'],
-                                      transformed_records=records,
-                                      error_writer=error_writer,
-                                      transformer_factory=TransformerFactory(
-                                          FieldTransformations()))
+        visitor = CSVSplitVisitor(req_fields=['naccid'],
+                                  records=records,
+                                  error_writer=error_writer)
         errors = read_csv(input_file=visit_data_stream,
                           error_writer=error_writer,
                           visitor=visitor)
@@ -126,15 +122,13 @@ class TestCSVTransformVisitor:
     def test_valid_nonvisit(self, nonvisit_data_stream):
         """Test case where data does not correspond to visit."""
         err_stream = StringIO()
-        records: Dict[str, List[Dict[str, Any]]] = {}
+        records: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(list)
         error_writer = StreamErrorWriter(stream=err_stream,
                                          container_id='dummy',
                                          fw_path='dummy/dummy')
-        visitor = CSVTransformVisitor(req_fields=['naccid'],
-                                      transformed_records=records,
-                                      error_writer=error_writer,
-                                      transformer_factory=TransformerFactory(
-                                          FieldTransformations()))
+        visitor = CSVSplitVisitor(req_fields=['naccid'],
+                                  records=records,
+                                  error_writer=error_writer)
         errors = read_csv(input_file=nonvisit_data_stream,
                           error_writer=error_writer,
                           visitor=visitor)
