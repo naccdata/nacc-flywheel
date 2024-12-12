@@ -21,8 +21,8 @@ class ErrorCheckKey(BaseModel):
         CSV / MODULE / FORM_VER / PACKET /
             form_<FORM_NAME>_<PACKET>_error_checks_<type>.csv
 
-    except for ENRL, which is of the form:
-        CSV / MODULE / FORM_VER / naccid-enrollment-
+    except for ENROLL, which is of the form:
+        CSV / ENROLL / FORM_VER / naccid-enrollment-
             form_error_checks_<type>.csv
     """
 
@@ -44,7 +44,9 @@ class ErrorCheckKey(BaseModel):
             instantiated  ErrorCheckKey
         """
         key_parts = key.split('/')
-        assert key_parts[0] == 'CSV', "Expected CSV at top level of S3 key"
+
+        if key_parts[0] != 'CSV':
+            raise ValueError("Expected CSV at top level of S3 key")
 
         if len(key_parts) == 5:
             module = key_parts[1]

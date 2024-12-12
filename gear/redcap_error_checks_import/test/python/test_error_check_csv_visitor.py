@@ -57,6 +57,35 @@ def data():
     }
 
 
+class TestErrorCheckKey:
+    """Tests the ErrorCheckKey class. The other tests
+    require working cases so these test cases just check
+    the invalid ones.
+    """
+
+    def test_invalid_key(self):
+        """Test invalid case."""
+        key = "CSV/badmodule/test.csv"
+
+        with pytest.raises(ValueError) as e:
+            ErrorCheckKey.create_from_key(key)
+
+        assert str(e.value) == (
+            f"Cannot parse ErrorCheckKey components from {key}; " +
+            "Expected to be of the form " +
+            "CSV / MODULE / FORM_VER / PACKET / filename")
+
+
+    def test_no_top_level_csv(self):
+        """Test invalid case."""
+        key = "JSON/module/1.0/dummy_packet/form_dummy_error_checks.json"
+
+        with pytest.raises(ValueError) as e:
+            ErrorCheckKey.create_from_key(key)
+
+        assert str(e.value) == "Expected CSV at top level of S3 key"
+
+
 class TestErrorCheckCSVVisitor:
     """Tests the ErrorCheckCSVVisitor class."""
 
@@ -105,7 +134,7 @@ class TestErrorCheckCSVVisitor:
         assert not visitor.visit_row(data, 1)
 
         errors = visitor.error_writer.errors()
-        assert len(errors) == 12
+        assert len(errors) == 13
         for error in errors:
             assert error['message'].endswith("is required") or \
                 error['message'].startswith('Expected')
