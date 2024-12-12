@@ -32,7 +32,9 @@ def load_error_check_csv(key: ErrorCheckKey,
     visitor = ErrorCheckCSVVisitor(key=key,
                                    error_writer=error_writer)
 
-    data = StringIO(file['Body'].read().decode('utf-8-sig'))  # TODO: ideally want pure utf-8
+    # TODO: ideally want pure utf-8 but a bit difficult with the
+    # way the CSVs are generated
+    data = StringIO(file['Body'].read().decode('utf-8-sig'))
     success = read_csv(input_file=data,
                        error_writer=error_writer,
                        visitor=visitor,
@@ -55,7 +57,7 @@ def run(*,
         s3_bucket: S3BucketReader,
         redcap_project: REDCapProject,
         modules: List[str],
-        fail_fast: bool = False
+        fail_fast: bool = True
         ):
     """Runs the REDCAP Error Checks import process.
 
@@ -83,7 +85,8 @@ def run(*,
             continue
 
         # Load from files from S3
-        log.info(f"Loading error checks from {bucket}/{error_key.full_path}")
+        full_path = f"s3://{bucket}/{error_key.full_path}"
+        log.info(f"Loading error checks from {full_path}")
         error_checks = load_error_check_csv(error_key, file)
 
         if not error_checks:
@@ -102,10 +105,8 @@ def run(*,
         try:
             num_records = redcap_project.import_records(json.dumps(error_checks),
                                                         data_format='json')
-            log.info(f"Imported {num_records} records from {bucket}/{error_key.full_path}")
+            log.info(f"Imported {num_records} records from {full_path}")
         except REDCapConnectionError as error:
             raise GearExecutionError(error.message) from error
-
-        log.info(f"Successfully imported {bucket}/{error_key.full_path}!")
 
     log.info("Import complete!")

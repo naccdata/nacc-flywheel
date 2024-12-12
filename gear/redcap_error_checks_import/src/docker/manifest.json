@@ -55,7 +55,7 @@
         "fail_fast": {
             "description": "Whether or not to fail fast during import",
             "type": "boolean",
-            "default": false
+            "default": true
         },
         "modules": {
             "description": "Comma-deliminated list of modules to perform the import for. Defaults to 'all', which just means it will run for every subdirectory found under CSV. TODO this could change to an input YAML instead.",

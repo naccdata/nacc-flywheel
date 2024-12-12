@@ -1,9 +1,9 @@
 """
 Tests the load_error_check_csv method.
 """
-import pytest
 from io import BytesIO
 
+import pytest
 from redcap_error_checks_import_app.error_check_csv_visitor import (
     ErrorCheckCSVVisitor,
     ErrorCheckKey,
@@ -14,9 +14,10 @@ from redcap_error_checks_import_app.main import load_error_check_csv
 @pytest.fixture(scope="module")
 def headers():
     """Creates dummy headers for testing."""
-    headers = list(ErrorCheckCSVVisitor.REQUIRED_HEADERS) \
-        + ['error_no', 'do_in_redcap', 'in_prev_versions', 'questions']
+    headers = list(ErrorCheckCSVVisitor.REQUIRED_HEADERS)
+    headers.extend(['error_no', 'do_in_redcap', 'in_prev_versions', 'questions'])
     return ','.join(headers)
+
 
 @pytest.fixture(scope="module")
 def file(headers):

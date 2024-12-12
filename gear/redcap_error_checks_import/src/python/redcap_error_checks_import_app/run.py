@@ -29,7 +29,7 @@ class REDCapImportErrorChecksVisitor(GearExecutionEnvironment):
                  s3_bucket: S3BucketReader,
                  redcap_project: REDCapProject,
                  modules: List[str],
-                 fail_fast: bool = False):
+                 fail_fast: bool = True):
         """Initializer."""
         super().__init__(client=client)
 
@@ -65,7 +65,7 @@ class REDCapImportErrorChecksVisitor(GearExecutionEnvironment):
                                             default='/redcap/aws/qcchecks')
         fail_fast: bool = get_config(gear_context=context,
                                      key='fail_fast',
-                                     default=False)
+                                     default=True)
         modules: List[str] = get_config(gear_context=context,
                                         key='modules',
                                         default='all').split(',')

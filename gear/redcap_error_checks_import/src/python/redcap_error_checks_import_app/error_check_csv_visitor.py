@@ -2,7 +2,6 @@
 Module to handle downloading error check CSVs from S3
 """
 import logging
-from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 
 from inputs.csv_reader import CSVVisitor
@@ -12,6 +11,7 @@ from outputs.errors import (
     missing_field_error,
     unexpected_value_error,
 )
+from pydantic import BaseModel
 
 log = logging.getLogger(__name__)
 
@@ -19,9 +19,11 @@ log = logging.getLogger(__name__)
 class ErrorCheckKey(BaseModel):
     """Pydantic model for the error check key, which expects to be
     of the form
-        CSV / MODULE / FORM_VER / PACKET / form_<FORM_NAME>_<PACKET>_error_checks_<type>.csv
+        CSV / MODULE / FORM_VER / PACKET /
+            form_<FORM_NAME>_<PACKET>_error_checks_<type>.csv
     except for ENRL, which is of the form
-        CSV / MODULE / FORM_VER / naccid-enrollment-form_error_checks_<type>.csv
+        CSV / MODULE / FORM_VER /
+            naccid-enrollment-form_error_checks_<type>.csv
     """
 
     full_path: str
@@ -173,23 +175,23 @@ class ErrorCheckCSVVisitor(CSVVisitor):
                                           line=line_num)
                 self.__error_writer.write(error)
 
-        if row.get('form_name', None) != self.__key.form_name:
+        if row.get('form_name') != self.__key.form_name:
             error = unexpected_value_error(field='form_name',
-                                           value=row.get('form_name', None),
+                                           value=row.get('form_name'),
                                            expected=self.__key.form_name,
                                            line=line_num)
             self.__error_writer.write(error)
 
-        if not row.get('error_code', None).startswith(self.__key.form_name):
+        if not row.get('error_code').startswith(self.__key.form_name):
             error = unexpected_value_error(field='error_code',
-                                           value=row.get('error_code', None),
+                                           value=row.get('error_code'),
                                            expected="Start with form_name",
                                            line=line_num)
             self.__error_writer.write(error)
 
-        if row.get('packet', None) != self.__key.packet:
+        if row.get('packet') != self.__key.packet:
             error = unexpected_value_error('packet',
-                                           row.get('packet', None),
+                                           row.get('packet'),
                                            self.__key.packet,
                                            line_num)
             self.__error_writer.write(error)
