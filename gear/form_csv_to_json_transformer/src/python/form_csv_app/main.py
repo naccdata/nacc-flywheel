@@ -180,7 +180,8 @@ def run(*, input_file: TextIO, destination: ProjectAdaptor,
         bool: True if transformation/upload successful
     """
 
-    transformed_records: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    transformed_records: DefaultDict[str, List[Dict[str,
+                                                    Any]]] = defaultdict(list)
     visitor = CSVTransformVisitor(req_fields=[FieldNames.NACCID],
                                   transformed_records=transformed_records,
                                   error_writer=error_writer,
