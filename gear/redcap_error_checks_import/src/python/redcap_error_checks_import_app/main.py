@@ -36,7 +36,7 @@ def load_error_check_csv(key: ErrorCheckKey,
     success = read_csv(input_file=data,
                        error_writer=error_writer,
                        visitor=visitor,
-                       ignore_sniffer_errors=True)
+                       skip_sniffer=False)
 
     if not success:
         log.error(

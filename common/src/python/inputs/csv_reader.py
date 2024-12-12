@@ -43,7 +43,7 @@ def read_csv(input_file: TextIO,
              error_writer: ErrorWriter,
              visitor: CSVVisitor,
              delimiters: str = ",",
-             ignore_sniffer_errors: bool = False) -> bool:
+             skip_sniffer: bool = False) -> bool:
     """Reads CSV file and applies the visitor to each row.
 
     Args:
@@ -59,7 +59,7 @@ def read_csv(input_file: TextIO,
         error_writer.write(empty_file_error())
         return False
 
-    if not ignore_sniffer_errors:
+    if not skip_sniffer:
         try:
             has_header = sniffer.has_header(csv_sample)
         except Error as error:
