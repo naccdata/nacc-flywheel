@@ -12,63 +12,49 @@ from redcap.redcap_connection import REDCapConnectionError
 from redcap.redcap_project import REDCapProject
 from s3.s3_client import S3BucketReader
 
-from .error_check_csv_visitor import ErrorCheckCSVVisitor
+from .error_check_csv_visitor import ErrorCheckCSVVisitor, ErrorCheckKey
 
 log = logging.getLogger(__name__)
 
 
-def load_error_check_csv(key: str,
+def load_error_check_csv(key: ErrorCheckKey,
                          file: Dict[str, Dict]) -> List[Dict[str, Any]]:
     """Load the error check CSV.
 
     Args:
-        key: The S3 key to the file
+        key: ErrorCheckKey containing details about the S3 key
         file: The S3 file object
-        error_writer: the ListErrorWriter to write errors to
     Returns:
         List of the validated and read in error checks.
     """
-    # parse expected key structure
-    # MODULE / FORM_VER / PACKET / files
-    # filename expected to be
-    # form_<FORM_NAME>_<packet>_error_checks_<type>.csv
-    key_parts = key.split('/')
-    if len(key_parts) != 5:
-        raise ValueError("Expected file to be under "
-                         + "CSV / MODULE / FORM_VER / PACKET / filename")
-
-    _, _, _, packet, filename = key_parts
-    form_name = filename.split('_')[1]
-
-    error_writer = ListErrorWriter(container_id="TODO",
-                                   fw_path="TODO")
-    visitor = ErrorCheckCSVVisitor(form_name=form_name,
-                                   packet=packet,
+    error_writer = ListErrorWriter(container_id="local",
+                                   fw_path="local")
+    visitor = ErrorCheckCSVVisitor(key=key,
                                    error_writer=error_writer)
 
-    # encoding is cp1252 due to CSVs being generated on SharePoint
-    data = StringIO(file['Body'].read().decode('cp1252'))
+    data = StringIO(file['Body'].read().decode('utf-8-sig'))  # TODO: ideally want pure utf-8
     success = read_csv(input_file=data,
                        error_writer=error_writer,
                        visitor=visitor,
                        ignore_sniffer_errors=True)
 
     if not success:
-        log.error(f"The following error occured while reading from {key}:")
+        log.error(f"The following error occured while reading from {key.full_path}:")
         log.error(f"{[x['message'] for x in error_writer.errors()]}")
         return None
 
-    if not visitor.error_checks:
-        log.error(f"No error checks found in {key}; invalid file?")
+    if not visitor.validated_error_checks:
+        log.error(f"No error checks found in {key.full_path}; invalid file?")
         return None
 
-    return visitor.error_checks
+    return visitor.validated_error_checks
 
 
 def run(*,
         proxy: FlywheelProxy,
         s3_bucket: S3BucketReader,
         redcap_project: REDCapProject,
+        modules: List[str],
         fail_fast: bool = False
         ):
     """Runs the REDCAP Error Checks import process.
@@ -77,8 +63,8 @@ def run(*,
         proxy: the proxy for the Flywheel instance
         s3_bucket: The S3BucketReader
         redcap_project: The QC Checks REDCapProject
+        modules: List of modules to import error checks for
         fail_fast: Whether or not to fail fast on error
-        dry_run: Whether or not this is a dry run
     """
     log.info("Running REDCAP error check import")
     bucket = s3_bucket.bucket_name
@@ -92,9 +78,13 @@ def run(*,
         if not key.endswith('.csv'):
             continue
 
+        error_key = ErrorCheckKey.create_from_key(key)
+        if modules != ['all'] and error_key.module not in modules:
+            continue
+
         # Load from files from S3
-        log.info(f"Loading error checks from {bucket}/{key}")
-        error_checks = load_error_check_csv(key, file)
+        log.info(f"Loading error checks from {bucket}/{error_key.full_path}")
+        error_checks = load_error_check_csv(error_key, file)
 
         if not error_checks:
             if fail_fast:
@@ -108,14 +98,14 @@ def run(*,
             log.info("DRY RUN: Skipping import.")
             continue
 
-        # Upload to REDCap
-        log.info("Importing error checks to REDCap...")
-        # import each record in JSON format
+        # Upload to REDCap; import each record in JSON format
         try:
             num_records = redcap_project.import_records(json.dumps(error_checks),
                                                         data_format='json')
-            log.info(f"Imported {num_records} records from {bucket}/{key}")
+            log.info(f"Imported {num_records} records from {bucket}/{error_key.full_path}")
         except REDCapConnectionError as error:
             raise GearExecutionError(error.message) from error
 
-        log.info(f"Successfully imported {bucket}/{key}!")
+        log.info(f"Successfully imported {bucket}/{error_key.full_path}!")
+
+    log.info("Import complete!")

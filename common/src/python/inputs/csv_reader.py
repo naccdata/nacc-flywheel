@@ -42,7 +42,7 @@ class CSVVisitor(ABC):
 def read_csv(input_file: TextIO,
              error_writer: ErrorWriter,
              visitor: CSVVisitor,
-             delimiters=",",
+             delimiters: str = ",",
              ignore_sniffer_errors: bool = False) -> bool:
     """Reads CSV file and applies the visitor to each row.
 

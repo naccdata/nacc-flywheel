@@ -124,6 +124,7 @@ def unexpected_value_error(field: str,
     Args:
       field: the field name
       value: the unexpected value
+      expected: the expected value
       line: the line number
       message: the error message
     Returns:
@@ -170,13 +171,6 @@ def previous_visit_failed_error(prev_visit: str) -> FileError:
                      error_code='failed-previous-visit',
                      message=(f'Visit file {prev_visit} has to be approved '
                               'before evaluating any subsequent visits'))
-
-
-def invalid_row_error(error_reason: str, index: int) -> FileError:
-    """Creates a FileError when a row is invalid."""
-    return FileError(error_type='error',
-                     error_code='invalid-row',
-                     message=f'Row {index} was invalid: {error_reason}')
 
 
 class ErrorWriter(ABC):

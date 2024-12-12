@@ -57,6 +57,11 @@
             "type": "boolean",
             "default": false
         },
+        "modules": {
+            "description": "Comma-deliminated list of modules to perform the import for. Defaults to 'all', which just means it will run for every subdirectory found under CSV. TODO this could change to an input YAML instead.",
+            "type": "string",
+            "default": "all"
+        },
         "apikey_path_prefix": {
             "description": "The instance specific AWS parameter path prefix for apikey",
             "type": "string",

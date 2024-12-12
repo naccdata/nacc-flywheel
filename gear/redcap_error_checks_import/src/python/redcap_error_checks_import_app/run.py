@@ -1,6 +1,6 @@
 """Entry script for REDCap Import Error Checks."""
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
@@ -28,12 +28,14 @@ class REDCapImportErrorChecksVisitor(GearExecutionEnvironment):
                  client: ClientWrapper,
                  s3_bucket: S3BucketReader,
                  redcap_project: REDCapProject,
+                 modules: List[str],
                  fail_fast: bool = False):
         """Initializer."""
         super().__init__(client=client)
 
         self.__s3_bucket = s3_bucket
         self.__redcap_project = redcap_project
+        self.__modules = modules
         self.__fail_fast = fail_fast
 
     @classmethod
@@ -64,6 +66,9 @@ class REDCapImportErrorChecksVisitor(GearExecutionEnvironment):
         fail_fast: bool = get_config(gear_context=context,
                                      key='fail_fast',
                                      default=False)
+        modules: List[str] = get_config(gear_context=context,
+                                        key='modules',
+                                        default='all').split(',')
 
         try:
             redcap_params = parameter_store.get_redcap_report_parameters(
@@ -85,12 +90,14 @@ class REDCapImportErrorChecksVisitor(GearExecutionEnvironment):
         return REDCapImportErrorChecksVisitor(client=client,
                                               redcap_project=redcap_project,
                                               s3_bucket=s3_bucket,
+                                              modules=modules,
                                               fail_fast=fail_fast)
 
     def run(self, context: GearToolkitContext) -> None:
         run(proxy=self.proxy,
             s3_bucket=self.__s3_bucket,
             redcap_project=self.__redcap_project,
+            modules=self.__modules,
             fail_fast=self.__fail_fast)
 
 def main():

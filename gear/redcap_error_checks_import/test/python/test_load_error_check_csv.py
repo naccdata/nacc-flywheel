@@ -4,16 +4,11 @@ Tests the load_error_check_csv method.
 import pytest
 from io import BytesIO
 
-from outputs.errors import ListErrorWriter
-from redcap_error_checks_import_app.error_check_csv_visitor import ErrorCheckCSVVisitor
+from redcap_error_checks_import_app.error_check_csv_visitor import (
+    ErrorCheckCSVVisitor,
+    ErrorCheckKey,
+)
 from redcap_error_checks_import_app.main import load_error_check_csv
-
-
-@pytest.fixture(scope='function')
-def error_writer():
-    """Creates an ErrorWriter for testing."""
-    return ListErrorWriter(container_id='dummmy-container',
-                           fw_path='dummy-fw-path')
 
 
 @pytest.fixture(scope="module")
@@ -38,15 +33,16 @@ def file(headers):
 @pytest.fixture(scope="module")
 def key():
     """Create dummy key for data."""
-    return "CSV/dummy_module/3.1/I/form_d1a_ivp_error_checks_mc.csv"
+    key_str = "CSV/dummy_module/3.1/I/form_d1a_ivp_error_checks_mc.csv"
+    return ErrorCheckKey.create_from_key(key_str)
 
 
 class TestLoadErrorCheckCSV:
     """Tests the load_error_check_csv method."""
 
-    def test_valid_csv(self, key, file, error_writer):
+    def test_valid_csv(self, key, file):
         """Test loading with valid dummy data."""
-        assert load_error_check_csv(key, file, error_writer) == [{
+        assert load_error_check_csv(key, file) == [{
             "error_code": "d1a-ivp-m-001",
             "error_type": "Error",
             "form_name": "d1a",
@@ -64,12 +60,14 @@ class TestLoadErrorCheckCSV:
     def test_invalid_key(self):
         """Test with an invalid key."""
         with pytest.raises(ValueError) as e:
-            load_error_check_csv("bad/key", None, None)
+            ErrorCheckKey.create_from_key("CSV/bad/key.csv")
 
-        assert str(e.value) == "Expected file to be under " \
+        assert str(e.value) == \
+            "Cannot parse ErrorCheckKey components from CSV/bad/key.csv; " \
+            + "Expected to be of the form " \
             + "CSV / MODULE / FORM_VER / PACKET / filename"
 
-    def test_empty_error_checks(self, key, headers, error_writer):
+    def test_empty_error_checks(self, key, headers):
         """Test when there is only a header"""
         data = {"Body": BytesIO(headers.encode('utf-8'))}
-        assert not load_error_check_csv(key, data, error_writer)
+        assert not load_error_check_csv(key, data)
