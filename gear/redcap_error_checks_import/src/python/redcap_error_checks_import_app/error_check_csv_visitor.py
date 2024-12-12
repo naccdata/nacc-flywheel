@@ -145,12 +145,6 @@ class ErrorCheckCSVVisitor(CSVVisitor):
         Returns:
           True if the row was processed without error, False otherwise
         """
-        # ignore completely empty lines
-        # TODO: should clean up CSVs to not have empty lines so we don't need
-        #       to do this
-        if all([not x for x in row.values()]):
-            return True
-
         error = None
         for field, value in row.items():
             if (not value and field not in self.ALLOWED_EMPTY_FIELDS
@@ -168,7 +162,8 @@ class ErrorCheckCSVVisitor(CSVVisitor):
         if not row.get('error_code').startswith(self.__key.form_name):
             error = unexpected_value_error(field='error_code',
                                            value=row.get('error_code'),
-                                           expected="Start with form_name",
+                                           expected="error_code to start "
+                                                    + "with form_name",
                                            line=line_num)
             self.__error_writer.write(error)
 

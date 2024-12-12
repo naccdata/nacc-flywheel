@@ -30,13 +30,13 @@ def load_error_check_csv(key: ErrorCheckKey,
     error_writer = ListErrorWriter(container_id="local", fw_path="local")
     visitor = ErrorCheckCSVVisitor(key=key, error_writer=error_writer)
 
-    # TODO: ideally want pure utf-8 but a bit difficult with the
+    # Ideally want pure utf-8 but a bit difficult with the
     # way the CSVs are generated
     data = StringIO(file['Body'].read().decode('utf-8-sig'))
     success = read_csv(input_file=data,
                        error_writer=error_writer,
                        visitor=visitor,
-                       skip_sniffer=False)
+                       skip_sniffer=True)
 
     if not success:
         log.error(
