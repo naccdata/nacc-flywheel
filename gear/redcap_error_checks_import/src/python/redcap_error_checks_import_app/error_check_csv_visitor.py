@@ -91,8 +91,6 @@ class ErrorCheckKey(BaseModel):
 
         return 'fvp' if self.packet.startswith('F') else 'ivp'
 
-    def validate_error_code(self) -> FileError:
-
 
 class ErrorCheckCSVVisitor(CSVVisitor):
     """Visitor for an Error Check CSV file."""
