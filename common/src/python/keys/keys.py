@@ -45,6 +45,7 @@ class DefaultValues:
     SESSION_LBL_PRFX = 'FORMS-VISIT-'
     C2TMODE = 1
     LBD_SHORT_VER = 3.1
+    QC_JSON_DIR = 'JSON'
     QC_GEAR = 'form-qc-checker'
     LEGACY_QC_GEAR = 'file-validator'
 

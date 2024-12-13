@@ -61,10 +61,10 @@ class DefinitionsLoader:
             DefinitionException: if error occurred while loading schemas
         """
 
-        s3_prefix = module
-        if input_data.get(FieldNames.FORMVER, None):
-            formver = str(input_data[FieldNames.FORMVER])
-            s3_prefix = f'{s3_prefix}/{formver}'
+        s3_prefix = f'{DefaultValues.QC_JSON_DIR}/{module}/'
+        # Assumes formver is validated earlier in the pipeline at pre-processing checks
+        formver = str(float(input_data.get(FieldNames.FORMVER, 0.0)))
+        s3_prefix = f'{s3_prefix}/{formver}'
 
         if input_data.get(FieldNames.PACKET, None):
             packet = str(input_data[FieldNames.PACKET]).upper()
@@ -72,7 +72,6 @@ class DefinitionsLoader:
 
         schema = self.download_definitions_from_s3(f'{s3_prefix}/rules/',
                                                    optional_forms)
-
         try:
             codes_map: Optional[Dict[
                 str, Dict]] = self.download_definitions_from_s3(
@@ -201,7 +200,7 @@ class DefinitionsLoader:
 
         s3_client = self.__s3_bucket
         try:
-            optional_forms = json.load(s3_client.read_data(self.__opfname))
+            optional_forms_def = json.load(s3_client.read_data(self.__opfname))
         except s3_client.exceptions.NoSuchKey as error:
             message = (f'Optional forms file {self.__opfname} '
                        f'not found in S3 bucket {s3_client.bucket_name}')
@@ -216,23 +215,26 @@ class DefinitionsLoader:
             self.__error_writer.write(system_error(message, None))
             raise DefinitionException(message) from error
 
-        if not optional_forms or module not in optional_forms:
-            log.warning('Cannot find optional forms info for module %s',
-                        module)
+        if not optional_forms_def:
+            log.warning('Optional forms information not defined')
             return None
 
-        module_info = optional_forms[module]
+        formver = str(float(input_data.get(FieldNames.FORMVER, 0.0)))
+
         # some modules may not have separate packet codes, set to 'D' for default
         packet = input_data.get(FieldNames.PACKET, 'D')
-        if packet not in module_info:
-            log.warning('Cannot find optional forms info for packet %s/%s',
-                        module, packet)
+
+        try:
+            optional_forms: List[str] = optional_forms_def[module][formver][
+                packet]
+        except KeyError:
+            log.warning('Optional forms info not available for %s/%s/%s',
+                        module, formver, packet)
             return None
 
-        packet_info: List[str] = module_info[packet]
         missing = []
         submission_status = {}
-        for form in packet_info:
+        for form in optional_forms:
             mode_var = f'{FieldNames.MODE}{form}'
             if not input_data.get(mode_var):
                 if self.__strict:

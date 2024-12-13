@@ -79,7 +79,7 @@ class DatastoreHelper(Datastore):
                         self.__legacy_label, self.__gid)
             return None
 
-        if len(projects) > 0:
+        if len(projects) > 1:
             log.warning(
                 'More than one matching project with label %s in group %s',
                 self.__legacy_label, self.__gid)
