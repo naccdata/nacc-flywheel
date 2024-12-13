@@ -19,9 +19,7 @@ log = logging.getLogger(__name__)
 class CSVVisitorCenterSplitter(CSVVisitor):
     """Class for visiting each row in CSV."""
 
-    def __init__(self,
-                 adcid_key: str,
-                 error_writer: ListErrorWriter):
+    def __init__(self, adcid_key: str, error_writer: ListErrorWriter):
         """Initializer."""
         self.__adcid_key: str = adcid_key
         self.__error_writer: ListErrorWriter = error_writer
@@ -172,8 +170,9 @@ def run(*,
         project = project_map[f'adcid-{adcid}']
         filename = f'{adcid}_{input_filename}'
 
-        log.info(f"Uploading {filename} for project {project.label} " + # type: ignore
-                 f"ADCID {adcid} with project ID {project.id}")         # type: ignore
+        log.info(f"Uploading {filename} for project {project.label} "
+                 +  # type: ignore
+                 f"ADCID {adcid} with project ID {project.id}")  # type: ignore
 
         contents = write_csv_to_stream(headers=visitor.headers,
                                        data=data,
