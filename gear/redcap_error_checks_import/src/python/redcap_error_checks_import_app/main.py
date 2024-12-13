@@ -34,8 +34,7 @@ def load_error_check_csv(key: ErrorCheckKey,
     data = StringIO(file['Body'].read().decode('utf-8'))
     success = read_csv(input_file=data,
                        error_writer=error_writer,
-                       visitor=visitor,
-                       skip_sniffer=True)
+                       visitor=visitor)
 
     if not success:
         log.error(
