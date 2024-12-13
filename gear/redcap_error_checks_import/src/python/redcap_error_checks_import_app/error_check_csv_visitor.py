@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from inputs.csv_reader import CSVVisitor
 from outputs.errors import (
+    FileError,
     ListErrorWriter,
     empty_field_error,
     missing_field_error,
@@ -78,6 +79,19 @@ class ErrorCheckKey(BaseModel):
             f"Cannot parse ErrorCheckKey components from {key}; " +
             "Expected to be of the form " +
             "CSV / MODULE / FORM_VER / PACKET / filename")
+
+    def get_visit_type(self) -> str:
+        """Determine visit type from packet.
+
+        Returns:
+            The visit type
+        """
+        if self.packet == 'I4':
+            return 'i4vp'
+
+        return 'fvp' if self.packet.startswith('F') else 'ivp'
+
+    def validate_error_code(self) -> FileError:
 
 
 class ErrorCheckCSVVisitor(CSVVisitor):
@@ -169,10 +183,21 @@ class ErrorCheckCSVVisitor(CSVVisitor):
                                            line=line_num)
             self.__error_writer.write(error)
 
-        if row.get('packet') != self.__key.packet:
-            error = unexpected_value_error('packet', row.get('packet'),
-                                           self.__key.packet, line_num)
-            self.__error_writer.write(error)
+        # check packet is consistent
+        if self.__key.packet:
+            visit_type = self.__key.get_visit_type()
+            if visit_type not in row.get('error_code', ''):
+                error = unexpected_value_error(field='error_code',
+                                               value=row.get('error_code'),
+                                               expected="error_code to have "
+                                                        + visit_type,
+                                               line=line_num)
+                self.__error_writer.write(error)
+
+            if row.get('packet') != self.__key.packet:
+                error = unexpected_value_error('packet', row.get('packet'),
+                                               self.__key.packet, line_num)
+                self.__error_writer.write(error)
 
         if self.__error_writer.errors():
             return False

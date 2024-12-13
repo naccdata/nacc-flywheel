@@ -58,9 +58,8 @@ def data():
 
 
 class TestErrorCheckKey:
-    """Tests the ErrorCheckKey class. The other tests
-    require working cases so these test cases just check
-    the invalid ones.
+    """Tests the ErrorCheckKey class. For creation, the other
+    tests test the valid case so not needed here.
     """
 
     def test_invalid_key(self):
@@ -84,6 +83,25 @@ class TestErrorCheckKey:
             ErrorCheckKey.create_from_key(key)
 
         assert str(e.value) == "Expected CSV at top level of S3 key"
+
+    def test_get_visit_type(self):
+        """Test get visit type."""
+        base_key = \
+            'CSV/module/1.0/REPLACE/form_dummy_error_checks.csv'
+
+        for packet in ['F', 'FF', 'FL']:
+            key = base_key.replace('REPLACE', packet)
+            key = ErrorCheckKey.create_from_key(key)
+            assert key.get_visit_type() == 'fvp'
+
+        for packet in ['I', 'IF', 'IL']:
+            key = base_key.replace('REPLACE', packet)
+            key = ErrorCheckKey.create_from_key(key)
+            assert key.get_visit_type() == 'ivp'
+
+        key = base_key.replace('REPLACE', 'I4')
+        key = ErrorCheckKey.create_from_key(key)
+        assert key.get_visit_type() == 'i4vp'
 
 
 class TestErrorCheckCSVVisitor:
@@ -134,7 +152,7 @@ class TestErrorCheckCSVVisitor:
         assert not visitor.visit_row(data, 1)
 
         errors = visitor.error_writer.errors()
-        assert len(errors) == 13
+        assert len(errors) == 14
         for error in errors:
             assert error['message'].endswith("is required") or \
                 error['message'].startswith('Expected')
@@ -198,7 +216,7 @@ class TestErrorCheckCSVVisitor:
         assert visitor.visit_header(headers)
 
         data = {
-            "error_code": "uds_header-ivp-m-001",
+            "error_code": "uds_header-fvp-m-001",
             "error_no": "1",  # should not be in final output
             "error_type": "Error",
             "form_name": "uds_header",
@@ -217,7 +235,7 @@ class TestErrorCheckCSVVisitor:
         }
         assert visitor.visit_row(data, 1)
         assert visitor.validated_error_checks == [{
-            "error_code": "uds_header-ivp-m-001",
+            "error_code": "uds_header-fvp-m-001",
             "error_type": "Error",
             "form_name": "uds_header",
             "packet": "F",
