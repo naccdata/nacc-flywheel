@@ -1,12 +1,12 @@
-"""Entrypoint script for the csv-to-json transformer app."""
+"""Entry script for Form CSV to JSON Transformer."""
 
 import logging
-import sys
 from typing import Dict, Optional
 
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
-from flywheel_gear_toolkit import GearToolkitContext
+from flywheel_gear_toolkit.context.context import GearToolkitContext
+from form_csv_app.main import run
 from gear_execution.gear_execution import (
     ClientWrapper,
     GearBotClient,
@@ -18,16 +18,13 @@ from gear_execution.gear_execution import (
 from inputs.parameter_store import ParameterStore
 from outputs.errors import ListErrorWriter
 from pydantic import ValidationError
-from uploads.uploader import LabelTemplate, UploadTemplateList
+from transform.transformer import FieldTransformations, TransformerFactory
 
-from csv_app.main import run
-
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
-class CsvToJsonVisitor(GearExecutionEnvironment):
-    """The gear execution visitor for the csv-to-json-transformer app."""
+class FormCSVtoJSONTransformer(GearExecutionEnvironment):
+    """Visitor for the templating gear."""
 
     def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
                  transform_input: Optional[InputFileWrapper],
@@ -39,8 +36,10 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
 
     @classmethod
     def create(
-            cls, context: GearToolkitContext,
-            parameter_store: Optional[ParameterStore]) -> 'CsvToJsonVisitor':
+        cls,
+        context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore] = None
+    ) -> 'FormCSVtoJSONTransformer':
         """Creates a gear execution object.
 
         Args:
@@ -69,10 +68,10 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
         if not hierarchy_labels:
             raise GearExecutionError("Expecting non-empty label templates")
 
-        return CsvToJsonVisitor(client=client,
-                                file_input=file_input,
-                                transform_input=transform_input,
-                                hierarchy_labels=hierarchy_labels)
+        return FormCSVtoJSONTransformer(client=client,
+                                        file_input=file_input,
+                                        transform_input=transform_input,
+                                        hierarchy_labels=hierarchy_labels)
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the CSV to JSON Transformer app.
@@ -94,8 +93,6 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             raise GearExecutionError(
                 f'Failed to find the project with ID {file.parents.project}')
 
-        template_map = self.__load_template(self.__hierarchy_labels)
-
         with open(self.__file_input.filepath, mode='r',
                   encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(container_id=file_id,
@@ -103,7 +100,8 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             success = run(input_file=csv_file,
                           destination=ProjectAdaptor(project=project,
                                                      proxy=proxy),
-                          template_map=template_map,
+                          transformer_factory=self.__build_transformer(
+                              self.__transform_input),
                           error_writer=error_writer)
 
             context.metadata.add_qc_result(self.__file_input.file_input,
@@ -116,34 +114,37 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                                                'name',
                                                'csv-to-json-transformer'))
 
-    def __load_template(
-            self, template_list: Dict[str, str]) -> Dict[str, LabelTemplate]:
-        """Creates the list of label templates from the input objects.
+    def __build_transformer(
+            self, transformer_input: Optional[InputFileWrapper]
+    ) -> TransformerFactory:
+        """Loads the transformation file and creates a transformer factory.
+
+        If the input is None, returns a factory for empty transformations.
+        Otherwise, loads the file as a FileTransformations object and creates
+        a factory using those.
 
         Args:
-          template_list: dictionary with label template details
+          transformer_input: the input file wrapper
         Returns:
-          Dictionary from label types to label template object
-        Raises:
-          GearExecutionError if the model validation fails
+          the TransformerFactory for the input
         """
-        try:
-            upload_templates = UploadTemplateList.model_validate(template_list)
-        except ValidationError as error:
-            raise GearExecutionError('Error reading label templates: '
-                                     f'{error}') from error
+        if not transformer_input:
+            return TransformerFactory(FieldTransformations())
 
-        return {
-            template_info.type: LabelTemplate(template_info)
-            for template_info in upload_templates
-        }
+        with open(transformer_input.filepath, mode='r',
+                  encoding='utf-8') as json_file:
+            try:
+                return TransformerFactory(
+                    FieldTransformations.model_validate_json(json_file.read()))
+            except ValidationError as error:
+                raise GearExecutionError('Error reading transformation file'
+                                         f'{error}') from error
 
 
 def main():
-    """Gear main method to transform CSV where row is participant data to set
-    of JSON files, one per participant."""
+    """Main method for Form CSV to JSON Transformer."""
 
-    GearEngine.create_with_parameter_store().run(gear_type=CsvToJsonVisitor)
+    GearEngine().run(gear_type=FormCSVtoJSONTransformer)
 
 
 if __name__ == "__main__":
