@@ -29,10 +29,10 @@ class DummyVisitor(StudyVisitor):
 @pytest.fixture(scope='module')
 def dummy_center():
     """Generate dummy CenterInfo for general testing."""
-    return CenterInfo(tags=['adcid-7'],
+    return CenterInfo(adcid=7,
                       name="Alpha ADRC",
                       group='alpha-adrc',
-                      adcid=7)
+                      tags=('adcid-7',))
 
 
 @pytest.fixture(scope='function')
@@ -56,8 +56,8 @@ class TestCenterInfo:
         """Check that model is created correctly from dict, and the equality
         matches."""
         center = CenterInfo(
-            **{
-                'tags': ['adcid-7'],
+            **{  # type: ignore
+                'tags': ('adcid-7',),
                 'name': 'Alpha ADRC',
                 'center-id': 'alpha-adrc',
                 'adcid': 7,
@@ -68,10 +68,10 @@ class TestCenterInfo:
     def test_invalid_creation(self):
         """Test invalid creation."""
         with pytest.raises(ValidationError):
-            CenterInfo()
+            CenterInfo()  # type: ignore
 
         with pytest.raises(ValidationError):
-            CenterInfo(tags=['adcid-7'], name="Alpha ADRC", adcid=7)
+            CenterInfo(tags=('adcid-7',), name="Alpha ADRC", adcid=7)  # type: ignore
 
     def test_apply(self, dummy_center):
         """Test that visitor applied."""
