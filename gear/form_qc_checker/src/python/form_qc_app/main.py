@@ -189,7 +189,7 @@ def run(  # noqa: C901
 
     gid = file.parents.group
     adcid = admin_group.get_adcid(gid)
-    if not adcid:
+    if adcid is None:
         raise GearExecutionError(f'Failed to find ADCID for group: {gid}')
 
     datastore = DatastoreHelper(pk_field=pk_field,
