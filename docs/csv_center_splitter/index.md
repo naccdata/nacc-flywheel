@@ -10,7 +10,6 @@ Along with the input CSV to split, the gear takes in a config YAML with the foll
 adcid_key: <column name from the input CSV with the ADCID>
 target_project: <name of the target Flywheel project to write results to per center>
 staging_project_id: <ID of the staging Flywheel project to stage results to; will override target_project if specified>
-allow_merged_cells: <whether or not to allow merged cells in the input CSV>
 delimiter: <delimiter of the CSV, defaults to ','>
 local_run: <true if running on a local input file>
 dry_run: <whether or not this is a dry run - if so, will do everything except upload to Flywheel>
@@ -26,5 +25,4 @@ Some additional notes:
 ```yaml
 adcid_key: ADCID
 target_project: distribution-ncrad-biomarker
-allow_merged_cells: true
 ```

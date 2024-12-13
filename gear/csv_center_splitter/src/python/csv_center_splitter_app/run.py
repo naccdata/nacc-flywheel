@@ -29,7 +29,6 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
                  adcid_key: str,
                  target_project: str,
                  staging_project_id: Optional[str] = None,
-                 allow_merged_cells: bool = False,
                  delimiter: str = ',',
                  local_run: bool = False):
         super().__init__(client=client)
@@ -38,7 +37,6 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
         self.__adcid_key = adcid_key
         self.__target_project = target_project
         self.__staging_project_id = staging_project_id
-        self.__allow_merged_cells = allow_merged_cells
         self.__delimiter = delimiter
         self.__local_run = local_run
 
@@ -74,7 +72,6 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
         if not adcid_key:
             raise GearExecutionError("No ADCID key provided")
 
-        allow_merged_cells = context.config.get('allow_merged_cells', False)
         delimiter = context.config.get('delimiter', ',')
         local_run = context.config.get('local_run', False)
 
@@ -84,7 +81,6 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
             adcid_key=adcid_key,
             target_project=target_project,
             staging_project_id=staging_project_id,
-            allow_merged_cells=allow_merged_cells,
             delimiter=delimiter,
             local_run=local_run)
 
@@ -115,7 +111,6 @@ class CSVCenterSplitterVisitor(GearExecutionEnvironment):
                 adcid_key=self.__adcid_key,
                 target_project=self.__target_project,
                 staging_project_id=self.__staging_project_id,
-                allow_merged_cells=self.__allow_merged_cells,
                 delimiter=self.__delimiter)
 
 

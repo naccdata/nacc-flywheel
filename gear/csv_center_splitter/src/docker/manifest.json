@@ -56,11 +56,6 @@
             "type": "string",
             "default": ""
         },
-        "allow_merged_cells": {
-            "description": "Allow merged cells; if a row is missing an ADCID it assumes it's the same as the previous row(s)",
-            "type": "boolean",
-            "default": false
-        },
         "delimiter": {
             "description": "The input file delimiter",
             "type": "string",

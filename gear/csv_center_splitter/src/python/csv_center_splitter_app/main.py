@@ -21,16 +21,12 @@ class CSVVisitorCenterSplitter(CSVVisitor):
 
     def __init__(self,
                  adcid_key: str,
-                 error_writer: ListErrorWriter,
-                 allow_merged_cells: bool = False):
+                 error_writer: ListErrorWriter):
         """Initializer."""
         self.__adcid_key: str = adcid_key
         self.__error_writer: ListErrorWriter = error_writer
         self.__split_data: Dict[int, List[str]] = {}
         self.__headers: List[str] = []
-
-        self.__allow_merged_cells = allow_merged_cells
-        self.__prev_adcid: Optional[int] = None
 
     @property
     def adcid_key(self):
@@ -87,17 +83,13 @@ class CSVVisitorCenterSplitter(CSVVisitor):
         """
         adcid = row[self.adcid_key]
         if not adcid:
-            if self.__allow_merged_cells:
-                adcid = self.__prev_adcid
-            else:
-                message = f"Row {line_num} was invalid: Missing ADCID value"
-                error = empty_field_error(field=self.adcid_key,
-                                          line=line_num,
-                                          message=message)
-                self.__error_writer.write(error)
-                return False
+            message = f"Row {line_num} was invalid: Missing ADCID value"
+            error = empty_field_error(field=self.adcid_key,
+                                      line=line_num,
+                                      message=message)
+            self.__error_writer.write(error)
+            return False
 
-        self.__prev_adcid = adcid
         if adcid not in self.split_data:
             self.split_data[adcid] = []
 
@@ -113,7 +105,6 @@ def run(*,
         adcid_key: str,
         target_project: str,
         staging_project_id: Optional[str] = None,
-        allow_merged_cells: bool = False,
         delimiter: str = ','):
     """Runs the CSV Center Splitter. Splits an input CSV by ADCID and uploads
     to each center's target project.
@@ -130,12 +121,10 @@ def run(*,
 
         staging_project_id: Project ID to stage results to; will override
                             target_project if specified
-        allow_merged_cells: Whether or not to allow merged cells
         delimiter: The CSV's delimiter; defaults to ','
     """
     # split CSV by ADCID key
-    visitor = CSVVisitorCenterSplitter(adcid_key, error_writer,
-                                       allow_merged_cells)
+    visitor = CSVVisitorCenterSplitter(adcid_key, error_writer)
     success = read_csv(input_file=input_file,
                        error_writer=error_writer,
                        visitor=visitor,
