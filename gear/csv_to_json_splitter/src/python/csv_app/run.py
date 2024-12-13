@@ -113,8 +113,7 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
 
             context.metadata.add_file_tags(self.__file_input.file_input,
                                            tags=context.manifest.get(
-                                               'name',
-                                               'csv-subject-splitter'))
+                                               'name', 'csv-subject-splitter'))
 
     def __load_template(
             self, template_list: Dict[str, str]) -> Dict[str, LabelTemplate]:

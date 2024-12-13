@@ -111,8 +111,7 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
 
             context.metadata.add_file_tags(self.__file_input.file_input,
                                            tags=context.manifest.get(
-                                               'name',
-                                               'form-transformer'))
+                                               'name', 'form-transformer'))
 
     def __build_transformer(
             self, transformer_input: Optional[InputFileWrapper]
