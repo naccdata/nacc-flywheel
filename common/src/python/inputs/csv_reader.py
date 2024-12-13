@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, TextIO
 from outputs.errors import (
     ErrorWriter,
     empty_file_error,
-    invalid_header_error,
     malformed_file_error,
 )
 
@@ -65,9 +64,9 @@ def read_csv(input_file: TextIO,
         error_writer.write(missing_header_error())
         return False
 
+    # visitor should handle errors for invalid headers/rows
     success = visitor.visit_header(list(reader.fieldnames))
     if not success:
-        error_writer.write(invalid_header_error())
         return False
 
     try:
