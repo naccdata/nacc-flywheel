@@ -1,7 +1,7 @@
 """Defines utilities for writing data files."""
 
 from abc import ABC, abstractmethod
-from csv import DictWriter
+from csv import DictWriter, QUOTE_MINIMAL
 from io import StringIO
 from typing import Any, Dict, List, Optional, TextIO
 
@@ -15,7 +15,8 @@ class CSVWriter:
     def __init__(self, stream: TextIO, fieldnames: List[str]) -> None:
         self.__writer = DictWriter(stream,
                                    fieldnames=fieldnames,
-                                   dialect='unix')
+                                   dialect='unix',
+                                   quoting=QUOTE_MINIMAL)
         self.__header_written = False
 
     def __write_header(self):

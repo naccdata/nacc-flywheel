@@ -128,7 +128,7 @@ def run(*,
     success = read_csv(input_file=input_file,
                        error_writer=error_writer,
                        visitor=visitor,
-                       delimiters=delimiter)
+                       delimiter=delimiter)
 
     if not success:
         log.error(
