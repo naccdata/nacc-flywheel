@@ -1,6 +1,7 @@
 """Defines REDCap Import Error Checks."""
 import json
 import logging
+from collections import Counter
 from io import StringIO
 from typing import Any, Dict, List
 
@@ -72,6 +73,11 @@ def run(*,
         log.error(f"No files found in {bucket}/CSV")
         return
 
+    # keep track if import status
+    total_records = 0
+    all_error_codes = []
+    failed_files = []
+
     for key, file in file_objects.items():
         if not key.endswith('.csv'):
             continue
@@ -84,6 +90,13 @@ def run(*,
         full_path = f"s3://{bucket}/{error_key.full_path}"
         log.info(f"Loading error checks from {full_path}")
         error_checks = load_error_check_csv(error_key, file)
+        all_error_codes.extend(x['error_code'] for x in error_checks)
+
+        # ensure no duplicates
+        duplicates = [k for k, v in Counter(all_error_codes).items() if v > 1]
+        if duplicates:
+            log.error(f"Found duplicated errors, will not import file: {duplicates}")
+            error_checks = None
 
         if not error_checks:
             if fail_fast:
@@ -91,6 +104,7 @@ def run(*,
                 return
             else:
                 log.info("Errors encountered, continuing to next file")
+                failed_files.append(key)
                 continue
 
         if proxy.dry_run:
@@ -102,7 +116,13 @@ def run(*,
             num_records = redcap_project.import_records(
                 json.dumps(error_checks), data_format='json')
             log.info(f"Imported {num_records} records from {full_path}")
+            total_records += num_records
         except REDCapConnectionError as error:
             raise GearExecutionError(error.message) from error
 
-    log.info("Import complete!")
+    # if we did not fail fast before, fail now
+    if failed_files:
+        raise GearExecutionError("Failed to import the following:\n"
+            + "\n".join(failed_files))
+
+    log.info(f"Import complete! Imported {total_records} total records")
