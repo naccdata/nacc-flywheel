@@ -1,4 +1,4 @@
-"""Entrypoint script for the csv-to-json transformer app."""
+"""Entrypoint script for the csv-subject splitter app."""
 
 import logging
 import sys
@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 
 class CsvToJsonVisitor(GearExecutionEnvironment):
-    """The gear execution visitor for the csv-to-json-transformer app."""
+    """The gear execution visitor for the csv-subject-splitter app."""
 
     def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
                  transform_input: Optional[InputFileWrapper],
@@ -114,7 +114,7 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             context.metadata.add_file_tags(self.__file_input.file_input,
                                            tags=context.manifest.get(
                                                'name',
-                                               'csv-to-json-transformer'))
+                                               'csv-subject-splitter'))
 
     def __load_template(
             self, template_list: Dict[str, str]) -> Dict[str, LabelTemplate]:

@@ -1,5 +1,5 @@
 {
-    "name": "csv-to-json-transformer",
+    "name": "csv-subject-splitter",
     "label": "CSV to JSON Transformer",
     "description": "Converts rows of CSV file to JSON files",
     "version": "0.0.11",
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/csv-to-json-transformer:0.0.11"
+            "image": "naccdata/csv-subject-splitter:0.0.11"
         },
         "flywheel": {
             "suite": "Curation",

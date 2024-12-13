@@ -83,8 +83,8 @@ def nonvisit_data_stream(valid_nonvisit_table):
     yield stream
 
 
-class TestCSVTransformVisitor:
-    """Tests csv-to-json transformation."""
+class TestCSVSplitVisitor:
+    """Tests csv-subject transformation."""
 
     def test_missing_column_headers(self, missing_columns_stream):
         """test missing expected column headers."""
