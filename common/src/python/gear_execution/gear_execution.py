@@ -223,7 +223,8 @@ class InputFileWrapper:
             str(optional): module name if a match found, else None
         """
         module = None
-        pattern = '^.*-([a-z]+v[0-9])\\.(\\bcsv\\b|\\bjson\\b)$'
+        # pattern = '^.*-([a-z]+v[0-9])\\.(\\bcsv\\b|\\bjson\\b)$'
+        pattern = '^.*-([a-zA-Z])\\.(\\bcsv\\b|\\bjson\\b)$'
         if match := re.search(pattern, self.filename, re.IGNORECASE):
             module = match.group(1)
 
