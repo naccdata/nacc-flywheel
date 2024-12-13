@@ -18,12 +18,10 @@ class CenterInfo(BaseModel):
     """
     adcid: int
     name: str
-    group: str = Field(validation_alias=AliasChoices('center_id',
-                                                     'center-id',
-                                                     'group'))
-    active: Optional[bool] = Field(validation_alias=AliasChoices('active',
-                                                                 'is-active',
-                                                                 'is_active'),
+    group: str = Field(
+        validation_alias=AliasChoices('center_id', 'center-id', 'group'))
+    active: Optional[bool] = Field(validation_alias=AliasChoices(
+        'active', 'is-active', 'is_active'),
                                    default=True)
     tags: Optional[Tuple[str, ...]] = ()
 
