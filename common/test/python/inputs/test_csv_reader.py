@@ -79,11 +79,26 @@ def empty(stream) -> bool:
 class DummyVisitor(CSVVisitor):
     """Dummy CSV Visitor class for testing."""
 
-    def __init__(self) -> None:
-        pass
-
     def visit_header(self, header: List[str]) -> bool:
         return header is not None
+
+    def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
+        return row is not None
+
+
+class NonNumericHeaderVisitor(CSVVisitor):
+    """Dummy CSV Visitor class for testing, which
+    explicitly says the header cannot be numeric.
+    """
+
+    def visit_header(self, header: List[str]) -> bool:
+        try:
+            for x in header:
+                float(x)
+        except ValueError:
+            return True
+
+        return False
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         return row is not None
@@ -110,19 +125,19 @@ class TestCSVReader:
         row = next(reader)
         assert row['message'] == 'Empty input file'
 
-    def test_no_header_stream(self, no_header_stream):
-        """Test stream without header row."""
+    def test_invalid_header_stream(self, no_header_stream):
+        """Test stream with invalid header row."""
         err_stream = StringIO()
         success = read_csv(input_file=no_header_stream,
                            error_writer=StreamErrorWriter(
                                stream=err_stream,
                                container_id='dummy',
                                fw_path='dummy-path'),
-                           visitor=DummyVisitor())
+                           visitor=NonNumericHeaderVisitor())
         assert not success
         assert not empty(err_stream)
         err_stream.seek(0)
         reader = csv.DictReader(err_stream, dialect='unix')
         assert reader.fieldnames
         row = next(reader)
-        assert row['message'] == 'No file header found'
+        assert row['message'] == 'Invalid header'

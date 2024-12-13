@@ -88,6 +88,13 @@ def missing_header_error() -> FileError:
                      message='No file header found')
 
 
+def invalid_header_error() -> FileError:
+    """Creates a FileError for an invalid header."""
+    return FileError(error_type='error',
+                     error_code='invalid-header',
+                     message='Invalid header')
+
+
 def missing_field_error(field: str) -> FileError:
     """Creates a FileError for a missing field in header."""
     return FileError(error_type='error',
