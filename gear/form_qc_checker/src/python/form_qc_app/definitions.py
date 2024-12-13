@@ -61,7 +61,7 @@ class DefinitionsLoader:
             DefinitionException: if error occurred while loading schemas
         """
 
-        s3_prefix = f'{DefaultValues.QC_JSON_DIR}/{module}/'
+        s3_prefix = f'{DefaultValues.QC_JSON_DIR}/{module}'
         # Assumes formver is validated earlier in the pipeline at pre-processing checks
         formver = str(float(input_data.get(FieldNames.FORMVER, 0.0)))
         s3_prefix = f'{s3_prefix}/{formver}'
