@@ -188,9 +188,9 @@ class InputFileWrapper:
         is_optional = context.manifest.get("inputs", {}).get(
             input_name, {}).get("optional", False)
 
-        if not file_input and is_optional:
-            return None
-
+        if not file_input:
+            if is_optional:
+                return None
             raise GearExecutionError(f'Missing input file {input_name}')
 
         if file_input["base"] != "file":
