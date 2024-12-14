@@ -45,14 +45,16 @@ class DefinitionsLoader:
         *,
         input_data: dict[str, Any],
         module: str,
-        optional_forms: Optional[Dict[str, bool]] = None
+        optional_forms: Optional[Dict[str, bool]] = None,
+        skip_forms: Optional[List[str]] = None
     ) -> tuple[Dict[str, Mapping], Optional[Dict[str, Dict]]]:
         """Download QC rule definitions and error code mappings from S3 bucket.
 
         Args:
             input_data: input data record
             module: module name,
-            optional_forms(optional): Submission status of each optional form
+            optional_forms (optional): Submission status of each optional form
+            skip_forms (optional): List of form names to skip
 
         Returns:
             rule definition schema, code mapping schema (optional)
@@ -71,11 +73,12 @@ class DefinitionsLoader:
             s3_prefix = f'{s3_prefix}/{packet}'
 
         schema = self.download_definitions_from_s3(f'{s3_prefix}/rules/',
-                                                   optional_forms)
+                                                   optional_forms, skip_forms)
         try:
             codes_map: Optional[Dict[
                 str, Dict]] = self.download_definitions_from_s3(
-                    f'{s3_prefix}/codes/', optional_forms)  # type: ignore
+                    f'{s3_prefix}/codes/', optional_forms,
+                    skip_forms)  # type: ignore
             # TODO - validate code mapping schema
         except DefinitionException as error:
             log.warning(error)
@@ -92,8 +95,10 @@ class DefinitionsLoader:
         return schema, codes_map
 
     def download_definitions_from_s3(  # noqa: C901
-            self, prefix: str,
-            optional_forms: Optional[Dict[str, bool]]) -> Dict[str, Mapping]:
+            self,
+            prefix: str,
+            optional_forms: Optional[Dict[str, bool]] = None,
+            skip_forms: Optional[List[str]] = None) -> Dict[str, Mapping]:
         """Download rule definition files from a source S3 bucket and generate
         validation schema. For optional forms, there are two definition files
         in the S3 bucket. Load the appropriate definition depending on whether
@@ -102,6 +107,7 @@ class DefinitionsLoader:
         Args:
             prefix: S3 path prefix
             optional_forms (optional): Submission status of each optional form
+            skip_forms (optional): List of form names to skip
 
         Returns:
             dict[str, Mapping[str, object]: Schema object from rule definitions
@@ -124,22 +130,24 @@ class DefinitionsLoader:
 
         parser_error = False
         for key, file_object in rule_defs.items():
-            if optional_forms:
-                # Select which file to load depending on form is submitted or not
-                filename = key.removeprefix(prefix)
-                formname = filename.partition('_')[0]
-                optional_def = filename.endswith('_optional.json')
+            filename = key.removeprefix(prefix)
+            formname = filename.partition('_')[0]
 
-                if formname in optional_forms:
-                    if optional_forms[formname]:  # form is submitted
-                        if optional_def:
-                            continue  # skip optional schema
-                    else:  # form not submitted
-                        if not optional_def:
-                            continue  # skip regular schema
+            if skip_forms and formname in skip_forms:
+                log.info('Skipping definition file: %s', key)
+                continue
+
+            # Select which definition to load depending on form is submitted or not
+            if optional_forms and formname in optional_forms:
+                optional_def = filename.endswith('_optional.json')
+                if optional_forms[formname] and optional_def:
+                    continue  # form is submitted, skip optional schema
+
+                if not optional_forms[formname] and not optional_def:
+                    continue  # form not submitted, skip regular schema
 
             if 'Body' not in file_object:
-                log.error('Failed to load the rule definition file: %s', key)
+                log.error('Failed to load the definition file: %s', key)
                 parser_error = True
                 continue
 
@@ -154,8 +162,8 @@ class DefinitionsLoader:
                 elif 'yaml' in rules_type:
                     form_def = yaml.safe_load(file_data)
                 else:
-                    log.error('Unhandled rule definition file type: %s - %s',
-                              key, rules_type)
+                    log.error('Unhandled definition file type: %s - %s', key,
+                              rules_type)
                     parser_error = True
                     continue
 
@@ -164,18 +172,18 @@ class DefinitionsLoader:
                 # It is assumed all variable names are unique within a project
                 if form_def:
                     full_schema.update(form_def)
-                    log.info('Parsed rule definition file: %s', key)
+                    log.info('Parsed definition file: %s', key)
                 else:
-                    log.error('Empty rule definition file: %s', key)
+                    log.error('Empty definition file: %s', key)
                     parser_error = True
             except (JSONDecodeError, yaml.YAMLError, TypeError) as error:
-                log.error('Failed to parse the rule definition file: %s - %s',
-                          key, error)
+                log.error('Failed to parse the definition file: %s - %s', key,
+                          error)
                 parser_error = True
 
         if parser_error:
             raise DefinitionException(
-                'Error(s) occurred while loading rule definitions')
+                'Error(s) occurred while loading definition schemas')
 
         return full_schema
 
