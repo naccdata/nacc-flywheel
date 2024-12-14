@@ -48,6 +48,7 @@ class DefaultValues:
     QC_JSON_DIR = 'JSON'
     QC_GEAR = 'form-qc-checker'
     LEGACY_QC_GEAR = 'file-validator'
+    MAX_POOL_CONNECTIONS = 50
 
 
 class MetadataKeys:
