@@ -1,7 +1,6 @@
 """Defines REDCap Import Error Checks."""
 import json
 import logging
-from collections import Counter
 from io import StringIO
 from typing import Any, Dict, List
 
@@ -13,7 +12,8 @@ from redcap.redcap_connection import REDCapConnectionError
 from redcap.redcap_project import REDCapProject
 from s3.s3_client import S3BucketReader
 
-from .error_check_csv_visitor import ErrorCheckCSVVisitor, ErrorCheckKey
+from .utils import ErrorCheckImportStats, ErrorCheckKey
+from .visitor import ErrorCheckCSVVisitor
 
 log = logging.getLogger(__name__)
 
@@ -73,10 +73,7 @@ def run(*,
         return
 
     # keep track if import status
-    total_records = 0
-    all_error_codes = []
-    failed_files = []
-
+    stats = ErrorCheckImportStats()
     for key, file in file_objects.items():
         if not key.endswith('.csv'):
             continue
@@ -89,10 +86,8 @@ def run(*,
         full_path = f"s3://{bucket}/{error_key.full_path}"
         log.info(f"Loading error checks from {full_path}")
         error_checks = load_error_check_csv(error_key, file)
-        all_error_codes.extend(x['error_code'] for x in error_checks)
 
-        # ensure no duplicates
-        duplicates = [k for k, v in Counter(all_error_codes).items() if v > 1]
+        duplicates = stats.add_error_codes([x['error_code'] for x in error_checks])
         if duplicates:
             log.error(f"Found duplicated errors, will not import file: {duplicates}")
             error_checks = None
@@ -103,7 +98,7 @@ def run(*,
                 return
             else:
                 log.info("Errors encountered, continuing to next file")
-                failed_files.append(key)
+                stats.add_failed_file(key)
                 continue
 
         if proxy.dry_run:
@@ -115,13 +110,13 @@ def run(*,
             num_records = redcap_project.import_records(
                 json.dumps(error_checks), data_format='json')
             log.info(f"Imported {num_records} records from {full_path}")
-            total_records += num_records
+            stats.add_to_total_records(num_records)
         except REDCapConnectionError as error:
             raise GearExecutionError(error.message) from error
 
     # if we did not fail fast before, fail now
-    if failed_files:
+    if stats.failed_files:
         raise GearExecutionError("Failed to import the following:\n"
-            + "\n".join(failed_files))
+            + "\n".join(stats.failed_files))
 
-    log.info(f"Import complete! Imported {total_records} total records")
+    log.info(f"Import complete! Imported {stats.total_records} total records")

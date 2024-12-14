@@ -1,95 +1,18 @@
 """Module to handle downloading error check CSVs from S3."""
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from inputs.csv_reader import CSVVisitor
 from outputs.errors import (
-    FileError,
     ListErrorWriter,
     empty_field_error,
     missing_field_error,
     unexpected_value_error,
 )
-from pydantic import BaseModel
+
+from .utils import ErrorCheckKey
 
 log = logging.getLogger(__name__)
-
-
-class ErrorCheckKey(BaseModel):
-    """Pydantic model for the error check key.
-
-    Expects to be of the form:
-        CSV / MODULE / FORM_VER / PACKET /
-            form_<FORM_NAME>_<PACKET>_error_checks_<type>.csv
-
-    except for ENROLL, which is of the form:
-        CSV / ENROLL / FORM_VER / naccid-enrollment-
-            form_error_checks_<type>.csv
-    """
-
-    full_path: str
-    csv: str
-    module: str
-    form_ver: str
-    filename: str
-    form_name: str
-    packet: Optional[str] = None
-
-    @classmethod
-    def create_from_key(cls, key: str) -> BaseModel:
-        """Create ErrorCheckKey from key.
-
-        Args:
-            key: The S3 key
-        Returns:
-            instantiated  ErrorCheckKey
-        """
-        key_parts = key.split('/')
-
-        if key_parts[0] != 'CSV':
-            raise ValueError("Expected CSV at top level of S3 key")
-
-        if len(key_parts) == 5:
-            module = key_parts[1]
-            filename = key_parts[4]
-            form_name = filename.split('_')[1]
-            if form_name == 'header':
-                form_name = f'{module.lower()}_header'
-
-            return ErrorCheckKey(full_path=key,
-                                 csv=key_parts[0],
-                                 module=module,
-                                 form_ver=key_parts[2],
-                                 packet=key_parts[3],
-                                 filename=filename,
-                                 form_name=form_name)
-        elif len(key_parts) == 4:
-            module = key_parts[1]
-            assert module == 'ENROLL'
-            filename = key_parts[3]
-            form_name = 'enrl'
-            return ErrorCheckKey(full_path=key,
-                                 csv=key_parts[0],
-                                 module=module,
-                                 form_ver=key_parts[2],
-                                 filename=filename,
-                                 form_name=form_name)
-
-        raise ValueError(
-            f"Cannot parse ErrorCheckKey components from {key}; " +
-            "Expected to be of the form " +
-            "CSV / MODULE / FORM_VER / PACKET / filename")
-
-    def get_visit_type(self) -> str:
-        """Determine visit type from packet.
-
-        Returns:
-            The visit type
-        """
-        if self.packet == 'I4':
-            return 'i4vp'
-
-        return 'fvp' if self.packet.startswith('F') else 'ivp'
 
 
 class ErrorCheckCSVVisitor(CSVVisitor):

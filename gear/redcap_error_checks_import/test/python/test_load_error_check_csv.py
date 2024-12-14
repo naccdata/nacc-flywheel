@@ -2,10 +2,9 @@
 from io import BytesIO
 
 import pytest
-from redcap_error_checks_import_app.error_check_csv_visitor import (
-    ErrorCheckCSVVisitor,
-    ErrorCheckKey,
-)
+from redcap_error_checks_import_app.visitor import ErrorCheckCSVVisitor
+from redcap_error_checks_import_app.utils import ErrorCheckKey
+
 from redcap_error_checks_import_app.main import load_error_check_csv
 
 

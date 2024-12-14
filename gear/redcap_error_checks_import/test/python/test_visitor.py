@@ -1,10 +1,8 @@
-"""Tests the ErrorCheckCSVVisitor."""
+"""Tests the ErrorCheckCSVVisitor and related models."""
 import pytest
 from outputs.errors import ListErrorWriter
-from redcap_error_checks_import_app.error_check_csv_visitor import (
-    ErrorCheckCSVVisitor,
-    ErrorCheckKey,
-)
+from redcap_error_checks_import_app.utils import ErrorCheckKey
+from redcap_error_checks_import_app.visitor import ErrorCheckCSVVisitor
 
 
 @pytest.fixture(scope='function')
