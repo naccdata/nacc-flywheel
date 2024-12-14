@@ -80,7 +80,7 @@ def run(*,
         log.error(f"No files found in {bucket}/CSV")
         return
 
-    # keep track if import status
+    # keep track of import status
     stats = ErrorCheckImportStats()
     for key, file in file_objects.items():
         if not key.endswith('.csv'):
