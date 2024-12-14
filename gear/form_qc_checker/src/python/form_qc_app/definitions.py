@@ -38,7 +38,7 @@ class DefinitionsLoader:
         self.__error_writer = error_writer
         self.__strict = strict
         # optional forms file in S3 bucket
-        self.__opfname = 'optional_forms.json'
+        self.__opfname = f'{DefaultValues.QC_JSON_DIR}/optional_forms.json'
 
     def load_definition_schemas(
         self,
