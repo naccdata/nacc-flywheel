@@ -56,8 +56,10 @@ def data():
 
 
 class TestErrorCheckKey:
-    """Tests the ErrorCheckKey class. For creation, the other
-    tests test the valid case so not needed here.
+    """Tests the ErrorCheckKey class.
+
+    For creation, the other tests test the valid case so not needed
+    here.
     """
 
     def test_invalid_key(self):
@@ -71,7 +73,6 @@ class TestErrorCheckKey:
             f"Cannot parse ErrorCheckKey components from {key}; " +
             "Expected to be of the form " +
             "CSV / MODULE / FORM_VER / PACKET / filename")
-
 
     def test_no_top_level_csv(self):
         """Test invalid case."""

@@ -99,8 +99,8 @@ class ErrorCheckCSVVisitor(CSVVisitor):
         if not row.get('error_code').startswith(self.__key.form_name):
             error = unexpected_value_error(field='error_code',
                                            value=row.get('error_code'),
-                                           expected="error_code to start "
-                                                    + "with form_name",
+                                           expected="error_code to start " +
+                                           "with form_name",
                                            line=line_num)
             self.__error_writer.write(error)
 
@@ -110,8 +110,8 @@ class ErrorCheckCSVVisitor(CSVVisitor):
             if visit_type not in row.get('error_code', ''):
                 error = unexpected_value_error(field='error_code',
                                                value=row.get('error_code'),
-                                               expected="error_code to have "
-                                                        + visit_type,
+                                               expected="error_code to have " +
+                                               visit_type,
                                                line=line_num)
                 self.__error_writer.write(error)
 

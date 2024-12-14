@@ -1,12 +1,18 @@
 """Tests the util classes."""
 import pytest
-from redcap_error_checks_import_app.utils import ErrorCheckKey, ErrorCheckImportStats
+from redcap_error_checks_import_app.utils import ErrorCheckImportStats, ErrorCheckKey
+
+
+@pytest.fixture(scope='function')
+def stats():
+    return ErrorCheckImportStats()
 
 
 class TestErrorCheckKey:
-    """Tests the ErrorCheckKey class. For creation, the tests in
-    test_load_error_check_csv test the valid case thoroughly
-    so not needed here.
+    """Tests the ErrorCheckKey class.
+
+    For creation, the tests in test_load_error_check_csv test the valid
+    case thoroughly so not needed here.
     """
 
     def test_invalid_key(self):
@@ -20,7 +26,6 @@ class TestErrorCheckKey:
             f"Cannot parse ErrorCheckKey components from {key}; " +
             "Expected to be of the form " +
             "CSV / MODULE / FORM_VER / PACKET / filename")
-
 
     def test_no_top_level_csv(self):
         """Test invalid case."""
@@ -53,21 +58,20 @@ class TestErrorCheckKey:
 
 class TestErrorCheckImportStats:
     """Tests the ErrorCheckImportStats class.
-    Mainly the add_error_codes method, as the others methods
-    are trivial.
+
+    Mainly the add_error_codes method, as the others methods are
+    trivial.
     """
 
-    def test_add_error_codes_no_duplicates(self):
+    def test_add_error_codes_no_duplicates(self, stats):
         """Test adding error codes, no duplicates."""
-        stats = ErrorCheckImportStats()
         for code in range(10):
             assert stats.add_error_codes([code]) == []
 
         assert len(stats.all_error_codes) == 10
 
-    def test_add_error_codes_duplicates(self):
+    def test_add_error_codes_duplicates(self, stats):
         """Test adding error codes with duplicates."""
-        stats = ErrorCheckImportStats()
         for code in range(10):
             assert stats.add_error_codes([code]) == []
         for code in range(10):

@@ -2,10 +2,14 @@
 from io import BytesIO
 
 import pytest
-from redcap_error_checks_import_app.visitor import ErrorCheckCSVVisitor
-from redcap_error_checks_import_app.utils import ErrorCheckKey
-
 from redcap_error_checks_import_app.main import load_error_check_csv
+from redcap_error_checks_import_app.utils import ErrorCheckImportStats, ErrorCheckKey
+from redcap_error_checks_import_app.visitor import ErrorCheckCSVVisitor
+
+
+@pytest.fixture(scope='function')
+def stats():
+    return ErrorCheckImportStats()
 
 
 @pytest.fixture(scope="module")
@@ -39,9 +43,9 @@ def key():
 class TestLoadErrorCheckCSV:
     """Tests the load_error_check_csv method."""
 
-    def test_valid_csv(self, key, file):
+    def test_valid_csv(self, key, file, stats):
         """Test loading with valid dummy data."""
-        assert load_error_check_csv(key, file) == [{
+        assert load_error_check_csv(key, file, stats) == [{
             "error_code": "d1a-ivp-m-001",
             "error_type": "Error",
             "form_name": "d1a",
@@ -56,7 +60,7 @@ class TestLoadErrorCheckCSV:
             "comp_vars": ""
         }]
 
-    def test_invalid_key(self):
+    def test_invalid_key(self, stats):
         """Test with an invalid key."""
         with pytest.raises(ValueError) as e:
             ErrorCheckKey.create_from_key("CSV/bad/key.csv")
@@ -69,4 +73,4 @@ class TestLoadErrorCheckCSV:
     def test_empty_error_checks(self, key, headers):
         """Test when there is only a header."""
         data = {"Body": BytesIO(headers.encode('utf-8'))}
-        assert not load_error_check_csv(key, data)
+        assert not load_error_check_csv(key, data, stats)

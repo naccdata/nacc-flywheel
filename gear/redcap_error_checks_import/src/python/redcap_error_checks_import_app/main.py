@@ -18,8 +18,8 @@ from .visitor import ErrorCheckCSVVisitor
 log = logging.getLogger(__name__)
 
 
-def load_error_check_csv(key: ErrorCheckKey,
-                         file: Dict[str, Dict]) -> List[Dict[str, Any]]:
+def load_error_check_csv(key: ErrorCheckKey, file: Dict[str, Dict],
+                         stats: ErrorCheckImportStats) -> List[Dict[str, Any]]:
     """Load the error check CSV.
 
     Args:
@@ -42,11 +42,19 @@ def load_error_check_csv(key: ErrorCheckKey,
         log.error(f"{[x['message'] for x in error_writer.errors()]}")
         return None
 
-    if not visitor.validated_error_checks:
+    error_checks = visitor.validated_error_checks
+    if not error_checks:
         log.error(f"No error checks found in {key.full_path}; invalid file?")
         return None
 
-    return visitor.validated_error_checks
+    # check for duplicates
+    duplicates = stats.add_error_codes([x['error_code'] for x in error_checks])
+    if duplicates:
+        log.error(
+            f"Found duplicated errors, will not import file: {duplicates}")
+        error_checks = None
+
+    return error_checks
 
 
 def run(*,
@@ -85,12 +93,7 @@ def run(*,
         # Load from files from S3
         full_path = f"s3://{bucket}/{error_key.full_path}"
         log.info(f"Loading error checks from {full_path}")
-        error_checks = load_error_check_csv(error_key, file)
-
-        duplicates = stats.add_error_codes([x['error_code'] for x in error_checks])
-        if duplicates:
-            log.error(f"Found duplicated errors, will not import file: {duplicates}")
-            error_checks = None
+        error_checks = load_error_check_csv(error_key, file, stats)
 
         if not error_checks:
             if fail_fast:
@@ -116,7 +119,7 @@ def run(*,
 
     # if we did not fail fast before, fail now
     if stats.failed_files:
-        raise GearExecutionError("Failed to import the following:\n"
-            + "\n".join(stats.failed_files))
+        raise GearExecutionError("Failed to import the following:\n" +
+                                 "\n".join(stats.failed_files))
 
     log.info(f"Import complete! Imported {stats.total_records} total records")

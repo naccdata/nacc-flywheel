@@ -1,9 +1,8 @@
-"""
-Defines model/util classes specifically used for importing error
-checks into REDCap.
-"""
-from pydantic import BaseModel
+"""Defines model/util classes specifically used for importing error checks into
+REDCap."""
 from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class ErrorCheckKey(BaseModel):
@@ -124,10 +123,9 @@ class ErrorCheckImportStats:
         self.__failed_files.append(failed_file)
 
     def add_error_codes(self, error_codes: List[str]) -> List[str]:
-        """Adds the error codes and checks if there are duplicates.
-        This class adds the duplicates regardless, that way we don't
-        drop unrelated error codes. It is up to the caller to decide
-        what to do about it.
+        """Adds the error codes and checks if there are duplicates. This class
+        adds the duplicates regardless, that way we don't drop unrelated error
+        codes. It is up to the caller to decide what to do about it.
 
         Args:
             error_codes: The error codes to add
