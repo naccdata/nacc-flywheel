@@ -14,7 +14,7 @@ from flywheel_adaptor.subject_adaptor import (
     SubjectError,
 )
 from keys.keys import DefaultValues, FieldNames
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, Field
 from utils.utils import update_file_info_metadata
 
 log = logging.getLogger(__name__)
@@ -25,42 +25,11 @@ class VisitMapping(TypedDict):
     visits: ParticipantVisits
 
 
-class UploadTemplateInfo(BaseModel):
-    """Defines model for label template input."""
-    type: Literal['session', 'acquisition', 'filename']
-    template: str
-    transform: Optional[Literal['upper', 'lower']] = Field(default=None)
-
-
-class UploadTemplateList(RootModel):
-    """Root model for serializing the upload template information."""
-    root: List[UploadTemplateInfo]
-
-    def __bool__(self) -> bool:
-        return bool(self.root)
-
-    def __iter__(self):
-        return iter(self.root)
-
-    def __getitem__(self, item) -> UploadTemplateInfo:
-        return self.root[item]
-
-    def __len__(self):
-        return len(self.root)
-
-    def append(self, template: UploadTemplateInfo) -> None:
-        """Appends the template info to the list."""
-        self.root.append(template)
-
-
-class LabelTemplate:
+class LabelTemplate(BaseModel):
     """Defines a string template object for generating labels using input data
     from file records."""
-
-    def __init__(self, template_info: UploadTemplateInfo) -> None:
-        self.__type = template_info.type
-        self.__template = Template(template_info.template)
-        self.__transform = template_info.transform
+    template: str
+    transform: Optional[Literal['upper', 'lower']] = Field(default=None)
 
     def instantiate(self, record: Dict[str, Any]) -> str:
         """Instantiates the template using the data from the record matching
@@ -75,19 +44,25 @@ class LabelTemplate:
           ValueError if a variable in the template does not occur in the record
         """
         try:
-            result = self.__template.substitute(record)
+            result = Template(self.template).substitute(record)
         except KeyError as error:
             raise ValueError(
-                f"Error creating {self.__type} label, missing column {error}"
-            ) from error
+                f"Error creating label, missing column {error}") from error
 
-        if self.__transform == 'lower':
+        if self.transform == 'lower':
             return result.lower()
 
-        if self.__transform == 'upper':
+        if self.transform == 'upper':
             return result.upper()
 
         return result
+
+
+class UploadTemplateInfo(BaseModel):
+    """Defines model for label template input."""
+    session: LabelTemplate
+    acquisition: LabelTemplate
+    filename: LabelTemplate
 
 
 class RecordUploader(ABC):
@@ -107,11 +82,11 @@ class JSONUploader(RecordUploader):
     """Generalizes upload of a record to an acquisition as JSON."""
 
     def __init__(self, project: ProjectAdaptor,
-                 template_map: Dict[str, LabelTemplate]) -> None:
+                 template_map: UploadTemplateInfo) -> None:
         self.__project = project
-        self.__session_template = template_map['session']
-        self.__acquisition_template = template_map['acquisition']
-        self.__filename_template = template_map['filename']
+        self.__session_template = template_map.session
+        self.__acquisition_template = template_map.acquisition
+        self.__filename_template = template_map.filename
 
     def upload(self, records: Dict[str, List[Dict[str, Any]]]) -> bool:
         """Uploads the records to acquisitions under the subject.

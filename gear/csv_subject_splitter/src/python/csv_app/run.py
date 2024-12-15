@@ -18,7 +18,7 @@ from gear_execution.gear_execution import (
 from inputs.parameter_store import ParameterStore
 from outputs.errors import ListErrorWriter
 from pydantic import ValidationError
-from uploads.uploader import LabelTemplate, UploadTemplateList
+from uploads.uploader import UploadTemplateInfo
 
 from csv_app.main import run
 
@@ -30,12 +30,10 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
     """The gear execution visitor for the csv-subject-splitter app."""
 
     def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
-                 transform_input: Optional[InputFileWrapper],
                  hierarchy_labels: Dict[str, str]) -> None:
         self.__client = client
         self.__file_input = file_input
         self.__hierarchy_labels = hierarchy_labels
-        self.__transform_input = transform_input
 
     @classmethod
     def create(
@@ -62,16 +60,12 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                                              context=context)
         assert file_input, "create raises exception if missing expected input"
 
-        transform_input = InputFileWrapper.create(input_name='transform_file',
-                                                  context=context)
-
         hierarchy_labels = context.config.get('hierarchy_labels')
         if not hierarchy_labels:
             raise GearExecutionError("Expecting non-empty label templates")
 
         return CsvToJsonVisitor(client=client,
                                 file_input=file_input,
-                                transform_input=transform_input,
                                 hierarchy_labels=hierarchy_labels)
 
     def run(self, context: GearToolkitContext) -> None:
@@ -115,8 +109,8 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
                                            tags=context.manifest.get(
                                                'name', 'csv-subject-splitter'))
 
-    def __load_template(
-            self, template_list: Dict[str, str]) -> Dict[str, LabelTemplate]:
+    def __load_template(self, template_list: Dict[str,
+                                                  str]) -> UploadTemplateInfo:
         """Creates the list of label templates from the input objects.
 
         Args:
@@ -127,15 +121,10 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
           GearExecutionError if the model validation fails
         """
         try:
-            upload_templates = UploadTemplateList.model_validate(template_list)
+            return UploadTemplateInfo.model_validate(template_list)
         except ValidationError as error:
             raise GearExecutionError('Error reading label templates: '
                                      f'{error}') from error
-
-        return {
-            template_info.type: LabelTemplate(template_info)
-            for template_info in upload_templates
-        }
 
 
 def main():
