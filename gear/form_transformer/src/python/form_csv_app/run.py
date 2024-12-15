@@ -6,7 +6,6 @@ from typing import Dict, Optional
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from flywheel_gear_toolkit.context.context import GearToolkitContext
-from form_csv_app.main import run
 from gear_execution.gear_execution import (
     ClientWrapper,
     GearBotClient,
@@ -19,6 +18,8 @@ from inputs.parameter_store import ParameterStore
 from outputs.errors import ListErrorWriter
 from pydantic import ValidationError
 from transform.transformer import FieldTransformations, TransformerFactory
+
+from form_csv_app.main import run
 
 log = logging.getLogger(__name__)
 
