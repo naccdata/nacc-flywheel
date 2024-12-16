@@ -31,23 +31,36 @@ class LabelTemplate(BaseModel):
     template: str
     transform: Optional[Literal['upper', 'lower']] = Field(default=None)
 
-    def instantiate(self, record: Dict[str, Any]) -> str:
+    def instantiate(self,
+                    record: Dict[str, Any],
+                    *,
+                    environment: Optional[Dict[str, Any]] = None) -> str:
         """Instantiates the template using the data from the record matching
         the variables in the template. Converts the generated label to upper or
         lower case if indicated for the template.
 
         Args:
           record: data record
+          env: environment variable settings
         Returns:
           the result of substituting values from the record.
         Raises:
           ValueError if a variable in the template does not occur in the record
         """
+        result = self.template
         try:
             result = Template(self.template).substitute(record)
         except KeyError as error:
-            raise ValueError(
-                f"Error creating label, missing column {error}") from error
+            if not environment:
+                raise ValueError(
+                    f"Error creating label, missing column {error}") from error
+
+        if environment:
+            try:
+                result = Template(result).substitute(environment)
+            except KeyError as error:
+                raise ValueError(
+                    f"Error creating label, missing column {error}") from error
 
         if self.transform == 'lower':
             return result.lower()
@@ -81,12 +94,16 @@ class RecordUploader(ABC):
 class JSONUploader(RecordUploader):
     """Generalizes upload of a record to an acquisition as JSON."""
 
-    def __init__(self, project: ProjectAdaptor,
+    def __init__(self,
+                 *,
+                 project: ProjectAdaptor,
+                 environment: Optional[Dict[str, Any]] = None,
                  template_map: UploadTemplateInfo) -> None:
         self.__project = project
         self.__session_template = template_map.session
         self.__acquisition_template = template_map.acquisition
         self.__filename_template = template_map.filename
+        self.__environment = environment if environment else {}
 
     def upload(self, records: Dict[str, List[Dict[str, Any]]]) -> bool:
         """Uploads the records to acquisitions under the subject.
@@ -107,7 +124,8 @@ class JSONUploader(RecordUploader):
                             record),
                         acquisition_label=self.__acquisition_template.
                         instantiate(record),
-                        filename=self.__filename_template.instantiate(record),
+                        filename=self.__filename_template.instantiate(
+                            record, environment=self.__environment),
                         contents=json.dumps(record),
                         content_type='application/json')
                 except SubjectError as error:
