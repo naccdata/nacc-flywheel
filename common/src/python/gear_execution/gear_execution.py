@@ -196,8 +196,6 @@ class InputFileWrapper:
         if file_input["base"] != "file":
             raise GearExecutionError(
                 f"The specified input {input_name} is not a file")
-        if is_optional and not file_input['object']['file_id']:
-            return None
 
         return InputFileWrapper(file_input=file_input)
 
