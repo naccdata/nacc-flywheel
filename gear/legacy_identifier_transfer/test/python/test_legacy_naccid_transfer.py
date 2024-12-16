@@ -1,19 +1,22 @@
-"""Tests for the legacy-identifier-transfer gear """
+"""Tests for the legacy-identifier-transfer gear."""
 import logging
-import pytest
 from datetime import datetime
-from unittest.mock import Mock, PropertyMock, create_autospec
-from pydantic import ValidationError
-from identifiers.model import IdentifierObject
-from outputs.errors import ErrorWriter
-from enrollment.enrollment_project import EnrollmentProject
-from legacy_identifier_transfer_app.main import process_legacy_identifiers
-from unittest.mock import MagicMock
-from legacy_identifier_transfer_app.main import LegacyEnrollmentBatch
 from typing import Mapping
+from unittest.mock import MagicMock, Mock, PropertyMock, create_autospec
+
+import pytest
+from enrollment.enrollment_project import EnrollmentProject
+from identifiers.model import IdentifierObject
+from legacy_identifier_transfer_app.main import (
+    LegacyEnrollmentBatch,
+    process_legacy_identifiers,
+)
+from outputs.errors import ErrorWriter
+from pydantic import ValidationError
 
 
 class TestLegacyEnrollmentBatch:
+
     def test_add_record_with_naccid(self):
         batch = LegacyEnrollmentBatch()
         record = MagicMock()
@@ -69,17 +72,19 @@ def mock_error_writer():
 
 
 class TestProcessLegacyIdentifiers:
+
     def test_process_success(self, mock_enrollment_project, mock_error_writer):
         # Setup
         mock_enrollment_project.find_subject.return_value = None
 
-        identifiers = {'NACC123456': IdentifierObject(
-            naccid='NACC123456',
-            adcid=123,
-            ptid='PTID1',
-            guid='GUID1',
-            naccadc=123
-        )}
+        identifiers = {
+            'NACC123456':
+            IdentifierObject(naccid='NACC123456',
+                             adcid=123,
+                             ptid='PTID1',
+                             guid='GUID1',
+                             naccadc=123)
+        }
         enrollment_date = datetime.now()
 
         # Execute
@@ -87,17 +92,23 @@ class TestProcessLegacyIdentifiers:
             identifiers=identifiers,
             enrollment_date=enrollment_date,
             enrollment_project=mock_enrollment_project,
-            error_writer=mock_error_writer
-        )
+            error_writer=mock_error_writer)
 
         # Assert
         assert result is True
         assert mock_error_writer.write.call_count == 0
 
-    def test_process_naccid_mismatch(self, mock_enrollment_project, mock_error_writer):
+    def test_process_naccid_mismatch(self, mock_enrollment_project,
+                                     mock_error_writer):
         # Setup
-        identifiers = {'NACC123456': IdentifierObject(
-            naccid='NACC654321', adcid=123, ptid='PTID1', guid='GUID1', naccadc=123)}
+        identifiers = {
+            'NACC123456':
+            IdentifierObject(naccid='NACC654321',
+                             adcid=123,
+                             ptid='PTID1',
+                             guid='GUID1',
+                             naccadc=123)
+        }
         enrollment_date = datetime.now()
 
         # Execute
@@ -105,14 +116,14 @@ class TestProcessLegacyIdentifiers:
             identifiers=identifiers,
             enrollment_date=enrollment_date,
             enrollment_project=mock_enrollment_project,
-            error_writer=mock_error_writer
-        )
+            error_writer=mock_error_writer)
 
         # Assert
         assert result is False
         mock_error_writer.write.assert_called_once()
 
-    def test_process_validation_error(self, mock_enrollment_project, mock_error_writer):
+    def test_process_validation_error(self, mock_enrollment_project,
+                                      mock_error_writer):
         # Setup
         mock_identifier = Mock()
         mock_identifier.configure_mock(**{
@@ -124,13 +135,12 @@ class TestProcessLegacyIdentifiers:
             title='Validation Error',
             line_errors=[{
                 'type': 'value_error',
-                'loc': ('adcid',),
+                'loc': ('adcid', ),
                 'input': None,
                 'ctx': {
                     'error': 'field required',
                 },
-            }]
-        )
+            }])
 
         type(mock_identifier).adcid = PropertyMock(
             side_effect=validation_error)
@@ -143,8 +153,7 @@ class TestProcessLegacyIdentifiers:
             identifiers=identifiers,
             enrollment_date=enrollment_date,
             enrollment_project=mock_enrollment_project,
-            error_writer=mock_error_writer
-        )
+            error_writer=mock_error_writer)
 
         # Assert
         assert result is False
@@ -173,8 +182,7 @@ class TestProcessLegacyIdentifiers:
             enrollment_date=enrollment_date,
             enrollment_project=mock_enrollment_project,
             error_writer=mock_error_writer,
-            dry_run=True
-        )
+            dry_run=True)
 
         # Assert
         assert result is True

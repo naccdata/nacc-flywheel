@@ -1,16 +1,21 @@
 """Defines legacy_identifier_transfer."""
 
-from datetime import datetime
 import logging
+from datetime import datetime
 from typing import Dict, Mapping
-
-from pydantic import ValidationError
 
 from enrollment.enrollment_project import EnrollmentProject
 from enrollment.enrollment_transfer import EnrollmentRecord
 from gear_execution.gear_execution import GearExecutionError
 from identifiers.model import CenterIdentifiers, IdentifierObject
-from outputs.errors import ErrorWriter, ListErrorWriter, identifier_error, legacy_naccid_error, unexpected_value_error
+from outputs.errors import (
+    ErrorWriter,
+    ListErrorWriter,
+    identifier_error,
+    legacy_naccid_error,
+    unexpected_value_error,
+)
+from pydantic import ValidationError
 
 log = logging.getLogger(__name__)
 
@@ -40,14 +45,12 @@ class LegacyEnrollmentBatch:
 
 
 def process_legacy_identifiers(
-    identifiers: Mapping[str, IdentifierObject],
-    enrollment_date: datetime,  # Added parameter for enrollment date
-    enrollment_project: EnrollmentProject,
-    error_writer: ErrorWriter,
-    dry_run: bool = True
-) -> bool:
-    """
-    Process legacy identifiers and create enrollment records.
+        identifiers: Mapping[str, IdentifierObject],
+        enrollment_date: datetime,  # Added parameter for enrollment date
+        enrollment_project: EnrollmentProject,
+        error_writer: ErrorWriter,
+        dry_run: bool = True) -> bool:
+    """Process legacy identifiers and create enrollment records.
 
     Args:
         identifiers: Dictionary of legacy identifiers
@@ -69,16 +72,14 @@ def process_legacy_identifiers(
                     legacy_naccid_error(
                         field='naccid',
                         value=naccid,
-                        message=f'NACCID mismatch: key {naccid} != value {identifier.naccid}'
-                    )
-                )
+                        message=
+                        f'NACCID mismatch: key {naccid} != value {identifier.naccid}'
+                    ))
                 return False
 
             # Create CenterIdentifiers first to validate ADCID/PTID pair
-            center_identifiers = CenterIdentifiers(
-                adcid=identifier.adcid,
-                ptid=identifier.ptid
-            )
+            center_identifiers = CenterIdentifiers(adcid=identifier.adcid,
+                                                   ptid=identifier.ptid)
 
             # Create enrollment record
             record = EnrollmentRecord(
@@ -93,8 +94,9 @@ def process_legacy_identifiers(
             )
 
             batch.add(record)
-            log.info('Added legacy enrollment for NACCID %s (ADCID: %s, PTID: %s)',
-                     identifier.naccid, identifier.adcid, identifier.ptid)
+            log.info(
+                'Added legacy enrollment for NACCID %s (ADCID: %s, PTID: %s)',
+                identifier.naccid, identifier.adcid, identifier.ptid)
 
         except ValidationError as validation_error:
             for error in validation_error.errors():
@@ -108,9 +110,7 @@ def process_legacy_identifiers(
                             expected=context['pattern'],
                             message=f'Invalid {field_name.upper()}',
                             # FIXME - line number is not available in the error
-                            line=0
-                        )
-                    )
+                            line=0))
                 else:
                     # Handle other validation errors
                     error_writer.write(
@@ -119,9 +119,7 @@ def process_legacy_identifiers(
                             value=str(error.get('input', '')),
                             message=f"Validation error: {error['msg']}",
                             # FIXME - line number is not available in the error
-                            line=0
-                        )
-                    )
+                            line=0))
             return False
 
     if not batch:
@@ -133,26 +131,23 @@ def process_legacy_identifiers(
     for record in batch:
         if not record.naccid:
             error_writer.write(
-                legacy_naccid_error(
-                    field='naccid',
-                    value='',
-                    message='Missing NACCID'
-                )
-            )
+                legacy_naccid_error(field='naccid',
+                                    value='',
+                                    message='Missing NACCID'))
             continue
 
         if enrollment_project.find_subject(label=record.naccid):
             log.error(
-                'Subject with NACCID %s already exists - skipping creation', record.naccid)
+                'Subject with NACCID %s already exists - skipping creation',
+                record.naccid)
             error_writer.write(
                 identifier_error(
                     field='naccid',
                     value=record.naccid,
-                    message=f'Subject with NACCID {record.naccid} already exists',
+                    message=
+                    f'Subject with NACCID {record.naccid} already exists',
                     # FIXME - line number is not available in the error
-                    line=0
-                )
-            )
+                    line=0))
             # Skip adding enrollments to Flywheel if subject already exists
             continue
 
@@ -189,8 +184,7 @@ def run(*,
             enrollment_date=datetime.now(),
             enrollment_project=enrollment_project,
             dry_run=dry_run,
-            error_writer=error_writer
-        )
+            error_writer=error_writer)
 
         # Retrieve and print accumulated errors
         accumulated_errors = error_writer.errors()
@@ -201,7 +195,8 @@ def run(*,
             log.error("No changes made due to errors in identifier processing")
             return False
 
-        log.info("Successfully processed %d legacy identifiers", len(identifiers))
+        log.info("Successfully processed %d legacy identifiers",
+                 len(identifiers))
 
     except GearExecutionError as error:
         log.error("Error during gear execution: %s", str(error))

@@ -1,7 +1,6 @@
 """Entry script for legacy_identifier_transfer."""
 
 import logging
-
 from typing import Any, Dict, Optional, Tuple
 
 from enrollment.enrollment_project import EnrollmentProject
@@ -14,13 +13,20 @@ from gear_execution.gear_execution import (
     GearExecutionEnvironment,
     GearExecutionError,
 )
-from identifiers.identifiers_lambda_repository import IdentifiersLambdaRepository, IdentifiersMode
-from identifiers.identifiers_repository import IdentifierRepository, IdentifierRepositoryError
+from identifiers.identifiers_lambda_repository import (
+    IdentifiersLambdaRepository,
+    IdentifiersMode,
+)
+from identifiers.identifiers_repository import (
+    IdentifierRepository,
+    IdentifierRepositoryError,
+)
 from identifiers.model import IdentifierObject
-from lambdas.lambda_function import LambdaClient, create_lambda_client
-from legacy_identifier_transfer_app.main import run
 from inputs.parameter_store import ParameterStore
+from lambdas.lambda_function import LambdaClient, create_lambda_client
 from outputs.errors import ListErrorWriter
+
+from legacy_identifier_transfer_app.main import run
 
 log = logging.getLogger(__name__)
 
@@ -81,7 +87,8 @@ def get_destination_group_and_project(dest_container: Any) -> Tuple[str, str]:
 class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
     """The gear execution visitor for the Legacy identifier transfer gear."""
 
-    def __init__(self, admin_id: str, client: ClientWrapper, identifiers_mode: IdentifiersMode):
+    def __init__(self, admin_id: str, client: ClientWrapper,
+                 identifiers_mode: IdentifiersMode):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__identifiers_mode: IdentifiersMode = identifiers_mode
@@ -89,8 +96,7 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
 
     @classmethod
     def create(
-        cls,
-        context: GearToolkitContext,
+        cls, context: GearToolkitContext,
         parameter_store: Optional[ParameterStore]
     ) -> 'LegacyIdentifierTransferVisitor':
         """Creates a legacy naccid transfer execution visitor.
@@ -105,17 +111,15 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
         """
         assert parameter_store, "Parameter store expected"
 
-        client = GearBotClient.create(
-            context=context, parameter_store=parameter_store)
+        client = GearBotClient.create(context=context,
+                                      parameter_store=parameter_store)
 
         admin_id = context.config.get("admin_group", "nacc")
         mode = context.config.get("identifiers_mode", "dev")
 
-        return LegacyIdentifierTransferVisitor(
-            admin_id=admin_id,
-            client=client,
-            identifiers_mode=mode
-        )
+        return LegacyIdentifierTransferVisitor(admin_id=admin_id,
+                                               client=client,
+                                               identifiers_mode=mode)
 
     def __get_adcid(self, project_id: str) -> Optional[int]:
         try:
@@ -127,15 +131,13 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
             log.error(f"Error getting ADCID: {error}")
             return None
 
-    def initialize_error_writer(self, dest_container, project_id: str) -> ListErrorWriter:
+    def initialize_error_writer(self, dest_container,
+                                project_id: str) -> ListErrorWriter:
         try:
             # This is a fix to get the lookup path since get_lookup_path breaks on dest_container
             fw_path = f"fw://{dest_container.group}/{dest_container.label}"
             # fw_path = self.proxy.get_lookup_path(dest_container)
-            return ListErrorWriter(
-                container_id=project_id,
-                fw_path=fw_path
-            )
+            return ListErrorWriter(container_id=project_id, fw_path=fw_path)
         except AttributeError as e:
             log.error(f"Container hierarchy error: {e}")
             raise
@@ -143,8 +145,7 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
     def run(self, context: GearToolkitContext) -> None:
         """Runs the legacy NACCID transfer gear.
 
-        Args: context: The gear execution context 
-
+        Args: context: The gear execution context
         """
 
         assert context, "Gear context expected"
@@ -159,8 +160,7 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
         if not dest_container:
             raise GearExecutionError("No destination container found")
 
-        log.info(
-            f"Destination container: {dest_container.label}")
+        log.info(f"Destination container: {dest_container.label}")
 
         # Get Group and Project IDs, ADCID for group
         group_id, project_id = get_destination_group_and_project(
@@ -188,14 +188,12 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
         log.info(f"Found {len(identifiers)} identifiers")
 
         # Initialize error writer
-        error_writer = self.initialize_error_writer(
-            dest_container, project_id)
+        error_writer = self.initialize_error_writer(dest_container, project_id)
 
         # Initialize enrollment project adapter
         group = self.proxy.find_group(group_id=group_id)
         if not group:
-            raise GearExecutionError(
-                f'Unable to get center group: {group_id}')
+            raise GearExecutionError(f'Unable to get center group: {group_id}')
         log.info(f"Group: {group.label}")
 
         project = group.get_project_by_id(project_id)
@@ -206,15 +204,20 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
         enrollment_project = EnrollmentProject.create_from(project)
         log.info(f"Enrollment project: {enrollment_project.label}")
 
-        run(adcid=adcid, identifiers=identifiers,
-            error_writer=error_writer, enrollment_project=enrollment_project, dry_run=self.__dry_run)
+        run(adcid=adcid,
+            identifiers=identifiers,
+            error_writer=error_writer,
+            enrollment_project=enrollment_project,
+            dry_run=self.__dry_run)
         pass
 
 
 def main():
-    """The Legacy NACCID transfer gear looks up all of the NACCIDs for
-    a center. If the center does not already have a Subject with a given
-    NACCID, it creates a new subject at that center for that participant.
+    """The Legacy NACCID transfer gear looks up all of the NACCIDs for a
+    center.
+
+    If the center does not already have a Subject with a given NACCID,
+    it creates a new subject at that center for that participant.
     """
 
     GearEngine().create_with_parameter_store().run(
