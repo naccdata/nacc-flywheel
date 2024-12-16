@@ -98,8 +98,8 @@ class TestCSVSplitVisitor:
                                   error_writer=error_writer)
 
         no_errors = read_csv(input_file=missing_columns_stream,
-                          error_writer=error_writer,
-                          visitor=visitor)
+                             error_writer=error_writer,
+                             visitor=visitor)
         assert not no_errors, ("expect error for missing columns")
         assert not empty(err_stream), "expect error message in output"
 
@@ -114,8 +114,8 @@ class TestCSVSplitVisitor:
                                   records=records,
                                   error_writer=error_writer)
         no_errors = read_csv(input_file=visit_data_stream,
-                          error_writer=error_writer,
-                          visitor=visitor)
+                             error_writer=error_writer,
+                             visitor=visitor)
         assert no_errors, "expect no errors"
         assert empty(err_stream), "expect error stream to be empty"
 
@@ -130,8 +130,8 @@ class TestCSVSplitVisitor:
                                   records=records,
                                   error_writer=error_writer)
         no_errors = read_csv(input_file=nonvisit_data_stream,
-                          error_writer=error_writer,
-                          visitor=visitor)
+                             error_writer=error_writer,
+                             visitor=visitor)
 
         assert no_errors, "expect no errors"
         assert empty(err_stream), "expect error stream to be empty"

@@ -159,7 +159,7 @@ class InputFileWrapper:
     def filename(self) -> str:
         """Returns the file name."""
         return self.file_input['location']['name']
-    
+
     @property
     def basename(self) -> str:
         """Returns the base name of the file name."""
