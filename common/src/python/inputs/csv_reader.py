@@ -9,7 +9,7 @@ from outputs.errors import (
     ErrorWriter,
     empty_file_error,
     malformed_file_error,
-    missing_header_error
+    missing_header_error,
 )
 
 

@@ -26,8 +26,8 @@ def build_project_map(
     Returns:
       dictionary mapping from adcid to group
     """
-    center_map = NACCGroup.create(proxy=proxy).\
-        get_center_map(center_filter=center_filter)
+    center_map = NACCGroup.create(proxy=proxy).get_center_map(
+        center_filter=center_filter)
 
     if not center_map:
         log.warning('No centers found to build project map')
