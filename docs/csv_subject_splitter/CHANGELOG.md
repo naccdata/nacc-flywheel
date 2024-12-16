@@ -4,6 +4,13 @@ All notable changes to this gear are documented in this file.
 
 ## TBD
 
+- n/a
+
+## 1.0.0
+
+- Redefines the csv-to-json-transformer to csv-subject-splitter gear that splits CSV files using the value in the NACCID column.
+  Note: most of 0.0.11 changes are for form split/transform that are specific to the form-transformer gear.
+- Adds config parameter for templating of labels for session and acquisition and filename resulting from split.
 - Optional input files are allowed to be missing.
 
 ## 0.0.11
