@@ -88,11 +88,19 @@ def missing_header_error() -> FileError:
                      message='No file header found')
 
 
+def invalid_header_error(message: Optional[str] = None) -> FileError:
+    """Creates a FileError for an invalid header."""
+    message = message if message else "Invalid header"
+    return FileError(error_type='error',
+                     error_code='invalid-header',
+                     message=message)
+
+
 def missing_field_error(field: str) -> FileError:
     """Creates a FileError for a missing field in header."""
     return FileError(error_type='error',
                      error_code='missing-field',
-                     message=f'Missing field {field} in the header')
+                     message=f'Missing field "{field}" in the header')
 
 
 def empty_field_error(field: str,

@@ -1,6 +1,7 @@
 """Module defining utilities for gear execution."""
 
 import logging
+import os
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -160,6 +161,12 @@ class InputFileWrapper:
         return self.file_input['location']['name']
 
     @property
+    def basename(self) -> str:
+        """Returns the base name of the file name."""
+        (basename, extension) = os.path.splitext(self.filename)
+        return basename
+
+    @property
     def filepath(self) -> str:
         """Returns the file path."""
         return self.file_input['location']['path']
@@ -185,12 +192,13 @@ class InputFileWrapper:
           GearExecutionError if there is no input with the name
         """
         file_input = context.get_input(input_name)
+        is_optional = context.manifest.get("inputs",
+                                           {}).get(input_name,
+                                                   {}).get("optional", False)
+
         if not file_input:
-            is_optional = context.manifest.get("inputs", {}).get(
-                input_name, {}).get("optional", False)
             if is_optional:
                 return None
-
             raise GearExecutionError(f'Missing input file {input_name}')
 
         if file_input["base"] != "file":
