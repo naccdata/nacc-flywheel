@@ -87,9 +87,8 @@ class DummyVisitor(CSVVisitor):
 
 
 class NonNumericHeaderVisitor(CSVVisitor):
-    """Dummy CSV Visitor class for testing, which
-    explicitly says the header cannot be numeric.
-    """
+    """Dummy CSV Visitor class for testing, which explicitly says the header
+    cannot be numeric."""
 
     def __init__(self, error_writer: StreamErrorWriter):
         """Initializer."""
@@ -138,10 +137,9 @@ class TestCSVReader:
     def test_invalid_header_stream(self, no_header_stream):
         """Test stream with invalid header row."""
         err_stream = StringIO()
-        error_writer = StreamErrorWriter(
-            stream=err_stream,
-            container_id='dummy',
-            fw_path='dummy-path')
+        error_writer = StreamErrorWriter(stream=err_stream,
+                                         container_id='dummy',
+                                         fw_path='dummy-path')
         visitor = NonNumericHeaderVisitor(error_writer)
 
         success = read_csv(input_file=no_header_stream,
