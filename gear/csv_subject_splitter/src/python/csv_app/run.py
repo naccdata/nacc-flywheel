@@ -97,6 +97,7 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             success = run(input_file=csv_file,
                           destination=ProjectAdaptor(project=project,
                                                      proxy=proxy),
+                          environment={'filename': self.__file_input.basename},
                           template_map=template_map,
                           error_writer=error_writer)
 

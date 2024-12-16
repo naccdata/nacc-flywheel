@@ -77,13 +77,15 @@ def notify_upload_errors():
 
 
 def run(*, input_file: TextIO, destination: ProjectAdaptor,
-        template_map: UploadTemplateInfo, error_writer: ErrorWriter) -> bool:
+        environment: Dict[str, Any], template_map: UploadTemplateInfo,
+        error_writer: ErrorWriter) -> bool:
     """Reads records from the input file and creates a JSON file for each.
     Uploads the JSON file to the respective aquisition in Flywheel.
 
     Args:
         input_file: the input file
         destination: Flywheel project container
+        environment: dictionary of variables describing environment for labels
         template_map: string templates for FW hierarchy labels
         error_writer: the writer for error output
     Returns:
@@ -102,7 +104,9 @@ def run(*, input_file: TextIO, destination: ProjectAdaptor,
     if not len(subject_record_map) > 0:
         return result
 
-    uploader = JSONUploader(project=destination, template_map=template_map)
+    uploader = JSONUploader(project=destination,
+                            template_map=template_map,
+                            environment=environment)
     upload_status = uploader.upload(subject_record_map)
     if not upload_status:
         notify_upload_errors()
