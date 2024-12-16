@@ -46,18 +46,6 @@
             }
         }
     },
-    "config": {
-        "admin_group": {
-            "description": "Name of the admin group",
-            "type": "string",
-            "default": "nacc"
-        },
-        "apikey_path_prefix": {
-            "description": "The instance specific AWS parameter path prefix for apikey",
-            "type": "string",
-            "default": "/prod/flywheel/gearbot"
-
-        }
-    },
+    "config": {},
     "command": "/bin/run"
 }
