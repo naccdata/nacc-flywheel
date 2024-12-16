@@ -3,7 +3,7 @@
 import logging
 import time
 from collections import deque
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from flywheel import FileEntry
 from flywheel.models.job import Job
@@ -29,11 +29,13 @@ class QCGearConfigs(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     apikey_path_prefix: str
-    parameter_path: str
+    rules_s3_bucket: str
     qc_checks_db_path: str
     primary_key: str
-    strict_mode: str
-    tag: str
+    strict_mode: Optional[bool] = True
+    legacy_project_label: Optional[str]
+    date_field: Optional[str]
+    tag: Optional[str]
 
 
 class QCGearInfo(BaseModel):
@@ -83,7 +85,7 @@ class QCCoordinator():
             job = job.reload()
 
         if job.state == 'failed':
-            time.sleep(10)  # wait to see if the job gets retried
+            time.sleep(5)  # wait to see if the job gets retried
             job = job.reload()
 
         log.info('Job %s finished with status: %s', job.id, job.state)
