@@ -223,9 +223,9 @@ class InputFileWrapper:
             str(optional): module name if a match found, else None
         """
         module = None
-        pattern = '^.*-([a-z]+v[0-9])\\.(\\bcsv\\b|\\bjson\\b)$'
+        pattern = '^.*(-|_)([a-z]*)\\.(csv|json)$'
         if match := re.search(pattern, self.filename, re.IGNORECASE):
-            module = match.group(1)
+            module = match.group(2)
 
         return module
 
