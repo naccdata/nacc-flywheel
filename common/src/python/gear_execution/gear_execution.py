@@ -192,12 +192,13 @@ class InputFileWrapper:
           GearExecutionError if there is no input with the name
         """
         file_input = context.get_input(input_name)
+        is_optional = context.manifest.get("inputs",
+                                           {}).get(input_name,
+                                                   {}).get("optional", False)
+
         if not file_input:
-            is_optional = context.manifest.get("inputs", {}).get(
-                input_name, {}).get("optional", False)
             if is_optional:
                 return None
-
             raise GearExecutionError(f'Missing input file {input_name}')
 
         if file_input["base"] != "file":
