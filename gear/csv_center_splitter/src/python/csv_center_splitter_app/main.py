@@ -23,7 +23,7 @@ class CSVVisitorCenterSplitter(CSVVisitor):
         """Initializer."""
         self.__adcid_key: str = adcid_key
         self.__error_writer: ListErrorWriter = error_writer
-        self.__split_data: Dict[int, List[str]] = {}
+        self.__split_data: Dict[str, List[Dict[str, Any]]] = {}
         self.__headers: List[str] = []
 
     @property
@@ -168,6 +168,8 @@ def run(*,
     # write results to each center's project
     for adcid, data in visitor.split_data.items():
         project = project_map[f'adcid-{adcid}']
+        assert project, "raises exception above if any projects are missing"
+
         filename = f'{adcid}_{input_filename}'
 
         log.info(f"Uploading {filename} for project {project.label} "
