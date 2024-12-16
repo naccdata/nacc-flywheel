@@ -83,8 +83,8 @@ def nonvisit_data_stream(valid_nonvisit_table):
     yield stream
 
 
-class TestCSVTransformVisitor:
-    """Tests csv-to-json transformation."""
+class TestCSVSplitVisitor:
+    """Tests csv-subject transformation."""
 
     def test_missing_column_headers(self, missing_columns_stream):
         """test missing expected column headers."""
@@ -97,10 +97,10 @@ class TestCSVTransformVisitor:
                                   records=records,
                                   error_writer=error_writer)
 
-        errors = read_csv(input_file=missing_columns_stream,
-                          error_writer=error_writer,
-                          visitor=visitor)
-        assert errors, ("expect error for missing columns")
+        no_errors = read_csv(input_file=missing_columns_stream,
+                             error_writer=error_writer,
+                             visitor=visitor)
+        assert not no_errors, ("expect error for missing columns")
         assert not empty(err_stream), "expect error message in output"
 
     def test_valid_visit(self, visit_data_stream):
@@ -113,10 +113,10 @@ class TestCSVTransformVisitor:
         visitor = CSVSplitVisitor(req_fields=['naccid'],
                                   records=records,
                                   error_writer=error_writer)
-        errors = read_csv(input_file=visit_data_stream,
-                          error_writer=error_writer,
-                          visitor=visitor)
-        assert not errors, "expect no errors"
+        no_errors = read_csv(input_file=visit_data_stream,
+                             error_writer=error_writer,
+                             visitor=visitor)
+        assert no_errors, "expect no errors"
         assert empty(err_stream), "expect error stream to be empty"
 
     def test_valid_nonvisit(self, nonvisit_data_stream):
@@ -129,9 +129,9 @@ class TestCSVTransformVisitor:
         visitor = CSVSplitVisitor(req_fields=['naccid'],
                                   records=records,
                                   error_writer=error_writer)
-        errors = read_csv(input_file=nonvisit_data_stream,
-                          error_writer=error_writer,
-                          visitor=visitor)
+        no_errors = read_csv(input_file=nonvisit_data_stream,
+                             error_writer=error_writer,
+                             visitor=visitor)
 
-        assert not errors, "expect no errors"
+        assert no_errors, "expect no errors"
         assert empty(err_stream), "expect error stream to be empty"

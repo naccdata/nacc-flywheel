@@ -1,4 +1,4 @@
-"""Entrypoint script for the csv-to-json transformer app."""
+"""Entrypoint script for the csv-subject splitter app."""
 
 import logging
 import sys
@@ -9,7 +9,7 @@ from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
-    GearBotClient,
+    ContextClient,
     GearEngine,
     GearExecutionEnvironment,
     GearExecutionError,
@@ -18,7 +18,7 @@ from gear_execution.gear_execution import (
 from inputs.parameter_store import ParameterStore
 from outputs.errors import ListErrorWriter
 from pydantic import ValidationError
-from uploads.uploader import LabelTemplate, UploadTemplateList
+from uploads.uploader import UploadTemplateInfo
 
 from csv_app.main import run
 
@@ -27,15 +27,13 @@ log = logging.getLogger(__name__)
 
 
 class CsvToJsonVisitor(GearExecutionEnvironment):
-    """The gear execution visitor for the csv-to-json-transformer app."""
+    """The gear execution visitor for the csv-subject-splitter app."""
 
     def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
-                 transform_input: Optional[InputFileWrapper],
                  hierarchy_labels: Dict[str, str]) -> None:
         self.__client = client
         self.__file_input = file_input
         self.__hierarchy_labels = hierarchy_labels
-        self.__transform_input = transform_input
 
     @classmethod
     def create(
@@ -55,15 +53,11 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
         """
         assert parameter_store, "Parameter store expected"
 
-        client = GearBotClient.create(context=context,
-                                      parameter_store=parameter_store)
+        client = ContextClient.create(context=context)
 
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
         assert file_input, "create raises exception if missing expected input"
-
-        transform_input = InputFileWrapper.create(input_name='transform_file',
-                                                  context=context)
 
         hierarchy_labels = context.config.get('hierarchy_labels')
         if not hierarchy_labels:
@@ -71,7 +65,6 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
 
         return CsvToJsonVisitor(client=client,
                                 file_input=file_input,
-                                transform_input=transform_input,
                                 hierarchy_labels=hierarchy_labels)
 
     def run(self, context: GearToolkitContext) -> None:
@@ -103,6 +96,7 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
             success = run(input_file=csv_file,
                           destination=ProjectAdaptor(project=project,
                                                      proxy=proxy),
+                          environment={'filename': self.__file_input.basename},
                           template_map=template_map,
                           error_writer=error_writer)
 
@@ -113,11 +107,10 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
 
             context.metadata.add_file_tags(self.__file_input.file_input,
                                            tags=context.manifest.get(
-                                               'name',
-                                               'csv-to-json-transformer'))
+                                               'name', 'csv-subject-splitter'))
 
-    def __load_template(
-            self, template_list: Dict[str, str]) -> Dict[str, LabelTemplate]:
+    def __load_template(self, template_list: Dict[str,
+                                                  str]) -> UploadTemplateInfo:
         """Creates the list of label templates from the input objects.
 
         Args:
@@ -128,22 +121,17 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
           GearExecutionError if the model validation fails
         """
         try:
-            upload_templates = UploadTemplateList.model_validate(template_list)
+            return UploadTemplateInfo.model_validate(template_list)
         except ValidationError as error:
             raise GearExecutionError('Error reading label templates: '
                                      f'{error}') from error
-
-        return {
-            template_info.type: LabelTemplate(template_info)
-            for template_info in upload_templates
-        }
 
 
 def main():
     """Gear main method to transform CSV where row is participant data to set
     of JSON files, one per participant."""
 
-    GearEngine.create_with_parameter_store().run(gear_type=CsvToJsonVisitor)
+    GearEngine().run(gear_type=CsvToJsonVisitor)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 """Module defining utilities for gear execution."""
 
 import logging
+import os
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -158,6 +159,12 @@ class InputFileWrapper:
     def filename(self) -> str:
         """Returns the file name."""
         return self.file_input['location']['name']
+
+    @property
+    def basename(self) -> str:
+        """Returns the base name of the file name."""
+        (basename, extension) = os.path.splitext(self.filename)
+        return basename
 
     @property
     def filepath(self) -> str:

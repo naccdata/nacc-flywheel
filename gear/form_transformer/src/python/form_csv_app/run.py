@@ -1,15 +1,14 @@
 """Entry script for Form CSV to JSON Transformer."""
 
 import logging
-from typing import Dict, Optional
+from typing import Optional
 
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from flywheel_gear_toolkit.context.context import GearToolkitContext
-from form_csv_app.main import run
 from gear_execution.gear_execution import (
     ClientWrapper,
-    GearBotClient,
+    ContextClient,
     GearEngine,
     GearExecutionEnvironment,
     GearExecutionError,
@@ -20,6 +19,8 @@ from outputs.errors import ListErrorWriter
 from pydantic import ValidationError
 from transform.transformer import FieldTransformations, TransformerFactory
 
+from form_csv_app.main import run
+
 log = logging.getLogger(__name__)
 
 
@@ -27,11 +28,9 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
     """Visitor for the templating gear."""
 
     def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
-                 transform_input: Optional[InputFileWrapper],
-                 hierarchy_labels: Dict[str, str]) -> None:
+                 transform_input: Optional[InputFileWrapper]) -> None:
         self.__client = client
         self.__file_input = file_input
-        self.__hierarchy_labels = hierarchy_labels
         self.__transform_input = transform_input
 
     @classmethod
@@ -54,8 +53,7 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
         """
         assert parameter_store, "Parameter store expected"
 
-        client = GearBotClient.create(context=context,
-                                      parameter_store=parameter_store)
+        client = ContextClient.create(context=context)
 
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
@@ -64,14 +62,9 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
         transform_input = InputFileWrapper.create(input_name='transform_file',
                                                   context=context)
 
-        hierarchy_labels = context.config.get('hierarchy_labels')
-        if not hierarchy_labels:
-            raise GearExecutionError("Expecting non-empty label templates")
-
         return FormCSVtoJSONTransformer(client=client,
                                         file_input=file_input,
-                                        transform_input=transform_input,
-                                        hierarchy_labels=hierarchy_labels)
+                                        transform_input=transform_input)
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the CSV to JSON Transformer app.
@@ -111,8 +104,7 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
 
             context.metadata.add_file_tags(self.__file_input.file_input,
                                            tags=context.manifest.get(
-                                               'name',
-                                               'csv-to-json-transformer'))
+                                               'name', 'form-transformer'))
 
     def __build_transformer(
             self, transformer_input: Optional[InputFileWrapper]

@@ -4,9 +4,14 @@ All notable changes to this gear are documented in this file.
 
 ## TBD
 
-- Optional input files are allowed to be missing.
+- n/a
 
-## 0.0.11
+## 1.0.0
+
+- Moves form-specific functionality of csv-to-json-transformer to form-transformer gear.
+- Add transformer schema as input file
+
+## 0.0.11 (from CSV-to-JSON-transformer)
 - Normalizes the visit date to `YYYY-MM-DD` format
 - Apply module specific transformations
 - Creates Flywheel hierarchy (subject/session/acquisition) if it does not exist

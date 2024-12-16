@@ -12,7 +12,7 @@ from outputs.errors import (
     empty_field_error,
     missing_field_error,
 )
-from uploads.uploader import JSONUploader, LabelTemplate
+from uploads.uploader import JSONUploader, UploadTemplateInfo
 
 log = logging.getLogger(__name__)
 
@@ -46,8 +46,7 @@ class CSVSplitVisitor(CSVVisitor):
         return found_all
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
-        """Apply necessary transformations on the given data row. Assumes all
-        records in the CSV file belongs to the same module.
+        """Assigns the row data to the subject by NACCID.
 
         Args:
           row: the dictionary for a row from a CSV file
@@ -78,35 +77,37 @@ def notify_upload_errors():
 
 
 def run(*, input_file: TextIO, destination: ProjectAdaptor,
-        template_map: Dict[str,
-                           LabelTemplate], error_writer: ErrorWriter) -> bool:
-    """Reads records from the input file and transforms each into a JSON file.
+        environment: Dict[str, Any], template_map: UploadTemplateInfo,
+        error_writer: ErrorWriter) -> bool:
+    """Reads records from the input file and creates a JSON file for each.
     Uploads the JSON file to the respective aquisition in Flywheel.
 
     Args:
         input_file: the input file
-        proxy: Flywheel proxy object
         destination: Flywheel project container
+        environment: dictionary of variables describing environment for labels
         template_map: string templates for FW hierarchy labels
         error_writer: the writer for error output
     Returns:
-        bool: True if transformation/upload successful
+        bool: True if upload successful
     """
 
-    transformed_records: DefaultDict[str, List[Dict[str,
-                                                    Any]]] = defaultdict(list)
+    subject_record_map: DefaultDict[str, List[Dict[str,
+                                                   Any]]] = defaultdict(list)
     visitor = CSVSplitVisitor(req_fields=[FieldNames.NACCID],
-                              records=transformed_records,
+                              records=subject_record_map,
                               error_writer=error_writer)
     result = read_csv(input_file=input_file,
                       error_writer=error_writer,
                       visitor=visitor)
 
-    if not len(transformed_records) > 0:
+    if not len(subject_record_map) > 0:
         return result
 
-    uploader = JSONUploader(project=destination, template_map=template_map)
-    upload_status = uploader.upload(transformed_records)
+    uploader = JSONUploader(project=destination,
+                            template_map=template_map,
+                            environment=environment)
+    upload_status = uploader.upload(subject_record_map)
     if not upload_status:
         notify_upload_errors()
 
