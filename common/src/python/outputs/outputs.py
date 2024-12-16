@@ -1,7 +1,7 @@
 """Defines utilities for writing data files."""
 
 from abc import ABC, abstractmethod
-from csv import DictWriter, QUOTE_MINIMAL
+from csv import QUOTE_MINIMAL, DictWriter
 from io import StringIO
 from typing import Any, Dict, List, Optional, TextIO
 
@@ -76,8 +76,7 @@ class ListJSONWriter(JSONWriter):
         return self.__objects
 
 
-def write_csv_to_stream(headers: List[str],
-                        data: List[Dict[str, Any]],
+def write_csv_to_stream(headers: List[str], data: List[Dict[str, Any]],
                         filename: str) -> StringIO:
     """Takes a header and data pair and uses CSVWriter to write the CSV
     contents to a StringIO stream.

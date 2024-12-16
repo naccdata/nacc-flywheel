@@ -13,7 +13,8 @@ def build_project_map(
         *,
         proxy: FlywheelProxy,
         destination_label: str,
-        center_filter: Optional[List[str]] = None) -> Dict[str, ProjectAdaptor]:
+        center_filter: Optional[List[str]] = None
+) -> Dict[str, ProjectAdaptor]:
     """Builds a map from adcid to the project of center group with the given
     label.
 

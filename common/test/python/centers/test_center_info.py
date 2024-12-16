@@ -32,7 +32,7 @@ def dummy_center():
     return CenterInfo(adcid=7,
                       name="Alpha ADRC",
                       group='alpha-adrc',
-                      tags=('adcid-7',))
+                      tags=('adcid-7', ))
 
 
 @pytest.fixture(scope='function')
@@ -57,7 +57,7 @@ class TestCenterInfo:
         matches."""
         center = CenterInfo(
             **{  # type: ignore
-                'tags': ('adcid-7',),
+                'tags': ('adcid-7', ),
                 'name': 'Alpha ADRC',
                 'center-id': 'alpha-adrc',
                 'adcid': 7,
@@ -71,7 +71,8 @@ class TestCenterInfo:
             CenterInfo()  # type: ignore
 
         with pytest.raises(ValidationError):
-            CenterInfo(tags=('adcid-7',), name="Alpha ADRC", adcid=7)  # type: ignore
+            CenterInfo(tags=('adcid-7', ), name="Alpha ADRC",
+                       adcid=7)  # type: ignore
 
     def test_apply(self, dummy_center):
         """Test that visitor applied."""
