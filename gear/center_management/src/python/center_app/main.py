@@ -52,7 +52,7 @@ def run(*,
     center_roles = get_project_roles(proxy, role_names)
 
     for center in center_list:
-        if new_only and 'new-center' not in center.tags:
+        if new_only and 'new-center' not in center.tags:  # type: ignore
             log.info(f"new_only set to True and {center.name} does not " +
                      "have `new-center` tag, skipping")
             continue
