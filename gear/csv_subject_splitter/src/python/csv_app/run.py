@@ -9,7 +9,7 @@ from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
-    GearBotClient,
+    ContextClient,
     GearEngine,
     GearExecutionEnvironment,
     GearExecutionError,
@@ -53,8 +53,7 @@ class CsvToJsonVisitor(GearExecutionEnvironment):
         """
         assert parameter_store, "Parameter store expected"
 
-        client = GearBotClient.create(context=context,
-                                      parameter_store=parameter_store)
+        client = ContextClient.create(context=context)
 
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
