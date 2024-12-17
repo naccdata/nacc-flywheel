@@ -54,7 +54,7 @@ def get_identifiers(identifiers_repo: IdentifierRepository,
     return identifiers
 
 
-# This is copied from redcap_fw_transfer - should move to module?
+# This is adapted from redcap_fw_transfer gear
 def get_destination_group_and_project(dest_container: Any) -> Tuple[str, str]:
     """Find the flywheel group id and project id for the destination project.
 
@@ -206,7 +206,6 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
 
         run(adcid=adcid,
             identifiers=identifiers,
-            error_writer=error_writer,
             enrollment_project=enrollment_project,
             dry_run=self.__dry_run)
         pass

@@ -8,13 +8,6 @@ from enrollment.enrollment_project import EnrollmentProject
 from enrollment.enrollment_transfer import EnrollmentRecord
 from gear_execution.gear_execution import GearExecutionError
 from identifiers.model import CenterIdentifiers, IdentifierObject
-from outputs.errors import (
-    ErrorWriter,
-    ListErrorWriter,
-    identifier_error,
-    legacy_naccid_error,
-    unexpected_value_error,
-)
 from pydantic import ValidationError
 
 log = logging.getLogger(__name__)
@@ -48,7 +41,6 @@ def process_legacy_identifiers(
         identifiers: Mapping[str, IdentifierObject],
         enrollment_date: datetime,  # Added parameter for enrollment date
         enrollment_project: EnrollmentProject,
-        error_writer: ErrorWriter,
         dry_run: bool = True) -> bool:
     """Process legacy identifiers and create enrollment records.
 
@@ -68,13 +60,8 @@ def process_legacy_identifiers(
         try:
             # Verify the NACCID matches between dict key and object
             if naccid != identifier.naccid:
-                error_writer.write(
-                    legacy_naccid_error(
-                        field='naccid',
-                        value=naccid,
-                        message=
-                        f'NACCID mismatch: key {naccid} != value {identifier.naccid}'
-                    ))
+                log.error(
+                    'NACCID mismatch: key %s != value %s', naccid, identifier.naccid)
                 return False
 
             # Create CenterIdentifiers first to validate ADCID/PTID pair
@@ -103,23 +90,14 @@ def process_legacy_identifiers(
                 if error['type'] == 'string_pattern_mismatch':
                     field_name = str(error['loc'][0])
                     context = error.get('ctx', {'pattern': ''})
-                    error_writer.write(
-                        unexpected_value_error(
-                            field=field_name,
-                            value=error['input'],
-                            expected=context['pattern'],
-                            message=f'Invalid {field_name.upper()}',
-                            # FIXME - line number is not available in the error
-                            line=0))
+                    log.error(
+                        'Invalid %s: %s (expected pattern: %s)',
+                        field_name, error['input'], context['pattern'])
                 else:
                     # Handle other validation errors
-                    error_writer.write(
-                        identifier_error(
-                            field=str(error['loc'][0]),
-                            value=str(error.get('input', '')),
-                            message=f"Validation error: {error['msg']}",
-                            # FIXME - line number is not available in the error
-                            line=0))
+                    log.error(
+                        'Validation error in field %s: %s (value: %s)',
+                        str(error['loc'][0]), error['msg'], str(error.get('input', '')))
             return False
 
     if not batch:
@@ -130,24 +108,16 @@ def process_legacy_identifiers(
     success = True
     for record in batch:
         if not record.naccid:
-            error_writer.write(
-                legacy_naccid_error(field='naccid',
-                                    value='',
-                                    message='Missing NACCID'))
+            log.error('Missing NACCID for record: %s', record)
             continue
 
         if enrollment_project.find_subject(label=record.naccid):
             log.error(
                 'Subject with NACCID %s already exists - skipping creation',
                 record.naccid)
-            error_writer.write(
-                identifier_error(
-                    field='naccid',
-                    value=record.naccid,
-                    message=
-                    f'Subject with NACCID {record.naccid} already exists',
-                    # FIXME - line number is not available in the error
-                    line=0))
+            log.error(
+                'Subject with NACCID %s already exists - skipping creation',
+                record.naccid)
             # Skip adding enrollments to Flywheel if subject already exists
             continue
 
@@ -162,8 +132,7 @@ def run(*,
         adcid: int,
         identifiers: Dict[str, IdentifierObject],
         enrollment_project: EnrollmentProject,
-        dry_run: bool = True,
-        error_writer: ListErrorWriter) -> bool:
+        dry_run: bool = True) -> bool:
     """Runs legacy identifier enrollment process.
 
     Args:
@@ -184,12 +153,7 @@ def run(*,
             enrollment_date=datetime.now(),
             enrollment_project=enrollment_project,
             dry_run=dry_run,
-            error_writer=error_writer)
-
-        # Retrieve and print accumulated errors
-        accumulated_errors = error_writer.errors()
-        for err in accumulated_errors:
-            log.error(err)
+        )
 
         if not success:
             log.error("No changes made due to errors in identifier processing")
