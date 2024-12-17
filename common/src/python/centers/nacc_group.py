@@ -5,7 +5,7 @@ from typing import List, Optional
 from flywheel.models.group import Group
 from flywheel.models.user import User
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 from redcap.redcap_repository import REDCapParametersRepository
 
 from centers.center_adaptor import CenterAdaptor
@@ -13,6 +13,17 @@ from centers.center_group import CenterGroup
 from centers.center_info import CenterInfo, CenterMapInfo
 
 log = logging.getLogger(__name__)
+
+
+class LegacyModuleInfo(BaseModel):
+    """Represents information about a legacy module in nacc/metadata project.
+
+    Attributes:
+        legacy_label (str): Label of the legacy module.
+        legacy_orderby (str): Orderby field for legacy module
+    """
+    legacy_label: str
+    legacy_orderby: str
 
 
 class NACCGroup(CenterAdaptor):

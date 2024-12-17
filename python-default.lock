@@ -17,7 +17,7 @@
 //     "fw-client>=0.7.0",
 //     "fw-utils>=3",
 //     "moto[s3,ses,ssm]>=5.0.15",
-//     "nacc_form_validator@ https://github.com/naccdata/nacc-form-validator/releases/download/v0.3.0/nacc_form_validator-0.3.0-py3-none-any.whl",
+//     "nacc_form_validator@ https://github.com/naccdata/nacc-form-validator/releases/download/v0.4.0/nacc_form_validator-0.4.0-py3-none-any.whl",
 //     "pandas-stubs>=2.0.3",
 //     "pandas>=2.1.1",
 //     "pydantic>=2.5.2",
@@ -1981,8 +1981,8 @@
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "e271c54377d48441d36acb52c5304aff63a30bb70182ea59770f45d2ada1108f",
-              "url": "https://github.com/naccdata/nacc-form-validator/releases/download/v0.3.0/nacc_form_validator-0.3.0-py3-none-any.whl"
+              "hash": "917acebae20f0aa19f847cd11293611e6cfcb6802d4ad2d1d6487bb43d67f4b5",
+              "url": "https://github.com/naccdata/nacc-form-validator/releases/download/v0.4.0/nacc_form_validator-0.4.0-py3-none-any.whl"
             }
           ],
           "project_name": "nacc-form-validator",
@@ -1992,7 +1992,7 @@
             "types-python-dateutil>=2.9.0.20240316"
           ],
           "requires_python": "==3.11.*",
-          "version": "0.3.0"
+          "version": "0.4.0"
         },
         {
           "artifacts": [
