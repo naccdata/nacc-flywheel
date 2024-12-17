@@ -71,7 +71,7 @@ class REDCapImportErrorChecksVisitor(GearExecutionEnvironment):
                                         default='all').split(',')
 
         try:
-            redcap_params = parameter_store.get_redcap_report_parameters(
+            redcap_params = parameter_store.get_redcap_report_parameters(  # type: ignore
                 param_path=qc_checks_db_path)
         except ParameterError as error:
             raise GearExecutionError(

@@ -1,5 +1,6 @@
 """Tests the ErrorCheckCSVVisitor and related models."""
 import logging
+
 import pytest
 from outputs.errors import LogErrorWriter
 from redcap_error_checks_import_app.utils import ErrorCheckKey
@@ -75,54 +76,6 @@ def data():
         "in_prev_versions": "No",  # should not be in final output
         "questions": ""  # should not be in final output
     }
-
-
-class TestErrorCheckKey:
-    """Tests the ErrorCheckKey class.
-
-    For creation, the other tests test the valid case so not needed
-    here.
-    """
-
-    def test_invalid_key(self):
-        """Test invalid case."""
-        key = "CSV/badmodule/test.csv"
-
-        with pytest.raises(ValueError) as e:
-            ErrorCheckKey.create_from_key(key)
-
-        assert str(e.value) == (
-            f"Cannot parse ErrorCheckKey components from {key}; " +
-            "Expected to be of the form " +
-            "CSV / MODULE / FORM_VER / PACKET / filename")
-
-    def test_no_top_level_csv(self):
-        """Test invalid case."""
-        key = "JSON/module/1.0/dummy_packet/form_dummy_error_checks.json"
-
-        with pytest.raises(ValueError) as e:
-            ErrorCheckKey.create_from_key(key)
-
-        assert str(e.value) == "Expected CSV at top level of S3 key"
-
-    def test_get_visit_type(self):
-        """Test get visit type."""
-        base_key = \
-            'CSV/module/1.0/REPLACE/form_dummy_error_checks.csv'
-
-        for packet in ['F', 'FF', 'FL']:
-            key = base_key.replace('REPLACE', packet)
-            key = ErrorCheckKey.create_from_key(key)
-            assert key.get_visit_type() == 'fvp'
-
-        for packet in ['I', 'IF', 'IL']:
-            key = base_key.replace('REPLACE', packet)
-            key = ErrorCheckKey.create_from_key(key)
-            assert key.get_visit_type() == 'ivp'
-
-        key = base_key.replace('REPLACE', 'I4')
-        key = ErrorCheckKey.create_from_key(key)
-        assert key.get_visit_type() == 'i4vp'
 
 
 class TestErrorCheckCSVVisitor:

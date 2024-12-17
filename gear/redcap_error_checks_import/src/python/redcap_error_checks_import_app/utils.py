@@ -25,14 +25,14 @@ class ErrorCheckKey(BaseModel):
     form_name: str
     packet: Optional[str] = None
 
-    @classmethod
-    def create_from_key(cls, key: str) -> BaseModel:
+    @staticmethod
+    def create_from_key(key: str):
         """Create ErrorCheckKey from key.
 
         Args:
             key: The S3 key
         Returns:
-            instantiated  ErrorCheckKey
+            instantiated ErrorCheckKey
         """
         key_parts = key.split('/')
 
@@ -70,12 +70,15 @@ class ErrorCheckKey(BaseModel):
             "Expected to be of the form " +
             "CSV / MODULE / FORM_VER / PACKET / filename")
 
-    def get_visit_type(self) -> str:
+    def get_visit_type(self) -> Optional[str]:
         """Determine visit type from packet.
 
         Returns:
-            The visit type
+            The visit type; None if there is no corresponding packet
         """
+        if not self.packet:
+            return None
+
         if self.packet == 'I4':
             return 'i4vp'
 
@@ -114,7 +117,7 @@ class ErrorCheckImportStats:
         """
         self.__total_records += num_records
 
-    def add_failed_files(self, failed_file: str) -> None:
+    def add_failed_file(self, failed_file: str) -> None:
         """Adds to the failed files.
 
         Args:

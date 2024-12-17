@@ -43,17 +43,25 @@ class TestErrorCheckKey:
 
         for packet in ['F', 'FF', 'FL']:
             key = base_key.replace('REPLACE', packet)
-            key = ErrorCheckKey.create_from_key(key)
-            assert key.get_visit_type() == 'fvp'
+            ec_key = ErrorCheckKey.create_from_key(key)
+            assert ec_key.get_visit_type() == 'fvp'
 
         for packet in ['I', 'IF', 'IL']:
             key = base_key.replace('REPLACE', packet)
-            key = ErrorCheckKey.create_from_key(key)
-            assert key.get_visit_type() == 'ivp'
+            ec_key = ErrorCheckKey.create_from_key(key)
+            assert ec_key.get_visit_type() == 'ivp'
 
         key = base_key.replace('REPLACE', 'I4')
-        key = ErrorCheckKey.create_from_key(key)
-        assert key.get_visit_type() == 'i4vp'
+        ec_key = ErrorCheckKey.create_from_key(key)
+        assert ec_key.get_visit_type() == 'i4vp'
+
+    def test_get_visit_type_enrollment(self):
+        """This get visit type on an enrollment form, which should result in a
+        None visit type."""
+        base_key = \
+            'CSV/ENROLL/1.0/form_dummy_error_checks.csv'
+        ec_key = ErrorCheckKey.create_from_key(base_key)
+        assert ec_key.get_visit_type() is None
 
 
 class TestErrorCheckImportStats:

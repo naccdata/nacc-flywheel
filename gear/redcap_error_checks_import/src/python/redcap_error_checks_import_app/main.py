@@ -2,7 +2,7 @@
 import json
 import logging
 from io import StringIO
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from gear_execution.gear_execution import GearExecutionError
@@ -19,8 +19,9 @@ log = logging.getLogger(__name__)
 
 
 def load_error_check_csv(key: ErrorCheckKey,
-                         file: Dict[str, Dict],
-                         stats: ErrorCheckImportStats) -> List[Dict[str, Any]]:
+                         file: Dict[Any, Any],
+                         stats: ErrorCheckImportStats) \
+        -> Optional[List[Dict[str, Any]]]:
     """Load the error check CSV.
 
     Args:
@@ -39,8 +40,7 @@ def load_error_check_csv(key: ErrorCheckKey,
                        visitor=visitor)
 
     if not success:
-        log.error(
-            f"Errors encountered while reading from {key.full_path}:")
+        log.error(f"Errors encountered while reading from {key.full_path}:")
         return None
 
     error_checks = visitor.validated_error_checks
@@ -63,7 +63,7 @@ def run(*,
         s3_bucket: S3BucketReader,
         redcap_project: REDCapProject,
         modules: List[str],
-        fail_fast: bool = True):
+        fail_fast: bool = True) -> None:
     """Runs the REDCAP Error Checks import process.
 
     Args:

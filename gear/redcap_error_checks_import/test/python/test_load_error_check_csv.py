@@ -70,7 +70,7 @@ class TestLoadErrorCheckCSV:
             + "Expected to be of the form " \
             + "CSV / MODULE / FORM_VER / PACKET / filename"
 
-    def test_empty_error_checks(self, key, headers):
+    def test_empty_error_checks(self, key, headers, stats):
         """Test when there is only a header."""
         data = {"Body": BytesIO(headers.encode('utf-8'))}
         assert not load_error_check_csv(key, data, stats)

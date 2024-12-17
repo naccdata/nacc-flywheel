@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 from inputs.csv_reader import CSVVisitor
 from outputs.errors import (
-    ListErrorWriter,
+    LogErrorWriter,
     empty_field_error,
     missing_field_error,
     unexpected_value_error,
@@ -27,18 +27,18 @@ class ErrorCheckCSVVisitor(CSVVisitor):
     ALLOWED_EMPTY_FIELDS = ("comp_forms", "comp_vars")
 
     def __init__(self, key: ErrorCheckKey,
-                 error_writer: ListErrorWriter) -> None:
+                 error_writer: LogErrorWriter) -> None:
         """Initializer."""
         self.__key = key
         self.__error_writer = error_writer
-        self.__validated_error_checks = []
+        self.__validated_error_checks: List[Dict[str, Any]] = []
 
     @property
-    def error_writer(self) -> ListErrorWriter:
+    def error_writer(self) -> LogErrorWriter:
         """Get the error writer.
 
         Returns:
-            The ListErrorWriter.
+            The LogErrorWriter.
         """
         return self.__error_writer
 
@@ -89,16 +89,18 @@ class ErrorCheckCSVVisitor(CSVVisitor):
                 error = empty_field_error(field=field, line=line_num)
                 self.__error_writer.write(error)
 
-        if row.get('form_name') != self.__key.form_name:
+        form_name = row.get('form_name', '')
+        if form_name != self.__key.form_name:
             error = unexpected_value_error(field='form_name',
-                                           value=row.get('form_name'),
+                                           value=form_name,
                                            expected=self.__key.form_name,
                                            line=line_num)
             self.__error_writer.write(error)
 
-        if not row.get('error_code').startswith(self.__key.form_name):
+        error_code = row.get('error_code', '')
+        if not error_code.startswith(self.__key.form_name):
             error = unexpected_value_error(field='error_code',
-                                           value=row.get('error_code'),
+                                           value=error_code,
                                            expected="error_code to start " +
                                            "with form_name",
                                            line=line_num)
@@ -107,16 +109,17 @@ class ErrorCheckCSVVisitor(CSVVisitor):
         # check packet is consistent
         if self.__key.packet:
             visit_type = self.__key.get_visit_type()
-            if visit_type not in row.get('error_code', ''):
+            if visit_type and visit_type not in error_code:
                 error = unexpected_value_error(field='error_code',
-                                               value=row.get('error_code'),
+                                               value=error_code,
                                                expected="error_code to have " +
                                                visit_type,
                                                line=line_num)
                 self.__error_writer.write(error)
 
-            if row.get('packet') != self.__key.packet:
-                error = unexpected_value_error('packet', row.get('packet'),
+            packet = row.get('packet', '')
+            if packet != self.__key.packet:
+                error = unexpected_value_error('packet', packet,
                                                self.__key.packet, line_num)
                 self.__error_writer.write(error)
 
