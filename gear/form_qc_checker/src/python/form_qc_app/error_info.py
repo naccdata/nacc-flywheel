@@ -2,8 +2,9 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
+from keys.keys import FieldNames, RuleLabels
 from outputs.errors import (
     CSVLocation,
     FileError,
@@ -13,12 +14,11 @@ from outputs.errors import (
 )
 from pydantic import BaseModel, ValidationError
 from redcap.redcap_connection import REDCapConnectionError, REDCapReportConnection
-
-from form_qc_app.parser import Keys
+from redcap.redcap_project import REDCapProject
 
 log = logging.getLogger(__name__)
 
-COMPOSITE_RULES = [Keys.COMPAT, Keys.TEMPORAL]
+COMPOSITE_RULES = [RuleLabels.COMPAT, RuleLabels.TEMPORAL, RuleLabels.GDS]
 
 
 class ErrorDescription(BaseModel):
@@ -49,7 +49,7 @@ class ErrorStore(ABC):
     """Base class to retrieve NACC QC checks information from a database."""
 
     # List of error cheks by error code
-    __errors_list: Dict[str, ErrorDescription] = {}
+    __errors_list: ClassVar[Dict[str, ErrorDescription]] = {}
 
     def __init__(self, preload: bool = False) -> None:
         """
@@ -160,8 +160,9 @@ class REDCapErrorStore(ErrorStore):
         if record_ids and self.__redcap_con:
             fields = list(ErrorDescription.__annotations__.keys())
             try:
-                records_list = self.__redcap_con.export_records(
-                    record_ids=record_ids, fields=fields)
+                redcap_prj = REDCapProject.create(self.__redcap_con)
+                records_list = redcap_prj.export_records(record_ids=record_ids,
+                                                         fields=fields)
                 for record in records_list:
                     error_code = record['error_code']  # type: ignore
                     try:
@@ -191,8 +192,8 @@ def replace_nullable_with_required(rule: str, code_shema: Dict[str,
     Returns:
         bool: True if a match found, else False
     """
-    if rule == Keys.NULLABLE and Keys.REQUIRED in code_shema:
-        code_shema[rule] = code_shema[Keys.REQUIRED]
+    if rule == RuleLabels.NULLABLE and RuleLabels.REQUIRED in code_shema:
+        code_shema[rule] = code_shema[RuleLabels.REQUIRED]
         return True
 
     return False
@@ -292,10 +293,10 @@ class ErrorComposer():
             if line_number else JSONLocation(key_path=field),
             value=value,
             message=error_msg,
-            ptid=str(self.__input_data[Keys.PTID])
-            if Keys.PTID in self.__input_data else None,
-            visitnum=str(self.__input_data[Keys.VISITNUM])
-            if Keys.VISITNUM in self.__input_data else None)
+            ptid=str(self.__input_data[FieldNames.PTID])
+            if FieldNames.PTID in self.__input_data else None,
+            visitnum=str(self.__input_data[FieldNames.VISITNUM])
+            if FieldNames.VISITNUM in self.__input_data else None)
 
     def __write_qc_error_no_code(self,
                                  *,
@@ -408,34 +409,35 @@ class ErrorComposer():
             if error.rule != error.schema_path[1]:
                 continue
 
-            if error.rule not in code_shema:
-                if not replace_nullable_with_required(error.rule, code_shema):
-                    log.warning(
-                        'NACC error code not found '
-                        'for variable %s rule %s - %s', field, error.rule,
-                        error.schema_path)
-                    self.__write_qc_error_no_code(error_obj=error,
-                                                  field=field,
-                                                  line_number=line_number)
-                    continue
+            if (error.rule not in code_shema
+                    and not replace_nullable_with_required(
+                        error.rule, code_shema)):
+                log.warning(
+                    'NACC error code not found '
+                    'for variable %s rule %s - %s', field, error.rule,
+                    error.schema_path)
+                self.__write_qc_error_no_code(error_obj=error,
+                                              field=field,
+                                              line_number=line_number)
+                continue
 
             if is_composite_rule(error.rule):
                 checks = code_shema[error.rule]
                 rule_index = error.info[0]
                 for check in checks:
-                    code_index = check[Keys.INDEX]
-                    if rule_index == code_index and check[Keys.CODE]:
+                    code_index = check[RuleLabels.INDEX]
+                    if rule_index == code_index and check[RuleLabels.CODE]:
                         first_code, other_codes = self._split_nacc_error_codes(
-                            check[Keys.CODE])
+                            check[RuleLabels.CODE])
                         nacc_error_codes.append(first_code)
                         err_info_map[first_code] = {
                             'error': error,
                             'field': field,
                             'other': other_codes
                         }
-            elif code_shema[error.rule][Keys.CODE]:
+            elif code_shema[error.rule][RuleLabels.CODE]:
                 first_code, other_codes = self._split_nacc_error_codes(
-                    code_shema[error.rule][Keys.CODE])
+                    code_shema[error.rule][RuleLabels.CODE])
                 nacc_error_codes.append(first_code)
                 err_info_map[first_code] = {
                     'error': error,

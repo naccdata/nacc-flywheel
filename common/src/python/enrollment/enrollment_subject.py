@@ -3,7 +3,6 @@
 from datetime import datetime
 from typing import Optional
 
-from flywheel.file_spec import FileSpec
 from flywheel_adaptor.subject_adaptor import SubjectAdaptor
 from identifiers.model import GUID_PATTERN, NACCID_PATTERN
 from pydantic import BaseModel, Field, ValidationError
@@ -47,7 +46,7 @@ class EnrollmentSubject(SubjectAdaptor):
           the enrollment subject
         """
         # pylint: disable=protected-access
-        return EnrollmentSubject(subject=subject._subject)
+        return EnrollmentSubject(subject=subject.subject)
 
     def get_enrollment_info(self) -> Optional[IdentifierInfoRecord]:
         """Returns the enrollment info object for this subject.
@@ -104,19 +103,13 @@ class EnrollmentSubject(SubjectAdaptor):
         Args:
           record: the enrollment record
         """
-        session = self.sessions.find_first('label=enrollment_transfer')
-        if not session:
-            session = self.add_session(label="enrollment_transfer")
-
-        acquisition = session.acquisitions.find_first("label=enrollment")
-        if not acquisition:
-            acquisition = session.add_acquisition(label="enrollment")
-
-        record_file_spec = FileSpec(
-            name='enrollment.json',
+        self.upload_acquisition_file(
+            session_label='enrollment_transfer',
+            acquisition_label='enrollment',
+            filename='enrollment.json',
             contents=record.model_dump_json(exclude_none=True),
-            content_type='application/json')
-        acquisition.upload_file(record_file_spec)
+            content_type='application/json',
+            skip_duplicates=False)
 
     def get_demographics_info(self) -> Optional[Demographics]:
         """Returns the demographics info object for this subject.

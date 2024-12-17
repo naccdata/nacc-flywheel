@@ -6,10 +6,11 @@ from centers.center_group import (
     FormIngestProjectMetadata,
     IngestProjectMetadata,
     ProjectMetadata,
-    REDCapFormProject,
+    REDCapFormProjectMetadata,
     REDCapProjectInput,
     StudyMetadata,
 )
+from keys.keys import DefaultValues
 from pydantic import ValidationError
 
 
@@ -43,9 +44,10 @@ def ingest_project_with_redcap():
                                     datatype="form",
                                     redcap_projects={
                                         "dummyv9":
-                                        REDCapFormProject(redcap_pid=12345,
-                                                          label="dummyv9",
-                                                          report_id=22)
+                                        REDCapFormProjectMetadata(
+                                            redcap_pid=12345,
+                                            label="dummyv9",
+                                            report_id=22)
                                     })
 
 
@@ -76,7 +78,7 @@ class TestProjectMetadataSerialization:
             model_object = IngestProjectMetadata.model_validate(project_dump)
             assert model_object == project_with_datatype
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
 
     # pylint: disable=(redefined-outer-name)
     def test_project_with_datatype(self, project_with_datatype):
@@ -106,7 +108,7 @@ class TestProjectMetadataSerialization:
                 project_dump)
             assert model_object == ingest_project_with_redcap
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
 
     # pylint: disable=(redefined-outer-name)
     def test_project_without_datatype(self, project_without_datatype):
@@ -120,7 +122,7 @@ class TestProjectMetadataSerialization:
             model_object = ProjectMetadata.model_validate(project_dump)
             assert model_object == project_without_datatype
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
 
 
 # pylint: disable=(redefined-outer-name)
@@ -151,13 +153,13 @@ class TestStudyMetadataSerialization:
         assert 'study-name' in study_dump
         assert 'ingest-projects' in study_dump
         assert 'accepted-project' in study_dump
-        assert len(study_dump.keys()) == 4
+        assert len(study_dump.keys()) == 5
 
         try:
             model_object = StudyMetadata.model_validate(study_dump)
             assert model_object == study_object
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
 
 
 # pylint: disable=(redefined-outer-name)
@@ -184,7 +186,7 @@ class TestCenterPortalMetadataSerialization:
             model_object = CenterProjectMetadata.model_validate(portal_dump)
             assert model_object == portal_metadata
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
 
 
 class TestREDCapUpdate:
@@ -198,9 +200,9 @@ class TestREDCapUpdate:
                                           study_id="test",
                                           project_label="ingest-form-test",
                                           projects=[
-                                              REDCapFormProject(
+                                              REDCapFormProjectMetadata(
                                                   redcap_pid=12345,
-                                                  label="enrollv1",
+                                                  label=DefaultValues.ENROLLMENT_MODULE,
                                                   report_id=22)
                                           ])
         study_info = portal_metadata.studies.get(input_object.study_id)
@@ -217,11 +219,11 @@ class TestREDCapUpdate:
         assert ingest_project.redcap_projects, (
             "expect non-null redcap projects after update")
         assert ingest_project.redcap_projects.get(
-            "enrollv1"), "expect non-null redcap project after update"
+            DefaultValues.ENROLLMENT_MODULE), "expect non-null redcap project after update"
 
         study_info.add_ingest(ingest_project)
         portal_metadata.add(study_info)
 
         assert portal_metadata.studies["test"].ingest_projects[
             "ingest-form-test"].redcap_projects[
-                "enrollv1"], "expect non-null redcap project after update"
+                DefaultValues.ENROLLMENT_MODULE], "expect non-null redcap project after update"

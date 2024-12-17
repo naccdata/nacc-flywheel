@@ -19,6 +19,7 @@ from identifiers.identifiers_lambda_repository import (
     IdentifiersMode,
 )
 from inputs.parameter_store import ParameterStore
+from keys.keys import DefaultValues
 from lambdas.lambda_function import LambdaClient, create_lambda_client
 from outputs.errors import ListErrorWriter
 
@@ -50,6 +51,8 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
                                       parameter_store=parameter_store)
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
+        assert file_input, "create raises exception if missing expected input"
+
         admin_id = context.config.get("admin_group", "nacc")
         mode = context.config.get("identifiers_mode", "dev")
 
@@ -68,8 +71,8 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
         assert context, 'Gear context required'
 
         file_module = self.__file_input.get_module_name_from_file_suffix()
-        enroll_module: str = context.config.get("enrollment_module",
-                                                "enrollv1")
+        enroll_module: str = context.config.get(
+            "enrollment_module", DefaultValues.ENROLLMENT_MODULE)
         if not file_module or (file_module.lower() != enroll_module.lower()):
             raise GearExecutionError(
                 f'Input file name {self.__file_input.filename} '

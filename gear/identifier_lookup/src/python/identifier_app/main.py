@@ -5,13 +5,11 @@ from typing import Any, Dict, List, Optional, TextIO
 
 from identifiers.model import IdentifierObject
 from inputs.csv_reader import CSVVisitor, read_csv
+from keys.keys import FieldNames
 from outputs.errors import ErrorWriter, identifier_error, missing_header_error
 from outputs.outputs import CSVWriter
 
 log = logging.getLogger(__name__)
-
-PTID = 'ptid'
-NACCID = 'naccid'
 
 
 class IdentifierVisitor(CSVVisitor):
@@ -21,19 +19,22 @@ class IdentifierVisitor(CSVVisitor):
     data from same ADRC (have the same ADCID).
     """
 
-    def __init__(self, identifiers: Dict[str, IdentifierObject],
-                 output_file: TextIO, error_writer: ErrorWriter) -> None:
+    def __init__(self, *, identifiers: Dict[str, IdentifierObject],
+                 output_file: TextIO, module_name: str,
+                 error_writer: ErrorWriter) -> None:
         """
         Args:
           identifiers: the map from PTID to Identifier object
           output_file: the data output stream
+          module_name: the module name for the form
           error_writer: the error output writer
         """
         self.__identifiers = identifiers
         self.__output_file = output_file
         self.__error_writer = error_writer
+        self.__module_name = module_name
         self.__header: Optional[List[str]] = None
-        self.__writer = None
+        self.__writer: Optional[CSVWriter] = None
 
     def __get_writer(self):
         """Returns the writer for the CSV output.
@@ -58,12 +59,13 @@ class IdentifierVisitor(CSVVisitor):
         Returns:
           True if `ptid` occurs in the header, False otherwise
         """
-        if PTID not in header:
+        if FieldNames.PTID not in header:
             self.__error_writer.write(missing_header_error())
             return False
 
         self.__header = header
-        self.__header.append(NACCID)
+        self.__header.append(FieldNames.NACCID)
+        self.__header.append(FieldNames.MODULE)
 
         return True
 
@@ -82,20 +84,23 @@ class IdentifierVisitor(CSVVisitor):
         """
         writer = self.__get_writer()
 
-        identifier = self.__identifiers.get(row[PTID])
+        identifier = self.__identifiers.get(row[FieldNames.PTID])
         if not identifier:
             self.__error_writer.write(
-                identifier_error(line=line_num, value=row[PTID]))
+                identifier_error(line=line_num, value=row[FieldNames.PTID]))
             return False
 
-        row[NACCID] = identifier.naccid
+        row[FieldNames.NACCID] = identifier.naccid
+        row[FieldNames.MODULE] = self.__module_name
+
         writer.write(row)
 
         return True
 
 
 def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
-        output_file: TextIO, error_writer: ErrorWriter) -> bool:
+        module_name: str, output_file: TextIO,
+        error_writer: ErrorWriter) -> bool:
     """Reads participant records from the input CSV file, finds the NACCID for
     each row from the ADCID and PTID, and outputs a CSV file with the NACCID
     inserted.
@@ -111,6 +116,7 @@ def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
     Args:
       input_file: the data input stream
       identifiers: the map from PTID to Identifier object
+      module_name: the module name for the form
       output_file: the data output stream
       error_writer: the error output writer
     Returns:
@@ -121,4 +127,5 @@ def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
                     error_writer=error_writer,
                     visitor=IdentifierVisitor(identifiers=identifiers,
                                               output_file=output_file,
+                                              module_name=module_name,
                                               error_writer=error_writer))

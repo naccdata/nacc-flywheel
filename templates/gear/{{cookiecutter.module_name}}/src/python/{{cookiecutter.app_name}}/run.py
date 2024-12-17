@@ -11,12 +11,11 @@ from gear_execution.gear_execution import (ClientWrapper, ContextClient,
                                            GearExecutionEnvironment)
 from {{cookiecutter.app_name}}.main import run
 from inputs.parameter_store import ParameterStore
-from inputs.yaml import YAMLReadError, get_object_lists
 
 log = logging.getLogger(__name__)
 
 class {{cookiecutter.class_name}}(GearExecutionEnvironment):
-    """Visitor for the templating gear."""
+    """Visitor for the {{cookiecutter.gear_name}} gear."""
 
     def __init__(self, admin_id: str, client: ClientWrapper, new_only: bool):
         super().__init__(client=client, admin_id=admin_id)
@@ -46,8 +45,8 @@ class {{cookiecutter.class_name}}(GearExecutionEnvironment):
 
     def run(self, context: GearToolkitContext) -> None:
         run(proxy=self.proxy,
-            new_only=.self.__new_only)
-        
+            new_only=self.__new_only)
+
 def main():
     """Main method for {{cookiecutter.gear_name}}."""
 

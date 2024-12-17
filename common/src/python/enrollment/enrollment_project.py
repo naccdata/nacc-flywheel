@@ -48,8 +48,7 @@ class EnrollmentProject(ProjectAdaptor):
         Returns:
           the enrollment project
         """
-        # pylint: disable=protected-access
-        return EnrollmentProject(project=project._project, proxy=project._fw)
+        return EnrollmentProject(project=project.project, proxy=project.proxy)
 
     def get_transfer_info(self) -> TransferInfo:
         """Gets the transfer info object for this project.

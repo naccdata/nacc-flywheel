@@ -4,7 +4,10 @@ from io import StringIO
 from typing import Optional
 
 import boto3
+from botocore.config import Config
+from inputs.environment import get_environment_variable
 from inputs.parameter_store import S3Parameters
+from keys.keys import DefaultValues
 
 log = logging.getLogger(__name__)
 
@@ -85,10 +88,40 @@ class S3BucketReader:
           the S3BucketReader
         """
 
-        client = boto3.client('s3',
-                              aws_access_key_id=parameters['accesskey'],
-                              aws_secret_access_key=parameters['secretkey'],
-                              region_name=parameters['region'])
+        client = boto3.client(
+            's3',
+            aws_access_key_id=parameters['accesskey'],
+            aws_secret_access_key=parameters['secretkey'],
+            region_name=parameters['region'],
+            config=Config(
+                max_pool_connections=DefaultValues.MAX_POOL_CONNECTIONS))
 
         return S3BucketReader(boto_client=client,
                               bucket_name=parameters['bucket'])
+
+    @classmethod
+    def create_from_environment(cls,
+                                s3bucket: str) -> Optional['S3BucketReader']:
+        """Returns the bucket reader using the gearbot access credentials
+        stored in the environment variables. Use this method only if nacc-
+        flywheel-gear user has access to the specified S3 bucket.
+
+        Args:
+          s3bucket: S3 bucket name
+        Returns:
+          the S3BucketReader
+        """
+
+        secret_key = get_environment_variable('AWS_SECRET_ACCESS_KEY')
+        access_id = get_environment_variable('AWS_ACCESS_KEY_ID')
+        region = get_environment_variable('AWS_DEFAULT_REGION')
+
+        client = boto3.client(
+            's3',
+            aws_access_key_id=access_id,
+            aws_secret_access_key=secret_key,
+            region_name=region,
+            config=Config(
+                max_pool_connections=DefaultValues.MAX_POOL_CONNECTIONS))
+
+        return S3BucketReader(boto_client=client, bucket_name=s3bucket)

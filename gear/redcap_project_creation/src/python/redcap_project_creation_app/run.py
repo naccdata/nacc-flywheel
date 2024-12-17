@@ -190,7 +190,7 @@ class REDCapProjectCreation(GearExecutionEnvironment):
                                        default_flow_style=False)
 
             tstmp = datetime.now().strftime("%Y%m%d-%H%M%S")
-            fname = f'{output_prefix} - {study_info.study_id} - {tstmp}.yml'
+            fname = f'{output_prefix} - {study_info.study_id} - {tstmp}.yaml'
             with context.open_output(fname, mode='w',
                                      encoding='utf-8') as out_file:
                 out_file.write(yaml_text)
@@ -203,7 +203,8 @@ class REDCapProjectCreation(GearExecutionEnvironment):
 def main():
     """Main method for REDCap Project Creation."""
 
-    GearEngine().run(gear_type=REDCapProjectCreation)
+    GearEngine().create_with_parameter_store().run(
+        gear_type=REDCapProjectCreation)
 
 
 if __name__ == "__main__":

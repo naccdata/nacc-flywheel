@@ -3,6 +3,7 @@
 import logging
 from typing import Any, Dict, Iterator, List, Optional, TextIO
 
+from dates.form_dates import DATE_FORMATS, DateFormatException, parse_date
 from enrollment.enrollment_project import EnrollmentProject, TransferInfo
 from enrollment.enrollment_transfer import (
     CenterValidator,
@@ -22,6 +23,7 @@ from identifiers.identifiers_repository import (
 )
 from identifiers.model import CenterIdentifiers, IdentifierObject
 from inputs.csv_reader import AggregateRowValidator, CSVVisitor, read_csv
+from keys.keys import FieldNames
 from outputs.errors import (
     CSVLocation,
     ErrorWriter,
@@ -29,7 +31,9 @@ from outputs.errors import (
     empty_field_error,
     identifier_error,
     missing_header_error,
+    unexpected_value_error,
 )
+from pydantic import ValidationError
 
 log = logging.getLogger(__name__)
 
@@ -104,7 +108,8 @@ class TransferVisitor(CSVVisitor):
           True if the header has expected columns, False otherwise.
         """
         expected_columns = {
-            'oldadcid', 'oldptid', 'naccidknwn', 'naccid', 'prevenrl'
+            FieldNames.OLDADCID, FieldNames.OLDPTID, FieldNames.NACCIDKWN,
+            FieldNames.NACCID, FieldNames.PREVENRL
         }
         if not expected_columns.issubset(set(header)):
             self.__error_writer.write(missing_header_error())
@@ -129,9 +134,10 @@ class TransferVisitor(CSVVisitor):
         if not has_known_naccid(row):
             return True
 
-        self.__naccid = row['naccid']
+        self.__naccid = row[FieldNames.NACCID]
         if not self.__naccid:
-            self.__error_writer.write(empty_field_error('naccid', line_num))
+            self.__error_writer.write(
+                empty_field_error(FieldNames.NACCID, line_num))
             return False
 
         self.__naccid_identifier = self.__repo.get(naccid=self.__naccid)
@@ -140,7 +146,7 @@ class TransferVisitor(CSVVisitor):
 
         self.__error_writer.write(
             identifier_error(
-                field='naccid',
+                field=FieldNames.NACCID,
                 value=self.__naccid,
                 line=line_num,
                 message=f"Did not find participant for NACCID {self.__naccid}")
@@ -167,7 +173,7 @@ class TransferVisitor(CSVVisitor):
             FileError(error_type='error',
                       error_code='mismatched-id',
                       location=CSVLocation(line=line_num,
-                                           column_name='naccid'),
+                                           column_name=FieldNames.NACCID),
                       message=("mismatched NACCID for "
                                f"{source} "
                                f"and provided NACCID {self.__naccid}")))
@@ -189,16 +195,18 @@ class TransferVisitor(CSVVisitor):
         if not guid_available(row):
             return True
 
-        guid_identifier = self.__repo.get(guid=row['guid'])
+        guid_identifier = self.__repo.get(guid=row[FieldNames.GUID])
         if not guid_identifier:
             self.__error_writer.write(
                 identifier_error(
-                    field='guid',
-                    value=row['guid'],
+                    field=FieldNames.GUID,
+                    value=row[FieldNames.GUID],
                     line=line_num,
-                    message=f"No NACCID found for GUID {row['guid']}"))
+                    message=f"No NACCID found for GUID {row[FieldNames.GUID]}")
+            )
             return False
-        if not self._match_naccid(guid_identifier, row['guid'], line_num):
+        if not self._match_naccid(guid_identifier, row[FieldNames.GUID],
+                                  line_num):
             return False
 
         self.__naccid_identifier = guid_identifier
@@ -221,13 +229,15 @@ class TransferVisitor(CSVVisitor):
         if not previously_enrolled(row):
             return True
 
-        previous_adcid = row['oldadcid']
+        previous_adcid = row[FieldNames.OLDADCID]
         if previous_adcid is None:
-            self.__error_writer.write(empty_field_error('oldadcid', line_num))
+            self.__error_writer.write(
+                empty_field_error(FieldNames.OLDADCID, line_num))
             return False
-        previous_ptid = row['oldptid']
+        previous_ptid = row[FieldNames.OLDPTID]
         if not previous_ptid:
-            self.__error_writer.write(empty_field_error('oldptid', line_num))
+            self.__error_writer.write(
+                empty_field_error(FieldNames.OLDPTID, line_num))
             return False
 
         ptid_identifier = self.__repo.get(adcid=previous_adcid,
@@ -263,8 +273,8 @@ class TransferVisitor(CSVVisitor):
         if not self.__validator.check(row, line_num):
             return True
 
-        new_identifiers = CenterIdentifiers(adcid=row['adcid'],
-                                            ptid=row['ptid'])
+        new_identifiers = CenterIdentifiers(adcid=row[FieldNames.ADCID],
+                                            ptid=row[FieldNames.PTID])
 
         if not self._naccid_visit(row=row, line_num=line_num):
             return False
@@ -278,15 +288,26 @@ class TransferVisitor(CSVVisitor):
         naccid = None
         if self.__naccid_identifier:
             naccid = self.__naccid_identifier.naccid
+
+        try:
+            enroll_date = parse_date(date_string=row[FieldNames.ENRLFRM_DATE],
+                                     formats=DATE_FORMATS)
+        except DateFormatException:
+            self.__error_writer.write(
+                unexpected_value_error(field=FieldNames.ENRLFRM_DATE,
+                                       value=row[FieldNames.ENRLFRM_DATE],
+                                       expected='',
+                                       message='Expected valid datetime date',
+                                       line=line_num))
+            return False
+
         self.__transfer_info.add(
-            TransferRecord(date=row['frmdate_enrl'],
-                           initials=row['initials_enrl'],
+            TransferRecord(date=enroll_date,
+                           initials=row[FieldNames.ENRLFRM_INITL],
                            center_identifiers=new_identifiers,
                            previous_identifiers=self.__previous_identifiers,
                            naccid=naccid))
-
         log.info('Transfer found on line %s', line_num)
-
         return True
 
 
@@ -310,7 +331,7 @@ class NewEnrollmentVisitor(CSVVisitor):
         Returns:
           True if the header has expected columns. False, otherwise.
         """
-        expected_columns = {'adcid', 'ptid', 'guid'}
+        expected_columns = {FieldNames.ADCID, FieldNames.PTID, FieldNames.GUID}
         if not expected_columns.issubset(set(header)):
             self.__error_writer.write(missing_header_error())
             return False
@@ -329,11 +350,43 @@ class NewEnrollmentVisitor(CSVVisitor):
         if not self.__validator.check(row, line_num):
             return False
 
-        log.info('Adding new enrollment for (%s,%s)', row['adcid'],
-                 row['ptid'])
-        self.__batch.add(EnrollmentRecord.create_from(row))
+        log.info('Adding new enrollment for (%s,%s)', row[FieldNames.ADCID],
+                 row[FieldNames.PTID])
+        try:
+            enroll_date = parse_date(date_string=row[FieldNames.ENRLFRM_DATE],
+                                     formats=DATE_FORMATS)
+        except DateFormatException:
+            self.__error_writer.write(
+                unexpected_value_error(field=FieldNames.ENRLFRM_DATE,
+                                       value=row[FieldNames.ENRLFRM_DATE],
+                                       expected='',
+                                       message='Expected valid datetime date',
+                                       line=line_num))
+            return False
 
-        return True
+        try:
+            self.__batch.add(
+                EnrollmentRecord(center_identifier=CenterIdentifiers(
+                    adcid=row[FieldNames.ADCID], ptid=row[FieldNames.PTID]),
+                                 guid=row.get(FieldNames.GUID)
+                                 if row.get(FieldNames.GUID) else None,
+                                 naccid=None,
+                                 start_date=enroll_date))
+            return True
+        except ValidationError as validation_error:
+            for error in validation_error.errors():
+                if error['type'] == 'string_pattern_mismatch':
+                    field_name = str(error['loc'][0])
+                    context = error.get('ctx', {'pattern': ''})
+                    self.__error_writer.write(
+                        unexpected_value_error(
+                            field=field_name,
+                            value=error['input'],
+                            expected=context['pattern'],
+                            message=f'Invalid {field_name.upper()}',
+                            line=line_num))
+
+            return False
 
 
 class ProvisioningVisitor(CSVVisitor):
@@ -417,7 +470,7 @@ def run(*, input_file: TextIO, center_id: int, repo: IdentifierRepository,
                                transfer_info=transfer_info))
         if not success:
             log.error("no changes made due to errors in input file")
-            return True
+            return False
 
         log.info("requesting %s new NACCIDs", len(enrollment_batch))
         enrollment_batch.commit(repo)

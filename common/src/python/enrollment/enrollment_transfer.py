@@ -42,7 +42,7 @@ class Demographics(BaseModel):
         """Constructs a Demographics object from row of enrollment/transfer
         form.
 
-        Assumes form is enrollv1.
+        Assumes form is enrollment form.
 
         Args:
           row: the dictionary for the row of form.
@@ -88,27 +88,6 @@ class EnrollmentRecord(BaseModel):
     end_date: Optional[datetime] = None
     transfer_from: Optional[TransferRecord] = None
     transfer_to: Optional[TransferRecord] = None
-
-    @classmethod
-    def create_from(cls, row: Dict[str, Any]) -> 'EnrollmentRecord':
-        """Creates an enrollment record from row of enrollment/transfer form.
-
-        Assumes form is enrollv1.
-
-        Args:
-          row: the dictionary for the row of form data
-        Returns:
-          EnrollmentRecord for the row.
-        """
-        guid = row.get('guid', None)
-        if not guid:
-            guid = None
-
-        return EnrollmentRecord(center_identifier=CenterIdentifiers(
-            adcid=row['adcid'], ptid=row['ptid']),
-                                guid=guid,
-                                naccid=None,
-                                start_date=row['frmdate_enrl'])
 
     def query_object(self) -> IdentifierQueryObject:
         """Creates an object for creating identifiers in the respository.

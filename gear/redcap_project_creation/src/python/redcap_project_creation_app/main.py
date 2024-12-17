@@ -4,8 +4,9 @@ import logging
 from typing import Dict, List, Optional, Tuple
 
 from centers.center_group import (
+    CenterError,
     CenterGroup,
-    REDCapFormProject,
+    REDCapFormProjectMetadata,
     REDCapProjectInput,
     StudyREDCapMetadata,
 )
@@ -16,14 +17,18 @@ from redcap.redcap_connection import (
     REDCapConnectionError,
     REDCapSuperUserConnection,
 )
+from redcap.redcap_project import REDCapProject
 
 log = logging.getLogger(__name__)
 
 
-def save_project_api_token(parameter_store: ParameterStore, base_path: str,
-                           token: str, url: str) -> Optional[int]:
-    """Retrieve the newly created REDCap PID using the project api token. Save
-    the project api token for the new project in AWS parameter store.
+def setup_new_project_elements(parameter_store: ParameterStore, base_path: str,
+                               token: str, url: str) -> Optional[int]:
+    """Set up elements required to access the new REDCap project.
+
+        - Retrieve the newly created REDCap PID using the project api token.
+        - Save the project api token for the new project in AWS parameter store.
+        - Add nacc gearbot user to the project
 
     Args:
         parameter_store: AWS parameter store connection
@@ -36,21 +41,23 @@ def save_project_api_token(parameter_store: ParameterStore, base_path: str,
     """
 
     try:
-        redcap_con = REDCapConnection(token=token, url=url)
+        redcap_prj = REDCapProject.create(
+            REDCapConnection(token=token, url=url))
+        redcap_prj.add_gearbot_user_to_project()
     except REDCapConnectionError as error:
         log.error(error)
         return None
 
     try:
         parameter_store.set_redcap_project_parameters(base_path=base_path,
-                                                      pid=redcap_con.pid,
+                                                      pid=redcap_prj.pid,
                                                       url=url,
                                                       token=token)
     except ParameterError as error:
         log.error(error)
         return None
 
-    return redcap_con.pid
+    return redcap_prj.pid
 
 
 # pylint: disable=(too-many-locals)
@@ -103,13 +110,13 @@ def run(
             for module in project.modules:
                 project_xml = None
                 if use_template and xml_templates:
-                    if module.label in xml_templates:
-                        project_xml = xml_templates[module.label]
-                    else:
+                    if module.label not in xml_templates:
                         log.error('Cannot find xml template for %s/%s/%s',
                                   center, project_lbl, module.label)
                         errors = True
                         continue
+
+                    project_xml = xml_templates[module.label]
 
                 redcap_prj_title = f'{group_adaptor.label} {module.title}'
                 try:
@@ -120,23 +127,28 @@ def run(
                     errors = True
                     continue
 
-                redcap_pid = save_project_api_token(parameter_store, base_path,
-                                                    api_key,
-                                                    redcap_super_con.url)
-                if redcap_pid:
-                    module_obj = REDCapFormProject(redcap_pid=redcap_pid,
-                                                   label=module.label,
-                                                   report_id=None)
-                    project_object.projects.append(module_obj)
-                else:
+                redcap_pid = setup_new_project_elements(
+                    parameter_store, base_path, api_key, redcap_super_con.url)
+                if not redcap_pid:
                     errors = True
                     continue
 
+                module_obj = REDCapFormProjectMetadata(redcap_pid=redcap_pid,
+                                                       label=module.label,
+                                                       report_id=None)
+                project_object.projects.append(module_obj)
+
             # Update REDCap project metadata in Flywheel
             if len(project_object.projects) > 0:
-                center_group = CenterGroup.create_from_group_adaptor(
-                    adaptor=group_adaptor)
-                center_group.add_redcap_project(project_object)
+                try:
+                    center_group = CenterGroup.get_center_group(
+                        adaptor=group_adaptor)
+                    center_group.add_redcap_project(project_object)
+                except CenterError:
+                    log.error(
+                        'Failed to update REDCap project metadata for %s/%s',
+                        group_adaptor.label, project_lbl)
+
                 redcap_metadata.append(project_object)
 
     return errors, redcap_metadata

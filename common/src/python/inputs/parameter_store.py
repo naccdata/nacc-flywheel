@@ -1,7 +1,8 @@
 """Module for getting proxy object for AWS SSM parameter store object."""
 import logging
+from typing import Dict, Optional
 
-from botocore.exceptions import ClientError, ParamValidationError
+from botocore.exceptions import ClientError, ParamValidationError  # type: ignore
 from pydantic import TypeAdapter, ValidationError
 from ssm_parameter_store import EC2ParameterStore
 from typing_extensions import Type, TypedDict, TypeVar
@@ -50,6 +51,11 @@ class CoManageParameters(TypedDict):
 class NotificationParameters(TypedDict):
     """Dictionary type for email sender."""
     sender: str
+
+
+class URLParameter(TypedDict):
+    """Dictionary type for url parameter."""
+    url: str
 
 
 class ParameterError(Exception):
@@ -141,7 +147,78 @@ class ParameterStore:
 
         return apikey
 
-    def get_redcap_project_parameters(
+    def get_all_redcap_parameters_at_path(
+            self,
+            *,
+            base_path: str,
+            prefix: Optional[str] = None) -> Dict[str, REDCapParameters]:
+        """Pulls URLs and Tokens for all the REDCap projects stored under a
+        base path in AWS parameter store.
+
+        Args:
+            base_path: base path in the parameter store
+            prefix (optional): parameter name prefix
+
+        Returns:
+            Dict[str, REDCapParameters]: Dictionary of REDCap parameters by PID
+
+        Raises:
+          ParameterError: if errors occur while retrieving parameters
+        """
+
+        if not base_path.endswith('/'):
+            base_path += '/'
+
+        redcap_params = {}
+        try:
+            parameters = self.__store.get_parameters_with_hierarchy(
+                base_path, decrypt=True)
+        except (ClientError, ParamValidationError) as error:
+            raise ParameterError(
+                f"Failed to retrieve parameters at {base_path}: {error}"
+            ) from error
+
+        for key, prj_params in parameters.items():
+            if prefix and not key.startswith(prefix):
+                log.warning('Unexpected parameter %s at path %s', key,
+                            base_path)
+                continue
+
+            type_adapter = TypeAdapter(REDCapParameters)
+            try:
+                redcap_params[key] = type_adapter.validate_python(prj_params)
+            except ValidationError as error:
+                raise ParameterError(
+                    f"Incorrect parameters at {base_path}/{key}: {error}"
+                ) from error
+
+        return redcap_params
+
+    def get_redcap_parameters(self, *, base_path: str,
+                              pid: int) -> REDCapParameters:
+        """Pulls URL and Token for the respective REDCap project from SSM
+        parameter store.
+
+        Args:
+            base_path: base path in the parameter store
+            pid: REDCap project ID
+
+        Returns:
+          the REDCap credentials stored at the parameter path
+
+        Raises:
+          ParameterError if any of the parameters are missing
+        """
+
+        if not base_path.endswith('/'):
+            base_path += '/'
+
+        param_path = base_path + 'pid_' + str(pid)
+
+        return self.get_parameters(param_type=REDCapParameters,
+                                   parameter_path=param_path)
+
+    def get_redcap_report_params_for_project(
             self, *, base_path: str, pid: int,
             report_id: int) -> REDCapReportParameters:
         """Pulls URL and Token for the respective REDCap project from SSM
@@ -285,4 +362,18 @@ class ParameterStore:
           ParameterError if any of the parameters are missing
         """
         return self.get_parameters(param_type=NotificationParameters,
+                                   parameter_path=param_path)
+
+    def get_portal_url(self, param_path: str) -> URLParameter:
+        """Pulls the portal URL parameter from the SSM parameter store at the
+        given path.
+
+        Args:
+          param_path: the path in the parameter store
+        Returns:
+          the portal URL parameter stored at the path
+        Raises:
+          ParameterError if the parameter is missing
+        """
+        return self.get_parameters(param_type=URLParameter,
                                    parameter_path=param_path)

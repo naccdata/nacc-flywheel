@@ -1,6 +1,7 @@
 """Module defining utilities for gear execution."""
 
 import logging
+import os
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -160,6 +161,12 @@ class InputFileWrapper:
         return self.file_input['location']['name']
 
     @property
+    def basename(self) -> str:
+        """Returns the base name of the file name."""
+        (basename, extension) = os.path.splitext(self.filename)
+        return basename
+
+    @property
     def filepath(self) -> str:
         """Returns the file path."""
         return self.file_input['location']['path']
@@ -171,20 +178,29 @@ class InputFileWrapper:
 
     @classmethod
     def create(cls, input_name: str,
-               context: GearToolkitContext) -> 'InputFileWrapper':
+               context: GearToolkitContext) -> Optional['InputFileWrapper']:
         """Creates the named InputFile.
+
+        Will return None if the named input is optional and no file is given.
 
         Args:
           input_name: the name of the input file
           context: the gear context
         Returns:
-          the input file object
+          the input file object. None, if the input is optional and not given
         Raises:
           GearExecutionError if there is no input with the name
         """
         file_input = context.get_input(input_name)
+        is_optional = context.manifest.get("inputs",
+                                           {}).get(input_name,
+                                                   {}).get("optional", False)
+
         if not file_input:
+            if is_optional:
+                return None
             raise GearExecutionError(f'Missing input file {input_name}')
+
         if file_input["base"] != "file":
             raise GearExecutionError(
                 f"The specified input {input_name} is not a file")
@@ -215,9 +231,9 @@ class InputFileWrapper:
             str(optional): module name if a match found, else None
         """
         module = None
-        pattern = '^.*-([a-z]+v[0-9])\\.(\\bcsv\\b|\\bjson\\b)$'
+        pattern = '^.*(-|_)([a-z]*)\\.(csv|json)$'
         if match := re.search(pattern, self.filename, re.IGNORECASE):
-            module = match.group(1)
+            module = match.group(2)
 
         return module
 

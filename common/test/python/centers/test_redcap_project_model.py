@@ -1,5 +1,5 @@
 """Tests the redcap project input object for updating center info."""
-from centers.center_group import REDCapFormProject, REDCapProjectInput
+from centers.center_group import REDCapFormProjectMetadata, REDCapProjectInput
 from pydantic import ValidationError
 
 
@@ -14,7 +14,7 @@ class TestREDCapProjectInput:
                                            study_id="test",
                                            project_label="test",
                                            projects=[
-                                               REDCapFormProject(
+                                               REDCapFormProjectMetadata(
                                                    redcap_pid=12345,
                                                    label="test",
                                                    report_id=22)
@@ -30,4 +30,4 @@ class TestREDCapProjectInput:
             model_object = REDCapProjectInput.model_validate(project_dump)
             assert model_object == project_model
         except ValidationError as error:
-            assert False, error
+            assert False, error  # noqa: B011
