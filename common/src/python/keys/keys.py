@@ -37,7 +37,8 @@ class DefaultValues:
     """Class to store default values."""
     NOTFILLED = 0
     LEGACY_PRJ_LABEL = 'retrospective-form'
-    ENROLLMENT_MODULE = 'ENROLLV1'
+    ENROLLMENT_MODULE = 'ENROLL'
+    UDS_MODULE = 'UDS'
     GEARBOT_USER_ID = 'nacc-flywheel-gear@uw.edu'
     NACC_GROUP_ID = 'nacc'
     METADATA_PRJ_LBL = 'metadata'
@@ -45,6 +46,10 @@ class DefaultValues:
     SESSION_LBL_PRFX = 'FORMS-VISIT-'
     C2TMODE = 1
     LBD_SHORT_VER = 3.1
+    QC_JSON_DIR = 'JSON'
+    QC_GEAR = 'form-qc-checker'
+    LEGACY_QC_GEAR = 'file-validator'
+    MAX_POOL_CONNECTIONS = 50
 
 
 class MetadataKeys:

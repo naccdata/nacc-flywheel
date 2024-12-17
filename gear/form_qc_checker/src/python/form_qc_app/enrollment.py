@@ -214,8 +214,9 @@ class CSVFileProcessor(FileProcessor):
                                              visitor=enrl_visitor)
 
             if input_data:
+                csv_content = file_obj.readlines()
                 self.__csv_reader = DictReader(
-                    file_obj, dialect=enrl_visitor.dialect)  # type: ignore
+                    csv_content, dialect=enrl_visitor.dialect)  # type: ignore
 
         return input_data
 

@@ -13,7 +13,7 @@ from flywheel_adaptor.subject_adaptor import (
     VisitInfo,
 )
 from gear_execution.gear_execution import GearExecutionError, InputFileWrapper
-from keys.keys import FieldNames
+from keys.keys import DefaultValues, FieldNames
 from outputs.errors import (
     JSONLocation,
     ListErrorWriter,
@@ -221,10 +221,19 @@ class JSONFileProcessor(FileProcessor):
         optional_forms = rule_def_loader.get_optional_forms_submission_status(
             input_data=input_data, module=self._module)
 
+        skip_forms = []
+        # Check which form is submitted for C2/C2T and skip the definition for other
+        if self._module == DefaultValues.UDS_MODULE:
+            if input_data.get(FieldNames.C2C2T, 2) == DefaultValues.C2TMODE:
+                skip_forms = ['c2']
+            else:
+                skip_forms = ['c2t']
+
         return rule_def_loader.load_definition_schemas(
             input_data=input_data,
             module=self._module,
-            optional_forms=optional_forms)
+            optional_forms=optional_forms,
+            skip_forms=skip_forms)
 
     def process_input(self, *, validator: RecordValidator) -> bool:
         """Process the JSON record for the participant visit.
