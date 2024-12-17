@@ -2,9 +2,8 @@
 
 All notable changes to this gear are documented in this file.
 
-## TBD
-
-- n/a
+## 1.0.1
+- Removes GearBot client
 
 ## 1.0.0
 

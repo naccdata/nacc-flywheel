@@ -51,7 +51,6 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
         Raises:
           GearExecutionError if any expected inputs are missing
         """
-        assert parameter_store, "Parameter store expected"
 
         client = ContextClient.create(context=context)
 
