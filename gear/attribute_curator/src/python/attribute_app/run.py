@@ -1,20 +1,19 @@
-"""Defines curation gear to run in user-facing projects; hiding curation 
-details from users.
-"""
+"""Defines curation gear to run in user-facing projects; hiding curation
+details from users."""
 
 import logging
 import sys
 from typing import Optional
 
-from attribute_app.main import run
-from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from flywheel_gear_toolkit import GearToolkitContext
-from gear_execution.gear_execution import (ClientWrapper, ContextClient,
-                                           GearEngine,
-                                           GearExecutionEnvironment,
-                                           InputFileWrapper)
+from gear_execution.gear_execution import (
+    ClientWrapper,
+    ContextClient,
+    GearEngine,
+    GearExecutionEnvironment,
+    InputFileWrapper,
+)
 from inputs.parameter_store import ParameterStore
-from inputs.yaml import get_object_lists
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -35,6 +34,8 @@ class AttributeCuratorVisitor(GearExecutionEnvironment):
         client = ContextClient.create(context=context)
         file_input = InputFileWrapper.create(input_name='attribute_file',
                                              context=context)
+        assert file_input, "attribute file is expected input"
+
         return AttributeCuratorVisitor(client=client, file_input=file_input)
 
     def run(self, context: GearToolkitContext):
