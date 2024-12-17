@@ -1,4 +1,6 @@
-"""ADD DETAIL HERE."""
+"""Defines curation gear to run in user-facing projects; hiding curation 
+details from users.
+"""
 
 import logging
 import sys
