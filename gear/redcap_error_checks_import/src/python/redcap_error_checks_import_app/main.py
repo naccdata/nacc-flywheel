@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from gear_execution.gear_execution import GearExecutionError
 from inputs.csv_reader import read_csv
-from outputs.errors import ListErrorWriter
+from outputs.errors import LogErrorWriter
 from redcap.redcap_connection import REDCapConnectionError
 from redcap.redcap_project import REDCapProject
 from s3.s3_client import S3BucketReader
@@ -18,17 +18,19 @@ from .visitor import ErrorCheckCSVVisitor
 log = logging.getLogger(__name__)
 
 
-def load_error_check_csv(key: ErrorCheckKey, file: Dict[str, Dict],
+def load_error_check_csv(key: ErrorCheckKey,
+                         file: Dict[str, Dict],
                          stats: ErrorCheckImportStats) -> List[Dict[str, Any]]:
     """Load the error check CSV.
 
     Args:
         key: ErrorCheckKey containing details about the S3 key
         file: The S3 file object
+        stats: The ErrorCheckImportStats object to keep track fo duplicates
     Returns:
         List of the validated and read in error checks.
     """
-    error_writer = ListErrorWriter(container_id="local", fw_path="local")
+    error_writer = LogErrorWriter(log=log)
     visitor = ErrorCheckCSVVisitor(key=key, error_writer=error_writer)
 
     data = StringIO(file['Body'].read().decode('utf-8'))
@@ -38,8 +40,7 @@ def load_error_check_csv(key: ErrorCheckKey, file: Dict[str, Dict],
 
     if not success:
         log.error(
-            f"The following error occured while reading from {key.full_path}:")
-        log.error(f"{[x['message'] for x in error_writer.errors()]}")
+            f"Errors encountered while reading from {key.full_path}:")
         return None
 
     error_checks = visitor.validated_error_checks
@@ -52,7 +53,7 @@ def load_error_check_csv(key: ErrorCheckKey, file: Dict[str, Dict],
     if duplicates:
         log.error(
             f"Found duplicated errors, will not import file: {duplicates}")
-        error_checks = None
+        return None
 
     return error_checks
 

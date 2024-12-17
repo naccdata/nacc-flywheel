@@ -59,17 +59,17 @@ class ErrorCheckCSVVisitor(CSVVisitor):
         Returns:
           True if the header has all required fields, False otherwise
         """
-        valid = True
+        error = None
         for h in self.REQUIRED_HEADERS:
             if h not in header:
                 # in the case of the enrollment form, packet is
                 # set to None and allowed to be missing
                 if h == 'packet' and self.__key.packet is None:
                     continue
-                self.__error_writer.write(missing_field_error(h))
-                valid = False
+                error = missing_field_error(h)
+                self.__error_writer.write(error)
 
-        return valid
+        return error is None
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Visit the dictionary for a row (per DictReader). Ensure the row
@@ -120,7 +120,7 @@ class ErrorCheckCSVVisitor(CSVVisitor):
                                                self.__key.packet, line_num)
                 self.__error_writer.write(error)
 
-        if self.__error_writer.errors():
+        if error:
             return False
 
         # only import items in REQUIRED_HEADERS

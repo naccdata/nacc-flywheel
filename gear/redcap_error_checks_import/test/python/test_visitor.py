@@ -1,15 +1,37 @@
 """Tests the ErrorCheckCSVVisitor and related models."""
+import logging
 import pytest
-from outputs.errors import ListErrorWriter
+from outputs.errors import LogErrorWriter
 from redcap_error_checks_import_app.utils import ErrorCheckKey
 from redcap_error_checks_import_app.visitor import ErrorCheckCSVVisitor
 
 
+class ListHandler(logging.Handler):
+    """Defines a handler to keep track of logged errors for testing."""
+
+    def __init__(self):
+        super().__init__()
+        self.__logs = []
+
+    def emit(self, record):
+        self.__logs.append(record.msg)
+
+    def get_logs(self):
+        return self.__logs
+
+
 @pytest.fixture(scope='function')
-def error_writer():
-    """Creates an ErrorWriter for testing."""
-    return ListErrorWriter(container_id='dummmy-container',
-                           fw_path='dummy-fw-path')
+def list_handler():
+    """Creates a list handler for testing."""
+    return ListHandler()
+
+
+@pytest.fixture(scope='function')
+def error_writer(list_handler):
+    """Creates an LogErrorWriter with handler for testing."""
+    log = logging.getLogger(__name__)
+    log.addHandler(list_handler)
+    return LogErrorWriter(log=log)
 
 
 @pytest.fixture(scope='function')
@@ -114,10 +136,10 @@ class TestErrorCheckCSVVisitor:
         header.extend(expected_extra_headers)
         assert visitor.visit_header(header)
 
-    def test_visit_header_missing(self, visitor):
+    def test_visit_header_missing(self, visitor, list_handler):
         """Tests when the header is missing expected fields."""
         assert not visitor.visit_header([])
-        errors = visitor.error_writer.errors()
+        errors = list_handler.get_logs()
 
         assert len(errors) == len(visitor.REQUIRED_HEADERS)
         for error in errors:
@@ -143,14 +165,14 @@ class TestErrorCheckCSVVisitor:
             "comp_vars": ""
         }]
 
-    def test_visit_row_invalid(self, visitor):
+    def test_visit_row_invalid(self, visitor, list_handler):
         """Test visiting a row with a dummy field (to not trigger empty row
         bypass), which will trigger complaints about missing errors."""
         data = {k: "" for k in visitor.REQUIRED_HEADERS}
         data['dummy'] = 'not-empty'
         assert not visitor.visit_row(data, 1)
 
-        errors = visitor.error_writer.errors()
+        errors = list_handler.get_logs()
         assert len(errors) == 14
         for error in errors:
             assert error['message'].endswith("is required") or \
