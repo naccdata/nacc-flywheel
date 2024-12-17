@@ -235,6 +235,7 @@ class UserErrorWriter(ErrorWriter):
 
     def prepare_error(self, error, set_timestamp: bool = True) -> None:
         """Prepare the error by adding container and timestamp information.
+
         Args:
           error: the file error object
           set_timestamp: if True, assign the writer timestamp to the error
