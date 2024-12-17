@@ -2,6 +2,12 @@
 
 All notable changes to this gear are documented in this file.
 
+## 1.1.0
+* Update loading rule definitions from S3 - skipping C2 or C2T definition depending on the version submitted
+* Defines the `is_valid_adcid` method in the `DataStoreHelper` class - checks whether provided ADCID is in current list of ADCIDs
+* Implements `get_previous_nonempty_record` method in the `DataStoreHelper` class - retrieves the previous record where specified fields are NOT empty
+* Updates to use nacc-form-validator [v0.4.0](https://github.com/naccdata/nacc-form-validator/releases/tag/v0.4.0)
+
 ## 1.0.4
 
 * Defines the `is_valid_rxcui` method in the `DataStoreHelper` class - adds the `rxnorm` common code to support this and future gears that may need to access the RxNorm API
