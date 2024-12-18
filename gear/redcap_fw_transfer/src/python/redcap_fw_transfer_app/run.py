@@ -11,7 +11,7 @@ from centers.center_group import (
     REDCapFormProjectMetadata,
 )
 from flywheel.rest import ApiException
-from flywheel_adaptor.flywheel_proxy import GroupAdaptor
+from flywheel_adaptor.flywheel_proxy import GroupAdaptor, ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
@@ -235,7 +235,8 @@ class REDCapFlywheelTransferVisitor(GearExecutionEnvironment):
                     redcap_pid=str(redcap_project.redcap_pid),
                     module=module,
                     fw_group=group_id,
-                    fw_project=project)
+                    prj_adaptor=ProjectAdaptor(project=project,
+                                               proxy=self.proxy))
             except GearExecutionError as error:
                 log.error(
                     'Error in ingesting module %s from REDCap project %s: %s',
