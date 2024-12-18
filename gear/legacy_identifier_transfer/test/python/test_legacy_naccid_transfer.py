@@ -8,7 +8,7 @@ import pytest
 from enrollment.enrollment_project import EnrollmentProject
 from identifiers.model import IdentifierObject
 from legacy_identifier_transfer_app.main import (
-    LegacyEnrollmentBatch,
+    LegacyEnrollmentCollection,
     process_legacy_identifiers,
 )
 from outputs.errors import ErrorWriter
@@ -18,7 +18,7 @@ from pydantic import ValidationError
 class TestLegacyEnrollmentBatch:
 
     def test_add_record_with_naccid(self):
-        batch = LegacyEnrollmentBatch()
+        batch = LegacyEnrollmentCollection()
         record = MagicMock()
         record.naccid = '12345'
         batch.add(record)
@@ -26,7 +26,7 @@ class TestLegacyEnrollmentBatch:
         assert list(batch)[0] == record
 
     def test_add_record_without_naccid(self, caplog):
-        batch = LegacyEnrollmentBatch()
+        batch = LegacyEnrollmentCollection()
         record = MagicMock()
         record.naccid = None
         with caplog.at_level(logging.WARNING):
@@ -35,7 +35,7 @@ class TestLegacyEnrollmentBatch:
         assert 'Skipping record with missing NACCID' in caplog.text
 
     def test_len(self):
-        batch = LegacyEnrollmentBatch()
+        batch = LegacyEnrollmentCollection()
         assert len(batch) == 0
         record1 = MagicMock()
         record1.naccid = '12345'
@@ -46,7 +46,7 @@ class TestLegacyEnrollmentBatch:
         assert len(batch) == 2
 
     def test_iter(self):
-        batch = LegacyEnrollmentBatch()
+        batch = LegacyEnrollmentCollection()
         record1 = MagicMock()
         record1.naccid = '12345'
         record2 = MagicMock()

@@ -13,7 +13,7 @@ from pydantic import ValidationError
 log = logging.getLogger(__name__)
 
 
-class LegacyEnrollmentBatch:
+class LegacyEnrollmentCollection:
     """Handles batch processing of legacy enrollment records."""
 
     def __init__(self) -> None:
@@ -54,7 +54,7 @@ def process_legacy_identifiers(
     Returns:
         bool: True if processing was successful
     """
-    batch = LegacyEnrollmentBatch()
+    record_collection = LegacyEnrollmentCollection()
 
     for naccid, identifier in identifiers.items():
         try:
@@ -80,7 +80,7 @@ def process_legacy_identifiers(
                 # transfer_to=None
             )
 
-            batch.add(record)
+            record_collection.add(record)
             log.info(
                 'Added legacy enrollment for NACCID %s (ADCID: %s, PTID: %s)',
                 identifier.naccid, identifier.adcid, identifier.ptid)
@@ -100,13 +100,13 @@ def process_legacy_identifiers(
                         str(error['loc'][0]), error['msg'], str(error.get('input', '')))
             return False
 
-    if not batch:
+    if not record_collection:
         log.warning('No valid legacy identifiers to process')
         return True
 
     # Process the batch
     success = True
-    for record in batch:
+    for record in record_collection:
         if not record.naccid:
             log.error('Missing NACCID for record: %s', record)
             continue
