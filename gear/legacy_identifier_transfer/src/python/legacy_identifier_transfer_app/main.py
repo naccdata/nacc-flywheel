@@ -37,15 +37,17 @@ class LegacyEnrollmentCollection:
         return iter(self.__records.values())
 
 
-def validate_and_create_record(naccid: str, identifier: IdentifierObject, enrollment_date: datetime) -> Optional[EnrollmentRecord]:
+def validate_and_create_record(
+        naccid: str, identifier: IdentifierObject,
+        enrollment_date: datetime) -> Optional[EnrollmentRecord]:
     """Validate identifier and create an enrollment record."""
     if naccid != identifier.naccid:
-        log.error('NACCID mismatch: key %s != value %s',
-                  naccid, identifier.naccid)
+        log.error('NACCID mismatch: key %s != value %s', naccid,
+                  identifier.naccid)
         return None
 
-    center_identifiers = CenterIdentifiers(
-        adcid=identifier.adcid, ptid=identifier.ptid)
+    center_identifiers = CenterIdentifiers(adcid=identifier.adcid,
+                                           ptid=identifier.ptid)
     record = EnrollmentRecord(
         center_identifier=center_identifiers,
         naccid=identifier.naccid,
@@ -55,7 +57,9 @@ def validate_and_create_record(naccid: str, identifier: IdentifierObject, enroll
     return record
 
 
-def process_record_collection(record_collection: LegacyEnrollmentCollection, enrollment_project: EnrollmentProject, dry_run: bool) -> bool:
+def process_record_collection(record_collection: LegacyEnrollmentCollection,
+                              enrollment_project: EnrollmentProject,
+                              dry_run: bool) -> bool:
     """Process the collection of records."""
     success = True
     for record in record_collection:
@@ -65,7 +69,8 @@ def process_record_collection(record_collection: LegacyEnrollmentCollection, enr
 
         if enrollment_project.find_subject(label=record.naccid):
             log.error(
-                'Subject with NACCID %s already exists - skipping creation', record.naccid)
+                'Subject with NACCID %s already exists - skipping creation',
+                record.naccid)
             continue
 
         if not dry_run:
@@ -96,12 +101,13 @@ def process_legacy_identifiers(
 
     for naccid, identifier in identifiers.items():
         try:
-            record = validate_and_create_record(
-                naccid, identifier, enrollment_date)
+            record = validate_and_create_record(naccid, identifier,
+                                                enrollment_date)
             if record:
                 record_collection.add(record)
-                log.info('Added legacy enrollment for NACCID %s (ADCID: %s, PTID: %s)',
-                         identifier.naccid, identifier.adcid, identifier.ptid)
+                log.info(
+                    'Added legacy enrollment for NACCID %s (ADCID: %s, PTID: %s)',
+                    identifier.naccid, identifier.adcid, identifier.ptid)
         except ValidationError as validation_error:
             for error in validation_error.errors():
                 if error['type'] == 'string_pattern_mismatch':
@@ -110,15 +116,17 @@ def process_legacy_identifiers(
                     log.error('Invalid %s: %s (expected pattern: %s)',
                               field_name, error['input'], context['pattern'])
                 else:
-                    log.error('Validation error in field %s: %s (value: %s)', str(
-                        error['loc'][0]), error['msg'], str(error.get('input', '')))
+                    log.error('Validation error in field %s: %s (value: %s)',
+                              str(error['loc'][0]), error['msg'],
+                              str(error.get('input', '')))
             return False
 
     if not record_collection:
         log.warning('No valid legacy identifiers to process')
         return True
 
-    return process_record_collection(record_collection, enrollment_project, dry_run)
+    return process_record_collection(record_collection, enrollment_project,
+                                     dry_run)
 
 
 def run(*,

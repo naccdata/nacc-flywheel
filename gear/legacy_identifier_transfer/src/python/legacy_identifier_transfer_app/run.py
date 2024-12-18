@@ -134,7 +134,8 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
     def initialize_error_writer(self, dest_container,
                                 project_id: str) -> ListErrorWriter:
         try:
-            # This is a fix to get the lookup path since get_lookup_path breaks on dest_container
+            # This is a fix to get the lookup path since get_lookup_path
+            #  breaks on dest_container
             fw_path = f"fw://{dest_container.group}/{dest_container.label}"
             # fw_path = self.proxy.get_lookup_path(dest_container)
             return ListErrorWriter(container_id=project_id, fw_path=fw_path)
@@ -155,7 +156,7 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
             dest_container = context.get_destination_container()
         except ApiException as error:
             raise GearExecutionError(
-                f"Error getting destination container: {error}")
+                f"Error getting destination container: {error}") from error
 
         if not dest_container:
             raise GearExecutionError("No destination container found")
@@ -186,9 +187,6 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
         if not identifiers:
             raise GearExecutionError('Unable to load center participant IDs')
         log.info(f"Found {len(identifiers)} identifiers")
-
-        # Initialize error writer
-        error_writer = self.initialize_error_writer(dest_container, project_id)
 
         # Initialize enrollment project adapter
         group = self.proxy.find_group(group_id=group_id)
