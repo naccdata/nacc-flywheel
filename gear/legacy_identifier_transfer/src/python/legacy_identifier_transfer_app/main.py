@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Dict, Mapping
+from typing import Dict, Mapping, Optional
 
 from enrollment.enrollment_project import EnrollmentProject
 from enrollment.enrollment_transfer import EnrollmentRecord
@@ -37,6 +37,44 @@ class LegacyEnrollmentCollection:
         return iter(self.__records.values())
 
 
+def validate_and_create_record(naccid: str, identifier: IdentifierObject, enrollment_date: datetime) -> Optional[EnrollmentRecord]:
+    """Validate identifier and create an enrollment record."""
+    if naccid != identifier.naccid:
+        log.error('NACCID mismatch: key %s != value %s',
+                  naccid, identifier.naccid)
+        return None
+
+    center_identifiers = CenterIdentifiers(
+        adcid=identifier.adcid, ptid=identifier.ptid)
+    record = EnrollmentRecord(
+        center_identifier=center_identifiers,
+        naccid=identifier.naccid,
+        guid=identifier.guid,
+        start_date=enrollment_date,
+    )
+    return record
+
+
+def process_record_collection(record_collection: LegacyEnrollmentCollection, enrollment_project: EnrollmentProject, dry_run: bool) -> bool:
+    """Process the collection of records."""
+    success = True
+    for record in record_collection:
+        if not record.naccid:
+            log.error('Missing NACCID for record: %s', record)
+            continue
+
+        if enrollment_project.find_subject(label=record.naccid):
+            log.error(
+                'Subject with NACCID %s already exists - skipping creation', record.naccid)
+            continue
+
+        if not dry_run:
+            subject = enrollment_project.add_subject(record.naccid)
+            subject.add_enrollment(record)
+            log.info('Created enrollment for subject %s', record.naccid)
+    return success
+
+
 def process_legacy_identifiers(
         identifiers: Mapping[str, IdentifierObject],
         enrollment_date: datetime,  # Added parameter for enrollment date
@@ -58,74 +96,29 @@ def process_legacy_identifiers(
 
     for naccid, identifier in identifiers.items():
         try:
-            # Verify the NACCID matches between dict key and object
-            if naccid != identifier.naccid:
-                log.error(
-                    'NACCID mismatch: key %s != value %s', naccid, identifier.naccid)
-                return False
-
-            # Create CenterIdentifiers first to validate ADCID/PTID pair
-            center_identifiers = CenterIdentifiers(adcid=identifier.adcid,
-                                                   ptid=identifier.ptid)
-
-            # Create enrollment record
-            record = EnrollmentRecord(
-                center_identifier=center_identifiers,
-                naccid=identifier.naccid,
-                guid=identifier.guid,  # Optional field
-                start_date=enrollment_date,
-                # Not setting optional fields:
-                # end_date=None
-                # transfer_from=None
-                # transfer_to=None
-            )
-
-            record_collection.add(record)
-            log.info(
-                'Added legacy enrollment for NACCID %s (ADCID: %s, PTID: %s)',
-                identifier.naccid, identifier.adcid, identifier.ptid)
-
+            record = validate_and_create_record(
+                naccid, identifier, enrollment_date)
+            if record:
+                record_collection.add(record)
+                log.info('Added legacy enrollment for NACCID %s (ADCID: %s, PTID: %s)',
+                         identifier.naccid, identifier.adcid, identifier.ptid)
         except ValidationError as validation_error:
             for error in validation_error.errors():
                 if error['type'] == 'string_pattern_mismatch':
                     field_name = str(error['loc'][0])
                     context = error.get('ctx', {'pattern': ''})
-                    log.error(
-                        'Invalid %s: %s (expected pattern: %s)',
-                        field_name, error['input'], context['pattern'])
+                    log.error('Invalid %s: %s (expected pattern: %s)',
+                              field_name, error['input'], context['pattern'])
                 else:
-                    # Handle other validation errors
-                    log.error(
-                        'Validation error in field %s: %s (value: %s)',
-                        str(error['loc'][0]), error['msg'], str(error.get('input', '')))
+                    log.error('Validation error in field %s: %s (value: %s)', str(
+                        error['loc'][0]), error['msg'], str(error.get('input', '')))
             return False
 
     if not record_collection:
         log.warning('No valid legacy identifiers to process')
         return True
 
-    # Process the batch
-    success = True
-    for record in record_collection:
-        if not record.naccid:
-            log.error('Missing NACCID for record: %s', record)
-            continue
-
-        if enrollment_project.find_subject(label=record.naccid):
-            log.error(
-                'Subject with NACCID %s already exists - skipping creation',
-                record.naccid)
-            log.error(
-                'Subject with NACCID %s already exists - skipping creation',
-                record.naccid)
-            # Skip adding enrollments to Flywheel if subject already exists
-            continue
-
-        if not dry_run:
-            subject = enrollment_project.add_subject(record.naccid)
-            subject.add_enrollment(record)
-            log.info('Created enrollment for subject %s', record.naccid)
-    return success
+    return process_record_collection(record_collection, enrollment_project, dry_run)
 
 
 def run(*,
