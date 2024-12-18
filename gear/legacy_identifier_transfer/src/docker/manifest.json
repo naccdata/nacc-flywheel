@@ -2,7 +2,7 @@
     "name": "legacy-identifier-transfer",
     "label": "Legacy Identifier Transfer",
     "description": "Handles retrieving legacy NACCIDs from identifiers-api and provisioning identifiers in Flywheel.",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
     "cite": "",
