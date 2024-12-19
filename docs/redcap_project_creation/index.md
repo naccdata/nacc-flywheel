@@ -19,14 +19,14 @@ centers:
 projects:
   - project-label: ingest-form
     modules:
-    - label: udsv4
+    - label: uds
       title: UDSv4 Direct Entry
-    - label: ftldv4
+    - label: ftld
       title: FTLDv4 Direct Entry
       template: ftld-alt
   - project-label: ingest-enrollment
     modules:
-    - label: enrollv1
+    - label: enroll
       title: Participant Enrollment/Transfer
 ```
 

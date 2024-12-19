@@ -226,6 +226,12 @@ Before you run the following be sure that `gear/<project-dir>/src/docker/.gitign
 
 #### Basic configuration
 
+The following steps are generalized in `bin/set-up-gear-for-local-run.sh` to automate some of the set up. Assumes the script is being run from the root directory due to local paths.
+
+```
+./bin/set-up-gear-for-local-run.sh <project-dir> <FW_API_KEY> [FW path]
+```
+
 1. Change into the project directory
 
    ```bash
@@ -287,9 +293,21 @@ Consult `fw-beta gear config --help` for details on the command.
 
 #### Environment Variables
 
-Environment variables are set in the `manifest.json`.
+Flywheel CLI version >= 0.19.0 is required to pass environment variables through to Docker.
 
->Secrets should not be added to the manifest file since it is version controlled.
+Environment variables can be passed to the docker run command using pass-through arguments ([docs](https://flywheel-io.gitlab.io/tools/app/cli/fw-beta/gear/run/#pass-through-arguments)):
+
+```bash
+fw-beta gear run tmp/gear/<gear-structure> -- -e xx=yy
+```
+
+Or, if using a .env file:
+
+```bash
+fw-beta gear run tmp/gear/<gear-structure> -- --env-file .env
+```
+
+>Note the templating script creates a project `.env` file automatically, so you may want to specify a different development file i.e. `.env.local` to store secrets. 
 
 #### Run the gear
 
@@ -386,7 +404,21 @@ To complete the gear, you will need to
 Generally, `run.py` should handle gathering any inputs, and `main.py` should handle the computation.
 The `common` directory includes common code that may be used across the gears.
 
-Additionally, you should also document your gear. Under `docs`, add a new directory called `docs/<gear-name>` with an `index.md` and `CHANGELOG.md`. The `index.md` should describe your gear as well as the expected inputs and outputs/results, whereas the Changelog should keep track of gear versions. See [Documenting and versioning](#documenting-and-versioning) for more information.
+Additionally, you should also document your gear, which can also be generated using a cookiecutter template:
+
+```bash
+cookiecutter templates/docs --output-dir docs/
+```
+
+which will create the following directory structure:
+
+```bash
+junk_gear
+├── CHANGELOG.md
+└── index.md
+```
+
+The `index.md` should describe your gear as well as the expected inputs and outputs/results, whereas the Changelog should keep track of gear versions. See [Documenting and versioning](#documenting-and-versioning) for more information.
 
 ## Adding common code
 
