@@ -91,7 +91,6 @@ def process_legacy_identifiers(
         identifiers: Dictionary of legacy identifiers
         enrollment_date: Date to use as start_date for enrollments
         enrollment_project: Project to add enrollments to
-        error_writer: For reporting errors
         dry_run: If True, do not actually add enrollments to Flywheel
 
     Returns:
@@ -139,7 +138,6 @@ def run(*,
     Args:
         identifiers: Dictionary of identifier objects from legacy system
         enrollment_project: Project to add enrollments to
-        error_writer: For reporting errors
 
     Returns:
         bool: True if processing was successful, False otherwise

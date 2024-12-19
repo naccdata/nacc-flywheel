@@ -24,7 +24,6 @@ from identifiers.identifiers_repository import (
 from identifiers.model import IdentifierObject
 from inputs.parameter_store import ParameterStore
 from lambdas.lambda_function import LambdaClient, create_lambda_client
-from outputs.errors import ListErrorWriter
 
 from legacy_identifier_transfer_app.main import run
 
@@ -130,18 +129,6 @@ class LegacyIdentifierTransferVisitor(GearExecutionEnvironment):
         except ApiException as error:
             log.error(f"Error getting ADCID: {error}")
             return None
-
-    def initialize_error_writer(self, dest_container,
-                                project_id: str) -> ListErrorWriter:
-        try:
-            # This is a fix to get the lookup path since get_lookup_path
-            #  breaks on dest_container
-            fw_path = f"fw://{dest_container.group}/{dest_container.label}"
-            # fw_path = self.proxy.get_lookup_path(dest_container)
-            return ListErrorWriter(container_id=project_id, fw_path=fw_path)
-        except AttributeError as e:
-            log.error(f"Container hierarchy error: {e}")
-            raise
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the legacy NACCID transfer gear.
