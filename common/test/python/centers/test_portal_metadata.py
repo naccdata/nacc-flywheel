@@ -220,13 +220,13 @@ class TestREDCapUpdate:
         assert ingest_project.redcap_projects, (
             "expect non-null redcap projects after update")
         assert ingest_project.redcap_projects.get(
-            DefaultValues.ENROLLMENT_MODULE
-        ), "expect non-null redcap project after update"
+            DefaultValues.ENROLLMENT_MODULE), \
+            "expect non-null redcap project after update"
 
         study_info.add_ingest(ingest_project)
         portal_metadata.add(study_info)
 
         assert portal_metadata.studies["test"].ingest_projects[
             "ingest-form-test"].redcap_projects[
-                DefaultValues.
-                ENROLLMENT_MODULE], "expect non-null redcap project after update"
+                DefaultValues.ENROLLMENT_MODULE], \
+            "expect non-null redcap project after update"
