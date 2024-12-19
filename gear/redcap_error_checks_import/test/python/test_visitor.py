@@ -97,7 +97,7 @@ class TestErrorCheckCSVVisitor:
 
         assert len(errors) == len(visitor.REQUIRED_HEADERS)
         for error in errors:
-            assert error['message'].startswith("Missing field")
+            assert error['message'].startswith("Missing required field")
             assert error['message'].endswith("in the header")
 
     def test_visit_row(self, visitor, data):

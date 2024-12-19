@@ -92,12 +92,10 @@ class EnrollmentFormVisitor(CSVVisitor):
         Returns:
           True if required fields occur in the header, False otherwise
         """
-        if self.__pk_field not in header:
-            self.__error_writer.write(missing_field_error(self.__pk_field))
-            return False
 
-        if FieldNames.FORMVER not in header:
-            self.__error_writer.write(missing_field_error(FieldNames.FORMVER))
+        expected_columns = {self.__pk_field, FieldNames.FORMVER}
+        if not set(expected_columns).issubset(set(header)):
+            self.__error_writer.write(missing_field_error(expected_columns))
             return False
 
         self.__header = header

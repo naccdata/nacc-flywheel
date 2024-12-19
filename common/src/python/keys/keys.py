@@ -20,6 +20,7 @@ class FieldNames:
     NACCIDKWN = 'naccidknwn'
     PREVENRL = 'prevenrl'
     C2C2T = 'rmmodec2c2t'
+    ENRLTYPE = 'enrltype'
 
 
 class RuleLabels:
@@ -44,6 +45,7 @@ class DefaultValues:
     METADATA_PRJ_LBL = 'metadata'
     ADMIN_PROJECT = 'project-admin'
     SESSION_LBL_PRFX = 'FORMS-VISIT-'
+    ENRL_SESSION_LBL_PRFX = 'ENROLLMENT-TRANSFER-'
     C2TMODE = 1
     LBD_SHORT_VER = 3.1
     QC_JSON_DIR = 'JSON'
@@ -62,3 +64,9 @@ class MetadataKeys:
     C2T = 'UDS-C2T'
     LBD_LONG = 'LBD-v3.0'
     LBD_SHORT = 'LBD-v3.1'
+    TRANSFERS = 'transfers'
+
+
+class SysErrorCodes:
+    """Class to store pre-processing error codes."""
+    ADCID_MISMATCH = 'preprocess-001'
