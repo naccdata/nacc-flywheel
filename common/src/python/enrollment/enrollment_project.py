@@ -66,8 +66,7 @@ class EnrollmentProject(ProjectAdaptor):
             return TransferInfo(transfers=[])
 
         try:
-            return TransferInfo.model_validate(
-                {MetadataKeys.TRANSFERS: info[MetadataKeys.TRANSFERS]})
+            return TransferInfo.model_validate(info)
         except ValidationError as error:
             raise EnrollmentError(
                 f"{MetadataKeys.TRANSFERS} metadata in {self.group}/{self.label} "
