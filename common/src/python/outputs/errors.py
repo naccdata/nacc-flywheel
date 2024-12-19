@@ -3,9 +3,15 @@ from abc import ABC, abstractmethod
 from datetime import datetime as dt
 from typing import Any, Dict, List, Literal, Optional, TextIO
 
+from keys.keys import SysErrorCodes
 from pydantic import BaseModel, ConfigDict, Field
 
 from outputs.outputs import CSVWriter
+
+preprocess_errors = {
+    SysErrorCodes.ADCID_MISMATCH:
+    "ADCID must match the ADCID of the center uploading the data",
+}
 
 
 class CSVLocation(BaseModel):
@@ -178,6 +184,38 @@ def previous_visit_failed_error(prev_visit: str) -> FileError:
                      error_code='failed-previous-visit',
                      message=(f'Visit file {prev_visit} has to be approved '
                               'before evaluating any subsequent visits'))
+
+
+def preprocessing_error(field: str,
+                        value: str,
+                        line: int,
+                        error_code: Optional[str] = None,
+                        message: Optional[str] = None) -> FileError:
+    """Creates a FileError for pre-processing error.
+
+    Args:
+      field: the field name
+      value: the unexpected value
+      line: the line number
+      error_code (optional): pre-processing error code
+      message (optional): the error message
+
+    Returns:
+      the constructed FileError
+    """
+
+    error_message = message if message else (
+        f'Pre-processing error for field {field} value {value}')
+
+    if error_code:
+        error_message = preprocess_errors.get(error_code, error_message)
+
+    return FileError(
+        error_type='error',
+        error_code=error_code if error_code else 'preprocess-error',
+        value=value,
+        location=CSVLocation(line=line, column_name=field),
+        message=error_message)
 
 
 class ErrorWriter(ABC):

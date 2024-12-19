@@ -11,7 +11,8 @@ from identifiers.identifiers_repository import (
 )
 from identifiers.model import GUID_PATTERN, NACCID_PATTERN, CenterIdentifiers
 from inputs.csv_reader import RowValidator
-from outputs.errors import CSVLocation, ErrorWriter, FileError, unexpected_value_error
+from keys.keys import SysErrorCodes
+from outputs.errors import CSVLocation, ErrorWriter, FileError, preprocessing_error
 from pydantic import BaseModel, Field
 
 log = logging.getLogger(__name__)
@@ -280,10 +281,10 @@ class CenterValidator(RowValidator):
 
         log.error("Center ID for project must match form ADCID")
         self.__error_writer.write(
-            unexpected_value_error(field='adcid',
-                                   value=row['adcid'],
-                                   expected=str(self.__center_id),
-                                   line=line_number))
+            preprocessing_error(field='adcid',
+                                value=row['adcid'],
+                                line=line_number,
+                                error_code=SysErrorCodes.ADCID_MISMATCH))
         return False
 
 

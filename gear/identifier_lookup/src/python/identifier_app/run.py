@@ -138,13 +138,19 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                                                self.proxy.get_file(file_id)))
             success = run(input_file=csv_file,
                           identifiers=identifiers,
-                          output_file=out_file,
                           module_name=module_name,
+                          adcid=adcid,
+                          output_file=out_file,
                           error_writer=error_writer)
+
             context.metadata.add_qc_result(self.__file_input.file_input,
                                            name="validation",
                                            state="PASS" if success else "FAIL",
                                            data=error_writer.errors())
+
+            context.metadata.add_file_tags(self.__file_input.file_input,
+                                           tags=context.manifest.get(
+                                               'name', 'identifier-lookup'))
 
 
 def main():

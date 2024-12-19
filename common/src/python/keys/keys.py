@@ -64,3 +64,8 @@ class MetadataKeys:
     LBD_LONG = 'LBD-v3.0'
     LBD_SHORT = 'LBD-v3.1'
     TRANSFERS = 'transfers'
+
+
+class SysErrorCodes:
+    """Class to store pre-processing error codes."""
+    ADCID_MISMATCH = 'preprocess-001'

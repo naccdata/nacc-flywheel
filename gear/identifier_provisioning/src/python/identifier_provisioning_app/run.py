@@ -124,6 +124,11 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
                                            state="PASS" if success else "FAIL",
                                            data=error_writer.errors())
 
+            context.metadata.add_file_tags(self.__file_input.file_input,
+                                           tags=context.manifest.get(
+                                               'name',
+                                               'identifier-provisioning'))
+
 
 def main():
     """Main method for Identifier Provisioning."""
