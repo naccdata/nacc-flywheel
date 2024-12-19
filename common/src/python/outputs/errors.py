@@ -1,4 +1,5 @@
 """Utilities for writing errors to a CSV error file."""
+import json
 from abc import ABC, abstractmethod
 from datetime import datetime as dt
 from logging import Logger
@@ -186,10 +187,11 @@ class ErrorWriter(ABC):
     """Abstract class for error write."""
 
     def __init__(self):
+        """Initializer - sets the timestamp to time of creation."""
         self.__timestamp = (dt.now()).strftime('%Y-%m-%d %H:%M:%S')
 
     def set_timestamp(self, error: FileError) -> None:
-        """Assigns the timestamp the error."""
+        """Assigns the timestamp to the error."""
         error.timestamp = self.__timestamp
 
     @abstractmethod
@@ -203,7 +205,6 @@ class LogErrorWriter(ErrorWriter):
     """Writes errors to logger."""
 
     def __init__(self, log: Logger) -> None:
-        """Initializer."""
         self.__log = log
         super().__init__()
 
@@ -216,14 +217,13 @@ class LogErrorWriter(ErrorWriter):
         """
         if set_timestamp:
             self.set_timestamp(error)
-        self.__log.error(error.model_dump(by_alias=True))
+        self.__log.error(json.dumps(error.model_dump(by_alias=True)), indent=4)
 
 
 class UserErrorWriter(ErrorWriter):
     """Abstract class for a user error writer."""
 
     def __init__(self, container_id: str, fw_path: str) -> None:
-        """Initializer."""
         self.__container_id = container_id
         self.__flyweel_path = fw_path
         super().__init__()
@@ -270,7 +270,6 @@ class ListErrorWriter(UserErrorWriter):
     """Collects FileErrors to file metadata."""
 
     def __init__(self, container_id: str, fw_path: str) -> None:
-        """Initializer."""
         super().__init__(container_id, fw_path)
         self.__errors: List[Dict[str, Any]] = []
 
