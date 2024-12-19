@@ -66,12 +66,11 @@ class APOETransformerVisitor(GearExecutionEnvironment):
 
         filename = context.config.get('output_filename', None)
         if not filename:
-            path = Path(file_input.filename)
-            filename = str(
-                path.with_stem(path.stem + "_apoe_transformed"))
+            path = Path(file_input.filename)  # type: ignore
+            filename = str(path.with_stem(path.stem + "_apoe_transformed"))
 
         return APOETransformerVisitor(client=client,
-                                      file_input=file_input,
+                                      file_input=file_input,  # type: ignore
                                       filename=filename,
                                       target_project_id=target_project_id,
                                       local_run=local_run,
