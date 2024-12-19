@@ -2,7 +2,7 @@
 import json
 from abc import ABC, abstractmethod
 from datetime import datetime as dt
-from logging import Logger
+from logging import Handler, Logger
 from typing import Any, Dict, List, Literal, Optional, TextIO
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -290,3 +290,17 @@ class ListErrorWriter(UserErrorWriter):
           List of serialized FileError objects
         """
         return self.__errors
+
+
+class ListHandler(Handler):
+    """Defines a handler to keep track of logged info."""
+
+    def __init__(self):
+        super().__init__()
+        self.__logs = []
+
+    def emit(self, record):
+        self.__logs.append(json.loads(record.msg))
+
+    def get_logs(self):
+        return self.__logs

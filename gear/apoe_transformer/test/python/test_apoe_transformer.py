@@ -1,24 +1,34 @@
 """Tests for the APOE transformer, namely APOETransformerCSVVisitor."""
+import logging
+
 import pytest
 from apoe_transformer_app.main import (
     APOE_ENCODINGS,
     APOETransformerCSVVisitor,
 )
-from outputs.errors import ListErrorWriter
+from outputs.errors import ListHandler, LogErrorWriter
 
 
 @pytest.fixture(scope='function')
-def visitor():
+def list_handler():
+    """Creates a list handler for testing."""
+    return ListHandler()
+
+
+@pytest.fixture(scope='function')
+def visitor(list_handler):
     """Creates a APOETransformerCSVVisitor for testing."""
-    error_writer = ListErrorWriter(container_id='dummmy-container',
-                                   fw_path='dummy-fw-path')
+    log = logging.getLogger(__name__)
+    log.addHandler(list_handler)
+
+    error_writer = LogErrorWriter(log)
     return APOETransformerCSVVisitor(error_writer)
 
 
 @pytest.fixture(scope='module')
 def apoe_headers():
     """Creates the expected headers."""
-    return APOETransformerCSVVisitor.EXPECTED_APOE_INPUT_HEADERS
+    return APOETransformerCSVVisitor.EXPECTED_INPUT_HEADERS
 
 
 class TestAPOETransformerCSVVisitor:
@@ -29,14 +39,16 @@ class TestAPOETransformerCSVVisitor:
         assert visitor.visit_header(apoe_headers)
         assert visitor.visit_header((*apoe_headers, 'extra1', 'extra2'))
 
-    def test_visit_header_invalid(self, visitor):
+    def test_visit_header_invalid(self, visitor, list_handler):
         """Test an invalid header."""
         assert not visitor.visit_header(['a1', 'a2'])
         assert not visitor.visit_header([])
 
-        errors = visitor.error_writer.errors()
+        errors = list_handler.get_logs()
         assert len(errors) == 8
-        assert errors[0]['message'] == 'Missing field adcid in the header'
+        for error in errors:
+            assert error['message'].startswith('Missing field "')
+            assert error['message'].endswith('" in the header')
 
     def test_visit_row(self, visitor, apoe_headers):
         """Test the visit_row method, and check that the transformed_data

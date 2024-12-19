@@ -2,18 +2,20 @@
 import logging
 from typing import Any, Dict, List, TextIO, Tuple
 
+from flywheel import FileSpec
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from inputs.csv_reader import CSVVisitor, read_csv
+from keys.keys import FieldNames
 from outputs.errors import (
-    ListErrorWriter,
+    LogErrorWriter,
     missing_field_error,
 )
-from outputs.outputs import write_csv_to_project
+from outputs.outputs import write_csv_to_stream
 
 log = logging.getLogger(__name__)
 
 # NCRAD (a1, a2) to NACC encoding
-APOE_ENCODINGS = {
+APOE_ENCODINGS: Dict[Tuple[str, str], int] = {
     ("E3", "E3"): 1,
     ("E3", "E4"): 2,
     ("E4", "E3"): 2,
@@ -29,26 +31,25 @@ APOE_ENCODINGS = {
 class APOETransformerCSVVisitor(CSVVisitor):
     """Class for visiting each row in the APOE genotype CSV."""
 
-    EXPECTED_APOE_INPUT_HEADERS: Tuple[str] = ('adcid', 'ptid', 'naccid', 'a1',
-                                               'a2')
+    EXPECTED_INPUT_HEADERS: Tuple[str] = (FieldNames.ADCID,
+                                          FieldNames.PTID,
+                                          FieldNames.NACCID,
+                                          'a1', 'a2')
 
-    EXPECTED_APOE_OUTPUT_HEADERS: Tuple[str] = ('adcid', 'ptid', 'naccid',
-                                                'apoe')
+    EXPECTED_OUTPUT_HEADERS: Tuple[str] = (FieldNames.ADCID,
+                                           FieldNames.PTID,
+                                           FieldNames.NACCID,
+                                           'apoe')
 
-    def __init__(self, error_writer: ListErrorWriter):
+    def __init__(self, error_writer: LogErrorWriter):
         """Initializer."""
-        self.__error_writer = error_writer
-        self.__transformed_data = []
+        self.__error_writer: LogErrorWriter = error_writer
+        self.__transformed_data: List[Dict[Any, Any]] = []
 
     @property
     def transformed_data(self):
         """The APOE transformed data."""
         return self.__transformed_data
-
-    @property
-    def error_writer(self):
-        """The error writer."""
-        return self.__error_writer
 
     def visit_header(self, header: List[str]) -> bool:
         """Verifies that the header is valid.
@@ -58,14 +59,12 @@ class APOETransformerCSVVisitor(CSVVisitor):
         Returns:
             True if the header is valid, else False
         """
-        result = True
-        for field in self.EXPECTED_APOE_INPUT_HEADERS:
-            if field not in header:
-                result = False
-                error = missing_field_error(field)
-                self.__error_writer.write(error)
+        missing = set(self.EXPECTED_INPUT_HEADERS) - set(header)
+        for field in missing:
+            error = missing_field_error(field)
+            self.__error_writer.write(error)
 
-        return result
+        return not missing
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Visit the dictionary for the row (per DictReader) and perform the
@@ -82,7 +81,7 @@ class APOETransformerCSVVisitor(CSVVisitor):
         row['apoe'] = APOE_ENCODINGS.get(pair, 9)
 
         # remove any extra headers
-        extra_fields = set(row.keys()) - set(self.EXPECTED_APOE_OUTPUT_HEADERS)
+        extra_fields = set(row.keys()) - set(self.EXPECTED_OUTPUT_HEADERS)
         for field in extra_fields:
             row.pop(field)
 
@@ -93,38 +92,43 @@ class APOETransformerCSVVisitor(CSVVisitor):
 def run(*,
         proxy: FlywheelProxy,
         input_file: TextIO,
-        output_filename: str,
-        target_project: ProjectAdaptor,
-        error_writer: ListErrorWriter,
+        filename: str,
+        project: ProjectAdaptor,
         delimiter: str = ','):
     """Runs the APOE transformation process.
 
     Args:
         proxy: the proxy for the Flywheel instance
         input_file: The input CSV TextIO stream to transform on
-        output_filename: The output filename to write to
-        target_project: The output target project to upload results to
-        error_writer: The ListErrorWriter object
+        filename: The output filename to write to
+        project: The target project to upload results to
         delimiter: The input CSV delimiter
     """
     # read the CSV
+    error_writer = LogErrorWriter(log)
     visitor = APOETransformerCSVVisitor(error_writer)
     success = read_csv(input_file=input_file,
                        error_writer=error_writer,
-                       visitor=visitor)
-    #delimiters=delimiter)  # TODO - pass after merging
+                       visitor=visitor,
+                       delimiter=delimiter)
 
     if not success:
         log.error(
-            "The following errors were found while reading the input CSV " +
-            "file, will not transform the data.")
-        for x in error_writer.errors():
-            log.error(x['message'])
+            "Errors found while reading the input CSV file, " +
+            "will not transform the data.")
         return
 
     # write transformed results to target project
-    log.info(f"Writing transformed APOE data to {target_project.id}")
-    write_csv_to_project(headers=visitor.EXPECTED_APOE_OUTPUT_HEADERS,
-                         data=visitor.transformed_data,
-                         filename=output_filename,
-                         project=target_project)
+    log.info(f"Writing transformed APOE data to {project.id}")
+    contents = write_csv_to_stream(headers=visitor.EXPECTED_OUTPUT_HEADERS,
+                                   data=visitor.transformed_data).getvalue()
+    file_spec = FileSpec(name=filename,
+                         contents=contents,
+                         content_type='text/csv',
+                         size=len(contents))
+
+    if proxy.dry_run:
+        log.info(f"DRY RUN: Would have uploaded {filename}")
+    else:
+        project.upload_file(file_spec)  # type: ignore
+        log.info(f"Successfully uploaded {filename}")
