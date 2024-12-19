@@ -2,7 +2,7 @@
 
 All notable changes to this gear are documented in this file.
 
-## 0.2.1
+## 1.0.0
 * Changes enrollment session and acquisition labels and JSON filename
 * Changes `identifier_mode` gear config to `database_mode`
 

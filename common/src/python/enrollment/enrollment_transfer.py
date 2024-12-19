@@ -277,7 +277,7 @@ class CenterValidator(RowValidator):
           True if the center ID matches, False otherwise.
         """
 
-        if row.get(FieldNames.ADCID) == self.__center_id:
+        if str(row.get(FieldNames.ADCID)) == str(self.__center_id):
             return True
 
         log.error("Center ID for project must match form ADCID")
