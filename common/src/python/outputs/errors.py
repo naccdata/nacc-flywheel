@@ -217,7 +217,7 @@ class LogErrorWriter(ErrorWriter):
         """
         if set_timestamp:
             self.set_timestamp(error)
-        self.__log.error(json.dumps(error.model_dump(by_alias=True)), indent=4)
+        self.__log.error(json.dumps(error.model_dump(by_alias=True), indent=4))
 
 
 class UserErrorWriter(ErrorWriter):

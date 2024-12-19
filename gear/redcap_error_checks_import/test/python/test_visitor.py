@@ -1,4 +1,5 @@
 """Tests the ErrorCheckCSVVisitor and related models."""
+import json
 import logging
 
 import pytest
@@ -15,7 +16,7 @@ class ListHandler(logging.Handler):
         self.__logs = []
 
     def emit(self, record):
-        self.__logs.append(record.msg)
+        self.__logs.append(json.loads(record.msg))
 
     def get_logs(self):
         return self.__logs
