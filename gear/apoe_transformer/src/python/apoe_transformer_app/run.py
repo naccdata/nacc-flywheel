@@ -24,8 +24,12 @@ log = logging.getLogger(__name__)
 class APOETransformerVisitor(GearExecutionEnvironment):
     """Visitor for the APOE Transformer gear."""
 
-    def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
-                 filename: str, target_project_id: str, local_run: bool,
+    def __init__(self,
+                 client: ClientWrapper,
+                 file_input: InputFileWrapper,
+                 filename: str,
+                 target_project_id: str,
+                 local_run: bool,
                  delimiter: str):
         super().__init__(client=client)
 
