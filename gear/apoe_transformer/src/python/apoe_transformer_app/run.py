@@ -24,12 +24,8 @@ log = logging.getLogger(__name__)
 class APOETransformerVisitor(GearExecutionEnvironment):
     """Visitor for the APOE Transformer gear."""
 
-    def __init__(self,
-                 client: ClientWrapper,
-                 file_input: InputFileWrapper,
-                 filename: str,
-                 target_project_id: str,
-                 local_run: bool,
+    def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
+                 filename: str, target_project_id: str, local_run: bool,
                  delimiter: str):
         super().__init__(client=client)
 
@@ -73,13 +69,13 @@ class APOETransformerVisitor(GearExecutionEnvironment):
             path = Path(file_input.filename)  # type: ignore
             filename = str(path.with_stem(path.stem + "_apoe_transformed"))
 
-        return APOETransformerVisitor(client=client,
-                                      file_input=file_input,  # type: ignore
-                                      filename=filename,
-                                      target_project_id=target_project_id,
-                                      local_run=local_run,
-                                      delimiter=context.config.get(
-                                          'delimiter', ','))
+        return APOETransformerVisitor(
+            client=client,
+            file_input=file_input,  # type: ignore
+            filename=filename,
+            target_project_id=target_project_id,
+            local_run=local_run,
+            delimiter=context.config.get('delimiter', ','))
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the APOE Transformer app."""

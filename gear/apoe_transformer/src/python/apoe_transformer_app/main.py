@@ -31,11 +31,13 @@ APOE_ENCODINGS: Dict[Tuple[str, str], int] = {
 class APOETransformerCSVVisitor(CSVVisitor):
     """Class for visiting each row in the APOE genotype CSV."""
 
-    EXPECTED_INPUT_HEADERS: Tuple[str, ...] = (FieldNames.ADCID, FieldNames.PTID,
-                                               FieldNames.NACCID, 'a1', 'a2')
+    EXPECTED_INPUT_HEADERS: Tuple[str,
+                                  ...] = (FieldNames.ADCID, FieldNames.PTID,
+                                          FieldNames.NACCID, 'a1', 'a2')
 
-    EXPECTED_OUTPUT_HEADERS: Tuple[str, ...] = (FieldNames.ADCID, FieldNames.PTID,
-                                                FieldNames.NACCID, 'apoe')
+    EXPECTED_OUTPUT_HEADERS: Tuple[str,
+                                   ...] = (FieldNames.ADCID, FieldNames.PTID,
+                                           FieldNames.NACCID, 'apoe')
 
     def __init__(self, error_writer: LogErrorWriter):
         """Initializer."""
@@ -115,7 +117,8 @@ def run(*,
 
     # write transformed results to target project
     log.info(f"Writing transformed APOE data to {project.id}")
-    contents = write_csv_to_stream(headers=list(visitor.EXPECTED_OUTPUT_HEADERS),
+    contents = write_csv_to_stream(headers=list(
+        visitor.EXPECTED_OUTPUT_HEADERS),
                                    data=visitor.transformed_data).getvalue()
     file_spec = FileSpec(name=filename,
                          contents=contents,
