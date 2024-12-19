@@ -107,8 +107,8 @@ class EnrollmentSubject(SubjectAdaptor):
         self.upload_acquisition_file(
             session_label=session_label,
             acquisition_label=DefaultValues.ENROLLMENT_MODULE,
-            filename=
-            f'{record.naccid}_{session_label}_{DefaultValues.ENROLLMENT_MODULE}.json',
+            filename=self.get_acquisition_file_name(
+                session=session_label, acquisition=DefaultValues.ENROLLMENT_MODULE),
             contents=record.model_dump_json(exclude_none=True),
             content_type='application/json',
             skip_duplicates=False)
