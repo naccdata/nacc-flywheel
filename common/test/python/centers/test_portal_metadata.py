@@ -229,4 +229,4 @@ class TestREDCapUpdate:
         assert portal_metadata.studies["test"].ingest_projects[
             "ingest-form-test"].redcap_projects[
                 DefaultValues.ENROLLMENT_MODULE], \
-                "expect non-null redcap project after update"
+            "expect non-null redcap project after update"

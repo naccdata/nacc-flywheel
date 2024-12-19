@@ -282,5 +282,24 @@ class SubjectAdaptor:
         except ApiException as error:
             raise SubjectError(
                 f'Failed to upload file {filename} to '
-                '{self.label}/{session_label}/{acquisition_label}: {error}'
+                f'{self.label}/{session_label}/{acquisition_label}: {error}'
             ) from error
+
+    def get_acquisition_file_name(self,
+                                  *,
+                                  session: str,
+                                  acquisition: str,
+                                  extension: Optional[str] = 'json',
+                                  connector: Optional[str] = '_') -> str:
+        """Generate filename in desired format.
+
+        Args:
+            session_label: Flywheel session label
+            acquisition_label: Flywheel acquisition label
+            extension (optional): file extension. Defaults to 'json'.
+            connector (optional): connecting charactor, Defauts to '_'
+
+        Returns:
+            str: generated filename
+        """
+        return f'{self.label}{connector}{session}{connector}{acquisition}.{extension}'
