@@ -66,12 +66,9 @@ class IdentifierVisitor(CSVVisitor):
         Returns:
           True if `ptid` occurs in the header, False otherwise
         """
-        if FieldNames.PTID not in header:
-            self.__error_writer.write(missing_field_error(FieldNames.PTID))
-            return False
-
-        if FieldNames.ADCID not in header:
-            self.__error_writer.write(missing_field_error(FieldNames.ADCID))
+        expected_columns = {FieldNames.PTID, FieldNames.ADCID}
+        if not set(expected_columns).issubset(set(header)):
+            self.__error_writer.write(missing_field_error(expected_columns))
             return False
 
         self.__header = header

@@ -20,6 +20,7 @@ class FieldNames:
     NACCIDKWN = 'naccidknwn'
     PREVENRL = 'prevenrl'
     C2C2T = 'rmmodec2c2t'
+    ENRLTYPE = 'enrltype'
 
 
 class RuleLabels:
