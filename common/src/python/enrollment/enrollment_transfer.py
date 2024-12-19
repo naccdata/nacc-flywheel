@@ -76,8 +76,8 @@ class TransferRecord(BaseModel):
     date: datetime
     initials: str
     center_identifiers: CenterIdentifiers
-    previous_identifiers: Optional[CenterIdentifiers]
-    naccid: Optional[str] = Field(max_length=10, pattern=NACCID_PATTERN)
+    previous_identifiers: Optional[CenterIdentifiers] = None
+    naccid: Optional[str] = Field(None, max_length=10, pattern=NACCID_PATTERN)
 
 
 class EnrollmentRecord(BaseModel):
