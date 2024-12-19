@@ -47,8 +47,8 @@ class TestAPOETransformerCSVVisitor:
         errors = list_handler.get_logs()
         assert len(errors) == 8
         for error in errors:
-            assert error['message'].startswith('Missing field "')
-            assert error['message'].endswith('" in the header')
+            assert error['message'].startswith('Missing required field(s)')
+            assert error['message'].endswith('in the header')
 
     def test_visit_row(self, visitor, apoe_headers):
         """Test the visit_row method, and check that the transformed_data
