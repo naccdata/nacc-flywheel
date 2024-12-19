@@ -3,14 +3,14 @@
 import logging
 from typing import Any, Dict, List, Optional, TextIO
 
+from enrollment.enrollment_transfer import CenterValidator
 from identifiers.model import IdentifierObject
 from inputs.csv_reader import CSVVisitor, read_csv
-from keys.keys import FieldNames, SysErrorCodes
+from keys.keys import FieldNames
 from outputs.errors import (
     ErrorWriter,
     identifier_error,
     missing_field_error,
-    preprocessing_error,
 )
 from outputs.outputs import CSVWriter
 
@@ -42,6 +42,8 @@ class IdentifierVisitor(CSVVisitor):
         self.__module_name = module_name
         self.__header: Optional[List[str]] = None
         self.__writer: Optional[CSVWriter] = None
+        self.__validator = CenterValidator(center_id=adcid,
+                                           error_writer=error_writer)
 
     def __get_writer(self):
         """Returns the writer for the CSV output.
@@ -91,12 +93,7 @@ class IdentifierVisitor(CSVVisitor):
           True if there is a NACCID for the PTID, False otherwise
         """
 
-        if int(row.get(FieldNames.ADCID, -1)) != self.__adcid:
-            self.__error_writer.write(
-                preprocessing_error(field=FieldNames.ADCID,
-                                    value=str(row.get(FieldNames.ADCID)),
-                                    line=line_num,
-                                    error_code=SysErrorCodes.ADCID_MISMATCH))
+        if not self.__validator.check(row=row, line_number=line_num):
             return False
 
         identifier = self.__identifiers.get(row[FieldNames.PTID])
