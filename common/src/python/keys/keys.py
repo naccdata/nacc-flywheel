@@ -63,3 +63,4 @@ class MetadataKeys:
     C2T = 'UDS-C2T'
     LBD_LONG = 'LBD-v3.0'
     LBD_SHORT = 'LBD-v3.1'
+    TRANSFERS = 'transfers'
