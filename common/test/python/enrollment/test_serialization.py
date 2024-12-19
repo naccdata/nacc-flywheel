@@ -96,7 +96,7 @@ class TestTransferRecord:
         try:
             assert TransferRecord.model_validate(transfer)
         except ValidationError:
-            assert False, "transfer record validation failed"
+            assert False, "transfer record validation failed"  # noqa: B011
 
     def test_incomplete_record(self):
         transfer = {
@@ -110,4 +110,4 @@ class TestTransferRecord:
         try:
             assert TransferRecord.model_validate(transfer)
         except ValidationError:
-            assert False, "transfer record validation failed"
+            assert False, "transfer record validation failed"  # noqa: B011
