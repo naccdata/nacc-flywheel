@@ -66,10 +66,12 @@ class EnrollmentProject(ProjectAdaptor):
             return TransferInfo(transfers=[])
 
         try:
-            return TransferInfo.model_validate(info[MetadataKeys.TRANSFERS])
+            return TransferInfo.model_validate(
+                {MetadataKeys.TRANSFERS: info[MetadataKeys.TRANSFERS]})
         except ValidationError as error:
-            raise EnrollmentError(f"Info in {self.group}/{self.label}"
-                                  " does not match expected format") from error
+            raise EnrollmentError(
+                f"{MetadataKeys.TRANSFERS} metadata in {self.group}/{self.label} "
+                "does not match expected format") from error
 
     def update_transfer_info(self, transfer_info: TransferInfo) -> None:
         """Updates the transfer information for this project.
