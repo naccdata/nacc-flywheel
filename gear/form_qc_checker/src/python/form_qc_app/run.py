@@ -16,7 +16,7 @@ from gear_execution.gear_execution import (
 from inputs.context_parser import get_config
 from inputs.parameter_store import ParameterError, ParameterStore
 from keys.keys import DefaultValues
-from redcap.redcap_connection import (
+from redcap_api.redcap_connection import (
     REDCapConnectionError,
     REDCapReportConnection,
 )

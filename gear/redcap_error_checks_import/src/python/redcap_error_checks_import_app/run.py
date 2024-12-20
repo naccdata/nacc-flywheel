@@ -12,8 +12,8 @@ from gear_execution.gear_execution import (
 )
 from inputs.context_parser import get_config
 from inputs.parameter_store import ParameterError, ParameterStore
-from redcap.redcap_connection import REDCapConnection, REDCapConnectionError
-from redcap.redcap_project import REDCapProject
+from redcap_api.redcap_connection import REDCapConnection, REDCapConnectionError
+from redcap_api.redcap_project import REDCapProject
 from s3.s3_client import S3BucketReader
 
 from redcap_error_checks_import_app.main import run

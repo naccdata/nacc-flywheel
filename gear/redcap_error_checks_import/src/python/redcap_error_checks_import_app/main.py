@@ -8,8 +8,8 @@ from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from gear_execution.gear_execution import GearExecutionError
 from inputs.csv_reader import read_csv
 from outputs.errors import LogErrorWriter
-from redcap.redcap_connection import REDCapConnectionError
-from redcap.redcap_project import REDCapProject
+from redcap_api.redcap_connection import REDCapConnectionError
+from redcap_api.redcap_project import REDCapProject
 from s3.s3_client import S3BucketReader
 
 from .utils import ErrorCheckImportStats, ErrorCheckKey

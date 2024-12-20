@@ -16,8 +16,8 @@ from keys.keys import DefaultValues
 from projects.study import Study
 from projects.template_project import TemplateProject
 from pydantic import AliasGenerator, BaseModel, ConfigDict, ValidationError
-from redcap.redcap_project import CENTER_USER_ROLE
-from redcap.redcap_repository import REDCapParametersRepository
+from redcap_api.redcap_project import CENTER_USER_ROLE
+from redcap_api.redcap_repository import REDCapParametersRepository
 from serialization.case import kebab_case
 from users.authorizations import AuthMap
 from users.nacc_directory import Authorizations
