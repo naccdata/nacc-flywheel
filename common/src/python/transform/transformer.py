@@ -154,6 +154,7 @@ class RecordTransformer(BaseRecordTransformer):
         Args:
           input_record: the input record
           line_number: the line number of the input record
+
         Returns:
           the transformed record. None, if any transform returns None.
         """
