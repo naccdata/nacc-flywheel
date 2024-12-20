@@ -61,13 +61,12 @@ class CSVTransformVisitor(CSVVisitor):
 
         self.__has_module_field = FieldNames.MODULE in header
 
-        found_all = True
-        for field in self.__req_fields:
-            if field not in header:
-                found_all = False
-                self.__error_writer.write(missing_field_error(field))
+        if not set(self.__req_fields).issubset(set(header)):
+            self.__error_writer.write(
+                missing_field_error(set(self.__req_fields)))
+            return False
 
-        return found_all
+        return True
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Apply necessary transformations on the given data row. Assumes all

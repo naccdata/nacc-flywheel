@@ -11,7 +11,8 @@ from identifiers.identifiers_repository import (
 )
 from identifiers.model import GUID_PATTERN, NACCID_PATTERN, CenterIdentifiers
 from inputs.csv_reader import RowValidator
-from outputs.errors import CSVLocation, ErrorWriter, FileError, unexpected_value_error
+from keys.keys import FieldNames, SysErrorCodes
+from outputs.errors import CSVLocation, ErrorWriter, FileError, preprocessing_error
 from pydantic import BaseModel, Field
 
 log = logging.getLogger(__name__)
@@ -75,8 +76,8 @@ class TransferRecord(BaseModel):
     date: datetime
     initials: str
     center_identifiers: CenterIdentifiers
-    previous_identifiers: Optional[CenterIdentifiers]
-    naccid: Optional[str] = Field(max_length=10, pattern=NACCID_PATTERN)
+    previous_identifiers: Optional[CenterIdentifiers] = None
+    naccid: Optional[str] = Field(None, max_length=10, pattern=NACCID_PATTERN)
 
 
 class EnrollmentRecord(BaseModel):
@@ -275,15 +276,16 @@ class CenterValidator(RowValidator):
         Returns:
           True if the center ID matches, False otherwise.
         """
-        if int(row['adcid']) == self.__center_id:
+
+        if str(row.get(FieldNames.ADCID)) == str(self.__center_id):
             return True
 
         log.error("Center ID for project must match form ADCID")
         self.__error_writer.write(
-            unexpected_value_error(field='adcid',
-                                   value=row['adcid'],
-                                   expected=str(self.__center_id),
-                                   line=line_number))
+            preprocessing_error(field=FieldNames.ADCID,
+                                value=row[FieldNames.ADCID],
+                                line=line_number,
+                                error_code=SysErrorCodes.ADCID_MISMATCH))
         return False
 
 

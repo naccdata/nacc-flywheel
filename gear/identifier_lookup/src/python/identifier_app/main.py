@@ -3,10 +3,15 @@
 import logging
 from typing import Any, Dict, List, Optional, TextIO
 
+from enrollment.enrollment_transfer import CenterValidator
 from identifiers.model import IdentifierObject
 from inputs.csv_reader import CSVVisitor, read_csv
 from keys.keys import FieldNames
-from outputs.errors import ErrorWriter, identifier_error, missing_header_error
+from outputs.errors import (
+    ErrorWriter,
+    identifier_error,
+    missing_field_error,
+)
 from outputs.outputs import CSVWriter
 
 log = logging.getLogger(__name__)
@@ -19,22 +24,26 @@ class IdentifierVisitor(CSVVisitor):
     data from same ADRC (have the same ADCID).
     """
 
-    def __init__(self, *, identifiers: Dict[str, IdentifierObject],
+    def __init__(self, *, adcid: int, identifiers: Dict[str, IdentifierObject],
                  output_file: TextIO, module_name: str,
                  error_writer: ErrorWriter) -> None:
         """
         Args:
-          identifiers: the map from PTID to Identifier object
-          output_file: the data output stream
-          module_name: the module name for the form
-          error_writer: the error output writer
+            adcid: ADCID for the center
+            identifiers: the map from PTID to Identifier object
+            output_file: the data output stream
+            module_name: the module name for the form
+            error_writer: the error output writer
         """
+        self.__adcid = adcid
         self.__identifiers = identifiers
         self.__output_file = output_file
         self.__error_writer = error_writer
         self.__module_name = module_name
         self.__header: Optional[List[str]] = None
         self.__writer: Optional[CSVWriter] = None
+        self.__validator = CenterValidator(center_id=adcid,
+                                           error_writer=error_writer)
 
     def __get_writer(self):
         """Returns the writer for the CSV output.
@@ -52,15 +61,16 @@ class IdentifierVisitor(CSVVisitor):
     def visit_header(self, header: List[str]) -> bool:
         """Prepares the visitor to write a CSV file with the given header.
 
-        If the header doesn't have `ptid`, returns an error.
+        If the header doesn't have `ptid` or `adcid`, returns an error.
 
         Args:
           header: the list of header names
         Returns:
           True if `ptid` occurs in the header, False otherwise
         """
-        if FieldNames.PTID not in header:
-            self.__error_writer.write(missing_header_error())
+        expected_columns = {FieldNames.PTID, FieldNames.ADCID}
+        if not set(expected_columns).issubset(set(header)):
+            self.__error_writer.write(missing_field_error(expected_columns))
             return False
 
         self.__header = header
@@ -82,7 +92,9 @@ class IdentifierVisitor(CSVVisitor):
         Returns:
           True if there is a NACCID for the PTID, False otherwise
         """
-        writer = self.__get_writer()
+
+        if not self.__validator.check(row=row, line_number=line_num):
+            return False
 
         identifier = self.__identifiers.get(row[FieldNames.PTID])
         if not identifier:
@@ -93,13 +105,14 @@ class IdentifierVisitor(CSVVisitor):
         row[FieldNames.NACCID] = identifier.naccid
         row[FieldNames.MODULE] = self.__module_name
 
+        writer = self.__get_writer()
         writer.write(row)
 
         return True
 
 
 def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
-        module_name: str, output_file: TextIO,
+        module_name: str, adcid: int, output_file: TextIO,
         error_writer: ErrorWriter) -> bool:
     """Reads participant records from the input CSV file, finds the NACCID for
     each row from the ADCID and PTID, and outputs a CSV file with the NACCID
@@ -117,6 +130,7 @@ def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
       input_file: the data input stream
       identifiers: the map from PTID to Identifier object
       module_name: the module name for the form
+      adcid: ADCID for the center
       output_file: the data output stream
       error_writer: the error output writer
     Returns:
@@ -125,7 +139,8 @@ def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
 
     return read_csv(input_file=input_file,
                     error_writer=error_writer,
-                    visitor=IdentifierVisitor(identifiers=identifiers,
+                    visitor=IdentifierVisitor(adcid=adcid,
+                                              identifiers=identifiers,
                                               output_file=output_file,
                                               module_name=module_name,
                                               error_writer=error_writer))

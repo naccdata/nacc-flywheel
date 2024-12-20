@@ -1,11 +1,19 @@
 """Utilities for writing errors to a CSV error file."""
+import json
 from abc import ABC, abstractmethod
 from datetime import datetime as dt
+from logging import Logger
 from typing import Any, Dict, List, Literal, Optional, TextIO
 
+from keys.keys import SysErrorCodes
 from pydantic import BaseModel, ConfigDict, Field
 
 from outputs.outputs import CSVWriter
+
+preprocess_errors = {
+    SysErrorCodes.ADCID_MISMATCH:
+    "ADCID must match the ADCID of the center uploading the data",
+}
 
 
 class CSVLocation(BaseModel):
@@ -96,11 +104,12 @@ def invalid_header_error(message: Optional[str] = None) -> FileError:
                      message=message)
 
 
-def missing_field_error(field: str) -> FileError:
+def missing_field_error(field: str | set[str]) -> FileError:
     """Creates a FileError for a missing field in header."""
-    return FileError(error_type='error',
-                     error_code='missing-field',
-                     message=f'Missing field "{field}" in the header')
+    return FileError(
+        error_type='error',
+        error_code='missing-field',
+        message=f'Missing required field(s) {field} in the header')
 
 
 def empty_field_error(field: str,
@@ -132,6 +141,7 @@ def unexpected_value_error(field: str,
     Args:
       field: the field name
       value: the unexpected value
+      expected: the expected value
       line: the line number
       message: the error message
     Returns:
@@ -180,30 +190,101 @@ def previous_visit_failed_error(prev_visit: str) -> FileError:
                               'before evaluating any subsequent visits'))
 
 
-class ErrorWriter(ABC):
-    """Abstract base class for error writer."""
+def preprocessing_error(field: str,
+                        value: str,
+                        line: int,
+                        error_code: Optional[str] = None,
+                        message: Optional[str] = None) -> FileError:
+    """Creates a FileError for pre-processing error.
 
-    def __init__(self, container_id: str, fw_path: str) -> None:
-        self.__container_id = container_id
-        self.__flyweel_path = fw_path
+    Args:
+      field: the field name
+      value: the unexpected value
+      line: the line number
+      error_code (optional): pre-processing error code
+      message (optional): the error message
+
+    Returns:
+      the constructed FileError
+    """
+
+    error_message = message if message else (
+        f'Pre-processing error for field {field} value {value}')
+
+    if error_code:
+        error_message = preprocess_errors.get(error_code, error_message)
+
+    return FileError(
+        error_type='error',
+        error_code=error_code if error_code else 'preprocess-error',
+        value=value,
+        location=CSVLocation(line=line, column_name=field),
+        message=error_message)
+
+
+class ErrorWriter(ABC):
+    """Abstract class for error write."""
+
+    def __init__(self):
+        """Initializer - sets the timestamp to time of creation."""
         self.__timestamp = (dt.now()).strftime('%Y-%m-%d %H:%M:%S')
+
+    def set_timestamp(self, error: FileError) -> None:
+        """Assigns the timestamp to the error."""
+        error.timestamp = self.__timestamp
 
     @abstractmethod
     def write(self, error: FileError, set_timestamp: bool = True) -> None:
         """Writes the error to the output target of implementing class."""
+        pass
+
+
+# pylint: disable=(too-few-public-methods)
+class LogErrorWriter(ErrorWriter):
+    """Writes errors to logger."""
+
+    def __init__(self, log: Logger) -> None:
+        self.__log = log
+        super().__init__()
+
+    def write(self, error: FileError, set_timestamp: bool = True) -> None:
+        """Writes the error to the logger.
+
+        Args:
+          error: the file error object
+          set_timestamp: if True, assign the writer timestamp to the error
+        """
+        if set_timestamp:
+            self.set_timestamp(error)
+        self.__log.error(json.dumps(error.model_dump(by_alias=True), indent=4))
+
+
+class UserErrorWriter(ErrorWriter):
+    """Abstract class for a user error writer."""
+
+    def __init__(self, container_id: str, fw_path: str) -> None:
+        self.__container_id = container_id
+        self.__flyweel_path = fw_path
+        super().__init__()
 
     def set_container(self, error: FileError) -> None:
         """Assigns the container ID and Flywheel path for the error."""
         error.container_id = self.__container_id
         error.flywheel_path = self.__flyweel_path
 
-    def set_timestamp(self, error: FileError) -> None:
-        """Assigns the timestamp the error."""
-        error.timestamp = self.__timestamp
+    def prepare_error(self, error, set_timestamp: bool = True) -> None:
+        """Prepare the error by adding container and timestamp information.
+
+        Args:
+          error: the file error object
+          set_timestamp: if True, assign the writer timestamp to the error
+        """
+        self.set_container(error)
+        if set_timestamp:
+            self.set_timestamp(error)
 
 
-# pylint: disable=(too-few-public-methods)
-class StreamErrorWriter(ErrorWriter):
+class StreamErrorWriter(UserErrorWriter):
     """Writes FileErrors to a stream as CSV."""
 
     def __init__(self, stream: TextIO, container_id: str,
@@ -220,13 +301,11 @@ class StreamErrorWriter(ErrorWriter):
           error: the file error object
           set_timestamp: if True, assign the writer timestamp to the error
         """
-        self.set_container(error)
-        if set_timestamp:
-            self.set_timestamp(error)
+        self.prepare_error(error, set_timestamp)
         self.__writer.write(error.model_dump(by_alias=True))
 
 
-class ListErrorWriter(ErrorWriter):
+class ListErrorWriter(UserErrorWriter):
     """Collects FileErrors to file metadata."""
 
     def __init__(self, container_id: str, fw_path: str) -> None:
@@ -240,9 +319,7 @@ class ListErrorWriter(ErrorWriter):
           error: the file error object
           set_timestamp: if True, assign the writer timestamp to the error
         """
-        self.set_container(error)
-        if set_timestamp:
-            self.set_timestamp(error)
+        self.prepare_error(error, set_timestamp)
         self.__errors.append(error.model_dump(by_alias=True))
 
     def errors(self) -> List[Dict[str, Any]]:

@@ -30,7 +30,7 @@ from outputs.errors import (
     FileError,
     empty_field_error,
     identifier_error,
-    missing_header_error,
+    missing_field_error,
     unexpected_value_error,
 )
 from pydantic import ValidationError
@@ -112,7 +112,7 @@ class TransferVisitor(CSVVisitor):
             FieldNames.NACCID, FieldNames.PREVENRL
         }
         if not expected_columns.issubset(set(header)):
-            self.__error_writer.write(missing_header_error())
+            self.__error_writer.write(missing_field_error(expected_columns))
             return False
 
         return True
@@ -333,7 +333,7 @@ class NewEnrollmentVisitor(CSVVisitor):
         """
         expected_columns = {FieldNames.ADCID, FieldNames.PTID, FieldNames.GUID}
         if not expected_columns.issubset(set(header)):
-            self.__error_writer.write(missing_header_error())
+            self.__error_writer.write(missing_field_error(expected_columns))
             return False
 
         return True
@@ -413,9 +413,9 @@ class ProvisioningVisitor(CSVVisitor):
         Returns:
           True if all of the visitors return True. False otherwise
         """
-        expected_columns = {'enrltype'}
+        expected_columns = {FieldNames.ENRLTYPE}
         if not expected_columns.issubset(set(header)):
-            self.__error_writer.write(missing_header_error())
+            self.__error_writer.write(missing_field_error(expected_columns))
             return False
 
         return (self.__enrollment_visitor.visit_header(header)
