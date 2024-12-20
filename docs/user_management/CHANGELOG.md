@@ -4,7 +4,7 @@ All notable changes to this gear are documented in this file.
 
 ## Unreleased
 
-* tba
+* Updates to pull REDCap API code from library instead
   
 ## 1.4.2
 

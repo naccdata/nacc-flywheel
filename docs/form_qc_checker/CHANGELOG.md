@@ -2,6 +2,10 @@
 
 All notable changes to this gear are documented in this file.
 
+## Unreleased
+
+* Updates to pull REDCap API code from library instead
+
 ## 1.1.0
 * Update loading rule definitions from S3 - skipping C2 or C2T definition depending on the version submitted
 * Defines the `is_valid_adcid` method in the `DataStoreHelper` class - checks whether provided ADCID is in current list of ADCIDs

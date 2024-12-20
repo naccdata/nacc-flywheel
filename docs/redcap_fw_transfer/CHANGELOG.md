@@ -2,6 +2,9 @@
 
 All notable changes to this gear are documented in this file.
 
+## Unreleased
+
+* Updates to pull REDCap API code from library instead
 
 ## 0.1.0
 * Removes timestamp from uploaded filename (filename needs to match for error correction)
