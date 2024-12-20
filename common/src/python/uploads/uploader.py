@@ -230,7 +230,8 @@ class FormJSONUploader(RecordUploader):
 
                 acq_label = record[FieldNames.MODULE].upper()
 
-                visit_file_name = f'{subject_lbl}_{session_label}_{acq_label}.json'
+                visit_file_name = subject.get_acquisition_file_name(
+                    session=session_label, acquisition=acq_label)
                 try:
                     new_file = subject.upload_acquisition_file(
                         session_label=session_label,
