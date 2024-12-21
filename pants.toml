@@ -46,3 +46,8 @@ use_rust_parser = true
 
 [update-build-files]
 formatter = "yapf"
+
+[python-repos]
+find_links = [
+    "file:///workspaces/flywheel-gear-extensions/dist/"
+]

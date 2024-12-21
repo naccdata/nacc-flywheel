@@ -45,7 +45,7 @@
         "checks_s3_bucket": {
             "description": "The S3 URI containing the error check CSVs; defaults to the NACC QC Rules bucket",
             "type": "string",
-            "default": "nacc-qc-rules/CSV"
+            "default": "nacc-qc-rules"
         },
         "qc_checks_db_path": {
             "description": "AWS parameter base path for the target REDCap project to import error checks to; defaults to the NACC QC Checks project",

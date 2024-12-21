@@ -16,7 +16,7 @@ from keys.keys import DefaultValues
 from projects.study import Study
 from projects.template_project import TemplateProject
 from pydantic import AliasGenerator, BaseModel, ConfigDict, ValidationError
-from redcap_api.redcap_project import CENTER_USER_ROLE
+from redcap_api.redcap_project import REDCapRoles
 from redcap_api.redcap_repository import REDCapParametersRepository
 from serialization.case import kebab_case
 from users.authorizations import AuthMap
@@ -610,13 +610,13 @@ class CenterGroup(CenterAdaptor):
                 continue
 
             if not redcap_project.assign_update_user_role_by_label(
-                    auth_email, CENTER_USER_ROLE):
+                    auth_email, REDCapRoles.CENTER_USER_ROLE):
                 success = False
                 continue
 
             log.info(
                 'User %s (%s) is assigned %s permissions in REDCap project %s',
-                user.email, auth_email, CENTER_USER_ROLE, redcap_project.title)
+                user.email, auth_email, REDCapRoles.CENTER_USER_ROLE, redcap_project.title)
 
         return success
 
