@@ -2566,7 +2566,7 @@
           "artifacts": [
             {
               "algorithm": "sha256",
-              "hash": "2f366b964140d413ff818460ad7503d0c64c74c80961a5bdb5cf7a226014983a",
+              "hash": "88a7988346be8817afd781b6915176a2d92c36417a7cb66b05e1ef7740371ac2",
               "url": "file:///workspaces/flywheel-gear-extensions/dist/redcap_api-0.1.0-py3-none-any.whl"
             }
           ],
