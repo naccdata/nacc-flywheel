@@ -102,8 +102,7 @@ class QCCoordinator():
             bool: True if job successfully complete, else False
         """
 
-        job = self._proxy.find_job(f'id={job_id}')
-
+        job = self._proxy.get_job_by_id(job_id)
         if not job:
             log.error('Cannot find a job with ID %s', job_id)
             return False
@@ -112,7 +111,7 @@ class QCCoordinator():
         max_retries = 3  # maximum number of retries in Flywheel
         retries = 1
         while status == 'retried' and retries <= max_retries:
-            new_job = self._proxy.find_job(f'previous_job_id={job_id}')
+            new_job = self._proxy.find_job(f'previous_job_id="{job_id}"')
             if not new_job:
                 log.error('Cannot find a retried job with previous_job_id=%s',
                           job_id)
