@@ -226,7 +226,9 @@ class JSONFileProcessor(FileProcessor):
         if self._module == DefaultValues.UDS_MODULE:
             try:
                 c2c2t_mode = int(input_data.get(FieldNames.C2C2T, 2))
-                skip_forms = ['c2'] if c2c2t_mode == DefaultValues.C2TMODE else ['c2t']
+                skip_forms = [
+                    'c2'
+                ] if c2c2t_mode == DefaultValues.C2TMODE else ['c2t']
             except ValueError:
                 pass
 
