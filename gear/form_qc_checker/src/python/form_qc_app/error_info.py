@@ -181,7 +181,7 @@ class REDCapErrorStore(ErrorStore):
 
 
 def replace_nullable_with_required(rule: str, code_schema: Dict[str,
-                                                               Dict]) -> bool:
+                                                                Dict]) -> bool:
     """If code mapping not found in the schema for nullable rule, use the same
     code as required rule if it is defined in the schema.
 

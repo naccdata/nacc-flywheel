@@ -3,7 +3,7 @@
 import json
 import logging
 from json.decoder import JSONDecodeError
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from centers.nacc_group import LegacyModuleInfo, NACCGroup, ValidationError
 from flywheel import Project
@@ -50,7 +50,8 @@ class DatastoreHelper(Datastore):
         self.__legacy_project = self.__get_legacy_project()
         self.__legacy_info = self.__get_legacy_modules_info()
 
-        self.__prev_visits = {}  # cache for grabbing previous records
+        self.__prev_visits: Dict[str, Any] = {
+        }  # cache for grabbing previous records
 
     def __pull_adcids_list(self) -> Optional[List[int]]:
         """Pull the list of ADCIDs from the admin group metadata project.
@@ -257,8 +258,10 @@ class DatastoreHelper(Datastore):
         prev_visit_cached = self.__prev_visits.get(subject_lbl, {})\
             .get(module, {}).get(orderby_value, {}).get('cached', False)
         if prev_visit_cached:
-            log.info("Already searched for previous visit, using cached records")
-            return self.__prev_visits[subject_lbl][module][orderby_value]['prev_visits']
+            log.info(
+                "Already searched for previous visit, using cached records")
+            return self.__prev_visits[subject_lbl][module][orderby_value][
+                'prev_visits']
 
         # otherwise try to grab from either project or legacy
         prev_visits = self.__query_project(project=self.__project,
