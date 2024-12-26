@@ -2,6 +2,10 @@
 
 All notable changes to this gear are documented in this file.
 
+## 1.1.5
+
+* Fixes string to int comparison when checking if C2 or C2T causing it to always skip C2T
+
 ## 1.1.4
 
 * Updates `nacc-form-validator` to `1.4.1` which fixes tuple index error and implements "isclose" for comparing float values
