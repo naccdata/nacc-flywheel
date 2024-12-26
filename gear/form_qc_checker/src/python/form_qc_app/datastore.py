@@ -50,6 +50,8 @@ class DatastoreHelper(Datastore):
         self.__legacy_project = self.__get_legacy_project()
         self.__legacy_info = self.__get_legacy_modules_info()
 
+        self.__prev_visits = {}  # cache for grabbing previous records
+
     def __pull_adcids_list(self) -> Optional[List[int]]:
         """Pull the list of ADCIDs from the admin group metadata project.
 
@@ -251,6 +253,14 @@ class DatastoreHelper(Datastore):
         module = current_record[FieldNames.MODULE]
         orderby_value = current_record[self.orderby]
 
+        # see if we've already cached the previous records
+        prev_visit_cached = self.__prev_visits.get(subject_lbl, {})\
+            .get(module, {}).get(orderby_value, {}).get('cached', False)
+        if prev_visit_cached:
+            log.info("Already searched for previous visit, using cached records")
+            return self.__prev_visits[subject_lbl][module][orderby_value]['prev_visits']
+
+        # otherwise try to grab from either project or legacy
         prev_visits = self.__query_project(project=self.__project,
                                            subject_lbl=subject_lbl,
                                            module=module,
@@ -259,6 +269,17 @@ class DatastoreHelper(Datastore):
                                            qc_gear=DefaultValues.QC_GEAR)
 
         if prev_visits:
+            # cache the previous visit
+            self.__prev_visits.update({
+                subject_lbl: {
+                    module: {
+                        orderby_value: {
+                            'prev_visits': prev_visits,
+                            'cached': True
+                        }
+                    }
+                }
+            })
             return prev_visits
 
         # if no previous visits found in the current project, check the legacy project
@@ -269,6 +290,18 @@ class DatastoreHelper(Datastore):
         if not legacy_visits:
             log.error('No previous visits found for %s/%s', subject_lbl,
                       module)
+
+        # cache either the fact there is no previous visit or the found legacy one
+        self.__prev_visits.update({
+            subject_lbl: {
+                module: {
+                    orderby_value: {
+                        'prev_visits': legacy_visits,
+                        'cached': True
+                    }
+                }
+            }
+        })
 
         return legacy_visits
 
