@@ -2,7 +2,7 @@
 
 All notable changes to this gear are documented in this file.
 
-## 1.1.5
+## 1.1.5 and 1.1.6
 
 * Fixes string to int comparison when checking if C2 or C2T causing it to always skip C2T
 
