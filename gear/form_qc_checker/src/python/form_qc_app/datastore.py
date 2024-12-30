@@ -251,7 +251,7 @@ class DatastoreHelper(Datastore):
             return None
 
         subject_lbl = current_record[self.pk_field]
-        module = current_record[FieldNames.MODULE]
+        module = current_record[FieldNames.MODULE].upper()
         orderby_value = current_record[self.orderby]
 
         # see if we've already cached the previous records
