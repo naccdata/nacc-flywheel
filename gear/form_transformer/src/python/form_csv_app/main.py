@@ -89,10 +89,10 @@ class CSVTransformVisitor(CSVVisitor):
         if not found_all:
             return False
 
-        # Set module
-        # Assumes all records in the CSV file belongs to the same module.
-        if self.__has_module_field:
+        # If module expected set module
+        if self.has_module():
             self.__set_module(row)
+            # All records in the CSV file must belongs to the same module.
             if not self.__check_module(row=row, line_num=line_num):
                 return False
 
@@ -140,10 +140,11 @@ class CSVTransformVisitor(CSVVisitor):
         Args:
           row: the input row
           line_num: the line number of row
+
         Returns:
           True if module matches, or no module expected. False, otherwise.
         """
-        if not self.__has_module_field:
+        if not self.has_module():
             return True
 
         row_module = self.__get_module(row)
@@ -175,13 +176,20 @@ def run(*, input_file: TextIO, destination: ProjectAdaptor,
         destination: Flyhweel project container
         transformer_factory: the factory for column transformers
         error_writer: the writer for error output
+
     Returns:
         bool: True if transformation/upload successful
     """
 
+    # TODO - get the required fields from template
+    req_fields_list = [
+        FieldNames.NACCID, FieldNames.MODULE, FieldNames.VISITNUM,
+        FieldNames.DATE_COLUMN, FieldNames.FORMVER
+    ]
+
     transformed_records: DefaultDict[str, List[Dict[str,
                                                     Any]]] = defaultdict(list)
-    visitor = CSVTransformVisitor(req_fields=[FieldNames.NACCID],
+    visitor = CSVTransformVisitor(req_fields=req_fields_list,
                                   transformed_records=transformed_records,
                                   error_writer=error_writer,
                                   transformer_factory=transformer_factory)

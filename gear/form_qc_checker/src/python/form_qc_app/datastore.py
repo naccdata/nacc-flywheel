@@ -143,8 +143,7 @@ class DatastoreHelper(Datastore):
             'file.name', 'file.file_id', "file.parents.acquisition",
             "file.parents.session", orderby_col
         ]
-        filters = (f'subject.label={subject_lbl}, acquisition.label={module},'
-                   f'{orderby_col}<{cutoff_val}')
+        filters = (f'acquisition.label={module},{orderby_col}<{cutoff_val}')
 
         if qc_gear:
             filters += f',file.info.qc.{qc_gear}.validation.state=PASS'
