@@ -97,15 +97,13 @@ class NotificationClient:
           user_entry: the user entry for the user
         """
         assert user_entry.auth_email, "user entry must have auth email"
-        if self.__should_send(user_entry):
-            self.__client.send(
-                configuration_set_name=self.__configuration_set_name,
-                destination=DestinationModel(
-                    to_addresses=[user_entry.email],
-                    cc_addresses=[user_entry.auth_email]),
-                template="user-creation",
-                template_data=TemplateDataModel(
-                    firstname=user_entry.first_name, url=self.__portal_url))
+        self.__client.send(
+            configuration_set_name=self.__configuration_set_name,
+            destination=DestinationModel(to_addresses=[user_entry.email],
+                                         cc_addresses=[user_entry.auth_email]),
+            template="user-creation",
+            template_data=TemplateDataModel(firstname=user_entry.first_name,
+                                            url=self.__portal_url))
 
     def __should_send(self, user_entry: ActiveUserEntry) -> bool:
         """Determines whether to send a notification.
