@@ -224,10 +224,15 @@ class JSONFileProcessor(FileProcessor):
         skip_forms = []
         # Check which form is submitted for C2/C2T and skip the definition for other
         if self._module == DefaultValues.UDS_MODULE:
-            if input_data.get(FieldNames.C2C2T, 2) == DefaultValues.C2TMODE:
-                skip_forms = ['c2']
-            else:
-                skip_forms = ['c2t']
+            c2c2t_mode = None
+            try:  # noqa: SIM105
+                c2c2t_mode = int(input_data.get(FieldNames.C2C2T, 2))
+            except ValueError:
+                pass
+
+            skip_forms = ['c2'] if c2c2t_mode == DefaultValues.C2TMODE else [
+                'c2t'
+            ]
 
         return rule_def_loader.load_definition_schemas(
             input_data=input_data,

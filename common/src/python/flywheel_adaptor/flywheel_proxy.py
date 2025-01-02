@@ -593,12 +593,27 @@ class FlywheelProxy:
         """Find the first Job matching the search string.
 
         Args:
-            search_str: paramets to search (e.g. 'id={job_id}')
+            search_str: paramets to search (e.g. 'state=failed')
 
         Returns:
             Job: Flywheel Job object if found, else None
         """
         return self.__fw.jobs.find_first(search_str)
+
+    def get_job_by_id(self, job_id: str) -> Optional[Job]:
+        """Find the Job with matching ID.
+
+        Args:
+            job_id: Flywheel job id
+
+        Returns:
+            Job: Flywheel Job object if found, else None
+        """
+        try:
+            return self.__fw.get_job(job_id)
+        except ApiException as error:
+            log.warning(error)
+            return None
 
     def get_matching_aquisition_files_info(
             self,
