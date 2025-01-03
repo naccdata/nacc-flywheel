@@ -84,7 +84,7 @@ class FileProcessor(ABC):
             bool: True if the file passed validation
 
         Raises:
-            GearExecutionError: if errors occured while processing the input file
+            GearExecutionError: if errors occurred while processing the input file
         """
 
 
@@ -105,7 +105,7 @@ class JSONFileProcessor(FileProcessor):
             FailedStatus: Literal['NONE', 'SAME', 'DIFFERENT']
 
         Raises:
-            GearExecutionError: If error occured while checking for previous visits
+            GearExecutionError: If error occurred while checking for previous visits
         """
         try:
             failed_visit = self.__subject.get_last_failed_visit(self._module)
@@ -250,7 +250,7 @@ class JSONFileProcessor(FileProcessor):
             bool: True if the record passed validation
 
         Raises:
-            GearExecutionError: if errors occured while processing the input record
+            GearExecutionError: if errors occurred while processing the input record
         """
 
         valid = False
@@ -268,7 +268,7 @@ class JSONFileProcessor(FileProcessor):
                     file_id=self.__file_id,
                     visitdate=self.__input_record[self.__date_field])
                 self.__subject.set_last_failed_visit(self._module, visit_info)
-            # reset failed visit metadta in Flyhweel
+            # reset failed visit metadata in Flywheel
             elif failed_visit == 'SAME':
                 self.__subject.reset_last_failed_visit(self._module)
 

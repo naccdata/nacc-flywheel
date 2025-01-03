@@ -77,10 +77,13 @@
             "type": "string",
             "default": "nacc"
         },
-        "tag": {
-            "description": "The tag to be added on input file upon job completion.",
-            "type": "string",
-            "default": "form-qc-checker"
+        "error_log_template": {
+            "description": "the template for deriving error log name <ptid>_<visitdate>_<module>_errors.log",
+            "type": "object",
+            "default": {
+                "ptid": "ptid",
+                "visitdate": "visitdate"
+            }
         }
     },
     "command": "/bin/run"

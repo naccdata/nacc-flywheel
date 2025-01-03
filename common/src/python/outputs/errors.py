@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Literal, Optional, TextIO
 from flywheel.file_spec import FileSpec
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
-from keys.keys import SysErrorCodes
+from keys.keys import FieldNames, SysErrorCodes
 from pydantic import BaseModel, ConfigDict, Field
 
 from outputs.outputs import CSVWriter, convert_json_to_csv_stream
@@ -401,3 +401,25 @@ def update_error_log_and_qc_metadata(*, error_log_name: str,
         return False
 
     return True
+
+
+def get_error_log_name(*, module: str, input_data: Dict[str, Any],
+                       naming_template: Dict[str, str]) -> Optional[str]:
+    """Derive error log name based on visit data.
+
+    Args:
+        module: module label
+        input_data: input visit record
+        naming_template: naming template for module
+
+    Returns:
+        str (optional): error log name or None
+    """
+    ptid = input_data.get(naming_template.get('ptid', FieldNames.PTID))
+    visitdate = input_data.get(
+        naming_template.get('visitdate', FieldNames.DATE_COLUMN))
+
+    if not ptid or not visitdate:
+        return None
+
+    return f'{ptid}_{visitdate}_{module.lower()}_errors.log'
