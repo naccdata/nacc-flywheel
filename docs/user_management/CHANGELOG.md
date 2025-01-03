@@ -5,6 +5,11 @@ All notable changes to this gear are documented in this file.
 ## Unreleased
 
 * tba
+
+## 1.4.3
+
+* Enable sending "user created" email when "none" is selected for notifications.
+* Update python dependencies.
   
 ## 1.4.2
 
