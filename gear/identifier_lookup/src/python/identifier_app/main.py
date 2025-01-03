@@ -35,7 +35,6 @@ class IdentifierVisitor(CSVVisitor):
             module_name: the module name for the form
             error_writer: the error output writer
         """
-        self.__adcid = adcid
         self.__identifiers = identifiers
         self.__output_file = output_file
         self.__error_writer = error_writer

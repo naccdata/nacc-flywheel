@@ -76,15 +76,15 @@ class ListJSONWriter(JSONWriter):
         return self.__objects
 
 
-def write_csv_to_stream(headers: List[str], data: List[Dict[str, Any]],
-                        filename: str) -> StringIO:
+def write_csv_to_stream(headers: List[str], data: List[Dict[str,
+                                                            Any]]) -> StringIO:
     """Takes a header and data pair and uses CSVWriter to write the CSV
     contents to a StringIO stream.
 
     Args:
         headers: The header values
         data: The data values, expected to be a list of JSON dicts
-        filename: The filename
+
     Returns:
         StringIO object containing the contents.
     """
@@ -92,5 +92,33 @@ def write_csv_to_stream(headers: List[str], data: List[Dict[str, Any]],
     writer = CSVWriter(stream, headers)
     for row in data:
         writer.write(row)
+
+    return stream
+
+
+def convert_json_to_csv_stream(data: List[Dict[str, Any]],
+                               fieldnames: List[str],
+                               header: bool = True) -> StringIO:
+    """Convert the list of JSON dicts to a CSV stream. Adding header is
+    optional.
+
+    Args:
+        data: the data values, expected to be a list of JSON dicts
+        fieldnames: list of keys for the dict
+        header: whether to add CSV header or not (default is True)
+
+    Returns:
+        StringIO object containing the contents.
+    """
+    stream = StringIO()
+    writer = DictWriter(stream,
+                        fieldnames=fieldnames,
+                        dialect='unix',
+                        quoting=QUOTE_MINIMAL)
+
+    if header:
+        writer.writeheader()
+
+    writer.writerows(data)
 
     return stream

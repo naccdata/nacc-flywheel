@@ -36,6 +36,7 @@ class FileError(BaseModel):
     pipeline."""
     model_config = ConfigDict(populate_by_name=True)
 
+    timestamp: Optional[str] = None
     error_type: Literal['alert', 'error'] = Field(serialization_alias='type')
     error_code: str = Field(serialization_alias='code')
     location: Optional[CSVLocation | JSONLocation] = None
@@ -44,7 +45,6 @@ class FileError(BaseModel):
     value: Optional[str] = None
     expected: Optional[str] = None
     message: str
-    timestamp: Optional[str] = None
     ptid: Optional[str] = None
     visitnum: Optional[str] = None
 

@@ -112,7 +112,7 @@ def run(  # noqa: C901
         redcap_connection (Optional): REDCap project for NACC QC checks
 
     Raises:
-        GearExecutionError if any problem occurrs while validating input file
+        GearExecutionError if any problem occurs while validating input file
     """
 
     if not input_wrapper.file_input:

@@ -14,7 +14,6 @@ from gear_execution.gear_execution import (
     GearExecutionError,
     InputFileWrapper,
 )
-from identifier_app.main import run
 from identifiers.identifiers_lambda_repository import (
     IdentifiersLambdaRepository,
     IdentifiersMode,
@@ -27,6 +26,8 @@ from identifiers.model import IdentifierObject
 from inputs.parameter_store import ParameterStore
 from lambdas.lambda_function import LambdaClient, create_lambda_client
 from outputs.errors import ListErrorWriter
+
+from identifier_app.main import run
 
 log = logging.getLogger(__name__)
 
