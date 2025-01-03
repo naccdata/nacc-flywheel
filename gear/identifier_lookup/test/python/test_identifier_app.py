@@ -4,7 +4,7 @@ from io import StringIO
 from typing import Any, List
 
 import pytest
-from identifier_app.main import run
+from identifier_app.main import NACCIDLookupVisitor, run
 from identifiers.model import IdentifierObject
 from outputs.errors import StreamErrorWriter
 
@@ -115,14 +115,17 @@ class TestIdentifierLookup:
         """Test empty input stream."""
         out_stream = StringIO()
         err_stream = StringIO()
+        error_writer = StreamErrorWriter(stream=err_stream,
+                                         container_id='dummy',
+                                         fw_path='dummy-path')
         success = run(input_file=empty_data_stream,
-                      adcid=1,
-                      identifiers=identifiers_map,
-                      output_file=out_stream,
-                      module_name='dummy-module',
-                      error_writer=StreamErrorWriter(stream=err_stream,
-                                                     container_id='dummy',
-                                                     fw_path='dummy-path'))
+                      lookup_visitor=NACCIDLookupVisitor(
+                          adcid=1,
+                          identifiers=identifiers_map,
+                          output_file=out_stream,
+                          module_name='dummy-module',
+                          error_writer=error_writer),
+                      error_writer=error_writer)
         assert not success
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -132,14 +135,17 @@ class TestIdentifierLookup:
         """Test case with no header."""
         out_stream = StringIO()
         err_stream = StringIO()
+        error_writer = StreamErrorWriter(stream=err_stream,
+                                         container_id='dummy',
+                                         fw_path='dummy-path')
         success = run(input_file=no_header_stream,
-                      adcid=1,
-                      identifiers=identifiers_map,
-                      output_file=out_stream,
-                      module_name='dummy-module',
-                      error_writer=StreamErrorWriter(stream=err_stream,
-                                                     container_id='dummy',
-                                                     fw_path='dummy-path'))
+                      lookup_visitor=NACCIDLookupVisitor(
+                          adcid=1,
+                          identifiers=identifiers_map,
+                          output_file=out_stream,
+                          module_name='dummy-module',
+                          error_writer=error_writer),
+                      error_writer=error_writer)
         assert not success
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -149,14 +155,17 @@ class TestIdentifierLookup:
         """Test case where header doesn't have ID columns."""
         out_stream = StringIO()
         err_stream = StringIO()
+        error_writer = StreamErrorWriter(stream=err_stream,
+                                         container_id='dummy',
+                                         fw_path='dummy-path')
         success = run(input_file=no_ids_stream,
-                      adcid=1,
-                      identifiers=identifiers_map,
-                      output_file=out_stream,
-                      module_name='dummy-module',
-                      error_writer=StreamErrorWriter(stream=err_stream,
-                                                     container_id='dummy',
-                                                     fw_path='dummy-path'))
+                      lookup_visitor=NACCIDLookupVisitor(
+                          adcid=1,
+                          identifiers=identifiers_map,
+                          output_file=out_stream,
+                          module_name='dummy-module',
+                          error_writer=error_writer),
+                      error_writer=error_writer)
         assert not success
         assert empty(out_stream)
         assert not empty(err_stream)
@@ -166,14 +175,17 @@ class TestIdentifierLookup:
         """Test case where everything should match."""
         out_stream = StringIO()
         err_stream = StringIO()
+        error_writer = StreamErrorWriter(stream=err_stream,
+                                         container_id='dummy',
+                                         fw_path='dummy-path')
         success = run(input_file=data_stream,
-                      adcid=1,
-                      identifiers=identifiers_map,
-                      output_file=out_stream,
-                      module_name='dummy-module',
-                      error_writer=StreamErrorWriter(stream=err_stream,
-                                                     container_id='dummy',
-                                                     fw_path='dummy-path'))
+                      lookup_visitor=NACCIDLookupVisitor(
+                          adcid=1,
+                          identifiers=identifiers_map,
+                          output_file=out_stream,
+                          module_name='dummy-module',
+                          error_writer=error_writer),
+                      error_writer=error_writer)
         assert success
         assert empty(err_stream)
         assert not empty(out_stream)
@@ -192,14 +204,17 @@ class TestIdentifierLookup:
         """Test case where there is no matching identifier."""
         out_stream = StringIO()
         err_stream = StringIO()
+        error_writer = StreamErrorWriter(stream=err_stream,
+                                         container_id='dummy',
+                                         fw_path='dummy-path')
         success = run(input_file=data_stream,
-                      identifiers=mismatched_identifiers_map,
-                      adcid=1,
-                      output_file=out_stream,
-                      module_name='dummy-module',
-                      error_writer=StreamErrorWriter(stream=err_stream,
-                                                     container_id='dummy',
-                                                     fw_path='dummy-path'))
+                      lookup_visitor=NACCIDLookupVisitor(
+                          identifiers=mismatched_identifiers_map,
+                          adcid=1,
+                          output_file=out_stream,
+                          module_name='dummy-module',
+                          error_writer=error_writer),
+                      error_writer=error_writer)
         assert not success
         assert empty(out_stream)
         assert not empty(err_stream)
