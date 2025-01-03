@@ -1,14 +1,21 @@
-"""Utilities for writing errors to a CSV error file."""
+"""Utilities for writing errors to a error log."""
+
 import json
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime as dt
 from logging import Logger
 from typing import Any, Dict, List, Literal, Optional, TextIO
 
+from flywheel.file_spec import FileSpec
+from flywheel.rest import ApiException
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from keys.keys import SysErrorCodes
 from pydantic import BaseModel, ConfigDict, Field
 
-from outputs.outputs import CSVWriter
+from outputs.outputs import CSVWriter, convert_json_to_csv_stream
+
+log = logging.getLogger(__name__)
 
 preprocess_errors = {
     SysErrorCodes.ADCID_MISMATCH:
@@ -264,13 +271,13 @@ class UserErrorWriter(ErrorWriter):
 
     def __init__(self, container_id: str, fw_path: str) -> None:
         self.__container_id = container_id
-        self.__flyweel_path = fw_path
+        self.__flywheel_path = fw_path
         super().__init__()
 
     def set_container(self, error: FileError) -> None:
         """Assigns the container ID and Flywheel path for the error."""
         error.container_id = self.__container_id
-        error.flywheel_path = self.__flyweel_path
+        error.flywheel_path = self.__flywheel_path
 
     def prepare_error(self, error, set_timestamp: bool = True) -> None:
         """Prepare the error by adding container and timestamp information.
@@ -329,3 +336,68 @@ class ListErrorWriter(UserErrorWriter):
           List of serialized FileError objects
         """
         return self.__errors
+
+
+def update_error_log_and_qc_metadata(*, error_log_name: str,
+                                     destination_prj: ProjectAdaptor,
+                                     gear_name: str, state: str,
+                                     errors: List[Dict[str, Any]],
+                                     fieldnames: List[str]) -> bool:
+    """Update error log file and store error metadata in file.info.qc.
+
+    Args:
+        error_log_name: error log file name
+        destination_prj: Flywheel project adaptor
+        gear_name: gear that generated errors
+        state: gear execution status [PASS|FAIL|NA]
+        errors: list of error objects, expected to be JSON dicts
+        fieldnames: list of error metadata fields (keys for the dict)
+
+    Returns:
+        bool: True if metadata update is successful, else False
+    """
+
+    header = True
+    contents = ''
+
+    current_log = destination_prj.get_file(error_log_name)
+    # append to existing error details if any
+    if current_log:
+        contents = current_log.read() + '\n'
+        header = False
+
+    if errors:
+        contents += convert_json_to_csv_stream(data=errors,
+                                               fieldnames=fieldnames,
+                                               header=header).getvalue()
+
+    error_file_spec = FileSpec(name=error_log_name,
+                               contents=contents,
+                               content_type='text')
+    try:
+        destination_prj.upload_file(error_file_spec)
+        destination_prj.reload()
+        new_file = destination_prj.get_file(error_log_name)
+    except ApiException as error:
+        log.error(f'Failed to upload file {error_log_name} to '
+                  f'{destination_prj.group}/{destination_prj.label}: {error}')
+        return False
+
+    try:
+        info = {
+            "qc": {
+                gear_name: {
+                    "validation": {
+                        "state": state.upper(),
+                        "data": errors
+                    }
+                }
+            }
+        }
+        new_file.update_info(info)
+    except ApiException as error:
+        log.error('Error in setting QC metadata in file %s - %s',
+                  error_log_name, error)
+        return False
+
+    return True
