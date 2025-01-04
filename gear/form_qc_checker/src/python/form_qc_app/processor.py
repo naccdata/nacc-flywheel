@@ -312,7 +312,7 @@ class JSONFileProcessor(FileProcessor):
 
         if not self.update_visit_error_log(input_record=self.__input_record,
                                            qc_passed=valid):
-            raise GearExecutionError('Failed to update visit error log for '
-                                     f'{self.__subject.label}/{visitdate}')
+            raise GearExecutionError('Failed to update error log for visit '
+                                     f'{self.__subject.label}, {visitdate}')
 
         return valid

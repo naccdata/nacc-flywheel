@@ -289,7 +289,7 @@ class CSVFileProcessor(FileProcessor):
                                                qc_passed=valid):
                 raise GearExecutionError(
                     'Failed to update error log for record '
-                    f'{row[self._pk_field]}/{row[self._date_field]}')
+                    f'{row[self._pk_field]}, {row[self._date_field]}')
 
         if not passed_all:
             self._error_writer.clear()

@@ -7,6 +7,7 @@ from datetime import datetime as dt
 from logging import Logger
 from typing import Any, Dict, List, Literal, Optional, TextIO
 
+from dates.form_dates import DEFAULT_DATE_FORMAT, convert_date
 from flywheel.file_spec import FileSpec
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
@@ -440,4 +441,9 @@ def get_error_log_name(*, module: str, input_data: Dict[str, Any],
     if not ptid or not visitdate:
         return None
 
-    return f'{ptid}_{visitdate}_{module.lower()}_qc-status.log'
+    normalized_date = convert_date(date_string=visitdate,
+                                   date_format=DEFAULT_DATE_FORMAT)
+    if not normalized_date:
+        return None
+
+    return f'{ptid}_{normalized_date}_{module.lower()}_qc-status.log'
