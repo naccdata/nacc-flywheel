@@ -167,11 +167,11 @@ def unexpected_value_error(field: str,
                      message=error_message)
 
 
-def unknown_field_error(field: str) -> FileError:
-    """Creates a FileError for an unknown field in file header."""
+def unknown_field_error(field: str | set[str]) -> FileError:
+    """Creates a FileError for unknown field(s) in file header."""
     return FileError(error_type='error',
                      error_code='unknown-field',
-                     message=f'Unknown field {field} in header')
+                     message=f'Unknown field(s) {field} in header')
 
 
 def system_error(
@@ -230,6 +230,15 @@ def preprocessing_error(field: str,
         value=value,
         location=CSVLocation(line=line, column_name=field),
         message=error_message)
+
+
+def partially_failed_file_error() -> FileError:
+    """Creates a FileError when input file is not fully approved."""
+    return FileError(
+        error_type='error',
+        error_code='partially-failed',
+        message=('Some records in this file did not pass validation, '
+                 'check the respective record level error log'))
 
 
 class ErrorWriter(ABC):
@@ -340,6 +349,10 @@ class ListErrorWriter(UserErrorWriter):
         """
         return self.__errors
 
+    def clear(self):
+        """Clear the errors list."""
+        self.__errors.clear()
+
 
 def update_error_log_and_qc_metadata(*,
                                      error_log_name: str,
@@ -347,9 +360,9 @@ def update_error_log_and_qc_metadata(*,
                                      gear_name: str,
                                      state: str,
                                      errors: List[Dict[str, Any]],
-                                     fieldnames: List[str],
                                      copy_metadata: bool = True) -> bool:
-    """Update error log file and store error metadata in file.info.qc.
+    """Update project level error log file and store error metadata in
+    file.info.qc.
 
     Args:
         error_log_name: error log file name
@@ -357,7 +370,6 @@ def update_error_log_and_qc_metadata(*,
         gear_name: gear that generated errors
         state: gear execution status [PASS|FAIL|NA]
         errors: list of error objects, expected to be JSON dicts
-        fieldnames: list of error metadata fields (keys for the dict)
         copy_metadata: copy metadata from previous gears, set to False for first gear
 
     Returns:
