@@ -239,11 +239,10 @@ def run(  # noqa: C901
 
     valid = file_processor.process_input(validator=validator)
 
-    error_log_template = gear_context.config.get(
-        'error_log_template', {
-            "ptid": FieldNames.PTID,
-            "visitdate": FieldNames.DATE_COLUMN
-        })
+    error_log_template = {
+        "ptid": FieldNames.PTID,
+        "visitdate": FieldNames.DATE_COLUMN
+    }
 
     log_file_name = get_error_log_name(module=module,
                                        input_data=input_data,

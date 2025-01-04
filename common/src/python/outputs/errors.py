@@ -13,7 +13,7 @@ from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from keys.keys import FieldNames, SysErrorCodes
 from pydantic import BaseModel, ConfigDict, Field
 
-from outputs.outputs import CSVWriter, convert_json_to_csv_stream
+from outputs.outputs import CSVWriter
 
 log = logging.getLogger(__name__)
 
@@ -338,11 +338,14 @@ class ListErrorWriter(UserErrorWriter):
         return self.__errors
 
 
-def update_error_log_and_qc_metadata(*, error_log_name: str,
+def update_error_log_and_qc_metadata(*,
+                                     error_log_name: str,
                                      destination_prj: ProjectAdaptor,
-                                     gear_name: str, state: str,
+                                     gear_name: str,
+                                     state: str,
                                      errors: List[Dict[str, Any]],
-                                     fieldnames: List[str]) -> bool:
+                                     fieldnames: List[str],
+                                     copy_metadata: bool = True) -> bool:
     """Update error log file and store error metadata in file.info.qc.
 
     Args:
@@ -352,28 +355,32 @@ def update_error_log_and_qc_metadata(*, error_log_name: str,
         state: gear execution status [PASS|FAIL|NA]
         errors: list of error objects, expected to be JSON dicts
         fieldnames: list of error metadata fields (keys for the dict)
+        copy_metadata: copy metadata from previous gears, set to False for first gear
 
     Returns:
         bool: True if metadata update is successful, else False
     """
 
-    header = True
+    info = {"qc": {}}
     contents = ''
 
     current_log = destination_prj.get_file(error_log_name)
     # append to existing error details if any
     if current_log:
-        contents = current_log.read() + '\n'
-        header = False
+        current_log = current_log.reload()
+        if copy_metadata and current_log.info:
+            info = current_log.info
+        contents = (current_log.read()).decode('utf-8')  # type: ignore
 
-    if errors:
-        contents += convert_json_to_csv_stream(data=errors,
-                                               fieldnames=fieldnames,
-                                               header=header).getvalue()
+    timestamp = (dt.now()).strftime('%Y-%m-%d %H:%M:%S')
+    contents += f'{timestamp} QC Status: {gear_name.upper()} - {state.upper()}'
+    for error in errors:
+        contents += json.dumps(error) + '\n'
 
     error_file_spec = FileSpec(name=error_log_name,
                                contents=contents,
-                               content_type='text')
+                               content_type='text',
+                               size=len(contents))
     try:
         destination_prj.upload_file(error_file_spec)
         destination_prj.reload()
@@ -383,17 +390,13 @@ def update_error_log_and_qc_metadata(*, error_log_name: str,
                   f'{destination_prj.group}/{destination_prj.label}: {error}')
         return False
 
-    try:
-        info = {
-            "qc": {
-                gear_name: {
-                    "validation": {
-                        "state": state.upper(),
-                        "data": errors
-                    }
-                }
-            }
+    info["qc"][gear_name] = {
+        "validation": {
+            "state": state.upper(),
+            "data": errors
         }
+    }
+    try:
         new_file.update_info(info)
     except ApiException as error:
         log.error('Error in setting QC metadata in file %s - %s',
@@ -422,4 +425,4 @@ def get_error_log_name(*, module: str, input_data: Dict[str, Any],
     if not ptid or not visitdate:
         return None
 
-    return f'{ptid}_{visitdate}_{module.lower()}_errors.log'
+    return f'{ptid}_{visitdate}_{module.lower()}_qc-status.log'
