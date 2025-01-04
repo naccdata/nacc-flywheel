@@ -112,22 +112,25 @@ def invalid_header_error(message: Optional[str] = None) -> FileError:
 
 
 def missing_field_error(field: str | set[str]) -> FileError:
-    """Creates a FileError for a missing field in header."""
+    """Creates a FileError for missing field(s) in header."""
     return FileError(
         error_type='error',
         error_code='missing-field',
-        message=f'Missing required field(s) {field} in the header')
+        message=f'Missing one or more required field(s) {field} in the header')
 
 
-def empty_field_error(field: str,
+def empty_field_error(field: str | set[str],
                       line: Optional[int] = None,
                       message: Optional[str] = None) -> FileError:
-    """Creates a FileError for an empty field."""
-    error_message = message if message else f'Field {field} is required'
+    """Creates a FileError for empty field(s)."""
+    error_message = message if message else f'Required field(s) {field} cannot be blank'
+    location = CSVLocation(line=line,
+                           column_name=str(field)) if line else JSONLocation(
+                               key_path=str(field))
+
     return FileError(error_type='error',
                      error_code='empty-field',
-                     location=CSVLocation(line=line, column_name=field)
-                     if line else JSONLocation(key_path=field),
+                     location=location,
                      message=error_message)
 
 
@@ -373,7 +376,7 @@ def update_error_log_and_qc_metadata(*,
         contents = (current_log.read()).decode('utf-8')  # type: ignore
 
     timestamp = (dt.now()).strftime('%Y-%m-%d %H:%M:%S')
-    contents += f'{timestamp} QC Status: {gear_name.upper()} - {state.upper()}'
+    contents += f'{timestamp} QC Status: {gear_name.upper()} - {state.upper()}\n'
     for error in errors:
         contents += json.dumps(error) + '\n'
 
