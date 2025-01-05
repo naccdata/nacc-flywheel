@@ -4,7 +4,7 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime as dt
-from logging import Logger
+from logging import Handler, Logger
 from typing import Any, Dict, List, Literal, Optional, TextIO
 
 from dates.form_dates import DEFAULT_DATE_FORMAT, convert_date
@@ -353,6 +353,20 @@ class ListErrorWriter(UserErrorWriter):
     def clear(self):
         """Clear the errors list."""
         self.__errors.clear()
+
+
+class ListHandler(Handler):
+    """Defines a handler to keep track of logged info."""
+
+    def __init__(self):
+        super().__init__()
+        self.__logs = []
+
+    def emit(self, record):
+        self.__logs.append(json.loads(record.msg))
+
+    def get_logs(self):
+        return self.__logs
 
 
 def update_error_log_and_qc_metadata(*,

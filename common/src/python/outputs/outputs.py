@@ -94,31 +94,3 @@ def write_csv_to_stream(headers: List[str], data: List[Dict[str,
         writer.write(row)
 
     return stream
-
-
-def convert_json_to_csv_stream(data: List[Dict[str, Any]],
-                               fieldnames: List[str],
-                               header: bool = True) -> StringIO:
-    """Convert the list of JSON dicts to a CSV stream. Adding header is
-    optional.
-
-    Args:
-        data: the data values, expected to be a list of JSON dicts
-        fieldnames: list of keys for the dict
-        header: whether to add CSV header or not (default is True)
-
-    Returns:
-        StringIO object containing the contents.
-    """
-    stream = StringIO()
-    writer = DictWriter(stream,
-                        fieldnames=fieldnames,
-                        dialect='unix',
-                        quoting=QUOTE_MINIMAL)
-
-    if header:
-        writer.writeheader()
-
-    writer.writerows(data)
-
-    return stream
