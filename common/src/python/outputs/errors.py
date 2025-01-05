@@ -398,7 +398,7 @@ def update_error_log_and_qc_metadata(*,
     # append to existing error details if any
     if current_log:
         current_log = current_log.reload()
-        if current_log.info and not reset_metadata:
+        if current_log.info and 'qc' in current_log.info and not reset_metadata:
             info = current_log.info
         contents = (current_log.read()).decode('utf-8')  # type: ignore
 

@@ -237,7 +237,10 @@ class FormJSONUploader(RecordUploader):
         if not qc_gear_metadata:
             return False
 
-        info = {}
+        info = error_log_file.info if (error_log_file.info
+                                       and 'qc' in error_log_file.info) else {
+                                           'qc': {}
+                                       }
         info['qc'][DefaultValues.QC_GEAR] = qc_gear_metadata
 
         try:
