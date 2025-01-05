@@ -4,13 +4,17 @@ import logging
 from typing import Any, Dict, List, Optional, TextIO
 
 from enrollment.enrollment_transfer import CenterValidator
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
+from gear_execution.gear_execution import GearExecutionError
 from identifiers.model import IdentifierObject
 from inputs.csv_reader import CSVVisitor, read_csv
 from keys.keys import FieldNames
 from outputs.errors import (
-    ErrorWriter,
+    ListErrorWriter,
+    get_error_log_name,
     identifier_error,
     missing_field_error,
+    update_error_log_and_qc_metadata,
 )
 from outputs.outputs import CSVWriter
 
@@ -26,7 +30,8 @@ class IdentifierVisitor(CSVVisitor):
 
     def __init__(self, *, adcid: int, identifiers: Dict[str, IdentifierObject],
                  output_file: TextIO, module_name: str,
-                 error_writer: ErrorWriter) -> None:
+                 error_writer: ListErrorWriter, date_field: str,
+                 project: ProjectAdaptor, gear_name: str) -> None:
         """
         Args:
             adcid: ADCID for the center
@@ -34,15 +39,28 @@ class IdentifierVisitor(CSVVisitor):
             output_file: the data output stream
             module_name: the module name for the form
             error_writer: the error output writer
+            date_field: visit date field for the module
+            project: Flywheel project adaptor
+            gear_name: gear name
         """
         self.__identifiers = identifiers
         self.__output_file = output_file
         self.__error_writer = error_writer
         self.__module_name = module_name
+        self.__date_field = date_field
+        self.__project = project
+        self.__gear_name = gear_name
         self.__header: Optional[List[str]] = None
         self.__writer: Optional[CSVWriter] = None
         self.__validator = CenterValidator(center_id=adcid,
                                            error_writer=error_writer)
+        self.__req_fields = {
+            FieldNames.PTID, FieldNames.ADCID, self.__date_field
+        }
+        self.__error_log_template = {
+            "ptid": FieldNames.PTID,
+            "visitdate": self.__date_field
+        }
 
     def __get_writer(self):
         """Returns the writer for the CSV output.
@@ -60,16 +78,17 @@ class IdentifierVisitor(CSVVisitor):
     def visit_header(self, header: List[str]) -> bool:
         """Prepares the visitor to write a CSV file with the given header.
 
-        If the header doesn't have `ptid` or `adcid`, returns an error.
+        If the header doesn't have required fields returns an error.
 
         Args:
           header: the list of header names
+
         Returns:
-          True if `ptid` occurs in the header, False otherwise
+          True if required fields occur in the header, False otherwise
         """
-        expected_columns = {FieldNames.PTID, FieldNames.ADCID}
-        if not set(expected_columns).issubset(set(header)):
-            self.__error_writer.write(missing_field_error(expected_columns))
+
+        if not self.__req_fields.issubset(set(header)):
+            self.__error_writer.write(missing_field_error(self.__req_fields))
             return False
 
         self.__header = header
@@ -88,17 +107,22 @@ class IdentifierVisitor(CSVVisitor):
         Args:
           row: the dictionary from the CSV row (DictReader)
           line_num: the line number of the row
+
         Returns:
           True if there is a NACCID for the PTID, False otherwise
         """
 
+        self.__error_writer.clear()
+
         if not self.__validator.check(row=row, line_number=line_num):
+            self.update_visit_error_log(input_record=row, qc_passed=False)
             return False
 
         identifier = self.__identifiers.get(row[FieldNames.PTID])
         if not identifier:
             self.__error_writer.write(
                 identifier_error(line=line_num, value=row[FieldNames.PTID]))
+            self.update_visit_error_log(input_record=row, qc_passed=False)
             return False
 
         row[FieldNames.NACCID] = identifier.naccid
@@ -106,13 +130,46 @@ class IdentifierVisitor(CSVVisitor):
 
         writer = self.__get_writer()
         writer.write(row)
+        self.update_visit_error_log(input_record=row, qc_passed=True)
 
         return True
+
+    def update_visit_error_log(self, *, input_record: Dict[str, Any],
+                               qc_passed: bool):
+        """Update error log file for the visit and store error metadata in
+        file.info.qc.
+
+        Args:
+            input_record: input visit record
+            qc_passed (bool): whether the visit passed QC checks
+
+        Returns:
+            bool: True if error log updated successfully, else False
+        """
+        error_log_name = get_error_log_name(
+            module=self.__module_name,
+            input_data=input_record,
+            naming_template=self.__error_log_template)
+
+        # This is first gear in pipeline validating individual rows
+        # therefore, clear metadata from previous runs `copy_metadata=False`
+        if not error_log_name or not update_error_log_and_qc_metadata(
+                error_log_name=error_log_name,
+                destination_prj=self.__project,
+                gear_name=self.__gear_name,
+                state='PASS' if qc_passed else 'FAIL',
+                errors=self.__error_writer.errors(),
+                copy_metadata=False):
+            raise GearExecutionError(
+                'Failed to update error log for visit '
+                f'{input_record[FieldNames.PTID]}, {input_record[self.__date_field]}'
+            )
 
 
 def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
         module_name: str, adcid: int, output_file: TextIO,
-        error_writer: ErrorWriter) -> bool:
+        error_writer: ListErrorWriter, date_field: str,
+        project: ProjectAdaptor, gear_name: str) -> bool:
     """Reads participant records from the input CSV file, finds the NACCID for
     each row from the ADCID and PTID, and outputs a CSV file with the NACCID
     inserted.
@@ -132,6 +189,10 @@ def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
       adcid: ADCID for the center
       output_file: the data output stream
       error_writer: the error output writer
+      date_field: visit date field for the module
+      project: Flywheel project adaptor
+      gear_name: gear name
+
     Returns:
       True if there were IDs with no corresponding NACCID
     """
@@ -142,4 +203,8 @@ def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
                                               identifiers=identifiers,
                                               output_file=output_file,
                                               module_name=module_name,
-                                              error_writer=error_writer))
+                                              error_writer=error_writer,
+                                              date_field=date_field,
+                                              project=project,
+                                              gear_name=gear_name),
+                    clear_errors=True)

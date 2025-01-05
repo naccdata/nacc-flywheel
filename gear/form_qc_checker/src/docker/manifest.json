@@ -68,7 +68,7 @@
             "default": "retrospective-form"
         },
         "date_field": {
-            "description": "Variable name of the visit date field for the module (used to sort the participant visits)",
+            "description": "Variable name of the visit date field for the module",
             "type": "string",
             "default": "visitdate"
         },
