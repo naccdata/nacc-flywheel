@@ -1,4 +1,4 @@
-"""QC checks cordination module."""
+"""QC checks coordination module."""
 
 import logging
 import time
@@ -32,10 +32,10 @@ class QCGearConfigs(BaseModel):
     rules_s3_bucket: str
     qc_checks_db_path: str
     primary_key: str
+    admin_group: str
     strict_mode: Optional[bool] = True
-    legacy_project_label: Optional[str]
-    date_field: Optional[str]
-    tag: Optional[str]
+    legacy_project_label: Optional[str] = None
+    date_field: Optional[str] = None
 
 
 class QCGearInfo(BaseModel):
@@ -46,7 +46,7 @@ class QCGearInfo(BaseModel):
 
 
 class QCCoordinator():
-    """This class cordinates the data quality checks for a given participant.
+    """This class coordinates the data quality checks for a given participant.
 
     - For each module visits are evaluated in the order of visit date.
     - If visit N for module M has not passed error checks any of the
@@ -57,7 +57,7 @@ class QCCoordinator():
     def __init__(self, *, subject: SubjectAdaptor, module: str,
                  proxy: FlywheelProxy,
                  gear_context: GearToolkitContext) -> None:
-        """Initialize the QC Cordinator.
+        """Initialize the QC Coordinator.
 
         Args:
             subject: Flywheel subject to run the QC checks
@@ -187,7 +187,7 @@ class QCCoordinator():
     def run_error_checks(self, *, gear_name: str, gear_configs: QCGearConfigs,
                          visits: List[Dict[str, str]], date_col: str) -> None:
         """Sequentially trigger the QC checks gear on the provided visits. If a
-        visit failed QC validation or error occured while running the QC gear,
+        visit failed QC validation or error occurred while running the QC gear,
         none of the subsequent visits will be evaluated.
 
         Args:
@@ -197,7 +197,7 @@ class QCCoordinator():
             date_col: name of the visit date field to sort the visits
 
         Raises:
-            GearExecutionError if errors occurr while triggering the QC gear
+            GearExecutionError if errors occur while triggering the QC gear
         """
 
         try:
