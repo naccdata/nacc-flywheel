@@ -28,10 +28,16 @@ class IdentifierVisitor(CSVVisitor):
     data from same ADRC (have the same ADCID).
     """
 
-    def __init__(self, *, adcid: int, identifiers: Dict[str, IdentifierObject],
-                 output_file: TextIO, module_name: str,
-                 error_writer: ListErrorWriter, date_field: str,
-                 project: ProjectAdaptor, gear_name: str) -> None:
+    def __init__(self,
+                 *,
+                 adcid: int,
+                 identifiers: Dict[str, IdentifierObject],
+                 output_file: TextIO,
+                 module_name: str,
+                 error_writer: ListErrorWriter,
+                 date_field: str,
+                 gear_name: str,
+                 project: Optional[ProjectAdaptor] = None) -> None:
         """
         Args:
             adcid: ADCID for the center
@@ -40,8 +46,8 @@ class IdentifierVisitor(CSVVisitor):
             module_name: the module name for the form
             error_writer: the error output writer
             date_field: visit date field for the module
-            project: Flywheel project adaptor
             gear_name: gear name
+            project: Flywheel project adaptor
         """
         self.__identifiers = identifiers
         self.__output_file = output_file
@@ -115,14 +121,14 @@ class IdentifierVisitor(CSVVisitor):
         self.__error_writer.clear()
 
         if not self.__validator.check(row=row, line_number=line_num):
-            self.update_visit_error_log(input_record=row, qc_passed=False)
+            self.__update_visit_error_log(input_record=row, qc_passed=False)
             return False
 
         identifier = self.__identifiers.get(row[FieldNames.PTID])
         if not identifier:
             self.__error_writer.write(
                 identifier_error(line=line_num, value=row[FieldNames.PTID]))
-            self.update_visit_error_log(input_record=row, qc_passed=False)
+            self.__update_visit_error_log(input_record=row, qc_passed=False)
             return False
 
         row[FieldNames.NACCID] = identifier.naccid
@@ -130,22 +136,28 @@ class IdentifierVisitor(CSVVisitor):
 
         writer = self.__get_writer()
         writer.write(row)
-        self.update_visit_error_log(input_record=row, qc_passed=True)
+        self.__update_visit_error_log(input_record=row, qc_passed=True)
 
         return True
 
-    def update_visit_error_log(self, *, input_record: Dict[str, Any],
-                               qc_passed: bool):
+    def __update_visit_error_log(self, *, input_record: Dict[str, Any],
+                                 qc_passed: bool):
         """Update error log file for the visit and store error metadata in
         file.info.qc.
 
         Args:
             input_record: input visit record
-            qc_passed (bool): whether the visit passed QC checks
+            qc_passed: whether the visit passed QC checks
 
         Returns:
             bool: True if error log updated successfully, else False
         """
+
+        if not self.__project:
+            log.warning(
+                'Parent project not specified to upload visit error log')
+            return
+
         error_log_name = get_error_log_name(
             module=self.__module_name,
             input_data=input_record,
@@ -166,10 +178,16 @@ class IdentifierVisitor(CSVVisitor):
             )
 
 
-def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
-        module_name: str, adcid: int, output_file: TextIO,
-        error_writer: ListErrorWriter, date_field: str,
-        project: ProjectAdaptor, gear_name: str) -> bool:
+def run(*,
+        input_file: TextIO,
+        identifiers: Dict[str, IdentifierObject],
+        module_name: str,
+        adcid: int,
+        output_file: TextIO,
+        error_writer: ListErrorWriter,
+        date_field: str,
+        gear_name: str,
+        project: Optional[ProjectAdaptor] = None) -> bool:
     """Reads participant records from the input CSV file, finds the NACCID for
     each row from the ADCID and PTID, and outputs a CSV file with the NACCID
     inserted.
@@ -190,8 +208,8 @@ def run(*, input_file: TextIO, identifiers: Dict[str, IdentifierObject],
       output_file: the data output stream
       error_writer: the error output writer
       date_field: visit date field for the module
-      project: Flywheel project adaptor
       gear_name: gear name
+      project: Flywheel project adaptor
 
     Returns:
       True if there were IDs with no corresponding NACCID

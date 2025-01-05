@@ -97,7 +97,8 @@ class TestErrorCheckCSVVisitor:
 
         assert len(errors) == len(visitor.REQUIRED_HEADERS)
         for error in errors:
-            assert error['message'].startswith("Missing required field")
+            assert error['message'].startswith(
+                "Missing one or more required field(s)")
             assert error['message'].endswith("in the header")
 
     def test_visit_row(self, visitor, data):
@@ -129,7 +130,7 @@ class TestErrorCheckCSVVisitor:
         errors = list_handler.get_logs()
         assert len(errors) == 14
         for error in errors:
-            assert error['message'].endswith("is required") or \
+            assert error['message'].endswith("cannot be blank") or \
                 error['message'].startswith('Expected')
 
             for field in visitor.ALLOWED_EMPTY_FIELDS:
