@@ -35,9 +35,8 @@ from identifier_app.main import run
 log = logging.getLogger(__name__)
 
 
-def get_identifiers(
-    identifiers_repo: IdentifierRepository, adcid: int
-) -> Dict[str, IdentifierObject]:
+def get_identifiers(identifiers_repo: IdentifierRepository,
+                    adcid: int) -> Dict[str, IdentifierObject]:
     """Gets all of the Identifier objects from the identifier database using
     the RDSParameters.
 
@@ -52,7 +51,9 @@ def get_identifiers(
     if center_identifiers:
         # pylint: disable=(not-an-iterable)
         identifiers = {
-            identifier.ptid: identifier for identifier in center_identifiers}
+            identifier.ptid: identifier
+            for identifier in center_identifiers
+        }
 
     return identifiers
 
@@ -74,7 +75,8 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
 
     @classmethod
     def create(
-        cls, context: GearToolkitContext, parameter_store: Optional[ParameterStore]
+        cls, context: GearToolkitContext,
+        parameter_store: Optional[ParameterStore]
     ) -> "IdentifierLookupVisitor":
         """Creates an identifier lookup execution visitor.
 
@@ -86,10 +88,10 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
         """
         assert parameter_store, "Parameter store expected"
 
-        client = GearBotClient.create(
-            context=context, parameter_store=parameter_store)
-        file_input = InputFileWrapper.create(
-            input_name="input_file", context=context)
+        client = GearBotClient.create(context=context,
+                                      parameter_store=parameter_store)
+        file_input = InputFileWrapper.create(input_name="input_file",
+                                             context=context)
         assert file_input, "create raises exception if missing expected input"
 
         admin_id = context.config.get("admin_group", "nacc")
@@ -121,14 +123,12 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
             file = self.proxy.get_file(file_id)
         except ApiException as error:
             raise GearExecutionError(
-                f"Failed to find the input file: {error}"
-            ) from error
+                f"Failed to find the input file: {error}") from error
 
         project = self.proxy.get_project_by_id(file.parents.project)
         if not project:
             raise GearExecutionError(
-                f"Failed to find the project with ID {file.parents.project}"
-            )
+                f"Failed to find the project with ID {file.parents.project}")
 
         try:
             identifiers = get_identifiers(
@@ -148,11 +148,10 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
         if not module_name:
             raise GearExecutionError(
                 "Expect module suffix to input file name: "
-                f"{self.__file_input.filename}"
-            )
+                f"{self.__file_input.filename}")
 
-        date_field = (context.config.get(
-            "date_field", FieldNames.DATE_COLUMN)).lower()
+        date_field = (context.config.get("date_field",
+                                         FieldNames.DATE_COLUMN)).lower()
 
         gear_name = context.manifest.get("name", "identifier-lookup")
 
@@ -160,8 +159,9 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
         filename = f"{basename}-identifier{extension}"
         input_path = Path(self.__file_input.filepath)
         with (
-            open(input_path, mode="r", encoding="utf-8") as csv_file,
-            context.open_output(filename, mode="w", encoding="utf-8") as out_file,
+                open(input_path, mode="r", encoding="utf-8") as csv_file,
+                context.open_output(filename, mode="w", encoding="utf-8") as
+                out_file,
         ):
             error_writer = ListErrorWriter(
                 container_id=file_id,
@@ -187,8 +187,8 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                 data=error_writer.errors(),
             )
 
-            context.metadata.add_file_tags(
-                self.__file_input.file_input, tags=gear_name)
+            context.metadata.add_file_tags(self.__file_input.file_input,
+                                           tags=gear_name)
 
 
 def main():
@@ -200,7 +200,8 @@ def main():
     Writes errors to a CSV file compatible with Flywheel error UI.
     """
 
-    GearEngine.create_with_parameter_store().run(gear_type=IdentifierLookupVisitor)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=IdentifierLookupVisitor)
 
 
 if __name__ == "__main__":
