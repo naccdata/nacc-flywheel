@@ -85,6 +85,8 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
             raise GearExecutionError(
                 f'Failed to find the project with ID {file.parents.project}')
 
+        gear_name = context.manifest.get('name', 'form-transformer')
+
         with open(self.__file_input.filepath, mode='r',
                   encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(container_id=file_id,
@@ -94,7 +96,8 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
                                                      proxy=proxy),
                           transformer_factory=self.__build_transformer(
                               self.__transform_input),
-                          error_writer=error_writer)
+                          error_writer=error_writer,
+                          gear_name=gear_name)
 
             context.metadata.add_qc_result(self.__file_input.file_input,
                                            name='validation',
@@ -102,8 +105,7 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
                                            data=error_writer.errors())
 
             context.metadata.add_file_tags(self.__file_input.file_input,
-                                           tags=context.manifest.get(
-                                               'name', 'form-transformer'))
+                                           tags=gear_name)
 
     def __build_transformer(
             self, transformer_input: Optional[InputFileWrapper]

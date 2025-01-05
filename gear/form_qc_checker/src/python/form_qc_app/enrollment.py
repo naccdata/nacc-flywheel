@@ -286,7 +286,7 @@ class CSVFileProcessor(FileProcessor):
                 record=row, line_number=self.__csv_reader.line_num - 1)
             passed_all = passed_all and valid
             if not self.update_visit_error_log(input_record=row,
-                                               qc_passed=valid):
+                                               qc_passed=valid, reset_metadata=True):
                 raise GearExecutionError(
                     'Failed to update error log for record '
                     f'{row[self._pk_field]}, {row[self._date_field]}')

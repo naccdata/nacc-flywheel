@@ -375,7 +375,7 @@ def update_error_log_and_qc_metadata(*,
                                      gear_name: str,
                                      state: str,
                                      errors: List[Dict[str, Any]],
-                                     copy_metadata: bool = True) -> bool:
+                                     reset_metadata: bool = False) -> bool:
     """Update project level error log file and store error metadata in
     file.info.qc.
 
@@ -385,7 +385,7 @@ def update_error_log_and_qc_metadata(*,
         gear_name: gear that generated errors
         state: gear execution status [PASS|FAIL|NA]
         errors: list of error objects, expected to be JSON dicts
-        copy_metadata: copy metadata from previous gears, set to False for first gear
+        reset_metadata: reset metadata from previous runs, set to True for first gear
 
     Returns:
         bool: True if metadata update is successful, else False
@@ -398,7 +398,7 @@ def update_error_log_and_qc_metadata(*,
     # append to existing error details if any
     if current_log:
         current_log = current_log.reload()
-        if copy_metadata and current_log.info:
+        if current_log.info and not reset_metadata:
             info = current_log.info
         contents = (current_log.read()).decode('utf-8')  # type: ignore
 

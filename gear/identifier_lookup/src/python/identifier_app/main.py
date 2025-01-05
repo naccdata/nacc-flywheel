@@ -164,14 +164,14 @@ class IdentifierVisitor(CSVVisitor):
             naming_template=self.__error_log_template)
 
         # This is first gear in pipeline validating individual rows
-        # therefore, clear metadata from previous runs `copy_metadata=False`
+        # therefore, clear metadata from previous runs `reset_metadata=True`
         if not error_log_name or not update_error_log_and_qc_metadata(
                 error_log_name=error_log_name,
                 destination_prj=self.__project,
                 gear_name=self.__gear_name,
                 state='PASS' if qc_passed else 'FAIL',
                 errors=self.__error_writer.errors(),
-                copy_metadata=False):
+                reset_metadata=True):
             raise GearExecutionError(
                 'Failed to update error log for visit '
                 f'{input_record[FieldNames.PTID]}, {input_record[self.__date_field]}'

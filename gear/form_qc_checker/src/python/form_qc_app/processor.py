@@ -97,13 +97,14 @@ class FileProcessor(ABC):
         """
 
     def update_visit_error_log(self, *, input_record: Dict[str, Any],
-                               qc_passed: bool) -> bool:
+                               qc_passed: bool, reset_metadata: bool = False) -> bool:
         """Update error log file for the visit and store error metadata in
         file.info.qc.
 
         Args:
             input_record: input visit record
-            qc_passed (bool): whether the visit passed QC checks
+            qc_passed: whether the visit passed QC checks
+            reset_metadata: reset metadata from previous runs, set to True for first gear
 
         Returns:
             bool: True if error log updated successfully, else False
@@ -120,7 +121,8 @@ class FileProcessor(ABC):
             destination_prj=self._project,
             gear_name=self._gear_name,
             state='PASS' if qc_passed else 'FAIL',
-            errors=self._error_writer.errors())
+            errors=self._error_writer.errors(),
+            reset_metadata=reset_metadata)
 
 
 class JSONFileProcessor(FileProcessor):
