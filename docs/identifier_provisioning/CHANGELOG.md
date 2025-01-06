@@ -2,6 +2,9 @@
 
 All notable changes to this gear are documented in this file.
 
+## 1.0.1
+* Update error reporting - move error metadata to visit error log files stored at project level.
+  
 ## 1.0.0
 * Changes enrollment session and acquisition labels and JSON filename
 * Changes `identifier_mode` gear config to `database_mode`
