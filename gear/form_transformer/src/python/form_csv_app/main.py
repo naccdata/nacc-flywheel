@@ -200,7 +200,7 @@ class CSVTransformVisitor(CSVVisitor):
             qc_passed: whether the visit passed QC checks
 
         Returns:
-            bool: True if error log updated successfully, else False
+            str (optional): error log name if update successful, else None
         """
 
         if not self.__project or not self.module:

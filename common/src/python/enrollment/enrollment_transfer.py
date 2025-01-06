@@ -91,7 +91,7 @@ class EnrollmentRecord(BaseModel):
     transfer_to: Optional[TransferRecord] = None
 
     def query_object(self) -> IdentifierQueryObject:
-        """Creates an object for creating identifiers in the respository.
+        """Creates an object for creating identifiers in the repository.
 
         Returns:
           the identifier query object to use in batch identifier creation
@@ -107,7 +107,7 @@ def has_value(row: Dict[str, Any], variable: str, value: int) -> bool:
     Args:
       row: dictionary for a data row
       variable: the variable name
-      value: the expected valute
+      value: the expected value
     Returns:
       True if the variable has the value. False, otherwise.
     """
@@ -122,7 +122,7 @@ def is_new_enrollment(row: Dict[str, Any]) -> bool:
     Returns:
       True if the row represents a new enrollment. False, otherwise.
     """
-    return has_value(row, 'enrltype', 1)
+    return has_value(row, FieldNames.ENRLTYPE, 1)
 
 
 def previously_enrolled(row: Dict[str, Any]) -> bool:
@@ -133,7 +133,7 @@ def previously_enrolled(row: Dict[str, Any]) -> bool:
     Returns:
       True if the row represents a previous enrollment. False, otherwise.
     """
-    return has_value(row, 'prevenrl', 1)
+    return has_value(row, FieldNames.PREVENRL, 1)
 
 
 def guid_available(row: Dict[str, Any]) -> bool:
@@ -144,7 +144,7 @@ def guid_available(row: Dict[str, Any]) -> bool:
     Returns:
       True if the row indicates the GUID is available
     """
-    return has_value(row, 'guidavail', 1)
+    return has_value(row, FieldNames.GUIDAVAIL, 1)
 
 
 def has_known_naccid(row: Dict[str, Any]) -> bool:
@@ -155,7 +155,7 @@ def has_known_naccid(row: Dict[str, Any]) -> bool:
     Returns:
       True if the row represents a known NACCID. False, otherwise.
     """
-    return has_value(row, 'naccidknwn', 1)
+    return has_value(row, FieldNames.NACCIDKWN, 1)
 
 
 def existing_participant_error(field: str,
