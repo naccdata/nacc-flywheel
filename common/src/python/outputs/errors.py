@@ -239,7 +239,7 @@ def partially_failed_file_error() -> FileError:
         error_type='error',
         error_code='partially-failed',
         message=('Some records in this file did not pass validation, '
-                 'check the respective record level error log'))
+                 'check the respective record level qc status'))
 
 
 class ErrorWriter(ABC):
@@ -436,18 +436,28 @@ def update_error_log_and_qc_metadata(*,
     return True
 
 
-def get_error_log_name(*, module: str, input_data: Dict[str, Any],
-                       naming_template: Dict[str, str]) -> Optional[str]:
+def get_error_log_name(
+        *,
+        module: str,
+        input_data: Dict[str, Any],
+        naming_template: Optional[Dict[str, str]] = None) -> Optional[str]:
     """Derive error log name based on visit data.
 
     Args:
         module: module label
         input_data: input visit record
-        naming_template: naming template for module
+        naming_template (optional): error log naming template for module
 
     Returns:
         str (optional): error log name or None
     """
+
+    if not naming_template:
+        naming_template = {
+            "ptid": FieldNames.PTID,
+            "visitdate": FieldNames.DATE_COLUMN
+        }
+
     ptid = input_data.get(naming_template.get('ptid', FieldNames.PTID))
     visitdate = input_data.get(
         naming_template.get('visitdate', FieldNames.DATE_COLUMN))

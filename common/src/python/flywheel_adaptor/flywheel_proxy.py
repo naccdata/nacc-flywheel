@@ -511,7 +511,7 @@ class FlywheelProxy:
 
         Note: this will replace any existing apps.
 
-        Note: temporary fix using FWCliennt because flywheel-sdk doesn't manage
+        Note: temporary fix using FWClient because flywheel-sdk doesn't manage
         type of viewer_apps.
 
         Args:
@@ -593,7 +593,7 @@ class FlywheelProxy:
         """Find the first Job matching the search string.
 
         Args:
-            search_str: paramets to search (e.g. 'state=failed')
+            search_str: parameters to search (e.g. 'state=failed')
 
         Returns:
             Job: Flywheel Job object if found, else None
@@ -615,7 +615,7 @@ class FlywheelProxy:
             log.warning(error)
             return None
 
-    def get_matching_aquisition_files_info(
+    def get_matching_acquisition_files_info(
             self,
             *,
             container_id: str,
