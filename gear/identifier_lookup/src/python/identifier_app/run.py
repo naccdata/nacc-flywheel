@@ -1,6 +1,6 @@
 """Entrypoint script for the identifier lookup app."""
 
-import logging  # noqa: I001
+import logging
 import os
 from pathlib import Path
 from typing import Dict, Optional

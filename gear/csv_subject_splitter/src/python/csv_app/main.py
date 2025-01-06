@@ -64,8 +64,8 @@ class CSVSplitVisitor(CSVVisitor):
                 found_all = False
 
         if not found_all:
-            self.__error_writer.write(
-                empty_field_error(empty_fields, line_num))
+            self.__error_writer.write(empty_field_error(
+                empty_fields, line_num))
             return False
 
         subject_lbl = row[FieldNames.NACCID]

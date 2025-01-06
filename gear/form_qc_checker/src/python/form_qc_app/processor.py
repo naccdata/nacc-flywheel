@@ -96,15 +96,18 @@ class FileProcessor(ABC):
             GearExecutionError: if errors occurred while processing the input file
         """
 
-    def update_visit_error_log(self, *, input_record: Dict[str, Any],
-                               qc_passed: bool, reset_metadata: bool = False) -> bool:
+    def update_visit_error_log(self,
+                               *,
+                               input_record: Dict[str, Any],
+                               qc_passed: bool,
+                               reset_metadata: bool = False) -> bool:
         """Update error log file for the visit and store error metadata in
         file.info.qc.
 
         Args:
             input_record: input visit record
             qc_passed: whether the visit passed QC checks
-            reset_metadata: reset metadata from previous runs, set to True for first gear
+            reset_metadata: reset metadata from previous runs, set True for first gear
 
         Returns:
             bool: True if error log updated successfully, else False
