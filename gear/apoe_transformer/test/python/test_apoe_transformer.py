@@ -46,7 +46,7 @@ class TestAPOETransformerCSVVisitor:
         assert not visitor.visit_header([])
 
         errors = list_handler.get_logs()
-        assert len(errors) == 8
+        assert len(errors) == 6
         for error in errors:
             assert error['message'].startswith('Missing required field(s)')
             assert error['message'].endswith('in the header')
@@ -67,7 +67,6 @@ class TestAPOETransformerCSVVisitor:
             assert len(visitor.transformed_data) == i + 1
             assert visitor.transformed_data[i] == {
                 'adcid': 0,
-                'ptid': 0,
                 'naccid': 0,
                 'apoe': value
             }
@@ -78,7 +77,6 @@ class TestAPOETransformerCSVVisitor:
         assert len(visitor.transformed_data) == 10
         assert visitor.transformed_data[9] == {
             'adcid': 3,
-            'ptid': 3,
             'naccid': 3,
             'apoe': 9
         }
@@ -100,7 +98,6 @@ class TestAPOETransformerCSVVisitor:
         assert len(visitor.transformed_data) == 1
         assert visitor.transformed_data[0] == {
             'adcid': 3,
-            'ptid': 3,
             'naccid': 3,
             'apoe': 9
         }

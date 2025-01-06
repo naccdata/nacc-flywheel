@@ -2,6 +2,10 @@
 
 All notable changes to this gear are documented in this file.
 
+## 0.1.2
+
+* Remove PTID from required headers/output fields
+
 ## 0.1.1
 
 * Allows both upper/lower cases for field headers

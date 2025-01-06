@@ -32,13 +32,11 @@ APOE_ENCODINGS: Dict[Tuple[str, str], int] = {
 class APOETransformerCSVVisitor(CSVVisitor):
     """Class for visiting each row in the APOE genotype CSV."""
 
-    EXPECTED_INPUT_HEADERS: Tuple[str,
-                                  ...] = (FieldNames.ADCID, FieldNames.PTID,
-                                          FieldNames.NACCID, 'a1', 'a2')
+    EXPECTED_INPUT_HEADERS: Tuple[str, ...] = (FieldNames.ADCID,
+                                               FieldNames.NACCID, 'a1', 'a2')
 
-    EXPECTED_OUTPUT_HEADERS: Tuple[str,
-                                   ...] = (FieldNames.ADCID, FieldNames.PTID,
-                                           FieldNames.NACCID, 'apoe')
+    EXPECTED_OUTPUT_HEADERS: Tuple[str, ...] = (FieldNames.ADCID,
+                                                FieldNames.NACCID, 'apoe')
 
     def __init__(self, error_writer: LogErrorWriter):
         """Initializer."""
