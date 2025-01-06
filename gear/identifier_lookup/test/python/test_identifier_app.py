@@ -115,8 +115,8 @@ class TestIdentifierLookup:
                                 identifiers_map: dict[Any, Any]):
         """Test empty input stream."""
         out_stream = StringIO()
-        error_writer = ListErrorWriter(
-            container_id='dummy', fw_path='dummy-path')
+        error_writer = ListErrorWriter(container_id='dummy',
+                                       fw_path='dummy-path')
         success = run(input_file=empty_data_stream,
                       adcid=1,
                       identifiers=identifiers_map,
@@ -133,8 +133,8 @@ class TestIdentifierLookup:
                        identifiers_map: dict[Any, Any]):
         """Test case with no header."""
         out_stream = StringIO()
-        error_writer = ListErrorWriter(
-            container_id='dummy', fw_path='dummy-path')
+        error_writer = ListErrorWriter(container_id='dummy',
+                                       fw_path='dummy-path')
         success = run(input_file=no_header_stream,
                       adcid=1,
                       identifiers=identifiers_map,
@@ -142,8 +142,7 @@ class TestIdentifierLookup:
                       module_name='dummy-module',
                       error_writer=error_writer,
                       date_field='visitdate',
-                      gear_name='identifier-lookup'
-                      )
+                      gear_name='identifier-lookup')
         assert not success
         assert empty(out_stream)
         assert error_writer.errors()
@@ -152,8 +151,8 @@ class TestIdentifierLookup:
                                   identifiers_map: dict[Any, Any]):
         """Test case where header doesn't have ID columns."""
         out_stream = StringIO()
-        error_writer = ListErrorWriter(
-            container_id='dummy', fw_path='dummy-path')
+        error_writer = ListErrorWriter(container_id='dummy',
+                                       fw_path='dummy-path')
         success = run(input_file=no_ids_stream,
                       adcid=1,
                       identifiers=identifiers_map,
@@ -170,8 +169,8 @@ class TestIdentifierLookup:
                                     identifiers_map: dict[Any, Any]):
         """Test case where everything should match."""
         out_stream = StringIO()
-        error_writer = ListErrorWriter(
-            container_id='dummy', fw_path='dummy-path')
+        error_writer = ListErrorWriter(container_id='dummy',
+                                       fw_path='dummy-path')
         success = run(input_file=data_stream,
                       adcid=1,
                       identifiers=identifiers_map,
@@ -197,8 +196,8 @@ class TestIdentifierLookup:
                                                                        Any]):
         """Test case where there is no matching identifier."""
         out_stream = StringIO()
-        error_writer = ListErrorWriter(
-            container_id='dummy', fw_path='dummy-path')
+        error_writer = ListErrorWriter(container_id='dummy',
+                                       fw_path='dummy-path')
         success = run(input_file=data_stream,
                       identifiers=mismatched_identifiers_map,
                       adcid=1,
