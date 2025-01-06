@@ -408,6 +408,8 @@ class ClaimedUserProcess(BaseUserProcess[RegisteredUserEntry]):
             if not self.__add_user(entry):
                 return
 
+            self.__created_queue.enqueue(entry)
+
             log.info('Added user %s', entry.registry_id)
 
         fw_user = self.__env.proxy.find_user(entry.registry_id)
@@ -415,9 +417,6 @@ class ClaimedUserProcess(BaseUserProcess[RegisteredUserEntry]):
             log.error('Failed to find user %s with ID %s', entry.email,
                       entry.registry_id)
             return
-
-        if not fw_user.firstlogin:
-            self.__created_queue.enqueue(entry)
 
         self.__update_queue.enqueue(entry)
 
