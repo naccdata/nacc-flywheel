@@ -125,13 +125,11 @@ def empty_field_error(field: str | set[str],
                       message: Optional[str] = None) -> FileError:
     """Creates a FileError for empty field(s)."""
     error_message = message if message else f'Required field(s) {field} cannot be blank'
-    location = CSVLocation(line=line,
-                           column_name=str(field)) if line else JSONLocation(
-                               key_path=str(field))
 
     return FileError(error_type='error',
                      error_code='empty-field',
-                     location=location,
+                     location=CSVLocation(line=line, column_name=str(field))
+                     if line else JSONLocation(key_path=str(field)),
                      message=error_message)
 
 
@@ -391,7 +389,7 @@ def update_error_log_and_qc_metadata(*,
         bool: True if metadata update is successful, else False
     """
 
-    info = {"qc": {}}
+    info: Dict[str, Any] = {"qc": {}}
     contents = ''
 
     current_log = destination_prj.get_file(error_log_name)
