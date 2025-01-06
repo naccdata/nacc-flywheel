@@ -43,6 +43,7 @@ from flywheel_adaptor.flywheel_proxy import (
 )
 
 from projects.study import Study, StudyVisitor
+from projects.study_group import StudyGroup
 
 log = logging.getLogger(__name__)
 
@@ -204,8 +205,9 @@ class AggregationMapper(StudyMapper):
 class DistributionMapper(StudyMapper):
     """Defines a mapping from a distribution study to FW containers."""
 
-    def __init__(self, study: Study) -> None:
+    def __init__(self, study: Study, proxy: FlywheelProxy) -> None:
         self.__study = study
+        self.__fw = proxy
 
     def map_center_pipelines(self, center: CenterGroup,
                              study_info: StudyMetadata) -> None:
@@ -225,6 +227,9 @@ class DistributionMapper(StudyMapper):
 
         Not implemented for distribution groups.
         """
+        study_group = StudyGroup.create(study=self.__study, proxy=self.__fw)
+        for datatype in self.__study.datatypes:
+            self.__add_ingest(study_group=study_group, datatype=datatype)
 
     def __add_distribution(self, *, center: CenterGroup,
                            study_info: 'StudyMetadata', datatype: str) -> None:
@@ -243,6 +248,16 @@ class DistributionMapper(StudyMapper):
                                         project_id=project.id,
                                         project_label=project_label,
                                         datatype=datatype))
+
+    def __add_ingest(self, *, study_group: StudyGroup, datatype: str) -> None:
+        """Adds an ingest project for the datatype to the study group.
+
+        Args:
+          study_group: the group for the study
+          datatype: the datatype
+        """
+        project_label = f"ingest-{datatype.lower()}"
+        study_group.add_project(project_label)
 
 
 class StudyMappingVisitor(StudyVisitor):
@@ -273,7 +288,7 @@ class StudyMappingVisitor(StudyVisitor):
                                               study=study,
                                               pipelines=['ingest', 'sandbox'])
         if study.mode == 'distribution':
-            self.__mapper = DistributionMapper(study)
+            self.__mapper = DistributionMapper(study=study, proxy=self.__fw)
 
         for center_id in study.centers:
             self.visit_center(center_id)
