@@ -1,6 +1,6 @@
 """Entrypoint script for the identifier lookup app."""
 
-import logging
+import logging  # noqa: I001
 import os
 from pathlib import Path
 from typing import Dict, Optional
@@ -16,6 +16,7 @@ from gear_execution.gear_execution import (
     GearExecutionError,
     InputFileWrapper,
 )
+from identifier_app.main import run
 from identifiers.identifiers_lambda_repository import (
     IdentifiersLambdaRepository,
     IdentifiersMode,
@@ -29,8 +30,6 @@ from inputs.parameter_store import ParameterStore
 from keys.keys import FieldNames
 from lambdas.lambda_function import LambdaClient, create_lambda_client
 from outputs.errors import ListErrorWriter
-
-from identifier_app.main import run
 
 log = logging.getLogger(__name__)
 
