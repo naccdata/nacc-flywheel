@@ -38,6 +38,7 @@ class TestAPOETransformerCSVVisitor:
         """Test the visit_header method."""
         assert visitor.visit_header(apoe_headers)
         assert visitor.visit_header((*apoe_headers, 'extra1', 'extra2'))
+        assert visitor.visit_header(['ADCID', 'PTID', 'NACCID', 'A1', 'A2'])
 
     def test_visit_header_invalid(self, visitor, list_handler):
         """Test an invalid header."""
@@ -87,11 +88,11 @@ class TestAPOETransformerCSVVisitor:
         visitor.visit_header(apoe_headers)
 
         data = {
-            'adcid': 3,
-            'ptid': 3,
-            'naccid': 3,
-            'a1': "EE",
-            'a2': "FF",
+            'Adcid': 3,
+            'Ptid': 3,
+            'Naccid': 3,
+            'A1': "EE",
+            'A2': "FF",
             'extra1': 'hello',
             'extra2': 'world'
         }

@@ -4,6 +4,7 @@ from typing import Any, Dict, List, TextIO, Tuple
 
 from flywheel import FileSpec
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
+from gear_execution.gear_execution import GearExecutionError
 from inputs.csv_reader import CSVVisitor, read_csv
 from keys.keys import FieldNames
 from outputs.errors import (
@@ -57,6 +58,7 @@ class APOETransformerCSVVisitor(CSVVisitor):
         Returns:
             True if the header is valid, else False
         """
+        header = [x.strip().lower() for x in header]
         missing = set(self.EXPECTED_INPUT_HEADERS) - set(header)
         for field in missing:
             error = missing_field_error(field)
@@ -74,6 +76,7 @@ class APOETransformerCSVVisitor(CSVVisitor):
         Returns:
             True if the row is valid and transformed successfully, else False
         """
+        row = {k.strip().lower(): v for k, v in row.items()}
         a1, a2 = row.pop('a1'), row.pop('a2')
         pair = (a1.strip().upper(), a2.strip().upper())
         row['apoe'] = APOE_ENCODINGS.get(pair, 9)
@@ -111,9 +114,8 @@ def run(*,
                        delimiter=delimiter)
 
     if not success:
-        log.error("Errors found while reading the input CSV file, " +
-                  "will not transform the data.")
-        return
+        raise GearExecutionError(
+            'Errors found while reading the input CSV file')
 
     # write transformed results to target project
     log.info(f"Writing transformed APOE data to {project.id}")
