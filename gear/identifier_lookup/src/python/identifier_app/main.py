@@ -153,13 +153,13 @@ class CenterLookupVisitor(CSVVisitor):
         Returns:
           True if `naccid` occurs in the header, False otherwise
         """
-        expected_columns = {FieldNames.NACCID}
-        if not set(expected_columns).issubset(set(header)):
-            self.__error_writer.write(missing_field_error(expected_columns))
+        if FieldNames.NACCID not in header or FieldNames.NACCID.upper() not in header:
+            self.__error_writer.write(missing_field_error(FieldNames.NACCID))
             return False
 
         self.__header = header
         self.__header.append(FieldNames.ADCID)
+        self.__header.append(FieldNames.PTID)
 
         return True
 
