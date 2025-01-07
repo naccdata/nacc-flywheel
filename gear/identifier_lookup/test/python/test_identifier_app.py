@@ -6,7 +6,7 @@ from typing import Any, List
 import pytest
 from identifier_app.main import NACCIDLookupVisitor, run
 from identifiers.model import IdentifierObject
-from outputs.errors import StreamErrorWriter
+from outputs.errors import ListErrorWriter
 
 
 @pytest.fixture(scope="function")
@@ -55,8 +55,9 @@ def no_ids_stream():
 @pytest.fixture(scope="function")
 def data_stream():
     """Create valid data stream with header row."""
-    data: List[List[str | int]] = [['adcid', 'ptid', 'var1'], [1, '1', 8],
-                                   [1, '2', 99]]
+    data: List[List[str | int]] = [['adcid', 'ptid', 'visitdate', 'var1'],
+                                   [1, '1', '2024-12-31', 8],
+                                   [1, '2', '2024-12-31', 99]]
     stream = StringIO()
     write_to_stream(data, stream)
     stream.seek(0)
@@ -114,10 +115,8 @@ class TestIdentifierLookup:
                                 identifiers_map: dict[Any, Any]):
         """Test empty input stream."""
         out_stream = StringIO()
-        err_stream = StringIO()
-        error_writer = StreamErrorWriter(stream=err_stream,
-                                         container_id='dummy',
-                                         fw_path='dummy-path')
+        error_writer = ListErrorWriter(container_id='dummy',
+                                       fw_path='dummy-path')
         success = run(input_file=empty_data_stream,
                       lookup_visitor=NACCIDLookupVisitor(
                           adcid=1,
@@ -128,16 +127,14 @@ class TestIdentifierLookup:
                       error_writer=error_writer)
         assert not success
         assert empty(out_stream)
-        assert not empty(err_stream)
+        assert error_writer.errors()
 
     def test_no_header(self, no_header_stream: StringIO,
                        identifiers_map: dict[Any, Any]):
         """Test case with no header."""
         out_stream = StringIO()
-        err_stream = StringIO()
-        error_writer = StreamErrorWriter(stream=err_stream,
-                                         container_id='dummy',
-                                         fw_path='dummy-path')
+        error_writer = ListErrorWriter(container_id='dummy',
+                                       fw_path='dummy-path')
         success = run(input_file=no_header_stream,
                       lookup_visitor=NACCIDLookupVisitor(
                           adcid=1,
@@ -148,16 +145,14 @@ class TestIdentifierLookup:
                       error_writer=error_writer)
         assert not success
         assert empty(out_stream)
-        assert not empty(err_stream)
+        assert error_writer.errors()
 
     def test_no_id_column_headers(self, no_ids_stream: StringIO,
                                   identifiers_map: dict[Any, Any]):
         """Test case where header doesn't have ID columns."""
         out_stream = StringIO()
-        err_stream = StringIO()
-        error_writer = StreamErrorWriter(stream=err_stream,
-                                         container_id='dummy',
-                                         fw_path='dummy-path')
+        error_writer = ListErrorWriter(container_id='dummy',
+                                       fw_path='dummy-path')
         success = run(input_file=no_ids_stream,
                       lookup_visitor=NACCIDLookupVisitor(
                           adcid=1,
@@ -168,16 +163,14 @@ class TestIdentifierLookup:
                       error_writer=error_writer)
         assert not success
         assert empty(out_stream)
-        assert not empty(err_stream)
+        assert error_writer.errors()
 
     def test_data_with_matching_ids(self, data_stream: StringIO,
                                     identifiers_map: dict[Any, Any]):
         """Test case where everything should match."""
         out_stream = StringIO()
-        err_stream = StringIO()
-        error_writer = StreamErrorWriter(stream=err_stream,
-                                         container_id='dummy',
-                                         fw_path='dummy-path')
+        error_writer = ListErrorWriter(container_id='dummy',
+                                       fw_path='dummy-path')
         success = run(input_file=data_stream,
                       lookup_visitor=NACCIDLookupVisitor(
                           adcid=1,
@@ -187,7 +180,7 @@ class TestIdentifierLookup:
                           error_writer=error_writer),
                       error_writer=error_writer)
         assert success
-        assert empty(err_stream)
+        assert not error_writer.errors()
         assert not empty(out_stream)
         out_stream.seek(0)
         reader = csv.DictReader(out_stream, dialect='unix')
@@ -203,10 +196,8 @@ class TestIdentifierLookup:
                                                                        Any]):
         """Test case where there is no matching identifier."""
         out_stream = StringIO()
-        err_stream = StringIO()
-        error_writer = StreamErrorWriter(stream=err_stream,
-                                         container_id='dummy',
-                                         fw_path='dummy-path')
+        error_writer = ListErrorWriter(container_id='dummy',
+                                       fw_path='dummy-path')
         success = run(input_file=data_stream,
                       lookup_visitor=NACCIDLookupVisitor(
                           identifiers=mismatched_identifiers_map,
@@ -217,4 +208,4 @@ class TestIdentifierLookup:
                       error_writer=error_writer)
         assert not success
         assert empty(out_stream)
-        assert not empty(err_stream)
+        assert error_writer.errors()

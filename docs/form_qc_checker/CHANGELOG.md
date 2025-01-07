@@ -2,6 +2,9 @@
 
 All notable changes to this gear are documented in this file.
 
+## 1.2.0
+* Update error reporting - move error metadata to visit error log files stored at project level.
+  
 ## 1.1.7
 
 * Changes module label to uppercase for looking up previous visits in Flywheel

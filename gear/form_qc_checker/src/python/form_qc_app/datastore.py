@@ -151,7 +151,7 @@ class DatastoreHelper(Datastore):
         if qc_gear:
             filters += f',file.info.qc.{qc_gear}.validation.state=PASS'
 
-        visits = self.__proxy.get_matching_aquisition_files_info(
+        visits = self.__proxy.get_matching_acquisition_files_info(
             container_id=subject.id,
             dv_title=title,
             columns=columns,
