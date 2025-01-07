@@ -221,7 +221,7 @@ class CenterLookupVisitor(CSVVisitor):
           True if `naccid` occurs in the header, False otherwise
         """
         if (FieldNames.NACCID not in header
-                or FieldNames.NACCID.upper() not in header):
+                and FieldNames.NACCID.upper() not in header):
             self.__error_writer.write(missing_field_error(FieldNames.NACCID))
             return False
 
@@ -246,6 +246,7 @@ class CenterLookupVisitor(CSVVisitor):
         Raises:
           GearExecutionError if the identifiers repository raises an error
         """
+        row = { key.strip().lower(): value for key, value in row.items() }
 
         try:
             identifier = self.__identifiers_repo.get(
