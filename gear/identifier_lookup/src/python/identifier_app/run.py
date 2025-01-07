@@ -3,10 +3,9 @@
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Literal, Optional, TextIO
 
 from flywheel.rest import ApiException
-from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
@@ -16,7 +15,7 @@ from gear_execution.gear_execution import (
     GearExecutionError,
     InputFileWrapper,
 )
-from identifier_app.main import run
+from identifier_app.main import CenterLookupVisitor, NACCIDLookupVisitor, run
 from identifiers.identifiers_lambda_repository import (
     IdentifiersLambdaRepository,
     IdentifiersMode,
@@ -26,6 +25,7 @@ from identifiers.identifiers_repository import (
     IdentifierRepositoryError,
 )
 from identifiers.model import IdentifierObject
+from inputs.csv_reader import CSVVisitor
 from inputs.parameter_store import ParameterStore
 from keys.keys import FieldNames
 from lambdas.lambda_function import LambdaClient, create_lambda_client
@@ -60,17 +60,17 @@ def get_identifiers(identifiers_repo: IdentifierRepository,
 class IdentifierLookupVisitor(GearExecutionEnvironment):
     """The gear execution visitor for the identifier lookup app."""
 
-    def __init__(
-        self,
-        client: ClientWrapper,
-        admin_id: str,
-        file_input: InputFileWrapper,
-        identifiers_mode: IdentifiersMode,
-    ):
+    def __init__(self, *, client: ClientWrapper, admin_id: str,
+                 file_input: InputFileWrapper,
+                 identifiers_mode: IdentifiersMode, date_field: str,
+                 direction: Literal['nacc', 'center'], gear_name: str):
         super().__init__(client=client)
         self.__admin_id = admin_id
         self.__file_input = file_input
         self.__identifiers_mode: IdentifiersMode = identifiers_mode
+        self.__direction: Literal['nacc', 'center'] = direction
+        self.__date_field = date_field
+        self.__gear_name = gear_name
 
     @classmethod
     def create(
@@ -95,24 +95,26 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
 
         admin_id = context.config.get("admin_group", "nacc")
         mode = context.config.get("database_mode", "prod")
+        direction = context.config.get("direction", "nacc")
 
-        return IdentifierLookupVisitor(
-            client=client,
-            admin_id=admin_id,
-            file_input=file_input,
-            identifiers_mode=mode,
-        )
+        date_field = (context.config.get("date_field",
+                                         FieldNames.DATE_COLUMN)).lower()
 
-    def run(self, context: GearToolkitContext):
-        """Runs the identifier lookup app.
+        gear_name = context.manifest.get("name", "identifier-lookup")
 
-        Args:
-            context: the gear execution context
-        """
+        return IdentifierLookupVisitor(client=client,
+                                       gear_name=gear_name,
+                                       admin_id=admin_id,
+                                       file_input=file_input,
+                                       identifiers_mode=mode,
+                                       date_field=date_field,
+                                       direction=direction)
 
-        assert context, "Gear context required"
+    def __build_naccid_lookup(self, *, file_id: str,
+                              identifiers_repo: IdentifierRepository,
+                              output_file: TextIO,
+                              error_writer: ListErrorWriter) -> CSVVisitor:
 
-        file_id = self.__file_input.file_id
         admin_group = self.admin_group(admin_id=self.__admin_id)
         adcid = admin_group.get_adcid(self.proxy.get_file_group(file_id))
         if adcid is None:
@@ -130,13 +132,8 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                 f"Failed to find the project with ID {file.parents.project}")
 
         try:
-            identifiers = get_identifiers(
-                identifiers_repo=IdentifiersLambdaRepository(
-                    client=LambdaClient(client=create_lambda_client()),
-                    mode=self.__identifiers_mode,
-                ),
-                adcid=adcid,
-            )
+            identifiers = get_identifiers(identifiers_repo=identifiers_repo,
+                                          adcid=adcid)
         except IdentifierRepositoryError as error:
             raise GearExecutionError(error) from error
 
@@ -149,35 +146,64 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                 "Expect module suffix to input file name: "
                 f"{self.__file_input.filename}")
 
-        date_field = (context.config.get("date_field",
-                                         FieldNames.DATE_COLUMN)).lower()
+        return NACCIDLookupVisitor(adcid=adcid,
+                                   identifiers=identifiers,
+                                   output_file=output_file,
+                                   module_name=module_name,
+                                   error_writer=error_writer,
+                                   date_field=self.__date_field,
+                                   gear_name=self.__gear_name)
 
-        gear_name = context.manifest.get("name", "identifier-lookup")
+    def __build_center_lookup(self, *, identifiers_repo: IdentifierRepository,
+                              output_file: TextIO,
+                              error_writer: ListErrorWriter) -> CSVVisitor:
+
+        return CenterLookupVisitor(identifiers_repo=identifiers_repo,
+                                   output_file=output_file,
+                                   error_writer=error_writer)
+
+    def run(self, context: GearToolkitContext):
+        """Runs the identifier lookup app.
+
+        Args:
+            context: the gear execution context
+        """
+
+        assert context, 'Gear context required'
+
+        identifiers_repo = IdentifiersLambdaRepository(
+            client=LambdaClient(client=create_lambda_client()),
+            mode=self.__identifiers_mode)
 
         (basename, extension) = os.path.splitext(self.__file_input.filename)
         filename = f"{basename}-identifier{extension}"
         input_path = Path(self.__file_input.filepath)
-        with (
-                open(input_path, mode="r", encoding="utf-8") as csv_file,
-                context.open_output(filename, mode="w", encoding="utf-8") as
-                out_file,
-        ):
-            error_writer = ListErrorWriter(
-                container_id=file_id,
-                fw_path=self.proxy.get_lookup_path(
-                    self.proxy.get_file(file_id)),
-            )
-            success = run(
-                input_file=csv_file,
-                identifiers=identifiers,
-                module_name=module_name,
-                adcid=adcid,
-                output_file=out_file,
-                error_writer=error_writer,
-                date_field=date_field,
-                project=ProjectAdaptor(project=project, proxy=self.proxy),
-                gear_name=gear_name,
-            )
+        with (open(input_path, mode='r', encoding='utf-8') as csv_file,
+              context.open_output(filename, mode='w', encoding='utf-8') as
+              out_file):
+            file_id = self.__file_input.file_id
+            error_writer = ListErrorWriter(container_id=file_id,
+                                           fw_path=self.proxy.get_lookup_path(
+                                               self.proxy.get_file(file_id)))
+
+            clear_errors = False
+            if self.__direction == 'nacc':
+                lookup_visitor = self.__build_naccid_lookup(
+                    file_id=file_id,
+                    identifiers_repo=identifiers_repo,
+                    output_file=out_file,
+                    error_writer=error_writer)
+                clear_errors = True
+            elif self.__direction == 'center':
+                lookup_visitor = self.__build_center_lookup(
+                    identifiers_repo=identifiers_repo,
+                    output_file=out_file,
+                    error_writer=error_writer)
+
+            success = run(input_file=csv_file,
+                          lookup_visitor=lookup_visitor,
+                          error_writer=error_writer,
+                          clear_errors=clear_errors)
 
             context.metadata.add_qc_result(
                 self.__file_input.file_input,
@@ -187,7 +213,7 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
             )
 
             context.metadata.add_file_tags(self.__file_input.file_input,
-                                           tags=gear_name)
+                                           tags=self.__gear_name)
 
 
 def main():

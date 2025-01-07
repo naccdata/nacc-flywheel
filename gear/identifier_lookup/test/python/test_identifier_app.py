@@ -4,7 +4,7 @@ from io import StringIO
 from typing import Any, List
 
 import pytest
-from identifier_app.main import run
+from identifier_app.main import NACCIDLookupVisitor, run
 from identifiers.model import IdentifierObject
 from outputs.errors import ListErrorWriter
 
@@ -118,13 +118,15 @@ class TestIdentifierLookup:
         error_writer = ListErrorWriter(container_id='dummy',
                                        fw_path='dummy-path')
         success = run(input_file=empty_data_stream,
-                      adcid=1,
-                      identifiers=identifiers_map,
-                      output_file=out_stream,
-                      module_name='dummy-module',
-                      error_writer=error_writer,
-                      date_field='visitdate',
-                      gear_name='identifier-lookup')
+                      lookup_visitor=NACCIDLookupVisitor(
+                          adcid=1,
+                          identifiers=identifiers_map,
+                          output_file=out_stream,
+                          module_name='dummy-module',
+                          error_writer=error_writer,
+                          date_field='visitdate',
+                          gear_name='dummy'),
+                      error_writer=error_writer)
         assert not success
         assert empty(out_stream)
         assert error_writer.errors()
@@ -136,13 +138,15 @@ class TestIdentifierLookup:
         error_writer = ListErrorWriter(container_id='dummy',
                                        fw_path='dummy-path')
         success = run(input_file=no_header_stream,
-                      adcid=1,
-                      identifiers=identifiers_map,
-                      output_file=out_stream,
-                      module_name='dummy-module',
-                      error_writer=error_writer,
-                      date_field='visitdate',
-                      gear_name='identifier-lookup')
+                      lookup_visitor=NACCIDLookupVisitor(
+                          adcid=1,
+                          identifiers=identifiers_map,
+                          output_file=out_stream,
+                          module_name='dummy-module',
+                          error_writer=error_writer,
+                          date_field='visitdate',
+                          gear_name='dummy'),
+                      error_writer=error_writer)
         assert not success
         assert empty(out_stream)
         assert error_writer.errors()
@@ -154,13 +158,15 @@ class TestIdentifierLookup:
         error_writer = ListErrorWriter(container_id='dummy',
                                        fw_path='dummy-path')
         success = run(input_file=no_ids_stream,
-                      adcid=1,
-                      identifiers=identifiers_map,
-                      output_file=out_stream,
-                      module_name='dummy-module',
-                      error_writer=error_writer,
-                      date_field='visitdate',
-                      gear_name='identifier-lookup')
+                      lookup_visitor=NACCIDLookupVisitor(
+                          adcid=1,
+                          identifiers=identifiers_map,
+                          output_file=out_stream,
+                          module_name='dummy-module',
+                          error_writer=error_writer,
+                          date_field='visitdate',
+                          gear_name='dummy'),
+                      error_writer=error_writer)
         assert not success
         assert empty(out_stream)
         assert error_writer.errors()
@@ -172,13 +178,15 @@ class TestIdentifierLookup:
         error_writer = ListErrorWriter(container_id='dummy',
                                        fw_path='dummy-path')
         success = run(input_file=data_stream,
-                      adcid=1,
-                      identifiers=identifiers_map,
-                      output_file=out_stream,
-                      module_name='dummy-module',
-                      error_writer=error_writer,
-                      date_field='visitdate',
-                      gear_name='identifier-lookup')
+                      lookup_visitor=NACCIDLookupVisitor(
+                          adcid=1,
+                          identifiers=identifiers_map,
+                          output_file=out_stream,
+                          module_name='dummy-module',
+                          error_writer=error_writer,
+                          date_field='visitdate',
+                          gear_name='dummy'),
+                      error_writer=error_writer)
         assert success
         assert not error_writer.errors()
         assert not empty(out_stream)
@@ -199,13 +207,15 @@ class TestIdentifierLookup:
         error_writer = ListErrorWriter(container_id='dummy',
                                        fw_path='dummy-path')
         success = run(input_file=data_stream,
-                      identifiers=mismatched_identifiers_map,
-                      adcid=1,
-                      output_file=out_stream,
-                      module_name='dummy-module',
-                      error_writer=error_writer,
-                      date_field='visitdate',
-                      gear_name='identifier-lookup')
+                      lookup_visitor=NACCIDLookupVisitor(
+                          identifiers=mismatched_identifiers_map,
+                          adcid=1,
+                          output_file=out_stream,
+                          module_name='dummy-module',
+                          error_writer=error_writer,
+                          date_field='visitdate',
+                          gear_name='dummy'),
+                      error_writer=error_writer)
         assert not success
         assert empty(out_stream)
         assert error_writer.errors()
