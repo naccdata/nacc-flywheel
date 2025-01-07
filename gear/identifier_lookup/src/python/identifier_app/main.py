@@ -144,7 +144,6 @@ class NACCIDLookupVisitor(CSVVisitor):
 
         return True
 
-
     def __update_visit_error_log(self, *, input_record: Dict[str, Any],
                                  qc_passed: bool):
         """Update error log file for the visit and store error metadata in
@@ -191,7 +190,7 @@ class CenterLookupVisitor(CSVVisitor):
     """
 
     def __init__(self, *, identifiers_repo: IdentifierRepository,
-                 output_file: TextIO, error_writer: ErrorWriter) -> None:
+                 output_file: TextIO, error_writer: ListErrorWriter) -> None:
         self.__identifiers_repo = identifiers_repo
         self.__output_file = output_file
         self.__error_writer = error_writer
@@ -221,7 +220,8 @@ class CenterLookupVisitor(CSVVisitor):
         Returns:
           True if `naccid` occurs in the header, False otherwise
         """
-        if FieldNames.NACCID not in header or FieldNames.NACCID.upper() not in header:
+        if FieldNames.NACCID not in header or FieldNames.NACCID.upper(
+        ) not in header:
             self.__error_writer.write(missing_field_error(FieldNames.NACCID))
             return False
 
@@ -267,38 +267,18 @@ class CenterLookupVisitor(CSVVisitor):
         return True
 
 
-def run(*,
-        input_file: TextIO,
-        identifiers: Dict[str, IdentifierObject],
-        module_name: str,
-        adcid: int,
-        output_file: TextIO,
-        error_writer: ListErrorWriter,
-        date_field: str,
-        gear_name: str,
-        project: Optional[ProjectAdaptor] = None) -> bool:
-    """Reads participant records from the input CSV file, finds the NACCID for
-    each row from the ADCID and PTID, and outputs a CSV file with the NACCID
-    inserted.
-
-    If the NACCID isn't found for a row, an error is written to the error file.
-
-    Note: this function assumes that the ADCID for each row is the same, and
-    that the ADCID corresponds to the ID for the group where the file is
-    located.
-    The identifiers map should at least include Identifiers objects with this
-    ADCID.
+def run(*, input_file: TextIO, error_writer: ListErrorWriter,
+        lookup_visitor: CSVVisitor) -> bool:
+    """Reads participant records from the input CSV file and applies the ID
+    lookup visitor to insert corresponding IDs.
 
     Args:
       input_file: the data input stream
       lookup_visitor: the CSVVisitor for identifier lookup
       error_writer: the error output writer
-      date_field: visit date field for the module
-      gear_name: gear name
-      project: Flywheel project adaptor
 
     Returns:
-      True if there were IDs with no corresponding NACCID
+      True if there were IDs with no corresponding ID by lookup visitor
     """
 
     return read_csv(input_file=input_file,
