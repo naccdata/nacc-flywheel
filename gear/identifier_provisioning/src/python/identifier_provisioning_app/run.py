@@ -107,6 +107,7 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
                                      f'{file.parents.project}')
 
         input_path = Path(self.__file_input.filepath)
+        gear_name = context.manifest.get('name', 'identifier-provisioning')
         with open(input_path, mode='r', encoding='utf-8') as csv_file:
             error_writer = ListErrorWriter(
                 container_id=file_id, fw_path=self.proxy.get_lookup_path(file))
@@ -115,6 +116,7 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
                 center_id=adcid,
                 error_writer=error_writer,
                 enrollment_project=enrollment_project,
+                gear_name=gear_name,
                 repo=IdentifiersLambdaRepository(
                     client=LambdaClient(client=create_lambda_client()),
                     mode=self.__identifiers_mode))
@@ -125,9 +127,7 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
                                            data=error_writer.errors())
 
             context.metadata.add_file_tags(self.__file_input.file_input,
-                                           tags=context.manifest.get(
-                                               'name',
-                                               'identifier-provisioning'))
+                                           tags=gear_name)
 
 
 def main():

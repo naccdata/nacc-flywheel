@@ -21,6 +21,7 @@ class FieldNames:
     PREVENRL = 'prevenrl'
     C2C2T = 'rmmodec2c2t'
     ENRLTYPE = 'enrltype'
+    GUIDAVAIL = 'guidavail'
 
 
 class RuleLabels:

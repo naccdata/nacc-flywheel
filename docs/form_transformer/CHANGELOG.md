@@ -2,6 +2,9 @@
 
 All notable changes to this gear are documented in this file.
 
+## 1.0.5
+* Update error reporting - move error metadata to visit error log files stored at project level.
+  
 ## 1.0.2
 - Removes GearBot client
 - Change acquisition file naming schema

@@ -1,12 +1,12 @@
 import json
 import logging
-from abc import ABC, abstractmethod
 from datetime import datetime
 from string import Template
 from typing import Any, Dict, List, Literal, Optional, TypedDict
 
 import yaml
 from flywheel.file_spec import FileSpec
+from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from flywheel_adaptor.subject_adaptor import (
     ParticipantVisits,
@@ -78,20 +78,7 @@ class UploadTemplateInfo(BaseModel):
     filename: LabelTemplate
 
 
-class RecordUploader(ABC):
-
-    @abstractmethod
-    def upload(self, records: Dict[str, List[Dict[str, Any]]]) -> bool:
-        """Uploads the records to acquisitions under the subject.
-
-        Args:
-          records: map from subject to list of records
-        Returns:
-          True if the file for each record is saved. False, otherwise.
-        """
-
-
-class JSONUploader(RecordUploader):
+class JSONUploader:
     """Generalizes upload of a record to an acquisition as JSON."""
 
     def __init__(self,
@@ -136,7 +123,7 @@ class JSONUploader(RecordUploader):
         return success
 
 
-class FormJSONUploader(RecordUploader):
+class FormJSONUploader:
 
     def __init__(self, project: ProjectAdaptor, module: str) -> None:
         self.__project = project
@@ -150,8 +137,8 @@ class FormJSONUploader(RecordUploader):
 
         Args:
             subject: Flywheel subject adaptor for the participant
-            filename: Flywheel aquisition file name
-            file_id: Flywheel aquisition file ID
+            filename: Flywheel acquisition file name
+            file_id: Flywheel acquisition file ID
             input_record: input visit data
         """
         visit_mapping: VisitMapping
@@ -200,9 +187,59 @@ class FormJSONUploader(RecordUploader):
 
         return success
 
-    def upload(self, participant_records: Dict[str, List[Dict[str,
-                                                              Any]]]) -> bool:
-        """Converts a tranformed CSV record to a JSON file and uploads it to
+    def __copy_qc_gear_metadata(self, *, error_log_name: str,
+                                visit_file_name: str, subject: SubjectAdaptor,
+                                session: str, acquisition: str) -> bool:
+        """Copy existing QC gear metadata from visit file to error log file.
+
+        Args:
+            error_log_name: error log name for the visit
+            visit_file_name: visit acquisition file file name
+            subject: Flywheel subject adaptor
+            session: Flywheel session label
+            acquisition: Flywheel acquisition label
+
+        Returns:
+            bool: True if copying metadata successful
+        """
+
+        visit_file = subject.find_acquisition_file(
+            session_label=session,
+            acquisition_label=acquisition,
+            filename=visit_file_name)
+        if not visit_file:
+            return False
+
+        visit_file = visit_file.reload()
+        error_log_file = self.__project.get_file(error_log_name)
+        if not error_log_file or not visit_file.info:
+            return False
+
+        error_log_file = error_log_file.reload()
+        qc_gear_metadata = visit_file.info.get('qc',
+                                               {}).get(DefaultValues.QC_GEAR,
+                                                       {})
+
+        if not qc_gear_metadata:
+            return False
+
+        info = error_log_file.info if (error_log_file.info
+                                       and 'qc' in error_log_file.info) else {
+                                           'qc': {}
+                                       }
+        info['qc'][DefaultValues.QC_GEAR] = qc_gear_metadata
+
+        try:
+            error_log_file.update_info(info)
+        except ApiException:
+            return False
+
+        return True
+
+    def upload(
+            self,
+            participant_records: Dict[str, Dict[str, Dict[str, Any]]]) -> bool:
+        """Converts a transformed CSV record to a JSON file and uploads it to
         the respective acquisition in Flywheel.
 
         - If the record already exists in Flywheel (duplicate), it will not be uploaded.
@@ -216,7 +253,7 @@ class FormJSONUploader(RecordUploader):
         """
 
         success = True
-        for subject_lbl, records in participant_records.items():
+        for subject_lbl, visits_info in participant_records.items():
             subject = self.__project.find_subject(subject_lbl)
             if not subject:
                 log.info(
@@ -224,7 +261,7 @@ class FormJSONUploader(RecordUploader):
                     subject_lbl, self.__project.group, self.__project.label)
                 subject = self.__project.add_subject(subject_lbl)
 
-            for record in records:
+            for log_file, record in visits_info.items():
                 session_label = DefaultValues.SESSION_LBL_PRFX + \
                     record[FieldNames.VISITNUM]
 
@@ -244,7 +281,18 @@ class FormJSONUploader(RecordUploader):
                     success = False
                     continue
 
+                # No error and no new file (i.e. duplicate file exists)
                 if not new_file:
+                    if not self.__copy_qc_gear_metadata(
+                            error_log_name=log_file,
+                            visit_file_name=visit_file_name,
+                            subject=subject,
+                            session=session_label,
+                            acquisition=acq_label):
+                        log.warning(
+                            'Failed to copy QC gear metadata to error log file '
+                            ' %s from existing visit file %s', log_file,
+                            visit_file_name)
                     continue
 
                 if not update_file_info_metadata(new_file, record):

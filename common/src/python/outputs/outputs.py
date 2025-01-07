@@ -84,6 +84,7 @@ def write_csv_to_stream(headers: List[str], data: List[Dict[str,
     Args:
         headers: The header values
         data: The data values, expected to be a list of JSON dicts
+
     Returns:
         StringIO object containing the contents.
     """
