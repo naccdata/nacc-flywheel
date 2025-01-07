@@ -27,7 +27,7 @@
             "base": "api-key"
         },
         "input_file": {
-            "description": "The CSV input file. Each row must have ADCID and PTID",
+            "description": "The CSV input file. Requires participant ID that matches mapping direction.",
             "base": "file",
             "type": {
                 "enum": [
@@ -58,7 +58,7 @@
             "default": "/prod/flywheel/gearbot"
         },
         "direction": {
-            "description": "Direction of identifier mapping: to nacc, or to center",
+            "description": "Direction of identifier mapping; 'nacc' to naccid, or 'center' to center",
             "type": "string",
             "default": "nacc"
         }
