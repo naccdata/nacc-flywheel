@@ -162,7 +162,6 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                                    output_file=output_file,
                                    error_writer=error_writer)
 
-
     def run(self, context: GearToolkitContext):
         """Runs the identifier lookup app.
 
