@@ -2,6 +2,11 @@
 
 All notable changes to this gear are documented in this file.
 
+## 1.0.0
+
+* Adds ability to do a reverse lookup on NACCID to find the center IDs.
+  Allows injecting the ADCID needed to split a CSV for distribution across centers.
+
 ## 0.1.0
 * Update error reporting - move error metadata to visit error log files stored at project level.
   
