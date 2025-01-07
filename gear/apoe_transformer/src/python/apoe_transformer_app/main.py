@@ -6,7 +6,6 @@ from flywheel import FileSpec
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from gear_execution.gear_execution import GearExecutionError
 from inputs.csv_reader import CSVVisitor, read_csv
-from keys.keys import FieldNames
 from outputs.errors import (
     LogErrorWriter,
     missing_field_error,
@@ -32,21 +31,23 @@ APOE_ENCODINGS: Dict[Tuple[str, str], int] = {
 class APOETransformerCSVVisitor(CSVVisitor):
     """Class for visiting each row in the APOE genotype CSV."""
 
-    EXPECTED_INPUT_HEADERS: Tuple[str, ...] = (FieldNames.ADCID,
-                                               FieldNames.NACCID, 'a1', 'a2')
-
-    EXPECTED_OUTPUT_HEADERS: Tuple[str, ...] = (FieldNames.ADCID,
-                                                FieldNames.NACCID, 'apoe')
+    EXPECTED_INPUT_HEADERS: Tuple[str, ...] = ('a1', 'a2')
 
     def __init__(self, error_writer: LogErrorWriter):
         """Initializer."""
         self.__error_writer: LogErrorWriter = error_writer
         self.__transformed_data: List[Dict[Any, Any]] = []
+        self.__header: List[str] = []
 
     @property
     def transformed_data(self):
         """The APOE transformed data."""
         return self.__transformed_data
+
+    @property
+    def header(self) -> List[str]:
+        """Returns the output header."""
+        return self.__header
 
     def visit_header(self, header: List[str]) -> bool:
         """Verifies that the header is valid.
@@ -62,7 +63,15 @@ class APOETransformerCSVVisitor(CSVVisitor):
             error = missing_field_error(field)
             self.__error_writer.write(error)
 
-        return not missing
+        if missing:
+            return False
+
+        self.__header = [
+            column for column in header if column not in ['a1', 'a2']
+        ]
+        self.__header.append('apoe')
+
+        return True
 
     def visit_row(self, row: Dict[str, Any], line_num: int) -> bool:
         """Visit the dictionary for the row (per DictReader) and perform the
@@ -78,11 +87,6 @@ class APOETransformerCSVVisitor(CSVVisitor):
         a1, a2 = row.pop('a1'), row.pop('a2')
         pair = (a1.strip().upper(), a2.strip().upper())
         row['apoe'] = APOE_ENCODINGS.get(pair, 9)
-
-        # remove any extra headers
-        extra_fields = set(row.keys()) - set(self.EXPECTED_OUTPUT_HEADERS)
-        for field in extra_fields:
-            row.pop(field)
 
         self.__transformed_data.append(row)
         return True
@@ -117,8 +121,7 @@ def run(*,
 
     # write transformed results to target project
     log.info(f"Writing transformed APOE data to {project.id}")
-    contents = write_csv_to_stream(headers=list(
-        visitor.EXPECTED_OUTPUT_HEADERS),
+    contents = write_csv_to_stream(headers=visitor.header,
                                    data=visitor.transformed_data).getvalue()
     file_spec = FileSpec(name=filename,
                          contents=contents,
