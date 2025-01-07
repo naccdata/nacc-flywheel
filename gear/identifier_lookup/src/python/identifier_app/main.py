@@ -220,8 +220,8 @@ class CenterLookupVisitor(CSVVisitor):
         Returns:
           True if `naccid` occurs in the header, False otherwise
         """
-        if FieldNames.NACCID not in header or FieldNames.NACCID.upper(
-        ) not in header:
+        if (FieldNames.NACCID not in header
+                or FieldNames.NACCID.upper() not in header):
             self.__error_writer.write(missing_field_error(FieldNames.NACCID))
             return False
 
