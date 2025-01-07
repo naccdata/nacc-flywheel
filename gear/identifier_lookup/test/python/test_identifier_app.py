@@ -123,7 +123,9 @@ class TestIdentifierLookup:
                           identifiers=identifiers_map,
                           output_file=out_stream,
                           module_name='dummy-module',
-                          error_writer=error_writer),
+                          error_writer=error_writer,
+                          date_field='visitdate',
+                          gear_name='dummy'),
                       error_writer=error_writer)
         assert not success
         assert empty(out_stream)
@@ -141,7 +143,9 @@ class TestIdentifierLookup:
                           identifiers=identifiers_map,
                           output_file=out_stream,
                           module_name='dummy-module',
-                          error_writer=error_writer),
+                          error_writer=error_writer,
+                          date_field='visitdate',
+                          gear_name='dummy'),
                       error_writer=error_writer)
         assert not success
         assert empty(out_stream)
@@ -159,7 +163,9 @@ class TestIdentifierLookup:
                           identifiers=identifiers_map,
                           output_file=out_stream,
                           module_name='dummy-module',
-                          error_writer=error_writer),
+                          error_writer=error_writer,
+                          date_field='visitdate',
+                          gear_name='dummy'),
                       error_writer=error_writer)
         assert not success
         assert empty(out_stream)
@@ -177,7 +183,9 @@ class TestIdentifierLookup:
                           identifiers=identifiers_map,
                           output_file=out_stream,
                           module_name='dummy-module',
-                          error_writer=error_writer),
+                          error_writer=error_writer,
+                          date_field='visitdate',
+                          gear_name='dummy'),
                       error_writer=error_writer)
         assert success
         assert not error_writer.errors()
@@ -204,7 +212,9 @@ class TestIdentifierLookup:
                           adcid=1,
                           output_file=out_stream,
                           module_name='dummy-module',
-                          error_writer=error_writer),
+                          error_writer=error_writer,
+                          date_field='visitdate',
+                          gear_name='dummy'),
                       error_writer=error_writer)
         assert not success
         assert empty(out_stream)
