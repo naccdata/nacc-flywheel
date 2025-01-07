@@ -270,8 +270,11 @@ class CenterLookupVisitor(CSVVisitor):
         return True
 
 
-def run(*, input_file: TextIO, error_writer: ListErrorWriter,
-        lookup_visitor: CSVVisitor) -> bool:
+def run(*,
+        input_file: TextIO,
+        error_writer: ListErrorWriter,
+        lookup_visitor: CSVVisitor,
+        clear_errors: bool = False) -> bool:
     """Reads participant records from the input CSV file and applies the ID
     lookup visitor to insert corresponding IDs.
 
@@ -279,6 +282,7 @@ def run(*, input_file: TextIO, error_writer: ListErrorWriter,
       input_file: the data input stream
       lookup_visitor: the CSVVisitor for identifier lookup
       error_writer: the error output writer
+      clear_errors: clear the accumulated error metadata
 
     Returns:
       True if there were IDs with no corresponding ID by lookup visitor
@@ -286,4 +290,5 @@ def run(*, input_file: TextIO, error_writer: ListErrorWriter,
 
     return read_csv(input_file=input_file,
                     error_writer=error_writer,
-                    visitor=lookup_visitor)
+                    visitor=lookup_visitor,
+                    clear_errors=clear_errors)

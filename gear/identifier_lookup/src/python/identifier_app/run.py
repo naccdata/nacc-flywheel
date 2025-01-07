@@ -186,12 +186,14 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                                            fw_path=self.proxy.get_lookup_path(
                                                self.proxy.get_file(file_id)))
 
+            clear_errors = False
             if self.__direction == 'nacc':
                 lookup_visitor = self.__build_naccid_lookup(
                     file_id=file_id,
                     identifiers_repo=identifiers_repo,
                     output_file=out_file,
                     error_writer=error_writer)
+                clear_errors = True
             elif self.__direction == 'center':
                 lookup_visitor = self.__build_center_lookup(
                     identifiers_repo=identifiers_repo,
@@ -200,7 +202,8 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
 
             success = run(input_file=csv_file,
                           lookup_visitor=lookup_visitor,
-                          error_writer=error_writer)
+                          error_writer=error_writer,
+                          clear_errors=clear_errors)
 
             context.metadata.add_qc_result(
                 self.__file_input.file_input,
