@@ -1,7 +1,7 @@
 {
     "name": "identifier-lookup",
-    "label": "NACC ID Lookup",
-    "description": "Gear to check for NACC ID for incoming data",
+    "label": "Identifier Lookup",
+    "description": "Gear to look up participant identifiers for incoming data",
     "version": "1.0.0",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",
