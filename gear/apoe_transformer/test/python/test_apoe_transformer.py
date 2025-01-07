@@ -42,11 +42,11 @@ class TestAPOETransformerCSVVisitor:
 
     def test_visit_header_invalid(self, visitor, list_handler):
         """Test an invalid header."""
-        assert not visitor.visit_header(['a1', 'a2'])
+        assert not visitor.visit_header(['a2'])
         assert not visitor.visit_header([])
 
         errors = list_handler.get_logs()
-        assert len(errors) == 6
+        assert len(errors) == 3
         for error in errors:
             assert error['message'].startswith('Missing required field(s)')
             assert error['message'].endswith('in the header')
@@ -67,6 +67,7 @@ class TestAPOETransformerCSVVisitor:
             assert len(visitor.transformed_data) == i + 1
             assert visitor.transformed_data[i] == {
                 'adcid': 0,
+                'ptid': 0,
                 'naccid': 0,
                 'apoe': value
             }
@@ -77,6 +78,7 @@ class TestAPOETransformerCSVVisitor:
         assert len(visitor.transformed_data) == 10
         assert visitor.transformed_data[9] == {
             'adcid': 3,
+            'ptid': 3,
             'naccid': 3,
             'apoe': 9
         }
@@ -98,6 +100,9 @@ class TestAPOETransformerCSVVisitor:
         assert len(visitor.transformed_data) == 1
         assert visitor.transformed_data[0] == {
             'adcid': 3,
+            'ptid': 3,
             'naccid': 3,
+            'extra1': 'hello',
+            'extra2': 'world',
             'apoe': 9
         }
