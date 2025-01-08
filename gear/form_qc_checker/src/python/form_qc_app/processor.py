@@ -116,16 +116,20 @@ class FileProcessor(ABC):
             module=self._module,
             input_data=input_record,
             naming_template=self._error_log_template)
-        if not error_log_name:
+
+        if not error_log_name or not update_error_log_and_qc_metadata(
+                error_log_name=error_log_name,
+                destination_prj=self._project,
+                gear_name=self._gear_name,
+                state='PASS' if qc_passed else 'FAIL',
+                errors=self._error_writer.errors(),
+                reset_metadata=reset_metadata):
+            log.warning('Failed to update error log for record %s, %s',
+                        input_record[self._pk_field],
+                        input_record[self._date_field])
             return False
 
-        return update_error_log_and_qc_metadata(
-            error_log_name=error_log_name,
-            destination_prj=self._project,
-            gear_name=self._gear_name,
-            state='PASS' if qc_passed else 'FAIL',
-            errors=self._error_writer.errors(),
-            reset_metadata=reset_metadata)
+        return True
 
 
 class JSONFileProcessor(FileProcessor):

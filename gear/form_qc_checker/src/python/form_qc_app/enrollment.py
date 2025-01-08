@@ -7,21 +7,17 @@
 # Need to change the way we load rule definitions if we
 # have to support optional forms check for CSV inputs.
 
-from csv import Dialect, DictReader, Error, Sniffer
-from typing import Any, Dict, List, Mapping, Optional, TextIO
+from csv import DictReader
+from typing import Any, Dict, List, Mapping, Optional
 
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from gear_execution.gear_execution import GearExecutionError, InputFileWrapper
-from inputs.csv_reader import CSVVisitor
+from inputs.csv_reader import CSVVisitor, read_csv
 from keys.keys import FieldNames
 from outputs.errors import (
     ListErrorWriter,
     empty_field_error,
-    empty_file_error,
-    malformed_file_error,
     missing_field_error,
-    missing_header_error,
-    partially_failed_file_error,
     unknown_field_error,
 )
 
@@ -36,76 +32,46 @@ class EnrollmentFormVisitor(CSVVisitor):
     Requires the input CSV has primary-key column and module column.
     """
 
-    def __init__(self, pk_field: str, date_field: str,
-                 error_writer: ListErrorWriter) -> None:
+    def __init__(self,
+                 required_fields: set[str],
+                 error_writer: ListErrorWriter,
+                 processor: 'CSVFileProcessor',
+                 validator: Optional[RecordValidator] = None) -> None:
         """
         Args:
-          pk_field: primary key field for the project/module
-          date_field: visit date field for the module
+          required_fields: list of required fields
           error_writer: the error output writer
         """
-        self.__pk_field = pk_field
-        self.__date_field = date_field
+        self.__required_fields = required_fields
         self.__error_writer = error_writer
-        self.__header: Optional[List[str]] = None
-        self.__reader: Optional[DictReader] = None
-        self.__dialect: Optional[Dialect] = None
-
-    @property
-    def header(self) -> Optional[List[str]]:
-        """Returns header columns list."""
-        return self.__header
-
-    @property
-    def reader(self) -> Optional[DictReader]:
-        """Returns reader."""
-        return self.__reader
-
-    @reader.setter
-    def reader(self, reader: DictReader):
-        """Set the reader.
-
-        Args:
-            reader: csv DictReader
-        """
-
-        self.__reader = reader
-
-    @property
-    def dialect(self) -> Optional[Dialect]:
-        """Returns dialect."""
-        return self.__dialect
-
-    @dialect.setter
-    def dialect(self, dialect: Dialect):
-        """Set the dialect.
-
-        Args:
-            dialect: csv Dialect
-        """
-
-        self.__dialect = dialect
+        self.__processor = processor
+        self.__validator = validator
 
     def visit_header(self, header: List[str]) -> bool:
-        """Validates the header fields in file. If the header doesn't have.
-
-        <primary key field>, <date field>, or formver, writes an error.
+        """Validates the header fields in file. If the header doesn't have
+        primary key field, date field, or formver, writes an error. Also, if
+        validation schema provided, rejects the file if there are any unknown
+        fields in the header.
 
         Args:
           header: the list of header names
 
         Returns:
-          True if required fields occur in the header, False otherwise
+          True if required fields found in the header, False otherwise
         """
 
-        expected_columns = {
-            self.__pk_field, self.__date_field, FieldNames.FORMVER
-        }
-        if not set(expected_columns).issubset(set(header)):
-            self.__error_writer.write(missing_field_error(expected_columns))
+        if not self.__required_fields.issubset(set(header)):
+            self.__error_writer.write(
+                missing_field_error(self.__required_fields))
             return False
 
-        self.__header = header
+        if self.__validator:
+            unknown_fields = set(header).difference(
+                set(self.__validator.get_validation_schema().keys()))
+
+            if unknown_fields:
+                self.__error_writer.write(unknown_field_error(unknown_fields))
+                return False
 
         return True
 
@@ -121,71 +87,35 @@ class EnrollmentFormVisitor(CSVVisitor):
         Returns:
           True if required fields occur in the row, False otherwise
         """
-        if not row.get(self.__pk_field):
-            self.__error_writer.write(
-                empty_field_error(self.__pk_field, line_num))
+
+        self.__error_writer.clear()
+
+        found_all = True
+        empty_fields = set()
+        for field in self.__required_fields:
+            if field not in row or not row[field]:
+                empty_fields.add(field)
+                found_all = False
+
+        if not found_all:
+            self.__error_writer.write(empty_field_error(
+                empty_fields, line_num))
+            self.__processor.update_visit_error_log(input_record=row,
+                                                    qc_passed=False)
             return False
 
-        if not row.get(FieldNames.FORMVER):
-            self.__error_writer.write(
-                empty_field_error(FieldNames.FORMVER, line_num))
-            return False
+        if self.__validator:
+            valid = self.__validator.process_data_record(record=row,
+                                                         line_number=line_num)
 
-        if not row.get(self.__date_field):
-            self.__error_writer.write(
-                empty_field_error(self.__date_field, line_num))
-            return False
+            if not valid:
+                self.__processor.update_visit_error_log(input_record=row,
+                                                        qc_passed=valid,
+                                                        reset_metadata=True)
+
+            return valid
 
         return True
-
-
-def read_first_data_row(
-        input_file: TextIO, error_writer: ListErrorWriter,
-        visitor: EnrollmentFormVisitor) -> Optional[Dict[str, Any]]:
-    """Reads CSV file and validates the header and first data row. Sets the CSV
-    dialect for the visitor by sniffing a data sample.
-
-    Args:
-        input_file: the input stream for the CSV file
-        error_writer: the ErrorWriter for the input file
-        visitor: the visitor
-
-    Returns:
-        Returns first data row as a dict if no errors, else None
-    """
-    sniffer = Sniffer()
-    csv_sample = input_file.read(1024)
-    if not csv_sample:
-        error_writer.write(empty_file_error())
-        return None
-
-    try:
-        if not sniffer.has_header(csv_sample):
-            error_writer.write(missing_header_error())
-            return None
-
-        detected_dialect = sniffer.sniff(csv_sample, delimiters=',')
-
-        input_file.seek(0)
-        reader = DictReader(input_file, dialect=detected_dialect)
-    except Error as error:
-        error_writer.write(malformed_file_error(str(error)))
-        return None
-
-    assert reader.fieldnames, "File has header, reader should have fieldnames"
-
-    # check for required fields in the header
-    if not visitor.visit_header(list(reader.fieldnames)):
-        return None
-
-    first_row = next(reader)
-    if not visitor.visit_row(first_row, 1):
-        return None
-
-    visitor.dialect = detected_dialect  # type: ignore
-    input_file.seek(0)
-
-    return first_row
 
 
 class CSVFileProcessor(FileProcessor):
@@ -204,6 +134,8 @@ class CSVFileProcessor(FileProcessor):
                          project=project,
                          error_writer=error_writer,
                          gear_name=gear_name)
+        self.__required_fields = {pk_field, date_field, FieldNames.FORMVER}
+        self.__input: Optional[InputFileWrapper] = None
 
     def validate_input(
             self, *,
@@ -213,28 +145,29 @@ class CSVFileProcessor(FileProcessor):
 
         Args:
             input_wrapper: Wrapper object for gear input file
-            project: Flywheel project container
 
         Returns:
             Dict[str, Any]: None if required info missing, else first row as dict
         """
 
-        enrl_visitor = EnrollmentFormVisitor(pk_field=self._pk_field,
-                                             date_field=self._date_field,
-                                             error_writer=self._error_writer)
-
+        self.__input = input_wrapper
         with open(input_wrapper.filepath, mode='r',
                   encoding='utf-8') as file_obj:
-            input_data = read_first_data_row(input_file=file_obj,
-                                             error_writer=self._error_writer,
-                                             visitor=enrl_visitor)
+            # Validate header and first row of the CSV file
+            result = read_csv(input_file=file_obj,
+                              error_writer=self._error_writer,
+                              visitor=EnrollmentFormVisitor(
+                                  required_fields=self.__required_fields,
+                                  error_writer=self._error_writer,
+                                  processor=self),
+                              limit=1)
 
-            if input_data:
-                csv_content = file_obj.readlines()
-                self.__csv_reader = DictReader(
-                    csv_content, dialect=enrl_visitor.dialect)  # type: ignore
+            if not result:
+                return None
 
-        return input_data
+            file_obj.seek(0)
+            reader = DictReader(file_obj)
+            return next(reader)
 
     def load_schema_definitions(
         self, rule_def_loader: DefinitionsLoader, input_data: Dict[str, Any]
@@ -256,8 +189,8 @@ class CSVFileProcessor(FileProcessor):
                                                        module=self._module)
 
     def process_input(self, *, validator: RecordValidator) -> bool:
-        """Reads the CSV file and apply NACC data quality checks to each record
-        Rejects the file if there are any unknown fields in the header.
+        """Reads the CSV file and apply NACC data quality checks to each
+        record.
 
         Args:
             validator: Helper class for validating a input record
@@ -269,30 +202,20 @@ class CSVFileProcessor(FileProcessor):
             GearExecutionError: if errors occurred while processing the input file
         """
 
-        if not self.__csv_reader or not self.__csv_reader.fieldnames:
-            raise GearExecutionError('Failed to initialize the CSV reader')
+        if not self.__input:
+            raise GearExecutionError('Missing input file')
 
-        unknown_fields = set(self.__csv_reader.fieldnames).difference(
-            set(validator.get_validation_schema().keys()))
+        enrl_visitor = EnrollmentFormVisitor(
+            required_fields=self.__required_fields,
+            error_writer=self._error_writer,
+            processor=self,
+            validator=validator)
 
-        if unknown_fields:
-            self._error_writer.write(unknown_field_error(unknown_fields))
-            return False
+        with open(self.__input.filepath, mode='r',
+                  encoding='utf-8') as csv_file:
+            success = read_csv(input_file=csv_file,
+                               error_writer=self._error_writer,
+                               visitor=enrl_visitor,
+                               clear_errors=True)
 
-        passed_all = True
-        for row in self.__csv_reader:
-            self._error_writer.clear()  # clear the errors for previous record
-            valid = validator.process_data_record(
-                record=row, line_number=self.__csv_reader.line_num - 1)
-            passed_all = passed_all and valid
-            if not self.update_visit_error_log(
-                    input_record=row, qc_passed=valid, reset_metadata=True):
-                raise GearExecutionError(
-                    'Failed to update error log for record '
-                    f'{row[self._pk_field]}, {row[self._date_field]}')
-
-        if not passed_all:
-            self._error_writer.clear()
-            self._error_writer.write(partially_failed_file_error())
-
-        return passed_all
+            return success
