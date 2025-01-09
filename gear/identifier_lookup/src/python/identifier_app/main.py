@@ -72,7 +72,7 @@ class NACCIDLookupVisitor(CSVVisitor):
             "visitdate": self.__date_field
         }
 
-    def __get_writer(self):
+    def __get_writer(self) -> CSVWriter:
         """Returns the writer for the CSV output.
 
         Manages whether writer has been initialized. Requires that

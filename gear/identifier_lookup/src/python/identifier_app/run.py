@@ -176,7 +176,7 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
             mode=self.__identifiers_mode)
 
         (basename, extension) = os.path.splitext(self.__file_input.filename)
-        filename = f"{basename}-identifier{extension}"
+        filename = f"{basename}-identifiers{extension}"
         input_path = Path(self.__file_input.filepath)
         with (open(input_path, mode='r', encoding='utf-8') as csv_file,
               context.open_output(filename, mode='w', encoding='utf-8') as

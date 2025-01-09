@@ -7,9 +7,14 @@
 # Need to change the way we load rule definitions if we
 # have to support optional forms check for CSV inputs.
 
+import logging
+import os
 from csv import DictReader
+from io import StringIO
 from typing import Any, Dict, List, Mapping, Optional
 
+from flywheel import FileSpec
+from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from gear_execution.gear_execution import GearExecutionError, InputFileWrapper
 from inputs.csv_reader import CSVVisitor, read_csv
@@ -20,10 +25,13 @@ from outputs.errors import (
     missing_field_error,
     unknown_field_error,
 )
+from outputs.outputs import CSVWriter
 
 from form_qc_app.definitions import DefinitionsLoader
 from form_qc_app.processor import FileProcessor
 from form_qc_app.validate import RecordValidator
+
+log = logging.getLogger(__name__)
 
 
 class EnrollmentFormVisitor(CSVVisitor):
@@ -36,16 +44,41 @@ class EnrollmentFormVisitor(CSVVisitor):
                  required_fields: set[str],
                  error_writer: ListErrorWriter,
                  processor: 'CSVFileProcessor',
-                 validator: Optional[RecordValidator] = None) -> None:
+                 validator: Optional[RecordValidator] = None,
+                 output_stream: Optional[StringIO] = None) -> None:
         """
+
         Args:
-          required_fields: list of required fields
-          error_writer: the error output writer
+            required_fields: list of required field
+            error_writer: error metadata writer
+            processor: file processor
+            validator (optional): helper for validating input records
+            output_stream (optional): output stream
         """
         self.__required_fields = required_fields
         self.__error_writer = error_writer
         self.__processor = processor
         self.__validator = validator
+        self.__output_stream = output_stream
+        self.__output_writer: Optional[CSVWriter] = None
+        self.__header: Optional[List[str]] = None
+        self.__valid_rows = 0
+
+    def __get_output_writer(self) -> CSVWriter:
+        """Returns the writer for the CSV output.
+
+        Manages whether writer has been initialized. Requires that
+        output stream is provided at initialization and header has been
+        set.
+        """
+
+        if not self.__output_writer:
+            assert self.__output_stream, 'Output stream must be provided'
+            assert self.__header, 'CSV header must be set before adding any data rows'
+            self.__output_writer = CSVWriter(stream=self.__output_stream,
+                                             fieldnames=self.__header)
+
+        return self.__output_writer
 
     def visit_header(self, header: List[str]) -> bool:
         """Validates the header fields in file. If the header doesn't have
@@ -72,6 +105,8 @@ class EnrollmentFormVisitor(CSVVisitor):
             if unknown_fields:
                 self.__error_writer.write(unknown_field_error(unknown_fields))
                 return False
+
+        self.__header = header
 
         return True
 
@@ -100,22 +135,29 @@ class EnrollmentFormVisitor(CSVVisitor):
         if not found_all:
             self.__error_writer.write(empty_field_error(
                 empty_fields, line_num))
-            self.__processor.update_visit_error_log(input_record=row,
-                                                    qc_passed=False)
+            if self.__validator:
+                self.__processor.update_visit_error_log(input_record=row,
+                                                        qc_passed=False)
             return False
 
+        valid = True
         if self.__validator:
             valid = self.__validator.process_data_record(record=row,
                                                          line_number=line_num)
+            self.__processor.update_visit_error_log(input_record=row,
+                                                    qc_passed=valid,
+                                                    reset_metadata=True)
 
-            if not valid:
-                self.__processor.update_visit_error_log(input_record=row,
-                                                        qc_passed=valid,
-                                                        reset_metadata=True)
+        if valid and self.__output_stream:
+            writer = self.__get_output_writer()
+            writer.write(row)
+            self.__valid_rows += 1
 
-            return valid
+        return valid
 
-        return True
+    def get_valid_record_count(self) -> int:
+        """Returns the number of rows that passed validation."""
+        return self.__valid_rows
 
 
 class CSVFileProcessor(FileProcessor):
@@ -205,11 +247,13 @@ class CSVFileProcessor(FileProcessor):
         if not self.__input:
             raise GearExecutionError('Missing input file')
 
+        out_stream = StringIO()
         enrl_visitor = EnrollmentFormVisitor(
             required_fields=self.__required_fields,
             error_writer=self._error_writer,
             processor=self,
-            validator=validator)
+            validator=validator,
+            output_stream=out_stream)
 
         with open(self.__input.filepath, mode='r',
                   encoding='utf-8') as csv_file:
@@ -217,5 +261,24 @@ class CSVFileProcessor(FileProcessor):
                                error_writer=self._error_writer,
                                visitor=enrl_visitor,
                                clear_errors=True)
+
+            # If only subset of records passed validation,
+            # write those to a separate output file and upload to Flywheel project
+            if not success and enrl_visitor.get_valid_record_count() > 0:
+                (basename, extension) = os.path.splitext(self.__input.filename)
+                out_filename = f"{basename}-provisioning{extension}"
+                file_spec = FileSpec(name=out_filename,
+                                     contents=out_stream.getvalue(),
+                                     content_type='text/csv')
+
+                try:
+                    self._project.upload_file(file_spec)
+                    log.info('Uploaded file %s to project %s/%s', out_filename,
+                             self._project.group, self._project.label)
+                except ApiException as error:
+                    raise GearExecutionError(
+                        f'Failed to upload file {out_filename} to '
+                        f'{self._project.group}/{self._project.label}: {error}'
+                    ) from error
 
             return success
