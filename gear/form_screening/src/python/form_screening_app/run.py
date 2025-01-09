@@ -1,4 +1,4 @@
-"""Entry script for prescreening."""
+"""Entry script for form_screening."""
 import logging
 from typing import List, Optional
 
@@ -14,13 +14,13 @@ from gear_execution.gear_execution import (
 from gear_execution.gear_trigger import GearInfo
 from inputs.parameter_store import ParameterStore
 
-from prescreening_app.main import run
+from form_screening_app.main import run
 
 log = logging.getLogger(__name__)
 
 
-class PrescreeningVisitor(GearExecutionEnvironment):
-    """Visitor for the Prescreening gear."""
+class FormScreeningVisitor(GearExecutionEnvironment):
+    """Visitor for the Form Screening gear."""
 
     def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
                  accepted_modules: List[str], tags_to_add: List[str],
@@ -37,7 +37,7 @@ class PrescreeningVisitor(GearExecutionEnvironment):
         cls,
         context: GearToolkitContext,
         parameter_store: Optional[ParameterStore] = None
-    ) -> 'PrescreeningVisitor':
+    ) -> 'FormScreeningVisitor':
         """Creates a gear execution object.
 
         Args:
@@ -72,7 +72,7 @@ class PrescreeningVisitor(GearExecutionEnvironment):
                 f'Error(s) in reading scheduler gear configs file - {config_file_path}'
             )
 
-        return PrescreeningVisitor(
+        return FormScreeningVisitor(
             client=client,
             file_input=file_input,  # type: ignore
             accepted_modules=[
@@ -91,12 +91,13 @@ class PrescreeningVisitor(GearExecutionEnvironment):
 
 
 def main():
-    """Main method for PrescreeningVisitor.
+    """Main method for FormScreeningVisitor.
 
     Prescreens the input file.
     """
 
-    GearEngine.create_with_parameter_store().run(gear_type=PrescreeningVisitor)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=FormScreeningVisitor)
 
 
 if __name__ == "__main__":

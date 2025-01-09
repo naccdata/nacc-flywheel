@@ -1,4 +1,4 @@
-"""Defines Prescreening."""
+"""Defines Form Screening."""
 import logging
 from typing import List
 
@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 def run(*, proxy: FlywheelProxy, file_input: InputFileWrapper,
         accepted_modules: List[str], tags_to_add: List[str],
         scheduler_gear: GearInfo) -> None:
-    """Runs the prescreening process. Checks that the file suffix matches any
+    """Runs the form_screening process. Checks that the file suffix matches any
     accepted modules; if so, tag the file with the specified tags, and run the
     scheduler gear if it's not already running, else report error.
 

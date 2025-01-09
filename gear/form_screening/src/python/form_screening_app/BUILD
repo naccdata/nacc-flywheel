@@ -1,3 +1,3 @@
-python_sources(name="prescreening_app", )
+python_sources(name="form_screening_app", )
 
 pex_binary(name="bin", entry_point="run.py")

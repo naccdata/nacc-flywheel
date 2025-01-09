@@ -1,6 +1,6 @@
 {
-    "name": "prescreening",
-    "label": "Prescreening",
+    "name": "form_screening",
+    "label": "Form Screening",
     "description": "Prescreens input files to queue for form-scheduler gear",
     "version": "0.0.3",
     "author": "NACC",
@@ -15,7 +15,7 @@
     "custom": {
         "gear-builder": {
             "category": "utility",
-            "image": "naccdata/prescreening:0.0.3"
+            "image": "naccdata/form_screening:0.0.3"
         },
         "flywheel": {
             "suite": "NACC Admin Gears",

@@ -1,4 +1,4 @@
-# Prescreening
+# Form Screening Gear
 
 Prescreens input files to queue for form-scheduler gear. Looks at the file's basename suffix, and passes it if matches any of the accepted modules (case-insensitive). It then checks if the scheduler gear is running and triggers it if there are none in the `running` or `pending` state.
 
@@ -7,7 +7,7 @@ Prescreens input files to queue for form-scheduler gear. Looks at the file's bas
 This gear takes two input files:
 
 1. The input file (typically expected to be a CSV but not required) to verify
-2. The scheduler gear config file - an example can be found in [gear/prescreening/data/form-scheduler-configs.json](../../gear/prescreening/data/form-scheduler-configs.json)
+2. The scheduler gear config file - an example can be found in [gear/form_screening/data/form-scheduler-configs.json](../../gear/form_screening/data/form-scheduler-configs.json)
 
 The gear also takes the following optional input parameters:
 
