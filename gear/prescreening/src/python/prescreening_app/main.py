@@ -17,8 +17,8 @@ def run(*, proxy: FlywheelProxy, file_input: InputFileWrapper,
         accepted_modules: List[str], tags_to_add: List[str],
         scheduler_gear: GearInfo) -> None:
     """Runs the prescreening process. Checks that the file suffix matches any
-    accepted modules; if so, tag the file with the specified tags, else report
-    error.
+    accepted modules; if so, tag the file with the specified tags, and run the
+    scheduler gear if it's not already running, else report error.
 
     Args:
         proxy: the proxy for the Flywheel instance
@@ -34,14 +34,13 @@ def run(*, proxy: FlywheelProxy, file_input: InputFileWrapper,
 
     if proxy.dry_run:
         log.info("DRY RUN: file passes prescreening, would have added" +
-                 f"{tags_to_add} and triggerd {scheduler_gear}")
-        return
-
-    # add the specified tag
-    log.info(f"Adding the following tags to file: {tags_to_add}")
-    file = proxy.get_file(file_input.file_id)
-    for tag in tags_to_add:
-        file.add_tag(tag)
+                 f"{tags_to_add}")
+    else:
+        # add the specified tag
+        log.info(f"Adding the following tags to file: {tags_to_add}")
+        file = proxy.get_file(file_input.file_id)
+        for tag in tags_to_add:
+            file.add_tag(tag)
 
     # check if the scheduler gear is pending/running
     project_id = file.parents.project
@@ -51,6 +50,10 @@ def run(*, proxy: FlywheelProxy, file_input: InputFileWrapper,
                                               states=states,
                                               project_id=project_id):
         log.info("Scheduler gear already running")
+        return
+
+    if proxy.dry_run:
+        log.info("DRY RUN: Would trigger scheduler gear")
         return
 
     # otherwise invoke the gear
