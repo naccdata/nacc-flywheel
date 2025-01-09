@@ -131,7 +131,10 @@ class NACCIDLookupVisitor(CSVVisitor):
         identifier = self.__identifiers.get(row[FieldNames.PTID])
         if not identifier:
             self.__error_writer.write(
-                identifier_error(line=line_num, value=row[FieldNames.PTID]))
+                identifier_error(
+                    line=line_num,
+                    value=row[FieldNames.PTID],
+                    message='No matching NACCID found for the given PTID'))
             self.__update_visit_error_log(input_record=row, qc_passed=False)
             return False
 
