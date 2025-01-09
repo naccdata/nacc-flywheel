@@ -236,9 +236,10 @@ class QCCoordinator():
                 raise GearExecutionError(
                     f'Failed to retrieve {filename} - {error}') from error
 
-            job_id = qc_gear_info.trigger_gear(proxy=self.__proxy,
-                                               inputs={"form_data_file": visit_file},
-                                               destination=destination)
+            job_id = qc_gear_info.trigger_gear(
+                proxy=self.__proxy,
+                inputs={"form_data_file": visit_file},
+                destination=destination)
             if job_id:
                 log.info('Gear %s queued for file %s - Job ID %s', gear_name,
                          filename, job_id)

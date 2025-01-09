@@ -22,11 +22,8 @@ log = logging.getLogger(__name__)
 class PrescreeningVisitor(GearExecutionEnvironment):
     """Visitor for the Prescreening gear."""
 
-    def __init__(self,
-                 client: ClientWrapper,
-                 file_input: InputFileWrapper,
-                 accepted_modules: List[str],
-                 tags_to_add: List[str],
+    def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
+                 accepted_modules: List[str], tags_to_add: List[str],
                  scheduler_gear: GearInfo):
         super().__init__(client=client)
 
@@ -56,12 +53,11 @@ class PrescreeningVisitor(GearExecutionEnvironment):
 
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
-        scheduler_gear = InputFileWrapper.create(input_name='input_file',
-                                             context=context)
+        config_file_path = context.get_input_path(
+            'scheduler_gear_configs_file')
 
         accepted_modules = context.config.get('accepted_modules', None)
         tags_to_add = context.config.get('tags_to_add', None)
-        config_file_path = context.config.get('scheduler_gear_configs_file', None)
 
         if not accepted_modules:
             raise GearExecutionError("No accepted modules provided")

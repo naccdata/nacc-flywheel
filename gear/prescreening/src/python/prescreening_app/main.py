@@ -1,8 +1,8 @@
 """Defines Prescreening."""
 import logging
-from flywheel.models.job_state import JobState
 from typing import List
 
+from flywheel.models.job_state import JobState  # type: ignore
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from gear_execution.gear_execution import (
     GearExecutionError,
@@ -12,11 +12,9 @@ from gear_execution.gear_trigger import GearInfo
 
 log = logging.getLogger(__name__)
 
-def run(*,
-        proxy: FlywheelProxy,
-        file_input: InputFileWrapper,
-        accepted_modules: List[str],
-        tags_to_add: List[str],
+
+def run(*, proxy: FlywheelProxy, file_input: InputFileWrapper,
+        accepted_modules: List[str], tags_to_add: List[str],
         scheduler_gear: GearInfo) -> None:
     """Runs the prescreening process. Checks that the file suffix matches any
     accepted modules; if so, tag the file with the specified tags, else report
@@ -46,7 +44,7 @@ def run(*,
         file.add_tag(tag)
 
     # check if the scheduler gear is pending/running
-    project_id = file.file_parents.project
+    project_id = file.parents.project
     states = [JobState.RUNNING, JobState.PENDING]
     log.info(f"Checking status of {scheduler_gear.gear_name}")
     if scheduler_gear.check_instance_by_state(proxy=proxy,
@@ -56,5 +54,5 @@ def run(*,
         return
 
     # otherwise invoke the gear
-    scheduler_gear.run(proxy=proxy,
-                       destination=proxy.get_project_by_id(project_id))
+    scheduler_gear.trigger_gear(
+        proxy=proxy, destination=proxy.get_project_by_id(project_id))
