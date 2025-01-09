@@ -11,6 +11,7 @@ from gear_execution.gear_execution import (
     GearExecutionError,
     InputFileWrapper,
 )
+from gear_execution.gear_trigger import GearInfo
 from inputs.parameter_store import ParameterStore
 
 from prescreening_app.main import run
@@ -26,13 +27,13 @@ class PrescreeningVisitor(GearExecutionEnvironment):
                  file_input: InputFileWrapper,
                  accepted_modules: List[str],
                  tags_to_add: List[str],
-                 local_run: bool = False):
+                 scheduler_gear: GearInfo):
         super().__init__(client=client)
 
         self.__file_input = file_input
         self.__accepted_modules = accepted_modules
         self.__tags_to_add = tags_to_add
-        self.__local_run = local_run
+        self.__scheduler_gear = scheduler_gear
 
     @classmethod
     def create(
@@ -55,14 +56,25 @@ class PrescreeningVisitor(GearExecutionEnvironment):
 
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
-        local_run = context.config.get('local_run', False)
+        scheduler_gear = InputFileWrapper.create(input_name='input_file',
+                                             context=context)
+
         accepted_modules = context.config.get('accepted_modules', None)
         tags_to_add = context.config.get('tags_to_add', None)
+        config_file_path = context.config.get('scheduler_gear_configs_file', None)
 
         if not accepted_modules:
             raise GearExecutionError("No accepted modules provided")
         if not tags_to_add:
             raise GearExecutionError("No tags to add provided")
+        if not config_file_path:
+            raise GearExecutionError("No scheduler gear config file specified")
+
+        scheduler_gear = GearInfo.load_from_file(config_file_path)
+        if not scheduler_gear:
+            raise GearExecutionError(
+                f'Error(s) in reading scheduler gear configs file - {config_file_path}'
+            )
 
         return PrescreeningVisitor(
             client=client,
@@ -71,7 +83,7 @@ class PrescreeningVisitor(GearExecutionEnvironment):
                 x.strip().lower() for x in accepted_modules.split(',')
             ],
             tags_to_add=[x.strip().lower() for x in tags_to_add.split(',')],
-            local_run=local_run)
+            scheduler_gear=scheduler_gear)
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the Prescreening app."""
@@ -79,7 +91,7 @@ class PrescreeningVisitor(GearExecutionEnvironment):
             file_input=self.__file_input,
             accepted_modules=self.__accepted_modules,
             tags_to_add=self.__tags_to_add,
-            local_run=self.__local_run)
+            scheduler_gear=self.__scheduler_gear)
 
 
 def main():

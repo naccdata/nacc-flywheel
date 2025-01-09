@@ -1,0 +1,8 @@
+{
+    "gear_name": "form-scheduler",
+    "configs": {
+        "prioritized_modules": "UDS",
+        "queue_tags": "queued",
+        "send_email": true
+    }
+}

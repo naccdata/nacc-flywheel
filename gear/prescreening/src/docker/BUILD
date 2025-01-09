@@ -6,4 +6,4 @@ docker_image(name="prescreening",
                  ":manifest",
                  "gear/prescreening/src/python/prescreening_app:bin"
              ],
-             image_tags=["0.1.0", "latest"])
+             image_tags=["0.0.3", "latest"])

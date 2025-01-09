@@ -2,6 +2,10 @@
 
 All notable changes to this gear are documented in this file.
 
+## 0.1.1 (Unreleased)
+
+* Updates to use common `gear_execution/gear_trigger` code for logic related to triggering gears
+
 ## 0.1.0
 * Update error reporting - move error metadata to visit error log files stored at project level.
   
