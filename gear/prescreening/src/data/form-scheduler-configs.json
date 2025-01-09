@@ -3,6 +3,8 @@
     "configs": {
         "prioritized_modules": "UDS",
         "queue_tags": "queued",
-        "send_email": true
+        "send_email": true,
+        "apikey_path_prefix": "/sandbox/flywheel/gearbot",
+        "dry_run": false
     }
 }

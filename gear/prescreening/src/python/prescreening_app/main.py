@@ -32,13 +32,13 @@ def run(*, proxy: FlywheelProxy, file_input: InputFileWrapper,
     if module.lower() not in accepted_modules:
         raise GearExecutionError(f"Unallowed module suffix: {module}")
 
+    file = proxy.get_file(file_input.file_id)
     if proxy.dry_run:
         log.info("DRY RUN: file passes prescreening, would have added" +
                  f"{tags_to_add}")
     else:
         # add the specified tag
         log.info(f"Adding the following tags to file: {tags_to_add}")
-        file = proxy.get_file(file_input.file_id)
         for tag in tags_to_add:
             file.add_tag(tag)
 
