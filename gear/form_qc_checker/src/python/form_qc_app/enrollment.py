@@ -18,7 +18,7 @@ from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from gear_execution.gear_execution import GearExecutionError, InputFileWrapper
 from inputs.csv_reader import CSVVisitor, read_csv
-from keys.keys import FieldNames
+from keys.keys import DefaultValues, FieldNames
 from outputs.errors import (
     ListErrorWriter,
     empty_field_error,
@@ -266,7 +266,7 @@ class CSVFileProcessor(FileProcessor):
             # write those to a separate output file and upload to Flywheel project
             if not success and enrl_visitor.get_valid_record_count() > 0:
                 (basename, extension) = os.path.splitext(self.__input.filename)
-                out_filename = f"{basename}-provisioning{extension}"
+                out_filename = f'{basename}_{DefaultValues.PROV_SUFFIX}{extension}'
                 file_spec = FileSpec(name=out_filename,
                                      contents=out_stream.getvalue(),
                                      content_type='text/csv')
