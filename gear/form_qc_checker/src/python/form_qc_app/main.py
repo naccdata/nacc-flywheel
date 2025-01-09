@@ -40,6 +40,7 @@ log = logging.getLogger(__name__)
 def update_input_file_qc_status(*,
                                 gear_context: GearToolkitContext,
                                 gear_name: str,
+                                input_wrapper: InputFileWrapper,
                                 file: FileEntry,
                                 qc_passed: bool,
                                 errors: Optional[List[Dict[str, Any]]] = None):
@@ -56,7 +57,7 @@ def update_input_file_qc_status(*,
 
     status_str = 'PASS' if qc_passed else 'FAIL'
 
-    gear_context.metadata.add_qc_result(file,
+    gear_context.metadata.add_qc_result(input_wrapper.file_input,
                                         name='validation',
                                         state=status_str,
                                         data=errors)
@@ -71,7 +72,8 @@ def update_input_file_qc_status(*,
         if pass_tag in file.tags:
             file.delete_tag(pass_tag)
 
-    file.add_tag(new_tag)
+    # file.add_tag(new_tag)
+    gear_context.metadata.add_file_tags(input_wrapper.file_input, tags=new_tag)
 
     log.info('QC check status for file %s : %s', file.name, status_str)
     return True
@@ -191,6 +193,7 @@ def run(  # noqa: C901
     if not input_data:
         update_input_file_qc_status(gear_context=gear_context,
                                     gear_name=gear_name,
+                                    input_wrapper=input_wrapper,
                                     file=file,
                                     qc_passed=False,
                                     errors=error_writer.errors())
@@ -231,6 +234,7 @@ def run(  # noqa: C901
 
     update_input_file_qc_status(gear_context=gear_context,
                                 gear_name=gear_name,
+                                input_wrapper=input_wrapper,
                                 file=file,
                                 qc_passed=valid,
                                 errors=error_writer.errors())
