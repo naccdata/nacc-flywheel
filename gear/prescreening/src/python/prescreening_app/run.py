@@ -18,8 +18,8 @@ from prescreening_app.main import run
 log = logging.getLogger(__name__)
 
 
-class PreScreeningVisitor(GearExecutionEnvironment):
-    """Visitor for the Pre-Screening gear."""
+class PrescreeningVisitor(GearExecutionEnvironment):
+    """Visitor for the Prescreening gear."""
 
     def __init__(self,
                  client: ClientWrapper,
@@ -39,7 +39,7 @@ class PreScreeningVisitor(GearExecutionEnvironment):
         cls,
         context: GearToolkitContext,
         parameter_store: Optional[ParameterStore] = None
-    ) -> 'PreScreeningVisitor':
+    ) -> 'PrescreeningVisitor':
         """Creates a gear execution object.
 
         Args:
@@ -64,7 +64,7 @@ class PreScreeningVisitor(GearExecutionEnvironment):
         if not tags_to_add:
             raise GearExecutionError("No tags to add provided")
 
-        return PreScreeningVisitor(
+        return PrescreeningVisitor(
             client=client,
             file_input=file_input,  # type: ignore
             accepted_modules=[
@@ -74,7 +74,7 @@ class PreScreeningVisitor(GearExecutionEnvironment):
             local_run=local_run)
 
     def run(self, context: GearToolkitContext) -> None:
-        """Runs the PreScreening app."""
+        """Runs the Prescreening app."""
         run(proxy=self.proxy,
             file_input=self.__file_input,
             accepted_modules=self.__accepted_modules,
@@ -83,12 +83,12 @@ class PreScreeningVisitor(GearExecutionEnvironment):
 
 
 def main():
-    """Main method for PreScreeningVisitor.
+    """Main method for PrescreeningVisitor.
 
     Prescreens the input file.
     """
 
-    GearEngine.create_with_parameter_store().run(gear_type=PreScreeningVisitor)
+    GearEngine.create_with_parameter_store().run(gear_type=PrescreeningVisitor)
 
 
 if __name__ == "__main__":

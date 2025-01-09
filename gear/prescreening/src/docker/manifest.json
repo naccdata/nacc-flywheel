@@ -1,7 +1,7 @@
 {
     "name": "prescreening",
-    "label": "Pre-Screening",
-    "description": "Pre-screens input files to queue for form-scheduler gear",
+    "label": "Prescreening",
+    "description": "Prescreens input files to queue for form-scheduler gear",
     "version": "0.1.0",
     "author": "NACC",
     "maintainer": "NACC <nacchelp@uw.edu>",

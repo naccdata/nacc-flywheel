@@ -1,4 +1,4 @@
-"""Defines Pre-Screening."""
+"""Defines Prescreening."""
 import logging
 from typing import List
 
@@ -17,7 +17,7 @@ def run(*,
         accepted_modules: List[str],
         tags_to_add: List[str],
         local_run: bool = False) -> None:
-    """Runs the PreScreening process. Checks that the file suffix matches any
+    """Runs the prescreening process. Checks that the file suffix matches any
     accepted modules; if so, tag the file with the specified tags, else report
     error.
 
@@ -26,7 +26,7 @@ def run(*,
         file_input: The InputFileWrapper representing the file to
             potentially queue
         accepted_modules: List of accepted modules (case-insensitive)
-        tags_to_add: List of tags to add if the file passes pre-screening
+        tags_to_add: List of tags to add if the file passes prescreening
         local_run: Whether or not this is a local run - if so will verify the
             file but won't push changes upstream
     """
