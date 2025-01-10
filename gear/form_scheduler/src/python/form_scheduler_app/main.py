@@ -5,12 +5,12 @@
    sorted by file timestamp
 2. Process the queues in a round robin
     a. Check whether there are any submission pipelines running/pending;
-       if so, wait for it to finish
-    b. If none found, send an email notification to the user(s) who uploaded
-       the original file(s) to let them know their file is in the queue
-    c. Pull the next CSV from the queue and trigger the submission pipeline
-    d. Remove the queue tags from the file
-    e. Move to next queue
+       if so, wait for them to finish
+    b. Pull the next CSV from the queue and trigger the submission pipeline
+    c. Remove the queue tags from the file
+    d. Wait for the triggered submission pipeline to finish
+    e. Send email to user that the submission pipeline is complete
+    f. Move to next queue
 3. Repeat 2) until all queues are empty
 4. Repeat from the beginning until there are no more files to be queued
 """
@@ -101,22 +101,9 @@ class FormSchedulerQueue:
             if ext not in ['.csv', '.json']:
                 continue
 
-            # add to queue and maybe send email
-            # TODO: These need to be set up in AWS
+            # add to queue
             self.__queue[module].append(file)
             num_files += 1
-            # if self.__email_client and file.origin.type == OriginType.USER:
-            #     owner = file.origin.id
-            #     template_data = QueueAlertTemplateModel(
-            #         project=project.label,
-            #         file=file.name,
-            #         email_address=owner)
-
-            #     self.__email_client.send(configuration_set_name='TODO',
-            #                              destination=DestinationModel(
-            #                                 to_addresses=owner),
-            #                              template='TODO',
-            #                              template_data=template_data)
 
         # sort each queue by last modified date
         for subqueue in self.__queue.values():
@@ -142,6 +129,27 @@ class FormSchedulerQueue:
             True if the queue is empty, False otherwise.
         """
         return all(not x for x in self.__queue.values())
+
+
+def wait_for_submission_pipeline(proxy: FlywheelProxy,
+                                 search_str: str) -> None:
+    """Wait for a submission pipeline to finish executing bfore continuing.
+
+    Args:
+        proxy: the proxy for the Flywheel instance
+        search_str: The search string to search for the submission pipeline
+    """
+    running = True
+    while running:
+        job = proxy.find_job(search_str)
+        if job:
+            log.info(f"A submission pipeline with id {job.id} is currently " +
+                     "running, waiting for completion")
+            # at least for now we don't really care about the state
+            # of other submission pipelines, we just wait for it to finish
+            JobPoll.poll_job_status(job)
+        else:
+            running = False
 
 
 def run(*, proxy: FlywheelProxy, queue: FormSchedulerQueue, project_id: str,
@@ -181,24 +189,14 @@ def run(*, proxy: FlywheelProxy, queue: FormSchedulerQueue, project_id: str,
             if not subqueue:
                 continue
 
-            # a. Check if any submission pipelines are running for this project
-            #    if one is found, wait for it to finish before continuing
-            running = True
-            while running:
-                job = proxy.find_job(search_str)
-                if job:
-                    log.info(
-                        f"A submission pipeline with id {job.id} is already " +
-                        "running, waiting for completion")
-                    # at least for now we don't really care about the state
-                    # of other submission pipelines, we just wait for it to finish
-                    JobPoll.poll_job_status(job)
-                else:
-                    running = False
+            # a. Check if any submission pipelines are already running for
+            #    this project if one is found, wait for it to finish before continuing
+            #    This should actually not happen as it would mean that this gear
+            #    instance is not the owner/trigger of this submission pipeline,
+            #    but left in as a safeguard
+            wait_for_submission_pipeline(proxy, search_str)
 
-            # b. Send email notification (TODO)
-
-            # c. Pull the next CSV from queue and trigger submission pipeline
+            # b. Pull the next CSV from queue and trigger submission pipeline
             #    Here's where it isn't actually parameterized - we assume that
             #    the first gear is the file-validator regardless, and passes
             #    the corresponding inputs + uses the default configuration
@@ -223,9 +221,16 @@ def run(*, proxy: FlywheelProxy, queue: FormSchedulerQueue, project_id: str,
                          gear_name=submission_pipeline[0],
                          inputs=inputs)
 
-            # clear queue tags
+            # c. clear queue tags
             for tag in queue.queue_tags:
                 file.delete_tag(tag)
+
+            # d. wait for the above submission pipeline to finish
+            wait_for_submission_pipeline(proxy, search_str)
+
+            # e. TODO: send email to user
+            # if file.origin.type == 'user':
+            #     send_email(file.origin.id)
 
         # 3. repeat until all queues empty
 

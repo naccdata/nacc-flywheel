@@ -68,7 +68,7 @@ def trigger_gear(proxy: FlywheelProxy, gear_name: str, **kwargs) -> str:
             analysis_label: The label of the analysis, if running an analysis gear
             tags: The list of tags to set for the job
     Returns:
-        The job or analysis ID
+        The job or analysis ID of the gear run
     """
     gear = None
     try:

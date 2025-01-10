@@ -7,10 +7,11 @@ Queues project files for the submission pipeline. Intended to be triggered by th
 1. Pulls the current list of project files with the specified queue tags and adds them to processing queues for each module sorted by file timestamp
 2. Process the queues in a round robin
     1. Check whether there are any submission pipelines running/pending; if so, wait for it to finish
-    2. If none found, send an email notification to the user(s) who uploaded the original file(s) to let them know their file is in the queue
-    3. Pull the next CSV from the queue and trigger the submission pipeline
-    4. Remove the queue tags from the file
-    5. Move to next queue
+    2. Pull the next CSV from the queue and trigger the submission pipeline
+    3. Remove the queue tags from the file
+    4. Wait for the triggered submission pipeline to finish
+    5. Send email to user that the submission pipeline is complete
+    6. Move to next queue
 3. Repeat 2) until all queues are empty
 4. Repeat from the beginning until there are no more files to be queued
 
