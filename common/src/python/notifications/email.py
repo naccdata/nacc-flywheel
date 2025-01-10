@@ -72,6 +72,7 @@ class EmailClient:
         """Sends the message to the destination from the source address.
 
         Args:
+          configuration_set_name: name of the configuration set
           destination: the DestinationModel with email addresses
           template: the name of the SES template
           template_data: the MessageContentModel with message content
