@@ -4,7 +4,8 @@ All notable changes to this gear are documented in this file.
 
 ## 0.1.1 (Unreleased)
 
-* Updates to use common `gear_execution/gear_trigger` code for logic related to triggering gears
+* Refactors to move logic related to triggering gears to `common/gear_execution/gear_trigger` and pull from there
+* Refactors to move logic related to polling jobs to `common/jobs/jobs` and pull from there
 
 ## 0.1.0
 * Update error reporting - move error metadata to visit error log files stored at project level.

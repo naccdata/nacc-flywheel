@@ -36,7 +36,7 @@
         "submission_pipeline": {
             "description": "Comma-deliminated list of gears representing a submission pipeline",
             "type": "string",
-            "default": "TODO,SET,GEAR,ORDER"
+            "default": "file-validator,identifier-lookup,form-transformer,form-qc-coordinator,form-qc-checker"
         },
         "accepted_modules": {
             "description": "Comma-deliminated list of accepted modules. There will be one queue for each",

@@ -2,9 +2,8 @@
 import json
 import logging
 from json.decoder import JSONDecodeError
-from typing import Any, List, Optional
+from typing import Any, Optional
 
-from flywheel.models.job import Job
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -55,46 +54,27 @@ class GearInfo(BaseModel):
 
         return gear_configs
 
-    def check_instance_by_state(
-            self,
-            proxy: FlywheelProxy,
-            states: List[str],
-            project_id: Optional[str] = None) -> Optional[Job]:
-        """Check if an instance of this gear matches the given state.
 
-        Args:
-            proxy: the proxy for the Flywheel instance
-            states: List of states to check for
-            project_id: The project ID to check for gear instances;
-                if not specified, will match any gear instance in any project
+def trigger_gear(proxy: FlywheelProxy,
+                 gear_name: str,
+                 **kwargs) -> str:
+    """Trigger the gear.
 
-        Returns:
-            The Flywheel Job if found, None otherwise
-        """
-        search_str = f'gear_info.name=|{[self.gear_name]},state=|{states}'
-        if project_id:
-            search_str = f'parents.project={project_id},{search_str}'
+    Args:
+        proxy: the proxy for the Flywheel instance
+        gear_name: the name of the gear to trigger
+        kwargs: keyword arguments to pass to gear.run, which include:
+            configs: the configs to pass to the gear
+            inputs: The inputs to pass to the gear
+            destination: The destination container
+            analysis_label: The label of the analysis, if running an analysis gear
+            tags: The list of tags to set for the job
+    Returns:
+        The job or analysis ID
+    """
+    try:
+        gear = proxy.lookup_gear(gear_name)
+    except ApiException as error:
+        raise GearExecutionError(error) from error
 
-        log.info(
-            f"Checking job state with the following search str: {search_str}")
-        return proxy.find_job(search_str)
-
-    def trigger_gear(self, proxy: FlywheelProxy, **kwargs) -> str:
-        """Trigger the gear.
-
-        Args:
-            proxy: the proxy for the Flywheel instance
-            kwargs: keyword arguments to pass to gear.run, which include:
-                inputs: The inputs to pass to the gear
-                destination: The destination container
-                analysis_label: The label of the analysis, if running an analysis gear
-                tags: The list of tags to set for the job
-        Returns:
-            The job or analysis ID
-        """
-        try:
-            gear = proxy.lookup_gear(self.gear_name)
-        except ApiException as error:
-            raise GearExecutionError(error) from error
-
-        return gear.run(config=self.configs.model_dump(), **kwargs)
+    return gear.run(**kwargs)

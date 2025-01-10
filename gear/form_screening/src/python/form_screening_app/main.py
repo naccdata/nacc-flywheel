@@ -1,16 +1,43 @@
 """Defines Form Screening."""
 import logging
-from typing import List
+from typing import List, Optional
 
+from flywheel.models.job import Job
 from flywheel.models.job_state import JobState  # type: ignore
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from gear_execution.gear_execution import (
     GearExecutionError,
     InputFileWrapper,
 )
-from gear_execution.gear_trigger import GearInfo
+from gear_execution.gear_trigger import GearInfo, trigger_gear
 
 log = logging.getLogger(__name__)
+
+
+def check_instance_by_state(
+        gear_name: str,
+        proxy: FlywheelProxy,
+        states: List[str],
+        project_id: Optional[str] = None) -> Optional[Job]:
+    """Check if an instance of the gear matches the given state.
+
+    Args:
+        gear_name: the gear name
+        proxy: the proxy for the Flywheel instance
+        states: List of states to check for
+        project_id: The project ID to check for gear instances;
+            if not specified, will match any gear instance in any project
+
+    Returns:
+        The Flywheel Job if found, None otherwise
+    """
+    search_str = f'gear_info.name=|{[gear_name]},state=|{states}'
+    if project_id:
+        search_str = f'parents.project={project_id},{search_str}'
+
+    log.info(
+        f"Checking job state with the following search str: {search_str}")
+    return proxy.find_job(search_str)
 
 
 def run(*, proxy: FlywheelProxy, file_input: InputFileWrapper,
@@ -46,9 +73,10 @@ def run(*, proxy: FlywheelProxy, file_input: InputFileWrapper,
     project_id = file.parents.project
     states = [JobState.RUNNING, JobState.PENDING]
     log.info(f"Checking status of {scheduler_gear.gear_name}")
-    if scheduler_gear.check_instance_by_state(proxy=proxy,
-                                              states=states,
-                                              project_id=project_id):
+    if check_instance_by_state(gear_name=scheduler_gear.gear_name,
+                               proxy=proxy,
+                               states=states,
+                               project_id=project_id):
         log.info("Scheduler gear already running")
         return
 
@@ -57,5 +85,7 @@ def run(*, proxy: FlywheelProxy, file_input: InputFileWrapper,
         return
 
     # otherwise invoke the gear
-    scheduler_gear.trigger_gear(
-        proxy=proxy, destination=proxy.get_project_by_id(project_id))
+    trigger_gear(proxy=proxy,
+                 gear_name=scheduler_gear.gear_name,
+                 config=scheduler_gear.model_dump(),
+                 destination=proxy.get_project_by_id(project_id))

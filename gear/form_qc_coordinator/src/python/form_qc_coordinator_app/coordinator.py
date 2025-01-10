@@ -1,19 +1,18 @@
 """QC checks coordination module."""
 
 import logging
-import time
 from collections import deque
 from typing import Dict, List, Optional
 
 from flywheel import FileEntry
-from flywheel.models.job import Job
 from flywheel.rest import ApiException
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy, ProjectAdaptor
 from flywheel_adaptor.subject_adaptor import SubjectAdaptor, VisitInfo
 from flywheel_gear_toolkit import GearToolkitContext
 from flywheel_gear_toolkit.utils.metadata import Metadata, create_qc_result_dict
 from gear_execution.gear_execution import GearExecutionError
-from gear_execution.gear_trigger import GearConfigs, GearInfo
+from gear_execution.gear_trigger import GearConfigs, GearInfo, trigger_gear
+from jobs.job_poll import JobPoll
 from keys.keys import FieldNames
 from outputs.errors import (
     FileError,
@@ -62,58 +61,6 @@ class QCCoordinator():
         self.__module = module
         self.__proxy = proxy
         self.__metadata = Metadata(context=gear_context)
-
-    def poll_job_status(self, job: Job) -> str:
-        """Check for the completion status of a gear job.
-
-        Args:
-            job: Flywheel Job object
-
-        Returns:
-            str: job completion status
-        """
-
-        while job.state in ['pending', 'running']:
-            time.sleep(30)
-            job = job.reload()
-
-        if job.state == 'failed':
-            time.sleep(5)  # wait to see if the job gets retried
-            job = job.reload()
-
-        log.info('Job %s finished with status: %s', job.id, job.state)
-
-        return job.state
-
-    def is_job_complete(self, job_id: str) -> bool:
-        """Checks the status of the given job.
-
-        Args:
-            job_id: Flywheel job ID
-
-        Returns:
-            bool: True if job successfully complete, else False
-        """
-
-        job = self.__proxy.get_job_by_id(job_id)
-        if not job:
-            log.error('Cannot find a job with ID %s', job_id)
-            return False
-
-        status = self.poll_job_status(job)
-        max_retries = 3  # maximum number of retries in Flywheel
-        retries = 1
-        while status == 'retried' and retries <= max_retries:
-            new_job = self.__proxy.find_job(f'previous_job_id="{job_id}"')
-            if not new_job:
-                log.error('Cannot find a retried job with previous_job_id=%s',
-                          job_id)
-                break
-            job_id = new_job.id
-            retries += 1
-            status = self.poll_job_status(new_job)
-
-        return (status == 'complete')
 
     def passed_qc_checks(self, visit_file: FileEntry, gear_name: str) -> bool:
         """Check the validation status for the specified visit for the
@@ -236,8 +183,10 @@ class QCCoordinator():
                 raise GearExecutionError(
                     f'Failed to retrieve {filename} - {error}') from error
 
-            job_id = qc_gear_info.trigger_gear(
+            job_id = trigger_gear(
                 proxy=self.__proxy,
+                gear_name=gear_name,
+                config=qc_gear_info.model_dump(),
                 inputs={"form_data_file": visit_file},
                 destination=destination)
             if job_id:
@@ -248,7 +197,7 @@ class QCCoordinator():
                     f'Failed to trigger gear {gear_name} on file {filename}')
 
             # If QC gear did not complete, stop evaluating any subsequent visits
-            if not self.is_job_complete(job_id):
+            if not JobPoll.is_job_complete(self.__proxy, job_id):
                 self.update_last_failed_visit(file_id=file_id,
                                               filename=filename,
                                               visitdate=visitdate)

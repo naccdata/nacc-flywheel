@@ -65,6 +65,10 @@ class FormSchedulerVisitor(GearExecutionEnvironment):
         if not queue_tags:
             raise GearExecutionError("No queue tags to search for provided")
 
+        if submission_pipeline[0] != 'file-validator':
+            raise GearExecutionError("First gear in submission pipeline must be "
+                                     + "the file validator")
+
         # figure out the module order based on accepted and prioritized modules
         prioritized_modules = prioritized_modules if prioritized_modules else []
         if not set(prioritized_modules).issubset(accepted_modules):
@@ -72,7 +76,8 @@ class FormSchedulerVisitor(GearExecutionEnvironment):
                                      + "accepted_modules")
 
         module_order = prioritized_modules.extend(
-            [x for x in accepted_modules if x not in prioritized_modules])
+            [x for x in accepted_modules.lower()
+             if x not in prioritized_modules.lower()])
 
         return FormSchedulerVisitor(
             client=client,
@@ -94,12 +99,12 @@ class FormSchedulerVisitor(GearExecutionEnvironment):
             raise GearExecutionError("Destination container must be a project")
 
         queue = FormSchedulerQueue(proxy=self.proxy,
-                                   project_id=dest_container.id,
                                    module_order=self.__module_order,
                                    queue_tags=self.__queue_tags,
                                    source_email=self.__source_email)
         run(proxy=self.proxy,
             queue=queue,
+            project_id=dest_container.id,
             submission_pipeline=self.__submission_pipeline)
 
 
