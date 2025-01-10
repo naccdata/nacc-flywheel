@@ -56,8 +56,8 @@
             "type": "string",
             "default": "ENROLL,UDS,FTLD,LBD"
         },
-        "tags_to_add": {
-            "description": "Comma-deliminated list of tags to add",
+        "queue_tags": {
+            "description": "Comma-deliminated list of queue tags to add",
             "type": "string",
             "default": "queued"
         },

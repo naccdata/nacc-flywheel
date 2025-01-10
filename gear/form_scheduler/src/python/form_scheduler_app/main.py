@@ -20,7 +20,6 @@ import re
 from typing import Dict, List, Optional, Tuple
 
 from flywheel.models.file_output import FileOutput  # type: ignore
-from flywheel.models.job_state import JobState  # type: ignore
 from flywheel.models.project_output import ProjectOutput  # type: ignore
 
 #from flywheel.models.origin_type import OriginType
@@ -64,14 +63,14 @@ class FormSchedulerQueue:
         self.__proxy = proxy
         self.__module_order = module_order
         self.__index = -1
-        self.__queue_tags = set(queue_tags)  # make set for comparison later
+        self.queue_tags = set(queue_tags)  # make set for comparison later
 
         # if sending emails, set up client
         self.__email_client = EmailClient(client=create_ses_client(),
                                           source=source_email) \
             if source_email else None
 
-        self.queue: Dict[str, List[FileOutput]] = {
+        self.__queue: Dict[str, List[FileOutput]] = {
             k: []
             for k in self.__module_order
         }
@@ -84,10 +83,8 @@ class FormSchedulerQueue:
         Returns:
             The number of files added to the queue
         """
-        # force a reload
-        project.reload()
         files = [
-            x for x in project.files if self.__queue_tags.issubset(set(x.tags))
+            x for x in project.files if self.queue_tags.issubset(set(x.tags))
         ]
         num_files = 0
 
@@ -107,7 +104,7 @@ class FormSchedulerQueue:
 
             # add to queue and maybe send email
             # TODO: These need to be set up in AWS
-            self.queue[module].append(file)
+            self.__queue[module].append(file)
             num_files += 1
             # if self.__email_client and file.origin.type == OriginType.USER:
             #     owner = file.origin.id
@@ -123,7 +120,7 @@ class FormSchedulerQueue:
             #                              template_data=template_data)
 
         # sort each queue by last modified date
-        for subqueue in self.queue.values():
+        for subqueue in self.__queue.values():
             subqueue.sort(key=lambda file: file.modified)
 
         return num_files
@@ -135,13 +132,9 @@ class FormSchedulerQueue:
             Tuple with the module name and its corresponding
             queue to be processed.
         """
-        if self.__index + 1 >= len(self.__module_order):
-            self.__index = 0
-        else:
-            self.__index += 1
-
+        self.__index = (self.__index + 1) % len(self.__module_order)
         module = self.__module_order[self.__index]
-        return module, self.queue[module]
+        return module, self.__queue[module]
 
     def empty(self) -> bool:
         """Returns whether or not the queue is empty.
@@ -149,7 +142,7 @@ class FormSchedulerQueue:
         Returns:
             True if the queue is empty, False otherwise.
         """
-        return all(not x for x in self.queue.values())
+        return all(not x for x in self.__queue.values())
 
 
 def run(*, proxy: FlywheelProxy, queue: FormSchedulerQueue, project_id: str,
@@ -168,15 +161,17 @@ def run(*, proxy: FlywheelProxy, queue: FormSchedulerQueue, project_id: str,
         raise GearExecutionError(f"Cannot find project with ID {project_id}")
 
     # search string to use for looking for running submission pipelines
-    search_str = f'parents.project={project_id},' \
-        + f'gear_info.name=|{submission_pipeline},' \
-        + f'state=|{[JobState.PENDING, JobState.RUNNING]}'
-
+    search_str = JobPoll.generate_search_string(
+        project_ids_list=[project_id],
+        gears_list=submission_pipeline,
+        states_list=['running', 'pending'])
     log.info("Starting Form Scheduler queue")
 
     # 1. Pull the current list of files
     num_files = -1
     while num_files != 0:
+        # force a project reload with each outer loop
+        project = project.reload()
         num_files = queue.add_files(project)
         log.info(f"Pulled {num_files} queued files, beginning queue process")
 
@@ -193,6 +188,9 @@ def run(*, proxy: FlywheelProxy, queue: FormSchedulerQueue, project_id: str,
             while running:
                 job = proxy.find_job(search_str)
                 if job:
+                    log.info(
+                        f"A submission pipeline with id {job.id} is already " +
+                        "running, waiting for completion")
                     # at least for now we don't really care about the state
                     # of other submission pipelines, we just wait for it to finish
                     JobPoll.poll_job_status(job)
@@ -202,22 +200,36 @@ def run(*, proxy: FlywheelProxy, queue: FormSchedulerQueue, project_id: str,
             # b. Send email notification (TODO)
 
             # c. Pull the next CSV from queue and trigger submission pipeline
-            #    Here's where it isn't actually parameterized - it is assumed that
+            #    Here's where it isn't actually parameterized - we assume that
             #    the first gear is the file-validator regardless, and passes
             #    the corresponding inputs + uses the default configuration
             #    If the first gear changes and has different inputs/needs updated
             #    configurations, this may break as a result and will need to be updated
             #    Maybe we should check that the first gear is always this?
+            file = subqueue.pop(0)
+            log.info(
+                f"Kicking off {submission_pipeline[0]} for {file.name}, " +
+                f"module {module}")
+
+            validation_schema = project.get_file(f'{module}-schema.json')
+            if not validation_schema:
+                raise GearExecutionError(
+                    f"Missing validation schema for {module}")
+
             inputs = {
-                "input_file": subqueue.pop(0),
-                "validation_schema": project.get_file(f'{module}-schema.json')
+                "input_file": file,
+                "validation_schema": validation_schema
             }
             trigger_gear(proxy=proxy,
                          gear_name=submission_pipeline[0],
                          inputs=inputs)
 
+            # clear queue tags
+            for tag in queue.queue_tags:
+                file.delete_tag(tag)
+
         # 3. repeat until all queues empty
 
     # 4. Repeat from beginning (pulling files) until no more files are found
 
-    log.info("No matter files to process, exiting Form Scheduler gear")
+    log.info("No more queued files to process, exiting Form Scheduler gear")

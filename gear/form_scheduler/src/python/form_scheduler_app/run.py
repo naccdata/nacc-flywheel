@@ -12,6 +12,7 @@ from gear_execution.gear_execution import (
     GearExecutionError,
 )
 from inputs.parameter_store import ParameterStore
+from utils.utils import parse_string_to_list
 
 from form_scheduler_app.main import FormSchedulerQueue, run
 
@@ -53,10 +54,15 @@ class FormSchedulerVisitor(GearExecutionEnvironment):
         client = GearBotClient.create(context=context,
                                       parameter_store=parameter_store)
 
-        submission_pipeline = context.config.get('submission_pipeline', None)
-        accepted_modules = context.config.get('accepted_modules', None)
-        prioritized_modules = context.config.get('prioritized_modules', None)
-        queue_tags = context.config.get('queue_tags', None)
+        submission_pipeline = parse_string_to_list(
+            context.config.get('submission_pipeline', None))
+        accepted_modules = parse_string_to_list(
+            context.config.get('accepted_modules', None))
+        prioritized_modules = parse_string_to_list(
+            context.config.get('prioritized_modules', None))
+        queue_tags = parse_string_to_list(context.config.get(
+            'queue_tags', None),
+                                          to_lower=False)
         source_email = context.config.get('source_email', None)
 
         if not submission_pipeline:
@@ -66,30 +72,24 @@ class FormSchedulerVisitor(GearExecutionEnvironment):
         if not queue_tags:
             raise GearExecutionError("No queue tags to search for provided")
 
+        # figure out the module order based on accepted and prioritized modules
+        if not set(prioritized_modules).issubset(accepted_modules):
+            raise GearExecutionError(
+                "prioritized_modules is not a subset of " + "accepted_modules")
+
+        prioritized_modules.extend(
+            [x for x in accepted_modules if x not in prioritized_modules])
+
         if submission_pipeline[0] != 'file-validator':
             raise GearExecutionError(
                 "First gear in submission pipeline must be " +
                 "the file validator")
 
-        # figure out the module order based on accepted and prioritized modules
-        prioritized_modules = prioritized_modules if prioritized_modules else []
-        if not set(prioritized_modules).issubset(accepted_modules):
-            raise GearExecutionError(
-                "prioritized_modules is not a subset of " + "accepted_modules")
-
-        module_order = prioritized_modules.extend([
-            x for x in accepted_modules.lower()
-            if x not in prioritized_modules.lower()
-        ])
-
-        return FormSchedulerVisitor(
-            client=client,
-            submission_pipeline=[
-                x.strip().lower() for x in submission_pipeline.split(',')
-            ],
-            module_order=module_order,
-            queue_tags=[x.strip().lower() for x in queue_tags.split(',')],
-            source_email=source_email)
+        return FormSchedulerVisitor(client=client,
+                                    submission_pipeline=submission_pipeline,
+                                    module_order=prioritized_modules,
+                                    queue_tags=queue_tags,
+                                    source_email=source_email)
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the Form Scheduler app."""

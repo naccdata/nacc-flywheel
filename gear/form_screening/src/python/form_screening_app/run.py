@@ -13,6 +13,7 @@ from gear_execution.gear_execution import (
 )
 from gear_execution.gear_trigger import GearInfo
 from inputs.parameter_store import ParameterStore
+from utils.utils import parse_string_to_list
 
 from form_screening_app.main import run
 
@@ -23,13 +24,13 @@ class FormScreeningVisitor(GearExecutionEnvironment):
     """Visitor for the Form Screening gear."""
 
     def __init__(self, client: ClientWrapper, file_input: InputFileWrapper,
-                 accepted_modules: List[str], tags_to_add: List[str],
+                 accepted_modules: List[str], queue_tags: List[str],
                  scheduler_gear: GearInfo):
         super().__init__(client=client)
 
         self.__file_input = file_input
         self.__accepted_modules = accepted_modules
-        self.__tags_to_add = tags_to_add
+        self.__queue_tags = queue_tags
         self.__scheduler_gear = scheduler_gear
 
     @classmethod
@@ -56,12 +57,15 @@ class FormScreeningVisitor(GearExecutionEnvironment):
         config_file_path = context.get_input_path(
             'scheduler_gear_configs_file')
 
-        accepted_modules = context.config.get('accepted_modules', None)
-        tags_to_add = context.config.get('tags_to_add', None)
+        accepted_modules = parse_string_to_list(
+            context.config.get('accepted_modules', None))
+        queue_tags = parse_string_to_list(context.config.get(
+            'queue_tags', None),
+                                          to_lower=False)
 
         if not accepted_modules:
             raise GearExecutionError("No accepted modules provided")
-        if not tags_to_add:
+        if not queue_tags:
             raise GearExecutionError("No tags to add provided")
         if not config_file_path:
             raise GearExecutionError("No scheduler gear config file specified")
@@ -75,10 +79,8 @@ class FormScreeningVisitor(GearExecutionEnvironment):
         return FormScreeningVisitor(
             client=client,
             file_input=file_input,  # type: ignore
-            accepted_modules=[
-                x.strip().lower() for x in accepted_modules.split(',')
-            ],
-            tags_to_add=[x.strip().lower() for x in tags_to_add.split(',')],
+            accepted_modules=accepted_modules,
+            queue_tags=queue_tags,
             scheduler_gear=scheduler_gear)
 
     def run(self, context: GearToolkitContext) -> None:
@@ -86,7 +88,7 @@ class FormScreeningVisitor(GearExecutionEnvironment):
         run(proxy=self.proxy,
             file_input=self.__file_input,
             accepted_modules=self.__accepted_modules,
-            tags_to_add=self.__tags_to_add,
+            queue_tags=self.__queue_tags,
             scheduler_gear=self.__scheduler_gear)
 
 

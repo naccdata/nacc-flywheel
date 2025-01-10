@@ -185,7 +185,7 @@ class QCCoordinator():
 
             job_id = trigger_gear(proxy=self.__proxy,
                                   gear_name=gear_name,
-                                  config=qc_gear_info.model_dump(),
+                                  config=qc_gear_info.configs.model_dump(),
                                   inputs={"form_data_file": visit_file},
                                   destination=destination)
             if job_id:

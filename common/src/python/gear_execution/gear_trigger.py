@@ -70,9 +70,13 @@ def trigger_gear(proxy: FlywheelProxy, gear_name: str, **kwargs) -> str:
     Returns:
         The job or analysis ID
     """
+    gear = None
     try:
         gear = proxy.lookup_gear(gear_name)
     except ApiException as error:
         raise GearExecutionError(error) from error
+
+    if not gear:
+        raise GearExecutionError(f"Failed to find gear: {gear_name}")
 
     return gear.run(**kwargs)
