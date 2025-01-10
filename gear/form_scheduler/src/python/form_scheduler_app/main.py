@@ -6,8 +6,8 @@
 2. Process the queues in a round robin
     a. Check whether there are any submission pipelines running/pending;
        if so, wait for them to finish
-    b. Pull the next CSV from the queue and trigger the submission pipeline
-    c. Remove the queue tags from the file
+    b. Pull the next CSV from the queue and clear queue tags
+    c. Trigger the submission pipeline
     d. Wait for the triggered submission pipeline to finish
     e. Send email to user that the submission pipeline is complete
     f. Move to next queue
@@ -102,14 +102,23 @@ def run(*,
             #    but left in as a safeguard
             wait_for_submission_pipeline(proxy, search_str)
 
-            # b. Pull the next CSV from queue and trigger submission pipeline
+            # b. Pull the next CSV from queue and clear the queue tags
+            file = subqueue.pop(0)
+            for tag in queue.queue_tags:
+                file.delete_tag(tag)
+
+            # need to reload else the next gear may add the same queue tags back in
+            # causing an infinite loop
+            file = file.reload()
+
+            # c. Trigger the submission pipeline.
             #    Here's where it isn't actually parameterized - we assume that
             #    the first gear is the file-validator regardless, and passes
             #    the corresponding inputs + uses the default configuration
             #    If the first gear changes and has different inputs/needs updated
             #    configurations, this may break as a result and will need to be updated
             #    Maybe we should check that the first gear is always the file-validator?
-            file = subqueue.pop(0)
+
             log.info(
                 f"Kicking off {submission_pipeline[0]} for {file.name}, " +
                 f"module {module}")
@@ -127,10 +136,6 @@ def run(*,
                          gear_name=submission_pipeline[0],
                          inputs=inputs)
 
-            # c. clear queue tags
-            for tag in queue.queue_tags:
-                file.delete_tag(tag)
-
             # d. wait for the above submission pipeline to finish
             wait_for_submission_pipeline(proxy, search_str)
 
@@ -139,7 +144,6 @@ def run(*,
             if email_client and file.origin.type == 'user':
                 send_email(email_client=email_client,
                            target_email=file.origin.id,
-                           project_label=project.label,
                            file_name=file.name,
                            portal_url=portal_url)  # type: ignore
 

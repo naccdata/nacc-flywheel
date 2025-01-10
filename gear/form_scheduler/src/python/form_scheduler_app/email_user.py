@@ -9,26 +9,22 @@ from notifications.email import (
 
 class SubmissionCompleteTemplateModel(BaseTemplateModel):
     """Submission complete template model."""
-    project_label: str
     file_name: str
     portal_url: str
 
 
 def send_email(email_client: EmailClient, target_email: str,
-               project_label: str, file_name: str,
-               portal_url: URLParameter) -> None:  # type: ignore
+               file_name: str, portal_url: URLParameter) -> None:  # type: ignore
     """Sends an email notifying user that their submission pipeline has
     completed.
 
     Args:
         email_client: EmailClient to send emails from
         target_email: Target email to send to
-        project_label: Project the file was uploaded to
         file_name: Name of the file
         portal_url: The portal URL
     """
     template_data = SubmissionCompleteTemplateModel(
-        project_label=project_label,
         file_name=file_name,
         email_address=target_email,
         portal_url=portal_url['url'])
