@@ -4,7 +4,7 @@
         "submission_pipeline": "file-validator,identifier-lookup,form-transformer,form-qc-coordinator,form-qc-checker",
         "accepted_modules": "ENROLL,UDS,FTLD,LBD",
         "prioritized_modules": "UDS",
-        "queue_tags": "adcid-999",
+        "queue_tags": "queued",
         "source_email": "",
         "apikey_path_prefix": "/sandbox/flywheel/gearbot",
         "dry_run": false
