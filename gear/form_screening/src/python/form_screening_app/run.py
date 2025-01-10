@@ -13,6 +13,7 @@ from gear_execution.gear_execution import (
 )
 from gear_execution.gear_trigger import GearInfo
 from inputs.parameter_store import ParameterStore
+from outputs.errors import ListErrorWriter
 from utils.utils import parse_string_to_list
 
 from form_screening_app.main import run
@@ -85,11 +86,22 @@ class FormScreeningVisitor(GearExecutionEnvironment):
 
     def run(self, context: GearToolkitContext) -> None:
         """Runs the Prescreening app."""
-        run(proxy=self.proxy,
-            file_input=self.__file_input,
-            accepted_modules=self.__accepted_modules,
-            queue_tags=self.__queue_tags,
-            scheduler_gear=self.__scheduler_gear)
+        file = self.proxy.get_file(self.__file_input.file_id)
+        error_writer = ListErrorWriter(
+            container_id=self.__file_input.file_id,
+            fw_path=self.proxy.get_lookup_path(file))
+
+        success = run(proxy=self.proxy,
+                      file_input=self.__file_input,
+                      accepted_modules=self.__accepted_modules,
+                      queue_tags=self.__queue_tags,
+                      scheduler_gear=self.__scheduler_gear,
+                      error_writer=error_writer)
+
+        context.metadata.add_qc_result(self.__file_input.file_input,
+                                       name='validation',
+                                       state='PASS' if success else 'FAIL',
+                                       data=error_writer.errors())
 
 
 def main():
