@@ -58,8 +58,6 @@ class FormSchedulerVisitor(GearExecutionEnvironment):
             context.config.get('submission_pipeline', None))
         accepted_modules = parse_string_to_list(
             context.config.get('accepted_modules', None))
-        prioritized_modules = parse_string_to_list(
-            context.config.get('prioritized_modules', None))
         queue_tags = parse_string_to_list(context.config.get(
             'queue_tags', None),
                                           to_lower=False)
@@ -72,14 +70,6 @@ class FormSchedulerVisitor(GearExecutionEnvironment):
         if not queue_tags:
             raise GearExecutionError("No queue tags to search for provided")
 
-        # figure out the module order based on accepted and prioritized modules
-        if not set(prioritized_modules).issubset(accepted_modules):
-            raise GearExecutionError(
-                "prioritized_modules is not a subset of " + "accepted_modules")
-
-        prioritized_modules.extend(
-            [x for x in accepted_modules if x not in prioritized_modules])
-
         if submission_pipeline[0] != 'file-validator':
             raise GearExecutionError(
                 "First gear in submission pipeline must be " +
@@ -87,7 +77,7 @@ class FormSchedulerVisitor(GearExecutionEnvironment):
 
         return FormSchedulerVisitor(client=client,
                                     submission_pipeline=submission_pipeline,
-                                    module_order=prioritized_modules,
+                                    module_order=accepted_modules,
                                     queue_tags=queue_tags,
                                     source_email=source_email)
 

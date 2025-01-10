@@ -3,17 +3,16 @@
 1. Pulls the current list of project files with the specified
    queue tags and adds them to processing queues for each module
    sorted by file timestamp
-2. Process the queues in round robin, with the prioritized modules
-   analyzed to completion first
-    a. Check whether there are any submission pipelines running/pending.
-       If there are, exit gear, no need to spin up another instance.
+2. Process the queues in a round robin
+    a. Check whether there are any submission pipelines running/pending;
+       if so, wait for it to finish
     b. If none found, send an email notification to the user(s) who uploaded
        the original file(s) to let them know their file is in the queue
-    c. Pull the next CSV in queue and trigger the submission pipeline
+    c. Pull the next CSV from the queue and trigger the submission pipeline
     d. Remove the queue tags from the file
     e. Move to next queue
-3. Repeat a-e until all queues are empty
-4. Repeat from the beginning
+3. Repeat 2) until all queues are empty
+4. Repeat from the beginning until there are no more files to be queued
 """
 import logging
 import re

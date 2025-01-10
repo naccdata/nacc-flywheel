@@ -39,14 +39,9 @@
             "default": "file-validator,identifier-lookup,form-transformer,form-qc-coordinator,form-qc-checker"
         },
         "accepted_modules": {
-            "description": "Comma-deliminated list of accepted modules. There will be one queue for each",
+            "description": "Comma-deliminated list of accepted modules, listed in order of priority. There will be one queue for each",
             "type": "string",
-            "default": "ENROLL,UDS,FTLD,LBD"
-        },
-        "prioritized_modules": {
-            "description": "Comma-deliminated list of modules to prioritize, which in turn are also prioritized relative to each other - must be a subset of accepted_modules",
-            "type": "string",
-            "default": "UDS"
+            "default": "UDS,ENROLL,FTLD,LBD"
         },
         "queue_tags": {
             "description": "Comma-deliminated list of queue tags to filter project files for to determine which need to be queued",
