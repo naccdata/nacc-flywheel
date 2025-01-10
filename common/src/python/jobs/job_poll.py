@@ -1,8 +1,7 @@
-"""
-Handles functionality related to watching/polling jobs.
-"""
+"""Handles functionality related to watching/polling jobs."""
 import logging
 import time
+
 from flywheel.models.job import Job
 from flywheel.models.job_state import JobState  # type: ignore
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy

@@ -55,9 +55,7 @@ class GearInfo(BaseModel):
         return gear_configs
 
 
-def trigger_gear(proxy: FlywheelProxy,
-                 gear_name: str,
-                 **kwargs) -> str:
+def trigger_gear(proxy: FlywheelProxy, gear_name: str, **kwargs) -> str:
     """Trigger the gear.
 
     Args:

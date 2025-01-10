@@ -18,33 +18,33 @@
 import logging
 import re
 from typing import Dict, List, Optional, Tuple
-from pydantic import BaseModel
 
-from flywheel import Project
-from flywheel.models.file_entry import FileEntry
+from flywheel.models.file_output import FileOutput  # type: ignore
 from flywheel.models.job_state import JobState  # type: ignore
+from flywheel.models.project_output import ProjectOutput  # type: ignore
+
 #from flywheel.models.origin_type import OriginType
 from flywheel_adaptor.flywheel_proxy import FlywheelProxy
 from gear_execution.gear_execution import GearExecutionError
 from gear_execution.gear_trigger import trigger_gear
 from jobs.job_poll import JobPoll
 from notifications.email import EmailClient, create_ses_client
+from pydantic import BaseModel
 
 MODULE_PATTERN = re.compile(r"^.+-([a-zA-Z]+)(\..+)$")
 log = logging.getLogger(__name__)
 
 
 class QueueAlertTemplateModel(BaseModel):
-    """Queue alert template model"""
+    """Queue alert template model."""
     project: str
     filename: str
     email_address: str
 
 
 class FormSchedulerQueue:
-    """Class to define a queue for each accepted module,
-    with prioritization allowed.
-    """
+    """Class to define a queue for each accepted module, with prioritization
+    allowed."""
 
     def __init__(self,
                  proxy: FlywheelProxy,
@@ -71,22 +71,24 @@ class FormSchedulerQueue:
                                           source=source_email) \
             if source_email else None
 
-        self.queue: Dict[str, List[FileEntry]] = {k: [] for k in self.__module_order}
+        self.queue: Dict[str, List[FileOutput]] = {
+            k: []
+            for k in self.__module_order
+        }
 
-    def add_files(self, project_id: str) -> Tuple[Project, int]:
+    def add_files(self, project: ProjectOutput) -> int:
         """Add the files (filtered by queue tags) to queue.
 
         Args:
-            project_id: Project ID to pull queue files from
+            project: Project to pull queue files from
         Returns:
-            The project that was pulled from and the number of files added
+            The number of files added to the queue
         """
-        # grab each time to make sure it's refreshed
-        project = self.__proxy.get_project_by_id(project_id)
-        if not project:
-            raise GearExecutionError(f"Cannot find project with ID {project_id}")
-
-        files = [x for x in project.files if self.__queue_tags.issubset(set(x.tags))]
+        # force a reload
+        project.reload()
+        files = [
+            x for x in project.files if self.__queue_tags.issubset(set(x.tags))
+        ]
         num_files = 0
 
         # grabs files in the format *-<module>.<ext>
@@ -124,9 +126,9 @@ class FormSchedulerQueue:
         for subqueue in self.queue.values():
             subqueue.sort(key=lambda file: file.modified)
 
-        return project, num_files
+        return num_files
 
-    def next_queue(self) -> Tuple[str, List[FileEntry]]:
+    def next_queue(self) -> Tuple[str, List[FileOutput]]:
         """Returns the next queue in the round robin.
 
         Returns:
@@ -149,10 +151,8 @@ class FormSchedulerQueue:
         """
         return all(not x for x in self.queue.values())
 
-def run(*,
-        proxy: FlywheelProxy,
-        queue: FormSchedulerQueue,
-        project_id: str,
+
+def run(*, proxy: FlywheelProxy, queue: FormSchedulerQueue, project_id: str,
         submission_pipeline: List[str]):
     """Runs the Form Scheduler process.
 
@@ -163,6 +163,10 @@ def run(*,
         submission_pipeline: List of gear names representing the submission
             pipeline
     """
+    project = proxy.get_project_by_id(project_id)
+    if not project:
+        raise GearExecutionError(f"Cannot find project with ID {project_id}")
+
     # search string to use for looking for running submission pipelines
     search_str = f'parents.project={project_id},' \
         + f'gear_info.name=|{submission_pipeline},' \
@@ -173,7 +177,7 @@ def run(*,
     # 1. Pull the current list of files
     num_files = -1
     while num_files != 0:
-        project, num_files = queue.add_files(project_id)
+        num_files = queue.add_files(project)
         log.info(f"Pulled {num_files} queued files, beginning queue process")
 
         # 2. Process queue in round robin

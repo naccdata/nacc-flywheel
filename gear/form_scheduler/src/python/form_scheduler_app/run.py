@@ -1,6 +1,6 @@
 """Entry script for form_scheduler."""
 import logging
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from flywheel.rest import ApiException
 from flywheel_gear_toolkit import GearToolkitContext
@@ -21,7 +21,8 @@ log = logging.getLogger(__name__)
 class FormSchedulerVisitor(GearExecutionEnvironment):
     """Visitor for the Form Scheduler gear."""
 
-    def __init__(self, client: ClientWrapper,
+    def __init__(self,
+                 client: ClientWrapper,
                  queue_tags: List[str],
                  submission_pipeline: List[str],
                  module_order: List[str],
@@ -66,23 +67,26 @@ class FormSchedulerVisitor(GearExecutionEnvironment):
             raise GearExecutionError("No queue tags to search for provided")
 
         if submission_pipeline[0] != 'file-validator':
-            raise GearExecutionError("First gear in submission pipeline must be "
-                                     + "the file validator")
+            raise GearExecutionError(
+                "First gear in submission pipeline must be " +
+                "the file validator")
 
         # figure out the module order based on accepted and prioritized modules
         prioritized_modules = prioritized_modules if prioritized_modules else []
         if not set(prioritized_modules).issubset(accepted_modules):
-            raise GearExecutionError("prioritized_modules is not a subset of "
-                                     + "accepted_modules")
+            raise GearExecutionError(
+                "prioritized_modules is not a subset of " + "accepted_modules")
 
-        module_order = prioritized_modules.extend(
-            [x for x in accepted_modules.lower()
-             if x not in prioritized_modules.lower()])
+        module_order = prioritized_modules.extend([
+            x for x in accepted_modules.lower()
+            if x not in prioritized_modules.lower()
+        ])
 
         return FormSchedulerVisitor(
             client=client,
-            submission_pipeline=
-                [x.strip().lower() for x in submission_pipeline.split(',')],
+            submission_pipeline=[
+                x.strip().lower() for x in submission_pipeline.split(',')
+            ],
             module_order=module_order,
             queue_tags=[x.strip().lower() for x in queue_tags.split(',')],
             source_email=source_email)
@@ -90,7 +94,7 @@ class FormSchedulerVisitor(GearExecutionEnvironment):
     def run(self, context: GearToolkitContext) -> None:
         """Runs the Form Scheduler app."""
         try:
-            dest_container = context.get_destination_container()
+            dest_container: Any = context.get_destination_container()
         except ApiException as error:
             raise GearExecutionError(
                 f'Cannot find destination container: {error}') from error

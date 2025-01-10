@@ -14,11 +14,10 @@ from gear_execution.gear_trigger import GearInfo, trigger_gear
 log = logging.getLogger(__name__)
 
 
-def check_instance_by_state(
-        gear_name: str,
-        proxy: FlywheelProxy,
-        states: List[str],
-        project_id: Optional[str] = None) -> Optional[Job]:
+def check_instance_by_state(gear_name: str,
+                            proxy: FlywheelProxy,
+                            states: List[str],
+                            project_id: Optional[str] = None) -> Optional[Job]:
     """Check if an instance of the gear matches the given state.
 
     Args:
@@ -35,8 +34,7 @@ def check_instance_by_state(
     if project_id:
         search_str = f'parents.project={project_id},{search_str}'
 
-    log.info(
-        f"Checking job state with the following search str: {search_str}")
+    log.info(f"Checking job state with the following search str: {search_str}")
     return proxy.find_job(search_str)
 
 
