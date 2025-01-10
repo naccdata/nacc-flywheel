@@ -143,8 +143,8 @@ def run(*,
             #    submission pipeline has completed
             if email_client and file.origin.type == 'user':
                 send_email(email_client=email_client,
-                           target_email=file.origin.id,
-                           file_name=file.name,
+                           file=file,
+                           project=project,
                            portal_url=portal_url)  # type: ignore
 
         # 3. repeat until all queues empty
