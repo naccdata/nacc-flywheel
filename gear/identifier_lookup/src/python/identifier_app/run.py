@@ -27,7 +27,7 @@ from identifiers.identifiers_repository import (
 from identifiers.model import IdentifierObject
 from inputs.csv_reader import CSVVisitor
 from inputs.parameter_store import ParameterStore
-from keys.keys import FieldNames
+from keys.keys import DefaultValues, FieldNames
 from lambdas.lambda_function import LambdaClient, create_lambda_client
 from outputs.errors import ListErrorWriter
 
@@ -176,7 +176,7 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
             mode=self.__identifiers_mode)
 
         (basename, extension) = os.path.splitext(self.__file_input.filename)
-        filename = f"{basename}-identifier{extension}"
+        filename = f'{basename}_{DefaultValues.IDENTIFIER_SUFFIX}{extension}'
         input_path = Path(self.__file_input.filepath)
         with (open(input_path, mode='r', encoding='utf-8') as csv_file,
               context.open_output(filename, mode='w', encoding='utf-8') as

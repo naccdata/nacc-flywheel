@@ -72,7 +72,7 @@ class NACCIDLookupVisitor(CSVVisitor):
             "visitdate": self.__date_field
         }
 
-    def __get_writer(self):
+    def __get_writer(self) -> CSVWriter:
         """Returns the writer for the CSV output.
 
         Manages whether writer has been initialized. Requires that
@@ -131,7 +131,10 @@ class NACCIDLookupVisitor(CSVVisitor):
         identifier = self.__identifiers.get(row[FieldNames.PTID])
         if not identifier:
             self.__error_writer.write(
-                identifier_error(line=line_num, value=row[FieldNames.PTID]))
+                identifier_error(
+                    line=line_num,
+                    value=row[FieldNames.PTID],
+                    message='No matching NACCID found for the given PTID'))
             self.__update_visit_error_log(input_record=row, qc_passed=False)
             return False
 

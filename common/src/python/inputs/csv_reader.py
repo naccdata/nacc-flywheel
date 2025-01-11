@@ -41,18 +41,21 @@ class CSVVisitor(ABC):
         return True
 
 
-def read_csv(input_file: TextIO,
+def read_csv(*,
+             input_file: TextIO,
              error_writer: ErrorWriter,
              visitor: CSVVisitor,
              delimiter: str = ',',
-             clear_errors: bool = False) -> bool:
+             limit: Optional[int] = None,
+             clear_errors: Optional[bool] = False) -> bool:
     """Reads CSV file and applies the visitor to each row.
 
     Args:
       input_file: the input stream for the CSV file
       error_writer: the ErrorWriter for the input file
       visitor: the visitor
-      delimiter: Expected delimiter for the CSV
+      delimiter: expected delimiter for the CSV
+      limit: maximum number of lines to read (excluding header)
       clear_errors: clear the accumulated error metadata
 
     Returns:
@@ -76,9 +79,11 @@ def read_csv(input_file: TextIO,
         return False
 
     try:
-        for record in reader:
+        for count, record in enumerate(reader):
             row_success = visitor.visit_row(record, line_num=reader.line_num)
             success = row_success and success
+            if limit and count >= limit:
+                break
     except Error as error:
         error_writer.write(malformed_file_error(str(error)))
         return False

@@ -53,6 +53,8 @@ class DefaultValues:
     QC_GEAR = 'form-qc-checker'
     LEGACY_QC_GEAR = 'file-validator'
     MAX_POOL_CONNECTIONS = 50
+    PROV_SUFFIX = 'provisioning'
+    IDENTIFIER_SUFFIX = 'identifiers'
 
 
 class MetadataKeys:

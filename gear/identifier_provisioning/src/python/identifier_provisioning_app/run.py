@@ -70,10 +70,13 @@ class IdentifierProvisioningVisitor(GearExecutionEnvironment):
 
         assert context, 'Gear context required'
 
-        file_module = self.__file_input.get_module_name_from_file_suffix()
+        file_suffix = self.__file_input.get_module_name_from_file_suffix()
         enroll_module: str = context.config.get(
-            "enrollment_module", DefaultValues.ENROLLMENT_MODULE)
-        if not file_module or (file_module.lower() != enroll_module.lower()):
+            "enrollment_module", DefaultValues.ENROLLMENT_MODULE).lower()
+        if not file_suffix or not (
+            (f'{enroll_module}_{file_suffix.lower()}'
+             == f'{enroll_module}_{DefaultValues.PROV_SUFFIX}') or
+            (file_suffix.lower() == enroll_module)):
             raise GearExecutionError(
                 f'Input file name {self.__file_input.filename} '
                 f'expected to have {enroll_module} suffix.')

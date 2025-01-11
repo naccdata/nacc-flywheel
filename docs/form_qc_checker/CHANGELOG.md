@@ -2,8 +2,11 @@
 
 All notable changes to this gear are documented in this file.
 
+## 1.2.3
+* Updates enrollment qc workflow - writes passed visits to a new file to trigger identifier provisioning.
+
 ## 1.2.0
-* Update error reporting - move error metadata to visit error log files stored at project level.
+* Updates error reporting - move error metadata to visit error log files stored at project level.
   
 ## 1.1.7
 

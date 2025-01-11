@@ -85,7 +85,7 @@ def identifier_error(line: int,
     """
     error_message = message if message else 'Unrecognized participant ID'
     return FileError(error_type='error',
-                     error_code='identifier',
+                     error_code='identifier-error',
                      location=CSVLocation(line=line, column_name=field),
                      value=value,
                      message=error_message)
