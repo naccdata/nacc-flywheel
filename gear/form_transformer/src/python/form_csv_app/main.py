@@ -13,7 +13,7 @@ from outputs.errors import (
     empty_field_error,
     get_error_log_name,
     missing_field_error,
-    system_error,
+    partially_failed_file_error,
     unexpected_value_error,
     update_error_log_and_qc_metadata,
 )
@@ -130,8 +130,11 @@ class CSVTransformVisitor(CSVVisitor):
             self.__update_visit_error_log(input_record=row, qc_passed=False)
             return False
 
+        # for the records that passed transformation, only obtain the log name
+        # error metadata will be updated when the acquisition file is uploaded
         error_log_name = self.__update_visit_error_log(input_record=row,
-                                                       qc_passed=True)
+                                                       qc_passed=True,
+                                                       update=False)
         if not error_log_name:
             return False
 
@@ -190,14 +193,19 @@ class CSVTransformVisitor(CSVVisitor):
 
         return False
 
-    def __update_visit_error_log(self, *, input_record: Dict[str, Any],
-                                 qc_passed: bool) -> Optional[str]:
+    def __update_visit_error_log(
+            self,
+            *,
+            input_record: Dict[str, Any],
+            qc_passed: bool,
+            update: Optional[bool] = True) -> Optional[str]:
         """Update error log file for the visit and store error metadata in
         file.info.qc.
 
         Args:
             input_record: input visit record
             qc_passed: whether the visit passed QC checks
+            update (optional): whether to update the log or return only name
 
         Returns:
             str (optional): error log name if update successful, else None
@@ -213,6 +221,9 @@ class CSVTransformVisitor(CSVVisitor):
             module=self.module,
             input_data=input_record,
             naming_template=self.__error_log_template)
+
+        if not update:
+            return error_log_name
 
         if not error_log_name or not update_error_log_and_qc_metadata(
                 error_log_name=error_log_name,
@@ -285,11 +296,13 @@ def run(*,
     uploader = FormJSONUploader(
         project=destination,
         module=visitor.module,  # type: ignore
+        gear_name=gear_name,
+        error_writer=error_writer,
         downstream_gears=downstream_gears)
     upload_status = uploader.upload(transformed_records)
     if not upload_status:
-        error_writer.write(
-            system_error('Error(s) occurred while uploading visit files'))
+        error_writer.clear()
+        error_writer.write(partially_failed_file_error())
         notify_upload_errors()
 
     return result and upload_status

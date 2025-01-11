@@ -45,7 +45,8 @@ class FileError(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     timestamp: Optional[str] = None
-    error_type: Literal['alert', 'error'] = Field(serialization_alias='type')
+    error_type: Literal['alert', 'error',
+                        'warning'] = Field(serialization_alias='type')
     error_code: str = Field(serialization_alias='code')
     location: Optional[CSVLocation | JSONLocation] = None
     container_id: Optional[str] = None
@@ -174,18 +175,20 @@ def unknown_field_error(field: str | set[str]) -> FileError:
 
 
 def system_error(
-    message: str,
-    error_location: Optional[CSVLocation | JSONLocation] = None,
-) -> FileError:
+        message: str,
+        error_location: Optional[CSVLocation | JSONLocation] = None,
+        error_type: Literal['alert', 'error',
+                            'warning'] = 'error') -> FileError:
     """Creates a FileError object for a system error.
 
     Args:
       message: error message
-      error_location [Optional]: CSV or JSON file location related to the error
+      error_location (optional): CSV or JSON file location related to the error
+      error_type: error type, defaults to "error"
     Returns:
       a FileError object initialized for system error
     """
-    return FileError(error_type='error',
+    return FileError(error_type=error_type,
                      error_code='system-error',
                      location=error_location,
                      message=message)
