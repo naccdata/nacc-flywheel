@@ -142,7 +142,8 @@ def run(*,
             # e. send email to user who uploaded the file that their
             #    submission pipeline has completed
             if email_client and file.origin.type == 'user':
-                send_email(email_client=email_client,
+                send_email(proxy=proxy,
+                           email_client=email_client,
                            file=file,
                            project=project,
                            portal_url=portal_url)  # type: ignore

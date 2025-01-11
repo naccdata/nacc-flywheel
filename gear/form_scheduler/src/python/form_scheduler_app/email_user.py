@@ -2,6 +2,8 @@
 from flywheel.models.file_output import FileOutput  # type: ignore
 from flywheel.models.project_output import ProjectOutput  # type: ignore
 
+from flywheel_adaptor.flywheel_proxy import FlywheelProxy
+
 from inputs.parameter_store import URLParameter
 from notifications.email import (
     BaseTemplateModel,
@@ -12,12 +14,14 @@ from notifications.email import (
 
 class SubmissionCompleteTemplateModel(BaseTemplateModel):
     """Submission complete template model."""
+    first_name: str
     file_name: str
-    portal_url: str
     center_name: str
+    portal_url: str
 
 
-def send_email(email_client: EmailClient,
+def send_email(proxy: FlywheelProxy,
+               email_client: EmailClient,
                file: FileOutput,
                project: ProjectOutput,
                portal_url: URLParameter) -> None:  # type: ignore
@@ -25,17 +29,26 @@ def send_email(email_client: EmailClient,
     completed.
 
     Args:
+        proxy: the proxy for the Flywheel instance
         email_client: EmailClient to send emails from
         file: The FileOutput; will pull details from it
         project: The ProjectOutput; will pull details from it
         portal_url: The portal URL
     """
+    # lookup the user's email; if not set fall back to the file origin id
+    user = proxy.find_user(file.origin.id)
+    target_email = user.email if user.email else file.origin.id
+
+    # look up the center name
+    group = proxy.find_group(project.group)
+
     template_data = SubmissionCompleteTemplateModel(
+        first_name = user.firstname,
         file_name=file.name,
-        center_name=project.group,
+        center_name=group.label,
         portal_url=portal_url['url'])
 
-    destination = DestinationModel(to_addresses=[files.origin.id])
+    destination = DestinationModel(to_addresses=[target_email])
 
     email_client.send(configuration_set_name='submission-pipeline',
                       destination=destination,

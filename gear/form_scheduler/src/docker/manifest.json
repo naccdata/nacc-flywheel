@@ -51,7 +51,7 @@
         "source_email": {
             "description": "The source email; if not provided, will not send emails",
             "type": "string",
-            "default": "no-reply@naccdata.com"
+            "default": "no-reply@naccdata.org"
         },
         "portal_url_path": {
             "description": "Parameter path for the portal URL",
