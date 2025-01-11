@@ -205,12 +205,10 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                           error_writer=error_writer,
                           clear_errors=clear_errors)
 
-            context.metadata.add_qc_result(
-                self.__file_input.file_input,
-                name="validation",
-                state="PASS" if success else "FAIL",
-                data=error_writer.errors()
-            )
+            context.metadata.add_qc_result(self.__file_input.file_input,
+                                           name="validation",
+                                           state="PASS" if success else "FAIL",
+                                           data=error_writer.errors())
 
             context.metadata.add_file_tags(self.__file_input.file_input,
                                            tags=self.__gear_name)
