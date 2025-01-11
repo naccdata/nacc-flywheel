@@ -44,6 +44,11 @@
                     "source code"
                 ]
             }
+        },
+        "downstream_gears": {
+            "description": "Comma-delimited list of downstream gears",
+            "type": "string",
+            "default": "form-qc-coordinator,form-qc-checker"
         }
     },
     "config": {},

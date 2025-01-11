@@ -125,9 +125,13 @@ class JSONUploader:
 
 class FormJSONUploader:
 
-    def __init__(self, project: ProjectAdaptor, module: str) -> None:
+    def __init__(self,
+                 project: ProjectAdaptor,
+                 module: str,
+                 downstream_gears: Optional[List[str]] = None) -> None:
         self.__project = project
         self.__module = module
+        self._downstream_gears = downstream_gears
         self.__pending_visits: Dict[str, VisitMapping] = {}
 
     def __add_pending_visit(self, *, subject: SubjectAdaptor, filename: str,
@@ -187,10 +191,12 @@ class FormJSONUploader:
 
         return success
 
-    def __copy_qc_gear_metadata(self, *, error_log_name: str,
-                                visit_file_name: str, subject: SubjectAdaptor,
-                                session: str, acquisition: str) -> bool:
-        """Copy existing QC gear metadata from visit file to error log file.
+    def __copy_downstream_gears_metadata(self, *, error_log_name: str,
+                                         visit_file_name: str,
+                                         subject: SubjectAdaptor, session: str,
+                                         acquisition: str) -> bool:
+        """Copy any downstream gears metadata from visit file to error log
+        file.
 
         Args:
             error_log_name: error log name for the visit
@@ -202,6 +208,10 @@ class FormJSONUploader:
         Returns:
             bool: True if copying metadata successful
         """
+
+        if not self._downstream_gears:
+            log.info('No downstream gears defined')
+            return True
 
         visit_file = subject.find_acquisition_file(
             session_label=session,
@@ -216,18 +226,16 @@ class FormJSONUploader:
             return False
 
         error_log_file = error_log_file.reload()
-        qc_gear_metadata = visit_file.info.get('qc',
-                                               {}).get(DefaultValues.QC_GEAR,
-                                                       {})
-
-        if not qc_gear_metadata:
-            return False
-
         info = error_log_file.info if (error_log_file.info
                                        and 'qc' in error_log_file.info) else {
                                            'qc': {}
                                        }
-        info['qc'][DefaultValues.QC_GEAR] = qc_gear_metadata
+        for ds_gear in self._downstream_gears:
+            ds_gear_metadata = visit_file.info.get('qc', {}).get(ds_gear, {})
+            if not ds_gear_metadata:
+                return False
+
+            info['qc'][ds_gear] = ds_gear_metadata
 
         try:
             error_log_file.update_info(info)
@@ -283,7 +291,7 @@ class FormJSONUploader:
 
                 # No error and no new file (i.e. duplicate file exists)
                 if not new_file:
-                    if not self.__copy_qc_gear_metadata(
+                    if not self.__copy_downstream_gears_metadata(
                             error_log_name=log_file,
                             visit_file_name=visit_file_name,
                             subject=subject,

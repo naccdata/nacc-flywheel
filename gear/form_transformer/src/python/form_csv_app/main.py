@@ -233,9 +233,13 @@ def notify_upload_errors():
     pass
 
 
-def run(*, input_file: TextIO, destination: ProjectAdaptor,
-        transformer_factory: TransformerFactory, error_writer: ListErrorWriter,
-        gear_name: str) -> bool:
+def run(*,
+        input_file: TextIO,
+        destination: ProjectAdaptor,
+        transformer_factory: TransformerFactory,
+        error_writer: ListErrorWriter,
+        gear_name: str,
+        downstream_gears: Optional[List[str]] = None) -> bool:
     """Reads records from the input file and transforms each into a JSON file.
     Uploads the JSON file to the respective acquisition in Flywheel.
 
@@ -245,6 +249,7 @@ def run(*, input_file: TextIO, destination: ProjectAdaptor,
         transformer_factory: the factory for column transformers
         error_writer: the writer for error output
         gear_name: gear name
+        downstream_gears: list of downstream gears
 
     Returns:
         bool: True if transformation/upload successful
@@ -277,8 +282,10 @@ def run(*, input_file: TextIO, destination: ProjectAdaptor,
         raise GearExecutionError(
             'Module information not found in the input file')
 
-    uploader = FormJSONUploader(project=destination,
-                                module=visitor.module)  # type: ignore
+    uploader = FormJSONUploader(
+        project=destination,
+        module=visitor.module,  # type: ignore
+        downstream_gears=downstream_gears)
     upload_status = uploader.upload(transformed_records)
     if not upload_status:
         error_writer.write(
