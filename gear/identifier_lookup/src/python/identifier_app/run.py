@@ -209,7 +209,7 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                 self.__file_input.file_input,
                 name="validation",
                 state="PASS" if success else "FAIL",
-                data=error_writer.errors(),
+                data=error_writer.errors()
             )
 
             context.metadata.add_file_tags(self.__file_input.file_input,

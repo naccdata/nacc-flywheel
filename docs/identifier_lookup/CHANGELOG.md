@@ -2,7 +2,7 @@
 
 All notable changes to this gear are documented in this file.
 
-## 1.0.3
+## 1.0.4
 * Updates identifier lookup error messages and identifier file suffix.
 
 ## 1.0.0
