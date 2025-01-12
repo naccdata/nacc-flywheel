@@ -172,14 +172,22 @@ class QCCoordinator():
             error_writer.write(error_obj)
 
         qc_result = create_qc_result_dict(name='validation',
-                                          state='FAIL',
+                                          state=status,
                                           data=error_writer.errors())
-        updated_qc_info = self.__metadata.add_gear_info(
-            'qc', visit_file, **qc_result)
+        visit_file = visit_file.reload()
+        info = visit_file.info if (visit_file.info
+                                   and 'qc' in visit_file.info) else {
+                                       'qc': {}
+                                   }
 
         # add qc-coordinator gear info to visit file metadata
+        updated_qc_info = self.__metadata.add_gear_info(
+            'qc', visit_file, **qc_result)
+        gear_name = self.__metadata.name  # type: ignore
+        info['qc'][gear_name] = updated_qc_info['qc'][gear_name]
+
         try:
-            visit_file.update_info(updated_qc_info)
+            visit_file.update_info(info)
         except ApiException as error:
             log.error('Error in setting QC metadata in file %s - %s',
                       visit_file, error)
@@ -197,7 +205,7 @@ class QCCoordinator():
                 error_log_name=error_log_name,
                 destination_prj=ProjectAdaptor(project=project,
                                                proxy=self.__proxy),
-                gear_name=self.__metadata.name,  # type: ignore
+                gear_name=gear_name,
                 state=status,
                 errors=error_writer.errors()):
             raise GearExecutionError(
