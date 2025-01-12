@@ -1,8 +1,8 @@
-"""Frquently accessed field names, labels, and default values."""
+"""Frequently accessed field names, labels, and default values."""
 
 
 class FieldNames:
-    """Class to store frquently accessed field names."""
+    """Class to store frequently accessed field names."""
     NACCID = 'naccid'
     MODULE = 'module'
     PACKET = 'packet'
@@ -55,6 +55,7 @@ class DefaultValues:
     MAX_POOL_CONNECTIONS = 50
     PROV_SUFFIX = 'provisioning'
     IDENTIFIER_SUFFIX = 'identifiers'
+    FW_SEARCH_OR = '|='
 
 
 class MetadataKeys:
