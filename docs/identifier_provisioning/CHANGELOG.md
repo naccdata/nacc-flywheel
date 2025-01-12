@@ -14,7 +14,7 @@ All notable changes to this gear are documented in this file.
 
 ## 0.1.7
 * Adds this CHANGELOG
-* [#107](https://github.com/naccdata/flywheel-gear-extensions/pull/107) Improve enrollmenet errors
+* [#107](https://github.com/naccdata/flywheel-gear-extensions/pull/107) Improve enrollment errors
 	* Adds validation error handling to the creation of enrollment and transfer records
 	* Also adds code that allows dates to be parsed with more than one format
 
