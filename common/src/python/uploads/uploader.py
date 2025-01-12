@@ -226,6 +226,9 @@ class FormJSONUploader:
 
         error_log_file = self.__project.get_file(error_log_name)
         if not error_log_file:
+            log.error(
+                'Failed to retrieve visit error log file %s from project',
+                error_log_name)
             return False
 
         error_log_file = error_log_file.reload()
@@ -234,7 +237,6 @@ class FormJSONUploader:
                                            'qc': {}
                                        }
 
-        self.__error_writer.clear()
         # TODO: decide whether we need to show this warning, commenting out for now
         # self.__error_writer.write(
         #     system_error(message=(
@@ -286,7 +288,8 @@ class FormJSONUploader:
 
         try:
             error_log_file.update_info(info)
-        except ApiException:
+        except ApiException as error:
+            log.error(error)
             return False
 
         return True
@@ -376,7 +379,7 @@ class FormJSONUploader:
                             session=session_label,
                             acquisition=acq_label):
                         log.warning(
-                            'Failed to copy QC gear metadata to error log file '
+                            'Failed to copy downstream gear metadata to error log file '
                             ' %s from existing visit file %s', log_file,
                             visit_file_name)
                         success = False

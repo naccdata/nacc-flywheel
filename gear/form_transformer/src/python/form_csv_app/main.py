@@ -222,19 +222,19 @@ class CSVTransformVisitor(CSVVisitor):
             input_data=input_record,
             naming_template=self.__error_log_template)
 
-        if not update:
+        if not update or not error_log_name:
             return error_log_name
 
-        if not error_log_name or not update_error_log_and_qc_metadata(
+        if not update_error_log_and_qc_metadata(
                 error_log_name=error_log_name,
                 destination_prj=self.__project,
                 gear_name=self.__gear_name,
                 state='PASS' if qc_passed else 'FAIL',
                 errors=self.__error_writer.errors()):
-            raise GearExecutionError(
-                'Failed to update error log for visit '
-                f'{input_record[FieldNames.PTID]}, {input_record[self.__date_field]}'
-            )
+            log.error('Failed to update error log for visit %s, %s',
+                      input_record[FieldNames.PTID],
+                      input_record[self.__date_field])
+            return None
 
         return error_log_name
 
