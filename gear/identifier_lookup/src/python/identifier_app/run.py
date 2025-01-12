@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, Literal, Optional, TextIO
 
 from flywheel.rest import ApiException
+from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
 from flywheel_gear_toolkit import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
@@ -152,7 +153,9 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                                    module_name=module_name,
                                    error_writer=error_writer,
                                    date_field=self.__date_field,
-                                   gear_name=self.__gear_name)
+                                   gear_name=self.__gear_name,
+                                   project=ProjectAdaptor(project=project,
+                                                          proxy=self.proxy))
 
     def __build_center_lookup(self, *, identifiers_repo: IdentifierRepository,
                               output_file: TextIO,
@@ -205,12 +208,10 @@ class IdentifierLookupVisitor(GearExecutionEnvironment):
                           error_writer=error_writer,
                           clear_errors=clear_errors)
 
-            context.metadata.add_qc_result(
-                self.__file_input.file_input,
-                name="validation",
-                state="PASS" if success else "FAIL",
-                data=error_writer.errors(),
-            )
+            context.metadata.add_qc_result(self.__file_input.file_input,
+                                           name="validation",
+                                           state="PASS" if success else "FAIL",
+                                           data=error_writer.errors())
 
             context.metadata.add_file_tags(self.__file_input.file_input,
                                            tags=self.__gear_name)
