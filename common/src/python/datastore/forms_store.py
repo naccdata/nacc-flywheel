@@ -46,7 +46,9 @@ class FormsStore():
             search_col: str,
             search_val: str | List[str],
             search_op: SearchOperator,
-            qc_gear: Optional[str] = None) -> Optional[List[Dict[str, str]]]:
+            qc_gear: Optional[str] = None,
+            extra_columns: Optional[List[str]] = None,
+            find_all: bool = False) -> Optional[List[Dict[str, str]]]:
         """_summary_
 
         Args:
@@ -66,18 +68,20 @@ class FormsStore():
                                     search_col=search_col,
                                     search_val=search_val,
                                     search_op=search_op,
-                                    qc_gear=qc_gear)
+                                    qc_gear=qc_gear,
+                                    extra_columns=extra_columns)
 
     def query_legacy_project(
-        self,
-        *,
-        subject_lbl: str,
-        module: str,
-        search_col: str,
-        search_val: str | List[str],
-        search_op: SearchOperator,
-        qc_gear: Optional[str] = None,
-    ) -> Optional[List[Dict[str, str]]]:
+            self,
+            *,
+            subject_lbl: str,
+            module: str,
+            search_col: str,
+            search_val: str | List[str],
+            search_op: SearchOperator,
+            qc_gear: Optional[str] = None,
+            extra_columns: Optional[List[str]] = None,
+            find_all: bool = False) -> Optional[List[Dict[str, str]]]:
         """_summary_
 
         Args:
@@ -102,7 +106,8 @@ class FormsStore():
                                     search_col=search_col,
                                     search_val=search_val,
                                     search_op=search_op,
-                                    qc_gear=qc_gear)
+                                    qc_gear=qc_gear,
+                                    extra_columns=extra_columns)
 
     def __query_project(
             self,
@@ -113,16 +118,20 @@ class FormsStore():
             search_col: str,
             search_val: str | List[str],
             search_op: SearchOperator,
-            qc_gear: Optional[str] = None) -> Optional[List[Dict[str, str]]]:
+            qc_gear: Optional[str] = None,
+            extra_columns: Optional[List[str]] = None,
+            find_all: bool = False) -> Optional[List[Dict[str, str]]]:
         """Retrieve previous visit records for the specified project/subject.
 
         Args:
             project: Flywheel project container
             subject_lbl: Flywheel subject label
             module: module name
-            orderby: variable name that visits are sorted by
-            cutoff_val: cutoff value on orderby field
+            search_col: variable name that visits are sorted by
+            search_val: cutoff value on orderby field
+            search_op: search operator
             qc_gear (optional): specify qc_gear name to retrieve records that passed QC
+            extra_columns (optional): list of extra columns to return if any
 
         Returns:
             List[Dict]: List of visits matching with the specified cutoff value,
@@ -149,13 +158,20 @@ class FormsStore():
         title = ('Visits for '
                  f'{project.group}/{project.label}/{subject_lbl}/{module}')
 
-        search_col = f'file.info.forms.json.{search_col}'
+        search_col = f'{DefaultValues.FORM_METADATA_PATH}.{search_col}'
         columns = [
             'file.name', 'file.file_id', "file.parents.acquisition",
             "file.parents.session", search_col
         ]
-        filters = (
-            f'acquisition.label={module},{search_col}{search_op}{search_val}')
+
+        if extra_columns:
+            for extra_lbl in extra_columns:
+                extra_col = f'{DefaultValues.FORM_METADATA_PATH}.{extra_lbl}'
+                columns.append(extra_col)
+
+        filters = f'acquisition.label={module}'
+        if not find_all:
+            filters += f',{search_col}{search_op}{search_val}'
 
         if qc_gear:
             filters += f',file.info.qc.{qc_gear}.validation.state=PASS'

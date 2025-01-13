@@ -56,6 +56,8 @@ class DefaultValues:
     PROV_SUFFIX = 'provisioning'
     IDENTIFIER_SUFFIX = 'identifiers'
     FW_SEARCH_OR = '=|'
+    FORM_METADATA_PATH = 'file.info.forms.json'
+    I4_PACKET = 'I4'
 
 
 class MetadataKeys:
@@ -86,3 +88,4 @@ class SysErrorCodes:
     INVALID_PACKET = 'preprocess-019'
     MISSING_IVP = 'preprocess-020'
     MULTIPLE_IVP = 'preprocess-021'
+    INVALID_VERSION = 'preprocess-022'

@@ -39,16 +39,20 @@ preprocess_errors = {
     "Follow-Up Packet visit date (VISITDATE) cannot be equal to " +
     "or from a date before the Initial Visit Packet",
     SysErrorCodes.LOWER_I4_VISITDATE:
-    "Initial UDSv4 Visit Packet (PACKET=I4) visit date (VISITDATE) " +
-    "cannot be equal to or from a date before the last UDSv3 Visit Packet",
+    "To submit an Initial UDSv4 Visit Packet (PACKET=I4), participant must have "
+    +
+    "an existing UDSv3 Visit with visit date (VISITDATE) before the Initial I4 Packet",
     SysErrorCodes.INVALID_MODULE:
     "Provided MODULE is not in the list of currently accepted modules",
     SysErrorCodes.INVALID_PACKET:
-    "Provided PACKET code is not in list of accepted packets for this module",
+    "Provided PACKET code is not in the list of accepted packets for this module",
     SysErrorCodes.MISSING_IVP:
     "Follow-Up visit cannot be submitted without an existing Initial Visit Packet",
     SysErrorCodes.MULTIPLE_IVP:
-    "More than one IVP packet found for the participant/module"
+    "More than one IVP packet found for the participant/module",
+    SysErrorCodes.INVALID_VERSION:
+    "Provided FORMVER is not in the list of " +
+    "accepted versions for this module"
 }
 
 

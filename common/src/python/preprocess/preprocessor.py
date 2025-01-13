@@ -81,6 +81,33 @@ class FormPreprocessor():
 
         return True
 
+    def __is_accepted_version(self, *, module: str,
+                              module_configs: ModuleConfigs, version: str,
+                              line_num: int) -> bool:
+        """_summary_
+
+        Args:
+            module (str): _description_
+            module_configs (ModuleConfigs): _description_
+            version (str): _description_
+            line_num (int): _description_
+
+        Returns:
+            bool: _description_
+        """
+        if version not in module_configs.versions:
+            log.error('%s - %s/%s',
+                      preprocess_errors[SysErrorCodes.INVALID_VERSION], module,
+                      version)
+            self.__error_writer.write(
+                preprocessing_error(field=FieldNames.PACKET,
+                                    value=version,
+                                    line=line_num,
+                                    error_code=SysErrorCodes.INVALID_VERSION))
+            return False
+
+        return True
+
     def __check_initial_visit(  # noqa: C901
             self, *, subject_lbl: str, input_record: Dict[str, Any],
             module: str, module_configs: ModuleConfigs, line_num: int) -> bool:
@@ -180,20 +207,210 @@ class FormPreprocessor():
 
         return True
 
-    def __check_visitdate_visitnum(self, *, subject_lbl: str, module: str,
-                                   input_record: Dict[str, Any],
+    def __find_conflicting_visits(self, visits: List[Dict[str, str]],
+                                  field: str, value: Any) -> bool:
+        """_summary_
+
+        Args:
+            visits (List[Dict[str, str]]): _description_
+            field (str): _description_
+            value (Any): _description_
+
+        Returns:
+            bool: _description_
+        """
+
+        field_lbl = f'{DefaultValues.FORM_METADATA_PATH}.{field}'
+        for visit in visits:
+            if visit[field_lbl] == value:
+                log.error('Found conflicting visit with %s=%s', field, value)
+                return True
+
+        return False
+
+    def __check_visitdate_visitnum(self, *, subject_lbl: str,
+                                   input_record: Dict[str, Any], module: str,
+                                   module_configs: ModuleConfigs,
                                    line_num: int) -> bool:
         """_summary_
 
         Args:
             subject_lbl (str): _description_
-            module (str): _description_
             input_record (Dict[str, Any]): _description_
+            module (str): _description_
+            module_configs (str): _description_
             line_num: the line number of the input record
 
         Returns:
             bool: _description_
         """
+
+        date_field = module_configs.date_field
+        date_matches = self.__forms_store.query_ingest_project(
+            subject_lbl=subject_lbl,
+            module=module,
+            search_col=date_field,
+            search_val=input_record[date_field],
+            search_op='=',
+            extra_columns=[FieldNames.VISITNUM])
+
+        if (date_matches and self.__find_conflicting_visits(
+                visits=date_matches,
+                field=FieldNames.VISITNUM,
+                value=input_record[FieldNames.VISITNUM])):
+            self.__error_writer.write(
+                preprocessing_error(field=date_field,
+                                    value=input_record[date_field],
+                                    line=line_num,
+                                    error_code=SysErrorCodes.DIFF_VISITNUM))
+            return False
+
+        if module_configs.legacy_module:
+            module = module_configs.legacy_module
+        if module_configs.legacy_date:
+            date_field = module_configs.legacy_date
+
+        legacy_matches = self.__forms_store.query_legacy_project(
+            subject_lbl=subject_lbl,
+            module=module,
+            search_col=date_field,
+            search_val=input_record[date_field],
+            search_op='=',
+            extra_columns=[FieldNames.VISITNUM])
+
+        if (legacy_matches and self.__find_conflicting_visits(
+                visits=legacy_matches,
+                field=FieldNames.VISITNUM,
+                value=input_record[FieldNames.VISITNUM])):
+            self.__error_writer.write(
+                preprocessing_error(field=date_field,
+                                    value=input_record[date_field],
+                                    line=line_num,
+                                    error_code=SysErrorCodes.DIFF_VISITNUM))
+            return False
+
+        return True
+
+    def __check_visitnum_visitdate(self, *, subject_lbl: str,
+                                   input_record: Dict[str, Any], module: str,
+                                   module_configs: ModuleConfigs,
+                                   line_num: int) -> bool:
+        """_summary_
+
+        Args:
+            subject_lbl (str): _description_
+            input_record (Dict[str, Any]): _description_
+            module (str): _description_
+            module_configs (str): _description_
+            line_num: the line number of the input record
+
+        Returns:
+            bool: _description_
+        """
+
+        date_field = module_configs.date_field
+        visitnum_matches = self.__forms_store.query_ingest_project(
+            subject_lbl=subject_lbl,
+            module=module,
+            search_col=FieldNames.VISITNUM,
+            search_val=input_record[FieldNames.VISITNUM],
+            search_op='=',
+            extra_columns=[date_field])
+
+        if (visitnum_matches and self.__find_conflicting_visits(
+                visits=visitnum_matches,
+                field=date_field,
+                value=input_record[date_field])):
+            self.__error_writer.write(
+                preprocessing_error(field=FieldNames.VISITNUM,
+                                    value=input_record[FieldNames.VISITNUM],
+                                    line=line_num,
+                                    error_code=SysErrorCodes.DIFF_VISITDATE))
+            return False
+
+        if module_configs.legacy_module:
+            module = module_configs.legacy_module
+        if module_configs.legacy_date:
+            date_field = module_configs.legacy_date
+
+        legacy_matches = self.__forms_store.query_legacy_project(
+            subject_lbl=subject_lbl,
+            module=module,
+            search_col=FieldNames.VISITNUM,
+            search_val=input_record[FieldNames.VISITNUM],
+            search_op='=',
+            extra_columns=[date_field])
+
+        if (legacy_matches and self.__find_conflicting_visits(
+                visits=legacy_matches,
+                field=date_field,
+                value=input_record[date_field])):
+            self.__error_writer.write(
+                preprocessing_error(field=FieldNames.VISITNUM,
+                                    value=input_record[FieldNames.VISITNUM],
+                                    line=line_num,
+                                    error_code=SysErrorCodes.DIFF_VISITDATE))
+            return False
+
+        return True
+
+    def __check_udsv4_initial_visit(self, *, subject_lbl: str,
+                                    input_record: Dict[str, Any], module: str,
+                                    module_configs: ModuleConfigs,
+                                    line_num: int) -> bool:
+        """_summary_
+
+        Args:
+            subject_lbl (str): _description_
+            input_record (Dict[str, Any]): _description_
+            module (str): _description_
+            module_configs (str): _description_
+            line_num: the line number of the input record
+
+        Returns:
+            bool: _description_
+        """
+
+        if input_record[FieldNames.PACKET] != DefaultValues.I4_PACKET:
+            return True
+
+        date_field = module_configs.date_field
+        if module_configs.legacy_module:
+            module = module_configs.legacy_module
+        if module_configs.legacy_date:
+            date_field = module_configs.legacy_date
+
+        legacy_visits = self.__forms_store.query_legacy_project(
+            subject_lbl=subject_lbl,
+            module=module,
+            search_col=date_field,
+            search_val=input_record[date_field],
+            search_op='<=',
+            extra_columns=[FieldNames.VISITNUM],
+            find_all=True)
+
+        legacy_visit = legacy_visits[0] if legacy_visits else None
+
+        if (not legacy_visit or legacy_visit[date_field]
+                >= input_record[module_configs.date_field]):
+            self.__error_writer.write(
+                preprocessing_error(
+                    field=module_configs.date_field,
+                    value=input_record[module_configs.date_field],
+                    line=line_num,
+                    error_code=SysErrorCodes.LOWER_I4_VISITDATE))
+            return False
+
+        if legacy_visit[FieldNames.VISITNUM] >= input_record[
+                FieldNames.VISITNUM]:
+            self.__error_writer.write(
+                preprocessing_error(
+                    field=FieldNames.VISITNUM,
+                    value=input_record[FieldNames.VISITNUM],
+                    line=line_num,
+                    error_code=SysErrorCodes.LOWER_I4_VISITNUM))
+            return False
+
         return True
 
     def preprocess(self, *, input_record: Dict[str, Any], module: str,
@@ -217,6 +434,13 @@ class FormPreprocessor():
         subject_lbl = input_record[self.__primary_key]
         log.info('Running preprocessing checks for subject %s', subject_lbl)
 
+        if not self.__is_accepted_version(
+                module_configs=module_configs,
+                module=module,
+                version=input_record[FieldNames.FORMVER],
+                line_num=line_num):
+            return False
+
         if not self.__is_accepted_packet(
                 module_configs=module_configs,
                 module=module,
@@ -225,13 +449,28 @@ class FormPreprocessor():
             return False
 
         if not self.__check_initial_visit(subject_lbl=subject_lbl,
-                                          module_configs=module_configs,
-                                          module=module,
                                           input_record=input_record,
+                                          module=module,
+                                          module_configs=module_configs,
                                           line_num=line_num):
             return False
 
-        return self.__check_visitdate_visitnum(subject_lbl=subject_lbl,
+        if not self.__check_udsv4_initial_visit(subject_lbl=subject_lbl,
+                                                input_record=input_record,
+                                                module=module,
+                                                module_configs=module_configs,
+                                                line_num=line_num):
+            return False
+
+        if not self.__check_visitdate_visitnum(subject_lbl=subject_lbl,
                                                module=module,
+                                               module_configs=module_configs,
+                                               input_record=input_record,
+                                               line_num=line_num):
+            return False
+
+        return self.__check_visitnum_visitdate(subject_lbl=subject_lbl,
+                                               module=module,
+                                               module_configs=module_configs,
                                                input_record=input_record,
                                                line_num=line_num)
