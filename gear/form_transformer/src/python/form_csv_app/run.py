@@ -99,8 +99,7 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
             raise GearExecutionError(
                 f'Failed to find the project with ID {file.parents.project}')
 
-        # gear_name = context.manifest.get('name', 'form-transformer')
-        gear_name = 'form-transformer'
+        gear_name = context.manifest.get('name', 'form-transformer')
 
         downstream_gears = parse_string_to_list(
             context.config.get('downstream_gears', None))

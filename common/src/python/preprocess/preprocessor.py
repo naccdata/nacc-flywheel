@@ -393,7 +393,8 @@ class FormPreprocessor():
 
         legacy_visit = legacy_visits[0] if legacy_visits else None
 
-        if (not legacy_visit or legacy_visit[date_field]
+        date_field_lbl = f'{DefaultValues.FORM_METADATA_PATH}.{date_field}'
+        if (not legacy_visit or legacy_visit[date_field_lbl]
                 >= input_record[module_configs.date_field]):
             self.__error_writer.write(
                 preprocessing_error(
@@ -403,8 +404,8 @@ class FormPreprocessor():
                     error_code=SysErrorCodes.LOWER_I4_VISITDATE))
             return False
 
-        if legacy_visit[FieldNames.VISITNUM] >= input_record[
-                FieldNames.VISITNUM]:
+        visitnum_lbl = f'{DefaultValues.FORM_METADATA_PATH}.{FieldNames.VISITNUM}'
+        if legacy_visit[visitnum_lbl] >= input_record[FieldNames.VISITNUM]:
             self.__error_writer.write(
                 preprocessing_error(
                     field=FieldNames.VISITNUM,
