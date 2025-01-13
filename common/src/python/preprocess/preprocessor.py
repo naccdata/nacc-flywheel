@@ -53,9 +53,9 @@ class FormPreprocessor():
         self.__module_info = module_info
         self.__error_writer = error_writer
 
-    def __check_accepted_packet(self, *, module: str,
-                                module_configs: ModuleConfigs, packet: str,
-                                line_num: int) -> bool:
+    def __is_accepted_packet(self, *, module: str,
+                             module_configs: ModuleConfigs, packet: str,
+                             line_num: int) -> bool:
         """_summary_
 
         Args:
@@ -217,7 +217,7 @@ class FormPreprocessor():
         subject_lbl = input_record[self.__primary_key]
         log.info('Running preprocessing checks for subject %s', subject_lbl)
 
-        if not self.__check_accepted_packet(
+        if not self.__is_accepted_packet(
                 module_configs=module_configs,
                 module=module,
                 packet=input_record[FieldNames.PACKET],

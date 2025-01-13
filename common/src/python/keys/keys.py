@@ -55,7 +55,7 @@ class DefaultValues:
     MAX_POOL_CONNECTIONS = 50
     PROV_SUFFIX = 'provisioning'
     IDENTIFIER_SUFFIX = 'identifiers'
-    FW_SEARCH_OR = '|='
+    FW_SEARCH_OR = '=|'
 
 
 class MetadataKeys:

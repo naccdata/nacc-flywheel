@@ -10,7 +10,7 @@ from keys.keys import DefaultValues
 
 log = logging.getLogger(__name__)
 
-SearchOperator = Literal['=', '>', '<', '!=', '>=', '<=', '|=']
+SearchOperator = Literal['=', '>', '<', '!=', '>=', '<=', '=|']
 
 
 class FormsStore():
@@ -159,6 +159,8 @@ class FormsStore():
 
         if qc_gear:
             filters += f',file.info.qc.{qc_gear}.validation.state=PASS'
+
+        log.info('Searching for visits matching with filters: %s', filters)
 
         visits = self.__proxy.get_matching_acquisition_files_info(
             container_id=subject.id,
