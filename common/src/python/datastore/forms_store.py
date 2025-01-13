@@ -140,8 +140,8 @@ class FormsStore():
 
         subject = project.find_subject(subject_lbl)
         if not subject:
-            log.error('Failed to retrieve subject %s in project %s',
-                      subject_lbl, project.label)
+            log.warning('Subject %s is not found in project %s/%s',
+                        subject_lbl, project.group, project.label)
             return None
 
         if isinstance(search_val,
