@@ -222,8 +222,10 @@ class FormPreprocessor():
 
         field_lbl = f'{DefaultValues.FORM_METADATA_PATH}.{field}'
         for visit in visits:
-            if visit[field_lbl] == value:
-                log.error('Found conflicting visit with %s=%s', field, value)
+            if visit[field_lbl] != value:
+                log.error(
+                    'Found a visit with conflicting values [%s != %s] for field %s',
+                    visit[field_lbl], value, field)
                 return True
 
         return False
