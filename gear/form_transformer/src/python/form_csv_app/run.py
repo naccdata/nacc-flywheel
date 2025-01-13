@@ -9,7 +9,7 @@ from flywheel_adaptor.flywheel_proxy import ProjectAdaptor, ProjectError
 from flywheel_gear_toolkit.context.context import GearToolkitContext
 from gear_execution.gear_execution import (
     ClientWrapper,
-    ContextClient,
+    GearBotClient,
     GearEngine,
     GearExecutionEnvironment,
     GearExecutionError,
@@ -58,7 +58,10 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
           GearExecutionError if any expected inputs are missing
         """
 
-        client = ContextClient.create(context=context)
+        assert parameter_store, "Parameter store expected"
+
+        client = GearBotClient.create(context=context,
+                                      parameter_store=parameter_store)
 
         file_input = InputFileWrapper.create(input_name='input_file',
                                              context=context)
@@ -96,7 +99,8 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
             raise GearExecutionError(
                 f'Failed to find the project with ID {file.parents.project}')
 
-        gear_name = context.manifest.get('name', 'form-transformer')
+        # gear_name = context.manifest.get('name', 'form-transformer')
+        gear_name = 'form-transformer'
 
         downstream_gears = parse_string_to_list(
             context.config.get('downstream_gears', None))
@@ -204,7 +208,8 @@ class FormCSVtoJSONTransformer(GearExecutionEnvironment):
 def main():
     """Main method for Form CSV to JSON Transformer."""
 
-    GearEngine().run(gear_type=FormCSVtoJSONTransformer)
+    GearEngine.create_with_parameter_store().run(
+        gear_type=FormCSVtoJSONTransformer)
 
 
 if __name__ == "__main__":

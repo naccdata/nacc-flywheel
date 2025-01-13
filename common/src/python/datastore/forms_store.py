@@ -1,6 +1,8 @@
 """Module to extract/query form data from storage/warehouse."""
 
+import json
 import logging
+from json import JSONDecodeError
 from typing import Dict, List, Literal, Optional
 
 from flywheel_adaptor.flywheel_proxy import ProjectAdaptor
@@ -18,6 +20,23 @@ class FormsStore():
                  legacy_project: Optional[ProjectAdaptor]) -> None:
         self.__ingest_project = ingest_project
         self.__legacy_project = legacy_project
+        self.__proxy = self.__ingest_project.proxy
+
+    def is_new_subject(self, subject_lbl: str) -> bool:
+        """_summary_
+
+        Args:
+            subject_lbl (str): _description_
+
+        Returns:
+            bool: _description_
+        """
+
+        if self.__ingest_project.find_subject(subject_lbl):
+            return False
+
+        return not (self.__legacy_project
+                    and self.__legacy_project.find_subject(subject_lbl))
 
     def query_ingest_project(
             self,
@@ -141,7 +160,7 @@ class FormsStore():
         if qc_gear:
             filters += f',file.info.qc.{qc_gear}.validation.state=PASS'
 
-        visits = project.proxy.get_matching_acquisition_files_info(
+        visits = self.__proxy.get_matching_acquisition_files_info(
             container_id=subject.id,
             dv_title=title,
             columns=columns,
@@ -151,3 +170,28 @@ class FormsStore():
             return None
 
         return sorted(visits, key=lambda d: d[search_col], reverse=True)
+
+    def get_visit_data(self, file_name: str,
+                       acq_id: str) -> dict[str, str] | None:
+        """Read the previous visit file and convert to python dictionary.
+
+        Args:
+            file_name: Previous visit file name
+            acq_id: Previous visit acquisition id
+
+        Returns:
+            dict[str, str] | None: Previous visit data or None
+        """
+        visit_data = None
+
+        acquisition = self.__proxy.get_acquisition(acq_id)
+        file_content = acquisition.read_file(file_name)
+
+        try:
+            visit_data = json.loads(file_content)
+            log.info('Found previous visit file: %s', file_name)
+        except (JSONDecodeError, TypeError, ValueError) as error:
+            log.error('Failed to read the previous visit file - %s : %s',
+                      file_name, error)
+
+        return visit_data

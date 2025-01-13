@@ -123,13 +123,6 @@ class CSVTransformVisitor(CSVVisitor):
                                               qc_passed=False)
                 return False
 
-        # preprocessing checks
-        if self.module and not self.__preprocessor.preprocess(
-                input_record=row, module=self.module):
-            self.__update_visit_error_log(input_record=row, qc_passed=False)
-            log.error('Failed pre-processing checks in line %s', line_num)
-            return False
-
         # Set transformer for the module
         if not self.__transformer:
             self.__transformer = self.__transformer_factory.create(
@@ -138,6 +131,15 @@ class CSVTransformVisitor(CSVVisitor):
         transformed_row = self.__transformer.transform(row, line_num)
         if not transformed_row:
             self.__update_visit_error_log(input_record=row, qc_passed=False)
+            return False
+
+        # preprocessing checks (needs to happen after transformations)
+        if self.module and not self.__preprocessor.preprocess(
+                input_record=transformed_row,
+                module=self.module,
+                line_num=line_num):
+            self.__update_visit_error_log(input_record=row, qc_passed=False)
+            log.error('Failed pre-processing checks in line %s', line_num)
             return False
 
         # for the records that passed transformation, only obtain the log name

@@ -1,11 +1,14 @@
 """Module to implement form data pre-processing checks."""
 
+import logging
 from typing import Any, Dict, List, Optional
 
 from datastore.forms_store import FormsStore
-from keys.keys import DefaultValues, FieldNames
-from outputs.errors import ListErrorWriter
+from keys.keys import DefaultValues, FieldNames, SysErrorCodes
+from outputs.errors import ListErrorWriter, preprocess_errors, preprocessing_error
 from pydantic import BaseModel
+
+log = logging.getLogger(__name__)
 
 
 class PreprocessingException(Exception):
@@ -23,13 +26,13 @@ class ModuleConfigs(BaseModel):
     @classmethod
     def create(cls, label: str, configs: Dict[str, Any]) -> 'ModuleConfigs':
         """Create from given configs."""
-        return ModuleConfigs(
-            initial_packets=configs['initial_packets'],
-            followup_packets=configs['followup_packets'],
-            versions=configs['versions'],
-            date_field=configs['date_field'],
-            legacy_module=configs.get('legacy_module', label),
-            legacy_date=configs.get('legacy_date', configs['date_field']))
+        return ModuleConfigs(initial_packets=configs['initial_packets'],
+                             followup_packets=configs['followup_packets'],
+                             versions=configs['versions'],
+                             date_field=configs['date_field'],
+                             legacy_module=configs.get('legacy_module', label),
+                             legacy_date=configs.get('legacy_date',
+                                                     configs['date_field']))
 
 
 class FormProjectConfigs(BaseModel):
@@ -50,14 +53,45 @@ class FormPreprocessor():
         self.__module_info = module_info
         self.__error_writer = error_writer
 
-    def __check_initial_visit(self, *, subject_lbl: str, module: str,
-                              packet: str) -> bool:
+    def __check_accepted_packet(self, *, module: str,
+                                module_configs: ModuleConfigs, packet: str,
+                                line_num: int) -> bool:
+        """_summary_
+
+        Args:
+            module (str): _description_
+            module_configs (ModuleConfigs): _description_
+            packet (str): _description_
+            line_num (int): _description_
+
+        Returns:
+            bool: _description_
+        """
+        if (packet not in module_configs.initial_packets
+                and packet not in module_configs.followup_packets):
+            log.error('%s - %s/%s',
+                      preprocess_errors[SysErrorCodes.INVALID_PACKET], module,
+                      packet)
+            self.__error_writer.write(
+                preprocessing_error(field=FieldNames.PACKET,
+                                    value=packet,
+                                    line=line_num,
+                                    error_code=SysErrorCodes.INVALID_PACKET))
+            return False
+
+        return True
+
+    def __check_initial_visit(  # noqa: C901
+            self, *, subject_lbl: str, input_record: Dict[str, Any],
+            module: str, module_configs: ModuleConfigs, line_num: int) -> bool:
         """_summary_
 
         Args:
             subject_lbl (str): _description_
-            module (str): _description_
-            packet (str): _description_
+            input_record: _description_
+            module: module
+            module_configs (str): _description_
+            line_num: the line number of the input record
 
         Raises:
             PreprocessingException: _description_
@@ -65,75 +99,139 @@ class FormPreprocessor():
         Returns:
             bool: _description_
         """
-        module_config = self.__module_info.get(module)
-        if not module_config:
-            raise PreprocessingException(
-                f'No configurations found for module {module}')
 
-        if (packet not in module_config.initial_packets
-                or packet not in module_config.followup_packets):
-            return False
+        packet = input_record[FieldNames.PACKET]
 
-        initial_packet = self.__forms_store.query_ingest_project(
+        if self.__forms_store.is_new_subject(subject_lbl):
+            if packet in module_configs.initial_packets:
+                return True
+
+            if packet in module_configs.followup_packets:
+                log.error('%s - %s',
+                          preprocess_errors[SysErrorCodes.MISSING_IVP], packet)
+                self.__error_writer.write(
+                    preprocessing_error(field=FieldNames.PACKET,
+                                        value=packet,
+                                        line=line_num,
+                                        error_code=SysErrorCodes.MISSING_IVP))
+                return False
+
+        initial_packets = self.__forms_store.query_ingest_project(
             subject_lbl=subject_lbl,
             module=module,
             search_col=FieldNames.PACKET,
-            search_val=module_config.initial_packets,
+            search_val=module_configs.initial_packets,
             search_op=DefaultValues.FW_SEARCH_OR)
 
-        if not initial_packet:
-            if module_config.legacy_module:
-                module = module_config.legacy_module
+        if not initial_packets:
+            if module_configs.legacy_module:
+                module = module_configs.legacy_module
 
-            initial_packet = self.__forms_store.query_legacy_project(
+            initial_packets = self.__forms_store.query_legacy_project(
                 subject_lbl=subject_lbl,
                 module=module,
                 search_col=FieldNames.PACKET,
-                search_val=module_config.initial_packets,
+                search_val=module_configs.initial_packets,
                 search_op=DefaultValues.FW_SEARCH_OR)
 
-        if initial_packet and len(initial_packet) > 1:
-            raise PreprocessingException(
-                f'More than one IVP packet found for {subject_lbl}/{module}')
-
-        if packet in module_config.initial_packets and initial_packet:
+        if initial_packets and len(initial_packets) > 1:
+            self.__error_writer.write(
+                preprocessing_error(field=FieldNames.PACKET,
+                                    value=packet,
+                                    line=line_num,
+                                    error_code=SysErrorCodes.MULTIPLE_IVP))
             return False
 
-        return not (packet in module_config.followup_packets
-                    and not initial_packet)
+        initial_packet = initial_packets[0] if initial_packets else None
+
+        if packet in module_configs.followup_packets and not initial_packet:
+            self.__error_writer.write(
+                preprocessing_error(field=FieldNames.PACKET,
+                                    value=packet,
+                                    line=line_num,
+                                    error_code=SysErrorCodes.MISSING_IVP))
+            return False
+
+        if packet in module_configs.initial_packets and initial_packet:
+            ivp_record = self.__forms_store.get_visit_data(
+                initial_packet['file.name'],
+                initial_packet['file.parents.acquisition'])
+
+            if not ivp_record:
+                raise PreprocessingException(
+                    f"Error reading previous visit file {initial_packet['file.name']}"
+                )
+
+            # If IVP exists and not a modification to the same visit
+            if not (ivp_record[module_configs.date_field]
+                    == input_record[module_configs.date_field]
+                    and ivp_record[FieldNames.VISITNUM]
+                    == input_record[FieldNames.VISITNUM]):
+                log.error('%s - %s, %s',
+                          preprocess_errors[SysErrorCodes.IVP_EXISTS],
+                          ivp_record[module_configs.date_field],
+                          ivp_record[FieldNames.VISITNUM])
+                self.__error_writer.write(
+                    preprocessing_error(field=FieldNames.PACKET,
+                                        value=packet,
+                                        line=line_num,
+                                        error_code=SysErrorCodes.IVP_EXISTS))
+                return False
+
+        return True
 
     def __check_visitdate_visitnum(self, *, subject_lbl: str, module: str,
-                                   input_record: Dict[str, Any]) -> bool:
+                                   input_record: Dict[str, Any],
+                                   line_num: int) -> bool:
         """_summary_
 
         Args:
             subject_lbl (str): _description_
             module (str): _description_
             input_record (Dict[str, Any]): _description_
+            line_num: the line number of the input record
 
         Returns:
             bool: _description_
         """
         return True
 
-    def preprocess(self, *, input_record: Dict[str, Any], module: str) -> bool:
+    def preprocess(self, *, input_record: Dict[str, Any], module: str,
+                   line_num: int) -> bool:
         """_summary_
 
         Args:
             input_record (Dict[str, Any]): _description_
             module (str): _description_
+            line_num: the line number of the input record
 
         Returns:
             bool: _description_
         """
 
+        module_configs = self.__module_info.get(module)
+        if not module_configs:
+            raise PreprocessingException(
+                f'No configurations found for module {module}')
+
         subject_lbl = input_record[self.__primary_key]
-        passed = self.__check_initial_visit(
-            subject_lbl=subject_lbl,
-            module=module,
-            packet=input_record[FieldNames.PACKET])
+        log.info('Running preprocessing checks for subject %s', subject_lbl)
 
-        passed = passed and self.__check_visitdate_visitnum(
-            subject_lbl=subject_lbl, module=module, input_record=input_record)
+        if not self.__check_accepted_packet(
+                module_configs=module_configs,
+                module=module,
+                packet=input_record[FieldNames.PACKET],
+                line_num=line_num):
+            return False
 
-        return passed
+        if not self.__check_initial_visit(subject_lbl=subject_lbl,
+                                          module_configs=module_configs,
+                                          module=module,
+                                          input_record=input_record,
+                                          line_num=line_num):
+            return False
+
+        return self.__check_visitdate_visitnum(subject_lbl=subject_lbl,
+                                               module=module,
+                                               input_record=input_record,
+                                               line_num=line_num)
