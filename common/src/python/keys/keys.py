@@ -75,3 +75,14 @@ class MetadataKeys:
 class SysErrorCodes:
     """Class to store pre-processing error codes."""
     ADCID_MISMATCH = 'preprocess-001'
+    IVP_EXISTS = 'preprocess-002'
+    DIFF_VISITDATE = 'preprocess-006'
+    DIFF_VISITNUM = 'preprocess-007'
+    LOWER_FVP_VISITNUM = 'preprocess-008'
+    LOWER_I4_VISITNUM = 'preprocess-009'
+    LOWER_FVP_VISITDATE = 'preprocess-010'
+    LOWER_I4_VISITDATE = 'preprocess-013'
+    INVALID_MODULE = 'preprocess-018'
+    INVALID_PACKET = 'preprocess-019'
+    MISSING_IVP = 'preprocess-020'
+    MULTIPLE_IVP = 'preprocess-021'
