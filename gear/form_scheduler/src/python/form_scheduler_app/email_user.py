@@ -46,6 +46,13 @@ def send_email(proxy: FlywheelProxy, email_client: EmailClient,
     # lookup the user's email; if not set fall back to the file origin id
     target_email = user.email if user.email else file.origin.id
 
+    # don't send emails to the gearbot
+    if target_email in [
+            'nacc-flywheel-gear@uw.edu', 'nacc-flywheel-gear@washington.edu'
+    ]:
+        log.info("Owner is the gearbot, not sending email")
+        return
+
     # look up the center name
     group = proxy.find_group(project.group)
     group_label = "your center" if not group else group.label
