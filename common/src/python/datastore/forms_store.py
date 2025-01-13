@@ -73,7 +73,7 @@ class FormsStore():
             Optional[List[Dict[str, str]]]: _description_
         """
         if not self.__legacy_project:
-            log.warning('Legacy project not specified in group %s',
+            log.warning('Legacy project not provided for group %s',
                         self.__ingest_project.group)
             return None
 
