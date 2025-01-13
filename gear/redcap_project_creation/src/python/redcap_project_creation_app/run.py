@@ -184,16 +184,17 @@ class REDCapProjectCreation(GearExecutionEnvironment):
                                   use_template=use_xml_template,
                                   xml_templates=xml_templates)
 
-        if len(fw_metadata) > 0:
-            yaml_text = yaml.safe_dump(data=fw_metadata,
-                                       allow_unicode=True,
-                                       default_flow_style=False)
+        # TODO - fix writing generated metadata to yaml file
+        # if len(fw_metadata) > 0:
+        #     yaml_text = yaml.safe_dump(data=fw_metadata,
+        #                                allow_unicode=True,
+        #                                default_flow_style=False)
 
-            tstmp = datetime.now().strftime("%Y%m%d-%H%M%S")
-            fname = f'{output_prefix} - {study_info.study_id} - {tstmp}.yaml'
-            with context.open_output(fname, mode='w',
-                                     encoding='utf-8') as out_file:
-                out_file.write(yaml_text)
+        #     tstmp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        #     fname = f'{output_prefix} - {study_info.study_id} - {tstmp}.yaml'
+        #     with context.open_output(fname, mode='w',
+        #                              encoding='utf-8') as out_file:
+        #         out_file.write(yaml_text)
 
         if errors:
             raise GearExecutionError(
