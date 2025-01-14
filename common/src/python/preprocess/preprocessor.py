@@ -53,36 +53,41 @@ class FormPreprocessor():
         self.__module_info = module_info
         self.__error_writer = error_writer
 
-    def __is_accepted_packet(self, *, module: str,
-                             module_configs: ModuleConfigs, packet: str,
+    def __is_accepted_packet(self, *, input_record: Dict[str, Any],
+                             module: str, module_configs: ModuleConfigs,
                              line_num: int) -> bool:
         """_summary_
 
         Args:
             module (str): _description_
             module_configs (ModuleConfigs): _description_
-            packet (str): _description_
+            input_record: _description_
             line_num (int): _description_
 
         Returns:
             bool: _description_
         """
+
+        packet = input_record[FieldNames.PACKET]
         if (packet not in module_configs.initial_packets
                 and packet not in module_configs.followup_packets):
             log.error('%s - %s/%s',
                       preprocess_errors[SysErrorCodes.INVALID_PACKET], module,
                       packet)
             self.__error_writer.write(
-                preprocessing_error(field=FieldNames.PACKET,
-                                    value=packet,
-                                    line=line_num,
-                                    error_code=SysErrorCodes.INVALID_PACKET))
+                preprocessing_error(
+                    field=FieldNames.PACKET,
+                    value=packet,
+                    line=line_num,
+                    error_code=SysErrorCodes.INVALID_PACKET,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
             return False
 
         return True
 
-    def __is_accepted_version(self, *, module: str,
-                              module_configs: ModuleConfigs, version: str,
+    def __is_accepted_version(self, *, input_record: Dict[str, Any],
+                              module: str, module_configs: ModuleConfigs,
                               line_num: int) -> bool:
         """_summary_
 
@@ -95,15 +100,20 @@ class FormPreprocessor():
         Returns:
             bool: _description_
         """
+
+        version = input_record[FieldNames.VISITNUM]
         if version not in module_configs.versions:
             log.error('%s - %s/%s',
                       preprocess_errors[SysErrorCodes.INVALID_VERSION], module,
                       version)
             self.__error_writer.write(
-                preprocessing_error(field=FieldNames.PACKET,
-                                    value=version,
-                                    line=line_num,
-                                    error_code=SysErrorCodes.INVALID_VERSION))
+                preprocessing_error(
+                    field=FieldNames.PACKET,
+                    value=version,
+                    line=line_num,
+                    error_code=SysErrorCodes.INVALID_VERSION,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
             return False
 
         return True
@@ -137,10 +147,13 @@ class FormPreprocessor():
                 log.error('%s - %s',
                           preprocess_errors[SysErrorCodes.MISSING_IVP], packet)
                 self.__error_writer.write(
-                    preprocessing_error(field=FieldNames.PACKET,
-                                        value=packet,
-                                        line=line_num,
-                                        error_code=SysErrorCodes.MISSING_IVP))
+                    preprocessing_error(
+                        field=FieldNames.PACKET,
+                        value=packet,
+                        line=line_num,
+                        error_code=SysErrorCodes.MISSING_IVP,
+                        ptid=input_record[FieldNames.PTID],
+                        visitnum=input_record[FieldNames.VISITNUM]))
                 return False
 
         initial_packets = self.__forms_store.query_ingest_project(
@@ -163,20 +176,26 @@ class FormPreprocessor():
 
         if initial_packets and len(initial_packets) > 1:
             self.__error_writer.write(
-                preprocessing_error(field=FieldNames.PACKET,
-                                    value=packet,
-                                    line=line_num,
-                                    error_code=SysErrorCodes.MULTIPLE_IVP))
+                preprocessing_error(
+                    field=FieldNames.PACKET,
+                    value=packet,
+                    line=line_num,
+                    error_code=SysErrorCodes.MULTIPLE_IVP,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
             return False
 
         initial_packet = initial_packets[0] if initial_packets else None
 
         if packet in module_configs.followup_packets and not initial_packet:
             self.__error_writer.write(
-                preprocessing_error(field=FieldNames.PACKET,
-                                    value=packet,
-                                    line=line_num,
-                                    error_code=SysErrorCodes.MISSING_IVP))
+                preprocessing_error(
+                    field=FieldNames.PACKET,
+                    value=packet,
+                    line=line_num,
+                    error_code=SysErrorCodes.MISSING_IVP,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
             return False
 
         if packet in module_configs.initial_packets and initial_packet:
@@ -189,21 +208,35 @@ class FormPreprocessor():
                     f"Error reading previous visit file {initial_packet['file.name']}"
                 )
 
-            # If IVP exists and not a modification to the same visit
-            if not (ivp_record[module_configs.date_field]
+            # allow if this is an update to the existing initial visit packet
+            if (ivp_record[module_configs.date_field]
                     == input_record[module_configs.date_field]
                     and ivp_record[FieldNames.VISITNUM]
                     == input_record[FieldNames.VISITNUM]):
-                log.error('%s - %s, %s',
-                          preprocess_errors[SysErrorCodes.IVP_EXISTS],
-                          ivp_record[module_configs.date_field],
-                          ivp_record[FieldNames.VISITNUM])
-                self.__error_writer.write(
-                    preprocessing_error(field=FieldNames.PACKET,
-                                        value=packet,
-                                        line=line_num,
-                                        error_code=SysErrorCodes.IVP_EXISTS))
-                return False
+                return True
+
+            # allow if this is a new I4 submission
+            if (ivp_record[FieldNames.PACKET] == DefaultValues.UDS_I_PACKET
+                    and input_record[FieldNames.PACKET]
+                    == DefaultValues.UDS_I4_PACKET):
+                return True
+
+            log.error('%s: %s - %s, %s - %s',
+                      preprocess_errors[SysErrorCodes.IVP_EXISTS],
+                      ivp_record[module_configs.date_field],
+                      ivp_record[FieldNames.VISITNUM],
+                      input_record[module_configs.date_field],
+                      input_record[FieldNames.VISITNUM])
+
+            self.__error_writer.write(
+                preprocessing_error(
+                    field=FieldNames.PACKET,
+                    value=packet,
+                    line=line_num,
+                    error_code=SysErrorCodes.IVP_EXISTS,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
+            return False
 
         return True
 
@@ -261,10 +294,13 @@ class FormPreprocessor():
                 field=FieldNames.VISITNUM,
                 value=input_record[FieldNames.VISITNUM])):
             self.__error_writer.write(
-                preprocessing_error(field=date_field,
-                                    value=input_record[date_field],
-                                    line=line_num,
-                                    error_code=SysErrorCodes.DIFF_VISITNUM))
+                preprocessing_error(
+                    field=date_field,
+                    value=input_record[date_field],
+                    line=line_num,
+                    error_code=SysErrorCodes.DIFF_VISITNUM,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
             return False
 
         if module_configs.legacy_module:
@@ -285,10 +321,13 @@ class FormPreprocessor():
                 field=FieldNames.VISITNUM,
                 value=input_record[FieldNames.VISITNUM])):
             self.__error_writer.write(
-                preprocessing_error(field=date_field,
-                                    value=input_record[date_field],
-                                    line=line_num,
-                                    error_code=SysErrorCodes.DIFF_VISITNUM))
+                preprocessing_error(
+                    field=date_field,
+                    value=input_record[date_field],
+                    line=line_num,
+                    error_code=SysErrorCodes.DIFF_VISITNUM,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
             return False
 
         return True
@@ -324,10 +363,13 @@ class FormPreprocessor():
                 field=date_field,
                 value=input_record[date_field])):
             self.__error_writer.write(
-                preprocessing_error(field=FieldNames.VISITNUM,
-                                    value=input_record[FieldNames.VISITNUM],
-                                    line=line_num,
-                                    error_code=SysErrorCodes.DIFF_VISITDATE))
+                preprocessing_error(
+                    field=FieldNames.VISITNUM,
+                    value=input_record[FieldNames.VISITNUM],
+                    line=line_num,
+                    error_code=SysErrorCodes.DIFF_VISITDATE,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
             return False
 
         if module_configs.legacy_module:
@@ -348,10 +390,13 @@ class FormPreprocessor():
                 field=date_field,
                 value=input_record[date_field])):
             self.__error_writer.write(
-                preprocessing_error(field=FieldNames.VISITNUM,
-                                    value=input_record[FieldNames.VISITNUM],
-                                    line=line_num,
-                                    error_code=SysErrorCodes.DIFF_VISITDATE))
+                preprocessing_error(
+                    field=FieldNames.VISITNUM,
+                    value=input_record[FieldNames.VISITNUM],
+                    line=line_num,
+                    error_code=SysErrorCodes.DIFF_VISITDATE,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
             return False
 
         return True
@@ -373,7 +418,7 @@ class FormPreprocessor():
             bool: _description_
         """
 
-        if input_record[FieldNames.PACKET] != DefaultValues.I4_PACKET:
+        if input_record[FieldNames.PACKET] != DefaultValues.UDS_I4_PACKET:
             return True
 
         date_field = module_configs.date_field
@@ -401,7 +446,9 @@ class FormPreprocessor():
                     field=module_configs.date_field,
                     value=input_record[module_configs.date_field],
                     line=line_num,
-                    error_code=SysErrorCodes.LOWER_I4_VISITDATE))
+                    error_code=SysErrorCodes.LOWER_I4_VISITDATE,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
             return False
 
         visitnum_lbl = f'{DefaultValues.FORM_METADATA_PATH}.{FieldNames.VISITNUM}'
@@ -411,7 +458,9 @@ class FormPreprocessor():
                     field=FieldNames.VISITNUM,
                     value=input_record[FieldNames.VISITNUM],
                     line=line_num,
-                    error_code=SysErrorCodes.LOWER_I4_VISITNUM))
+                    error_code=SysErrorCodes.LOWER_I4_VISITNUM,
+                    ptid=input_record[FieldNames.PTID],
+                    visitnum=input_record[FieldNames.VISITNUM]))
             return False
 
         return True
@@ -437,18 +486,16 @@ class FormPreprocessor():
         subject_lbl = input_record[self.__primary_key]
         log.info('Running preprocessing checks for subject %s', subject_lbl)
 
-        if not self.__is_accepted_version(
-                module_configs=module_configs,
-                module=module,
-                version=input_record[FieldNames.FORMVER],
-                line_num=line_num):
+        if not self.__is_accepted_version(module_configs=module_configs,
+                                          module=module,
+                                          input_record=input_record,
+                                          line_num=line_num):
             return False
 
-        if not self.__is_accepted_packet(
-                module_configs=module_configs,
-                module=module,
-                packet=input_record[FieldNames.PACKET],
-                line_num=line_num):
+        if not self.__is_accepted_packet(module_configs=module_configs,
+                                         module=module,
+                                         input_record=input_record,
+                                         line_num=line_num):
             return False
 
         if not self.__check_initial_visit(subject_lbl=subject_lbl,

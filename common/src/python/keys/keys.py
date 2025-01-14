@@ -57,7 +57,8 @@ class DefaultValues:
     IDENTIFIER_SUFFIX = 'identifiers'
     FW_SEARCH_OR = '=|'
     FORM_METADATA_PATH = 'file.info.forms.json'
-    I4_PACKET = 'I4'
+    UDS_I4_PACKET = 'I4'
+    UDS_I_PACKET = 'I'
 
 
 class MetadataKeys:

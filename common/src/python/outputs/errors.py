@@ -238,7 +238,9 @@ def preprocessing_error(field: str,
                         value: str,
                         line: int,
                         error_code: Optional[str] = None,
-                        message: Optional[str] = None) -> FileError:
+                        message: Optional[str] = None,
+                        ptid: Optional[str] = None,
+                        visitnum: Optional[str] = None) -> FileError:
     """Creates a FileError for pre-processing error.
 
     Args:
@@ -247,6 +249,8 @@ def preprocessing_error(field: str,
       line: the line number
       error_code (optional): pre-processing error code
       message (optional): the error message
+      ptid (optional): PTID if known
+      visitnum (optional): visitnum if known
 
     Returns:
       the constructed FileError
@@ -263,7 +267,9 @@ def preprocessing_error(field: str,
         error_code=error_code if error_code else 'preprocess-error',
         value=value,
         location=CSVLocation(line=line, column_name=field),
-        message=error_message)
+        message=error_message,
+        ptid=ptid,
+        visitnum=visitnum)
 
 
 def partially_failed_file_error() -> FileError:
