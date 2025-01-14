@@ -161,7 +161,7 @@ class FormPreprocessor():
             module=module,
             search_col=FieldNames.PACKET,
             search_val=module_configs.initial_packets,
-            search_op=DefaultValues.FW_SEARCH_OR)
+            search_op=DefaultValues.FW_SEARCH_OR)  # type: ignore
 
         if not initial_packets:
             if module_configs.legacy_module:
@@ -172,7 +172,7 @@ class FormPreprocessor():
                 module=module,
                 search_col=FieldNames.PACKET,
                 search_val=module_configs.initial_packets,
-                search_op=DefaultValues.FW_SEARCH_OR)
+                search_op=DefaultValues.FW_SEARCH_OR)  # type: ignore
 
         if initial_packets and len(initial_packets) > 1:
             self.__error_writer.write(
