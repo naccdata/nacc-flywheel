@@ -101,7 +101,7 @@ class FormPreprocessor():
             bool: _description_
         """
 
-        version = input_record[FieldNames.VISITNUM]
+        version = input_record[FieldNames.FORMVER]
         if version not in module_configs.versions:
             log.error('%s - %s/%s',
                       preprocess_errors[SysErrorCodes.INVALID_VERSION], module,
